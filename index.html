@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="dark">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>KI21</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#0d1117;color:#e6edf3;min-height:100vh;font-family:'DM Sans',sans-serif;}
+#app{min-height:100vh;background:#0d1117;}
+.nav{background:#161b22;border-bottom:1px solid #30363d;padding:0 14px;height:44px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-brand{font-size:16px;font-weight:800;color:#e6edf3;cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
+.nav-right{display:flex;gap:5px;align-items:center;}
+.btn{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:5px;
+  padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:7px;padding:12px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
+.btn-o:disabled{background:#484f58;cursor:not-allowed;}
+.cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
+  padding:3px 8px;cursor:pointer;}
+.cust-label{font-size:8px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;line-height:1.3;}
+.cust-val{font-size:11px;font-weight:700;color:#ff6b00;line-height:1.3;max-width:100px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wrap{padding:12px 14px;max-width:500px;margin:0 auto;}
+.hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin:10px 0 16px;}
+.hero-a{font-weight:800;font-size:20px;color:#fff;}
+.hero-b{font-family:'DM Serif Display',serif;font-size:20px;color:#ff6b00;}
+.sit-row{display:flex;align-items:center;gap:12px;background:#161b22;border:1px solid #30363d;
+  border-radius:8px;padding:11px 12px;margin-bottom:5px;cursor:pointer;transition:border-color .15s;}
+.sit-row:hover{border-color:#ff6b00;}
+.sit-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+.sit-phase{font-size:9px;color:#484f58;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px;}
+.sit-title{font-size:13px;font-weight:700;color:#e6edf3;}
+.sit-arrow{color:#484f58;font-size:16px;}
+.tagline{margin-top:14px;text-align:center;font-size:11px;color:#484f58;}
+
+/* Station */
+.station-wrap{padding:14px;max-width:500px;margin:0 auto;}
+.st-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.st-back{background:transparent;border:none;color:#8b949e;font-size:20px;cursor:pointer;padding:0;line-height:1;}
+.st-phase{font-size:9px;color:#484f58;text-transform:uppercase;letter-spacing:1px;}
+.st-title{font-size:17px;font-weight:800;color:#e6edf3;}
+.st-cust{font-size:10px;color:#ff6b00;font-weight:600;background:rgba(255,107,0,.12);
+  border:1px solid rgba(255,107,0,.3);border-radius:4px;padding:2px 7px;
+  max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.phase-nav{display:flex;gap:5px;margin-bottom:10px;}
+.regel{font-size:12px;color:#8b949e;line-height:1.5;border-left:2px solid #ff6b00;
+  padding-left:10px;margin-bottom:14px;}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:#8b949e;margin-bottom:5px;}
+.field-wrap{margin-bottom:12px;}
+input,select,textarea{width:100%;background:#1c2333;border:1px solid #30363d;border-radius:6px;
+  padding:9px 11px;font-size:16px;font-family:'DM Sans',sans-serif;color:#e6edf3;
+  outline:none;-webkit-text-fill-color:#e6edf3;-webkit-user-select:text;user-select:text;
+  caret-color:#ff6b00;}
+input:focus,select:focus,textarea:focus{border-color:#ff6b00;}
+textarea{resize:vertical;min-height:110px;line-height:1.6;}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238b949e' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:26px;}
+select option{background:#1c2333;}
+.gen-row{display:flex;gap:8px;margin-bottom:14px;}
+.btn-reset{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:7px;
+  padding:12px 14px;font-size:16px;cursor:pointer;}
+.result-box{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.result-head{background:#1c2333;padding:8px 12px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid #30363d;}
+.result-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;}
+.result-btns{display:flex;gap:6px;}
+.result-body{padding:12px;font-size:12px;line-height:1.8;color:#e6edf3;
+  white-space:pre-wrap;max-height:350px;overflow-y:auto;}
+.result-foot{text-align:center;font-size:10px;color:#484f58;padding:6px;border-top:1px solid #30363d;}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;}
+.modal-box{background:#161b22;border-top:1px solid #30363d;border-radius:14px 14px 0 0;
+  padding:16px 14px 32px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal-handle{width:32px;height:3px;background:#30363d;border-radius:2px;margin:0 auto 14px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:#e6edf3;margin-bottom:14px;}
+.tab-row{display:flex;border-radius:7px;overflow:hidden;border:1px solid #30363d;margin-bottom:14px;}
+.tab-btn{flex:1;padding:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.modal-desc{font-size:12px;color:#8b949e;margin-bottom:8px;line-height:1.5;}
+.modal-row{display:flex;gap:8px;margin-top:8px;}
+.acc-row{display:flex;align-items:center;background:#1c2333;border:1px solid #30363d;
+  border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;}
+.acc-row.active{background:rgba(255,107,0,.12);border-color:rgba(255,107,0,.3);}
+.acc-name{font-size:13px;font-weight:600;color:#e6edf3;}
+.acc-sub{font-size:10px;color:#8b949e;}
+.acc-btns{display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:auto;}
+.acc-active{font-size:9px;color:#ff6b00;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.status-box{border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
+
+<script>
+// ── STORAGE ────────────────────────────────────────────────
+const LS={
+  get:(k,d)=>{try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+};
+
+// ── STATE ──────────────────────────────────────────────────
+const state={
+  view: LS.get('ki21_view','home'),
+  accounts: LS.get('ki21_acc',[]).filter(a=>a.cust&&a.cust.firma),
+  activeId: null,
+  modal: null,
+  pendingSit: null,
+};
+
+// Validate activeId
+const savedAid = LS.get('ki21_aid',null);
+if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
+
+// ── BUILD CONTEXT ───────────────────────────────────────────
+function buildCtx(cust,mu,kk,stk){
+  let s='--- KONTEXT ---\n';
+  s+='WICHTIG: Bei ROI-Berechnungen immer die korrekte Bezugsgröße verwenden.\n';
+  s+='Zeitersparnis gilt NUR für Mitarbeiter die direkt Kundentermine führen (Account Manager / Kundenbetreuer).\n';
+  s+='Nicht alle Mitarbeiter des Unternehmens. Konservativ rechnen.\n';
+  if(cust.firma)s+='Kunde: '+cust.firma+'\n';
+  if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
+  if(cust.branche)s+='Branche: '+cust.branche+'\n';
+  if(cust.ma)s+='Mitarbeiter: '+cust.ma+'\n';
+  if(cust.um)s+='Umsatz: '+cust.um+'\n';
+  if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
+  if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
+  if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
+  if(stk)s+='\nZusätzlicher Kontext:\n'+stk+'\n';
+  return s+'--- ENDE KONTEXT ---\n\n';
+}
+
+// ── STATIONS ───────────────────────────────────────────────
+const SITS=[
+  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔍',
+   regel:'Triggerevent und erste Infos eingeben – Steckbrief und Qualifizierungsfragen kommen raus.',
+   felder:[
+     {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
+     {id:'trigger',l:'Trigger Event / Anlass',t:'text',p:'z.B. neuer GF, Wachstum, Pressemitteilung'},
+     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Was weißt du bereits?'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi für ${mu&&mu.profil?'das folgende Unternehmen':'[Produkt]'} im deutschsprachigen Mittelstand.\n\nErstelle einen vollständigen Lead-Steckbrief:\n\nUnternehmen: ${c.firma||''}${c.ma?', '+c.ma+' Mitarbeiter':''}${c.um?', '+c.um+' Umsatz':''}\nBranche: ${c.branche||''}\nAnsprechpartner: ${c.ap||''}\nLead-Quelle: ${f.quelle||''}${f.trigger?'\nTrigger Event: '+f.trigger:''}${f.info?'\nErste Infos: '+f.info:''}\n\nTEIL A – UNTERNEHMENSANALYSE:\n1. Unternehmens-Snapshot – 5 Sätze inkl. relevanter News\n2. Aktuelle Branchensituation\n3. Ansprechpartner-Analyse\n4. Trigger Event Analyse\n5. Kaufsignal-Check\n6. Individueller Gesprächseinstieg\n\nTEIL B – QUALIFIZIERUNG:\n7. Qualifizierungs-Score 1-10\n8. Empfehlung\n\nTEIL C – QUALIFIZIERUNGSFRAGEN FÜRS TELEFONAT:\nROT – MUSS klären: Budget, Entscheider, Mitbewerber, Timeline, Prozess\nGELB – WICHTIG: Machtlage, Auslöser, Systemanbindungen\nGRÜN – SPÄTER: Cloud/On-Premise, Nutzeranzahl`
+  },
+  {id:1,num:2,phase:'Phase 2',title:'Besuchsvorbereitung',icon:'📋',
+   regel:'Ausgefüllte Qualifizierungs-Checkliste rein – Discovery-Frageleitfaden kommt raus.',
+   felder:[
+     {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Checkliste aus Phase 1 mit Antworten:\nBudget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...'},
+     {id:'recherche',l:'Offene Qualifizierungsfragen',t:'ta',p:'Noch offene Fragen und neue Erkenntnisse...'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nBereite den Discovery-Termin vor bei ${c.firma||''}.\nAnsprechpartner: ${c.ap||''}\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nOffene Fragen:\n${f.recherche||''}\n\nTEIL A – KUNDEN- UND MARKTANALYSE:\n1. Relevante Unternehmensinformationen\n2. Branchentrends\n3. Aktuelle Themen und News\n4. Gesprächsansätze\n\nTEIL B – DISCOVERY-FRAGELEITFADEN:\n5. Fragen Ebene 1 – Situation verstehen\n6. Fragen Ebene 2 – Schmerz aufdecken\n7. Fragen Ebene 3 – Implikation vertiefen\n8. KPI-Fragen für ROI-Berechnung\n9. Die wichtigste Frage an alle\n10. Umgang mit Ausweichen`
+  },
+  {id:2,num:3,phase:'Phase 3',title:'Discovery-Gespräch',icon:'🎯',
+   regel:'70% zuhören. Fragen stellen – Antworten eintragen. KPIs für ROI bereits hier ermitteln.',
+   felder:[
+     {id:'leitfaden',l:'Ergebnisse Besuchsvorbereitung',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
+     {id:'antworten',l:'Fragen für Discovery-Gespräch',t:'ta',p:'Fragen aus Phase 2 – Antworten während des Gesprächs eintragen...'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDiscovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nLeitfaden:\n${f.leitfaden||''}\n\nErkenntnisse:\n${f.antworten||''}\n\nTEIL A – SCHMERZANALYSE:\n1. Schmerzpunkte pro Entscheider\n2. Ursachen\n3. Auswirkungen wirtschaftlich + persönlich\n\nTEIL B – BUSINESS IMPACT:\n4. KPIs für ROI-Berechnung\n5. Konkrete Zahlen\n6. Business-Impact Schätzung\n\nTEIL C – STRATEGIE:\n7. Kaufargumente in Kundensprache\n8. Machtlage\n9. Empfohlener Demo-Pfad`
+  },
+  {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
+   regel:'Der Demo-Pfad kommt aus der Discovery. Zeige nur was der Kunde selbst genannt hat.',
+   felder:[
+     {id:'discovery',l:'Discovery-Ergebnisse (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDemo vorbereiten für ${c.firma||''}.\n\nDiscovery-Ergebnisse:\n${f.discovery||''}\n\nIndividueller Demo-Leitfaden:\n1. Relevante Themen aus Discovery\n2. Relevante Funktionen\n3. Nutzenargumente pro Entscheider\n4. Empfohlene Reihenfolge\n5. Demo-Einstieg\n6. Referenzkunden-Moment\n7. Einwände behandeln\n8. Abschluss – nächster Schritt`
+  },
+  {id:4,num:5,phase:'Phase 5',title:'Terminachbereitung',icon:'📝',
+   regel:'Stichworte eingeben – strukturierter Bericht kommt raus – direkt ins CRM.',
+   felder:[
+     {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Reaktionen, Einwände, Zusagen, nächste Schritte...'},
+     {id:'ergebnis',l:'Strukturierter Bericht (zum Kopieren ins CRM)',t:'ta',p:'Ergebnis nach Generierung hier einfügen...'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nTermin bei ${c.firma||''}, AP: ${c.ap||''}.\n\nStichworte:\n${f.stichworte||''}\n\nTEIL A – BESUCHSBERICHT:\n1. Zusammenfassung\n2. Reaktionen der Entscheider\n3. Machtlage\n4. Bestätigte Schmerzpunkte\n5. Einwände und Risiken\n6. Deal-Score 1-10\n\nTEIL B – NÄCHSTE SCHRITTE:\n7. Follow-up Mail – max. 5 Sätze\n8. Interne Notiz\n9. Nächste Schritte mit Datum`
+  },
+  {id:5,num:6,phase:'Phase 6',title:'ROI / Business Case',icon:'💰',
+   regel:'Keine neuen Daten – alle KPIs stammen aus der Discovery.',
+   felder:[
+     {id:'discovery',l:'KPIs und Zahlen aus der Discovery',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`ROI-Berechnung für ${c.firma||''}.\n\nKPIs aus der Discovery:\n${f.discovery||''}\n\nWICHTIG: Zeitersparnis gilt NUR für Account Manager / Kundenbetreuer – nicht für alle Mitarbeiter des Unternehmens. Nur Mitarbeiter die direkt Kundentermine führen werden berücksichtigt. Bitte konservativ rechnen.\n\nTEIL A – QUANTITATIVER NUTZEN:\n1. Anzahl Account Manager (aus KPIs)\n2. Zeitersparnis pro AM in Stunden/Woche (nur Vorbereitung + Nachbereitung)\n3. Monetärer Wert der Zeitersparnis pro Jahr\n4. Realistischer Mehrertrag durch bessere Vorbereitung (+5-10% Abschlussquote)\n5. ROI % (Mehrertrag / Investition)\n6. Amortisationszeit in Wochen\n\nBitte alle Annahmen transparent ausweisen.\n\nTEIL B – QUALITATIVER NUTZEN:\n7. Höhere Qualität der Kundengespräche\n8. Bessere Einheitlichkeit im Team\n9. Schnellere Einarbeitung neuer Mitarbeiter\n\nTEIL C – MANAGEMENT SUMMARY:\n10. Executive Summary 3 Sätze\n11. Warum handeln? Warum jetzt?`
+  },
+  {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
+   regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
+   felder:[
+     {id:'erkenntnisse',l:'Erkenntnisse aus Discovery, Demo, Nachbereitung',t:'ta',p:'Schmerzpunkte, KPIs, Einwände, Budget-Signale...'},
+     {id:'budget',l:'Budget & Preisvorstellung',t:'text',p:'z.B. 180k€/Jahr'},
+     {id:'einwand',l:'Erwartete Einwände',t:'text',p:'z.B. zu teuer, IT-Freigabe'},
+     {id:'paket',l:'Mein Angebot',t:'text',p:'z.B. On-Premise + Implementierung'},
+     {id:'minimum',l:'Mein Mindestpreis',t:'text',p:'z.B. 140.000€'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Angebotserstellung für ${c.firma||''}, AP: ${c.ap||''}.\n\nErkenntnisse: ${f.erkenntnisse||''}\nBudget: ${f.budget||''}\nAngebot: ${f.paket||''}\nMindestpreis: ${f.minimum||''}\nEinwände: ${f.einwand||''}\n\nTEIL A – MANAGEMENT SUMMARY:\n1. Warum handeln?\n2. Warum jetzt?\n3. Warum diese Lösung?\n\nTEIL B – ANGEBOT:\n4. Ausgangssituation\n5. Leistungsumfang\n6. ROI-Zusammenfassung\n7. Investition im ROI-Kontext\n8. Nächste Schritte\n\nTEIL C – EINWANDBEHANDLUNG:\n9. Pro Einwand: Hintergrund, Gegenfrage, Antwort\n\nTEIL D – VERHANDLUNG:\n10. Preisdruck ohne nachzugeben\n11. Der eine Satz der dreht`
+  }
+];
+
+// ── CLAUDE API ─────────────────────────────────────────────
+async function callClaude(prompt, onStream){
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey){alert('Bitte API Key unter ⚙ hinterlegen.');return null;}
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:4096,
+      stream:true,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!resp.ok){const err=await resp.json();throw new Error(err.error?.message||'API Fehler '+resp.status);}
+  const reader=resp.body.getReader();
+  const decoder=new TextDecoder();
+  let fullText='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done)break;
+    const chunk=decoder.decode(value,{stream:true});
+    const lines=chunk.split('\n');
+    for(const line of lines){
+      if(line.startsWith('data: ')){
+        const data=line.slice(6);
+        if(data==='[DONE]')continue;
+        try{
+          const parsed=JSON.parse(data);
+          if(parsed.type==='content_block_delta'&&parsed.delta?.text){
+            fullText+=parsed.delta.text;
+            if(onStream)onStream(fullText);
+          }
+        }catch(e){}
+      }
+    }
+  }
+  return fullText;
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function h(tag,attrs,...children){
+  const el=document.createElement(tag);
+  if(attrs)Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='className')el.className=v;
+    else el.setAttribute(k,v);
+  });
+  children.flat().forEach(c=>{
+    if(c==null)return;
+    el.appendChild(typeof c==='string'?document.createTextNode(c):c);
+  });
+  return el;
+}
+
+function modal(title,content,onClose){
+  const bg=h('div',{className:'modal-bg'});
+  bg.addEventListener('click',e=>{if(e.target===bg){bg.remove();if(onClose)onClose();}});
+  const box=h('div',{className:'modal-box'},
+    h('div',{className:'modal-handle'}),
+    h('div',{className:'modal-title'},title),
+    content
+  );
+  bg.appendChild(box);
+  document.body.appendChild(bg);
+  return bg;
+}
+
+function btn(label,className,onClick){
+  const b=h('button',{className,onclick:onClick},label);
+  return b;
+}
+
+function getActive(){return state.accounts.find(a=>a.id===state.activeId)||null;}
+function getActiveCust(){return(getActive()||{cust:{}}).cust;}
+
+// ── RENDER HOME ────────────────────────────────────────────
+function renderHome(){
+  const cust=getActiveCust();
+  const app=document.getElementById('app');
+  app.innerHTML='';
+
+  const nav=h('div',{className:'nav'},
+    h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
+    h('div',{className:'nav-right'},
+      h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
+      h('button',{className:'btn',onclick:showSettings},'⚙'),
+      h('button',{className:'btn',onclick:()=>showExport()},'↑'),
+      h('button',{className:'btn',onclick:()=>showImport()},'↓'),
+      h('div',{className:'cust-btn',onclick:showKunde},
+        h('div',{className:'cust-label'},'Kunde'),
+        h('div',{className:'cust-val'},cust.firma||'wählen →')
+      )
+    )
+  );
+
+  const wrap=h('div',{className:'wrap'},
+    h('div',{className:'hero'},
+      h('span',{className:'hero-a'},'Ihr Vertrieb.'),
+      h('span',{className:'hero-b'},'Plus KI.')
+    )
+  );
+
+  const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
+    textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Situation wählen');
+  wrap.appendChild(sitLabel);
+
+  SITS.forEach(sit=>{
+    const row=h('div',{className:'sit-row',onclick:()=>{
+      if(!state.activeId){state.pendingSit=sit.id;showKunde();}
+      else renderStation(sit.id);
+    }},
+      h('span',{className:'sit-icon'},sit.icon),
+      h('div',{style:{flex:1}},
+        h('div',{className:'sit-phase'},sit.phase),
+        h('div',{className:'sit-title'},sit.title)
+      ),
+      h('span',{className:'sit-arrow'},'›')
+    );
+    wrap.appendChild(row);
+  });
+
+  wrap.appendChild(h('div',{className:'tagline'},'Nicht verwalten. Unterstützen.'));
+  app.appendChild(nav);
+  app.appendChild(wrap);
+  LS.set('ki21_view','home');
+}
+
+// ── RENDER STATION ─────────────────────────────────────────
+
+
+function showFullscreenEdit(title, text, onSave){
+  const ta=h('textarea',{
+    style:{width:'100%',height:'calc(100vh - 180px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'14px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      outline:'none',resize:'none',lineHeight:'1.8',
+      WebkitTextFillColor:'#e6edf3',caretColor:'#ff6b00',
+      WebkitUserSelect:'text',userSelect:'text'}
+  });
+  ta.value=text;
+  const saveB=h('button',{className:'btn-o',style:{marginTop:'10px'},
+    onclick:()=>{onSave(ta.value);m.remove();}
+  },'Speichern & Schließen');
+  const content=h('div',{},ta,saveB);
+  const m=modal(title,content,null);
+}
+
+function showFullscreen(title, text){
+  const ta=h('textarea',{
+    style:{width:'100%',height:'calc(100vh - 160px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'13px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      outline:'none',resize:'none',lineHeight:'1.8',WebkitTextFillColor:'#e6edf3'}
+  });
+  ta.value=text;
+  const copyB=h('button',{className:'btn-o',
+    style:{marginTop:'10px'},
+    onclick:()=>{
+      if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{
+        copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren & Schließen',2000);
+      });
+    }
+  },'Kopieren & Schließen');
+  const content=h('div',{},ta,copyB);
+  modal(title,content,null);
+}
+
+async function transferAndGo(fromId, toId, result){
+  // Show loading overlay
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.95);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
+  overlay.innerHTML='<div style="font-size:32px">⚡</div><div style="font-size:14px;color:#ff6b00;font-weight:700;">Wichtigstes wird extrahiert...</div><div style="font-size:12px;color:#8b949e;">Claude priorisiert für '+SITS[toId].title+'</div>';
+  document.body.appendChild(overlay);
+
+  const extractMap={
+    0:{
+      f1:{fid:'checkliste', prompt:`Extrahiere aus diesem Qualifizierungs-Steckbrief die TOP 10 wichtigsten Erkenntnisse für die Besuchsvorbereitung.
+
+PRIORITÄT:
+1. Entscheider und Machtlage
+2. Budget und Timeline
+3. Schmerzpunkte und Kaufmotive
+4. Wettbewerber-Situation
+5. Risiken und Chancen
+
+Format: Nummerierte Liste, jeder Punkt max. 2 Sätze. Klar und direkt.
+
+Text:
+`},
+      f2:{fid:'recherche', prompt:`Extrahiere aus diesem Text die TOP 10 Qualifizierungsfragen fürs Telefonat.
+
+PRIORITÄT:
+1. ROT-Fragen zuerst (Budget, Entscheider, Timeline)
+2. GELB-Fragen (Machtlage, Auslöser)
+3. GRÜN-Fragen (Details)
+
+Format: Nummerierte Liste mit Priorität [ROT/GELB/GRÜN], kurz und präzise.
+
+Text:
+`}
+    },
+    1:{
+      f1:{fid:'leitfaden', prompt:`Extrahiere die TOP 10 wichtigsten Erkenntnisse aus dieser Besuchsvorbereitung.
+
+PRIORITÄT:
+1. Bestätigte Schmerzpunkte
+2. Entscheider und ihre Motive
+3. Wettbewerber-Situation
+4. Offene Risiken
+5. Strategische Hinweise
+
+Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
+
+Text:
+`},
+      f2:{fid:'antworten', prompt:`Extrahiere die TOP 10 wichtigsten Discovery-Fragen aus diesem Leitfaden.
+
+PRIORITÄT:
+1. Schmerz-Fragen (was kostet das Problem?)
+2. Ursachen-Fragen
+3. Auswirkungs-Fragen
+4. KPI-Fragen für ROI
+5. Entscheidungs-Fragen
+
+Format: Nummerierte Liste, jede Frage direkt formuliert.
+
+Text:
+`}
+    },
+    2:{
+      f1:{fid:'discovery', prompt:`Extrahiere die TOP 10 wichtigsten Discovery-Erkenntnisse für die Demo-Vorbereitung.
+
+PRIORITÄT:
+1. Bestätigte Schmerzpunkte in Kundensprache
+2. Was in der Demo gezeigt werden MUSS
+3. Was NICHT gezeigt werden soll
+4. Kaufargumente pro Entscheider
+5. Wettbewerber-Positionierung
+
+Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
+
+Text:
+`}
+    },
+    5:{
+      f1:{fid:'erkenntnisse', prompt:`Extrahiere die TOP 10 wichtigsten Erkenntnisse für die Angebotserstellung.
+
+PRIORITÄT:
+1. Bestätigte Schmerzpunkte in Kundensprache
+2. ROI-Zahlen und Business Case
+3. Entscheider-Motive
+4. Zu erwartende Einwände
+5. Nächste Schritte
+
+Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
+
+Text:
+`}
+    }
+  };
+
+  try{
+    const nextKEY='ki21_st_'+state.activeId+'_'+toId;
+    const nextData=LS.get(nextKEY,{fv:{},result:''});
+    const map=extractMap[fromId];
+
+    if(map){
+      // Call Claude for each field
+      const fields=Object.values(map);
+      for(const f of fields){
+        const extracted=await callClaude(f.prompt+result,null);
+        if(extracted) nextData.fv[f.fid]=extracted;
+      }
+    }
+
+    LS.set(nextKEY,nextData);
+  }catch(e){
+    console.error('Transfer error:',e);
+    // Fallback: copy full result
+    const nextKEY='ki21_st_'+state.activeId+'_'+toId;
+    const nextData=LS.get(nextKEY,{fv:{},result:''});
+    nextData.fv[Object.values(extractMap[fromId]||{})[0]?.fid||'leitfaden']=result;
+    LS.set(nextKEY,nextData);
+  }finally{
+    overlay.remove();
+    renderStation(toId);
+  }
+}
+
+function renderStation(sitId){
+  const sit=SITS[sitId];
+  const KEY='ki21_st_'+state.activeId+'_'+sitId;
+  let data=LS.get(KEY,{fv:{},result:''});
+  let loading=false;
+
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  LS.set('ki21_view',sitId);
+
+  const cust=getActiveCust();
+  const mu=LS.get('ki21_mu',{});
+  const kk=LS.get('ki21_kk_'+state.activeId,'');
+  const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+
+  const nav=h('div',{className:'nav'},
+    h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
+    h('div',{className:'nav-right'},
+      h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
+      h('button',{className:'btn',onclick:showSettings},'⚙')
+    )
+  );
+
+  const wrap=h('div',{className:'station-wrap'});
+
+  // Header
+  const header=h('div',{className:'st-header'},
+    h('button',{className:'st-back',onclick:renderHome},'←'),
+    h('div',{style:{flex:1}},
+      h('div',{className:'st-phase'},sit.phase),
+      h('div',{className:'st-title'},sit.icon+' '+sit.title)
+    )
+  );
+  if(cust.firma)header.appendChild(h('div',{className:'st-cust'},cust.firma));
+  wrap.appendChild(header);
+
+  // Phase nav
+  const phaseNav=h('div',{className:'phase-nav'});
+  if(sitId>0){
+    phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
+  }
+  phaseNav.appendChild(h('div',{style:{flex:1}}));
+  const stkBtn=h('button',{className:'btn',
+    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d'},
+    onclick:()=>showStkModal(sitId,sit.title)
+  },'Kontext '+sit.title);
+  phaseNav.appendChild(stkBtn);
+  if(sitId<SITS.length-1){
+    phaseNav.appendChild(h('button',{className:'btn',
+      style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.3)'},
+      onclick:()=>renderStation(sitId+1)
+    },SITS[sitId+1].title+' →'));
+  }
+  wrap.appendChild(phaseNav);
+
+  // Regel
+  wrap.appendChild(h('div',{className:'regel'},sit.regel));
+
+  // Fields
+  const fieldsDiv=h('div',{});
+  sit.felder.forEach(f=>{
+    const fw=h('div',{className:'field-wrap'});
+    fw.appendChild(h('div',{className:'field-label'},f.l));
+    let inp;
+    if(f.t==='select'){
+      inp=h('select',{});
+      const def=h('option',{value:''},'– wählen –');
+      inp.appendChild(def);
+      (f.opts||[]).forEach(o=>{
+        const opt=h('option',{value:o},o);
+        if(data.fv[f.id]===o)opt.selected=true;
+        inp.appendChild(opt);
+      });
+      inp.value=data.fv[f.id]||'';
+    } else if(f.t==='ta'){
+      inp=h('textarea',{placeholder:f.p||''});
+      if(f.big)inp.style.minHeight='200px';
+      inp.value=data.fv[f.id]||'';
+    } else {
+      inp=h('input',{type:'text',placeholder:f.p||''});
+      inp.value=data.fv[f.id]||'';
+    }
+    inp.addEventListener('input',e=>{
+      data.fv[f.id]=e.target.value;
+      LS.set(KEY,data);
+    });
+    if(f.t==='ta'){
+      const taWrap=h('div',{style:{position:'relative'}});
+      const fsBtn=h('button',{
+        style:{position:'absolute',top:'6px',right:'6px',
+          background:'rgba(255,107,0,.2)',border:'1px solid rgba(255,107,0,.4)',
+          color:'#ff6b00',borderRadius:'4px',padding:'2px 7px',fontSize:'12px',
+          cursor:'pointer',zIndex:10,lineHeight:'1.5'},
+        onclick:()=>showFullscreenEdit(f.l,inp.value,(v)=>{
+          inp.value=v; data.fv[f.id]=v; LS.set(KEY,data);
+        })
+      },'⛶');
+      taWrap.appendChild(inp);
+      taWrap.appendChild(fsBtn);
+      fw.appendChild(taWrap);
+    } else {
+      fw.appendChild(inp);
+    }
+    fieldsDiv.appendChild(fw);
+  });
+  wrap.appendChild(fieldsDiv);
+
+  // Generate button
+  const genBtn=h('button',{className:'btn-o',onclick:generate},'⚡ Mit Claude generieren');
+  const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
+    data={fv:{},result:''};
+    LS.set(KEY,data);
+    renderStation(sitId);
+  }},'↺');
+  const genRow=h('div',{className:'gen-row'});
+  genRow.appendChild(genBtn);
+  genRow.appendChild(resetBtn);
+  wrap.appendChild(genRow);
+
+  // Summary box (Demo-Vorbereitung only)
+  const demoSummaryBox=h('div',{className:'result-box',
+    style:{display:(sitId===3&&data.summary)?'block':'none',
+      borderColor:'rgba(255,107,0,.4)',marginBottom:'10px'}});
+  const demoSummaryHead=h('div',{className:'result-head',style:{background:'rgba(255,107,0,.12)'}});
+  const demoSummaryLabel=h('span',{className:'result-label'},'⚡ Kurzfassung – Die 5 Punkte die zählen');
+  const demoSummaryBtns=h('div',{className:'result-btns'});
+  const demoSummaryCopyBtn=h('button',{className:'btn',onclick:()=>{
+    if(navigator.clipboard)navigator.clipboard.writeText(data.summary||'').then(()=>{
+      demoSummaryCopyBtn.textContent='✓';setTimeout(()=>demoSummaryCopyBtn.textContent='Kopieren',2000);
+    });
+  }},'Kopieren');
+  demoSummaryBtns.appendChild(demoSummaryCopyBtn);
+  demoSummaryHead.appendChild(demoSummaryLabel);
+  demoSummaryHead.appendChild(demoSummaryBtns);
+  const demoSummaryBody=h('div',{className:'result-body',
+    style:{fontSize:'13px',lineHeight:'1.7'}},data.summary||'');
+  demoSummaryBox.appendChild(demoSummaryHead);
+  demoSummaryBox.appendChild(demoSummaryBody);
+  wrap.appendChild(demoSummaryBox);
+
+  // Result box
+  const resultBox=h('div',{className:'result-box',style:{display:data.result?'block':'none'}});
+  const resultHead=h('div',{className:'result-head'});
+  const resultLabel=h('span',{className:'result-label'},'✓ Claude Antwort');
+  const resultBtns=h('div',{className:'result-btns'});
+  const copyBtn=h('button',{className:'btn',onclick:()=>{
+    const txt=data.result;
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
+      copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);
+    });
+  }},'Kopieren');
+  const fullBtn=h('button',{className:'btn',onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
+  const shareBtn=h('button',{className:'btn',
+    style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
+    onclick:()=>{
+      if(navigator.share)navigator.share({title:'KI21 – '+sit.title,text:data.result});
+      else copyBtn.click();
+    }
+  },'Teilen ↗');
+  resultBtns.appendChild(copyBtn);
+  resultBtns.appendChild(fullBtn);
+  resultBtns.appendChild(shareBtn);
+  resultHead.appendChild(resultLabel);
+  resultHead.appendChild(resultBtns);
+  const resultBody=h('div',{className:'result-body'},data.result||'');
+  // Weiter button
+  const weiterRow=h('div',{style:{padding:'8px 12px',borderTop:'1px solid #30363d',display:'none'}});
+  resultBox.appendChild(resultHead);
+  resultBox.appendChild(resultBody);
+  resultBox.appendChild(weiterRow);
+  wrap.appendChild(resultBox);
+
+  // Show weiter button if result already exists (navigating back)
+  if(data.result){
+    const nextMapInit={
+      0:{nextId:1},1:{nextId:2},2:{nextId:3},4:{nextId:5},5:{nextId:6}
+    };
+    if(nextMapInit[sitId]){
+      const nextId=nextMapInit[sitId].nextId;
+      const wb=h('button',{
+        style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
+          padding:'10px 14px',fontSize:'13px',fontWeight:'700',cursor:'pointer',
+          fontFamily:'DM Sans,sans-serif',width:'100%'},
+        onclick:()=>transferAndGo(sitId,nextId,data.result)
+      },'Weiter zu '+SITS[nextId].title+' →');
+      weiterRow.appendChild(wb);
+      weiterRow.style.display='block';
+    }
+  }
+
+  async function generate(){
+    if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
+    if(loading)return;
+    loading=true;
+    genBtn.disabled=true;
+    genBtn.textContent='⏳ Claude antwortet...';
+    resultLabel.textContent='⏳ Claude antwortet...';
+    resultBox.style.display='block';
+    resultBody.textContent='';
+    resultBox.scrollIntoView({behavior:'smooth',block:'start'});
+
+    const prompt=sit.build(data.fv,cust,mu,kk,stk);
+    try{
+      const result=await callClaude(prompt,(streamText)=>{
+        resultBody.textContent=streamText;
+        data.result=streamText;
+        fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
+      });
+      if(result){
+        data.result=result;
+        data.prompt=prompt;
+        LS.set(KEY,data);
+        resultLabel.textContent='✓ Claude Antwort';
+
+        // For Demo-Vorbereitung (sitId===3): generate compact summary
+        if(sitId===3){
+          demoSummaryBox.style.display='block';
+          demoSummaryBody.textContent='⏳ Kurzfassung wird erstellt...';
+          try{
+            const summaryPrompt=`Erstelle aus diesem Demo-Leitfaden eine kompakte Kurzfassung für den Verkäufer.
+
+Format:
+🎯 DEMO-ZIEL: [1 Satz was wir erreichen wollen]
+
+TOP 5 PUNKTE DIE ZÄHLEN:
+1. [wichtigster Punkt]
+2. [wichtiger Punkt]
+3. [wichtiger Punkt]
+4. [wichtiger Punkt]
+5. [wichtiger Punkt]
+
+⚠️ UNBEDINGT VERMEIDEN:
+- [1-2 Punkte]
+
+💡 ABSCHLUSS-FRAGE: [Die eine Frage am Ende der Demo]
+
+Leitfaden:
+`+result;
+            const summary=await callClaude(summaryPrompt,null);
+            if(summary){
+              demoSummaryBody.textContent=summary;
+              data.summary=summary;
+              LS.set(KEY,data);
+            }
+          }catch(e){
+            demoSummaryBody.textContent='Kurzfassung konnte nicht erstellt werden.';
+          }
+        }
+
+        // Show Weiter button based on phase
+        weiterRow.innerHTML='';
+        const nextMap={
+          0:{nextId:1, fields:[
+            {fid:'checkliste', label:'Qualifizierungsergebnisse', extract:'full'},
+            {fid:'recherche', label:'Offene Qualifizierungsfragen', extract:'checkliste'}
+          ]},
+          1:{nextId:2, fields:[
+            {fid:'leitfaden', label:'Ergebnisse Besuchsvorbereitung', extract:'full'},
+            {fid:'antworten', label:'Fragen für Discovery-Gespräch', extract:'discovery_questions'}
+          ]},
+          2:{nextId:3, fields:[
+            {fid:'discovery', label:'Discovery-Ergebnisse', extract:'full'}
+          ]},
+          4:{nextId:5, fields:[
+            {fid:'discovery', label:'KPIs aus der Discovery', extract:'full'}
+          ]},
+          5:{nextId:6, fields:[
+            {fid:'erkenntnisse', label:'Erkenntnisse', extract:'full'}
+          ]}
+        };
+
+        if(nextMap[sitId]){
+          const next=nextMap[sitId];
+          const weiterBtn=h('button',{
+            style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
+              padding:'10px 14px',fontSize:'13px',fontWeight:'700',cursor:'pointer',
+              fontFamily:'DM Sans,sans-serif',width:'100%'},
+            onclick:()=>transferAndGo(sitId,next.nextId,result)
+          },'Weiter zu '+SITS[next.nextId].title+' →');
+          weiterRow.appendChild(weiterBtn);
+          weiterRow.style.display='block';
+        }
+      }
+    }catch(e){
+      alert('Fehler: '+e.message);
+      resultBox.style.display='none';
+    }finally{
+      loading=false;
+      genBtn.disabled=false;
+      genBtn.textContent='⚡ Mit Claude generieren';
+    }
+  }
+
+  app.appendChild(nav);
+  app.appendChild(wrap);
+}
+
+// ── MODALS ─────────────────────────────────────────────────
+function showKunde(){
+  const m=modal('Kunde wählen', buildKundeContent(), null);
+
+  function buildKundeContent(){
+    const div=h('div',{});
+
+    if(state.accounts.length>0){
+      div.appendChild(h('div',{style:{fontSize:'10px',fontWeight:'700',letterSpacing:'.8px',
+        textTransform:'uppercase',color:'#8b949e',marginBottom:'8px'}},'Zuletzt verwendet'));
+
+      state.accounts.forEach(a=>{
+        const row=h('div',{className:'acc-row'+(a.id===state.activeId?' active':''),
+          onclick:()=>{state.activeId=a.id;LS.set('ki21_aid',a.id);m.remove();
+            if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
+            else renderHome();}
+        },
+          h('div',{style:{flex:1,minWidth:0}},
+            h('div',{className:'acc-name'},a.cust.firma),
+            h('div',{className:'acc-sub'},(a.cust.ap||'')+(a.cust.branche?' · '+a.cust.branche:''))
+          ),
+          h('div',{className:'acc-btns'},
+            a.id===state.activeId?h('span',{className:'acc-active'},'aktiv'):h('span',{},''),
+            h('button',{className:'btn',onclick:e=>{e.stopPropagation();m.remove();showEditKunde(a);}},'\u270E'),
+            h('button',{style:{background:'transparent',border:'none',color:'#484f58',
+              fontSize:'16px',cursor:'pointer',padding:'0 2px'},
+              onclick:e=>{e.stopPropagation();
+                if(confirm('Kunde löschen?')){
+                  state.accounts=state.accounts.filter(x=>x.id!==a.id);
+                  LS.set('ki21_acc',state.accounts);
+                  if(state.activeId===a.id){state.activeId=state.accounts.length>0?state.accounts[0].id:null;LS.set('ki21_aid',state.activeId);}
+                  m.remove();showKunde();
+                }
+              }},'×')
+          )
+        );
+        div.appendChild(row);
+      });
+      div.appendChild(h('div',{style:{height:'8px'}}));
+    }
+
+    div.appendChild(h('button',{className:'btn-o',onclick:()=>{m.remove();showNeuerKunde();}},
+      '+ Neuer Kunde'));
+    return div;
+  }
+}
+
+function showNeuerKunde(initial,accId){
+  const isEdit=!!accId;
+  const f={firma:'',ap:'',branche:'',ma:'',um:'',...(initial||{})};
+  let kk=accId?LS.get('ki21_kk_'+accId,''):'';
+  let tab='stamm';
+
+  const content=h('div',{});
+  const tabRow=h('div',{className:'tab-row'});
+  const tabStamm=h('button',{className:'tab-btn',
+    style:{background:'#ff6b00',color:'#fff'},onclick:()=>switchTab('stamm')},'Stammdaten');
+  const tabKontext=h('button',{className:'tab-btn',
+    style:{background:'#1c2333',color:'#8b949e'},onclick:()=>switchTab('kontext')},'Kontext Kunde');
+  tabRow.appendChild(tabStamm);
+  tabRow.appendChild(tabKontext);
+  content.appendChild(tabRow);
+
+  const stammDiv=h('div',{});
+  const kontextDiv=h('div',{style:{display:'none'}});
+
+  const fields=[
+    {k:'firma',l:'Firmenname *',p:'z.B. Lueg AG, Essen'},
+    {k:'ap',l:'Ansprechpartner',p:'z.B. Herr Bernd, ext. Berater'},
+    {k:'branche',l:'Branche',p:'z.B. Automobilhandel'},
+  ];
+  const inputs={};
+  fields.forEach(x=>{
+    const fw=h('div',{style:{marginBottom:'10px'}});
+    fw.appendChild(h('div',{className:'field-label'},x.l));
+    const inp=h('input',{type:'text',placeholder:x.p});
+    inp.value=f[x.k]||'';
+    inp.addEventListener('input',e=>f[x.k]=e.target.value);
+    inputs[x.k]=inp;
+    fw.appendChild(inp);
+    stammDiv.appendChild(fw);
+  });
+  const twoCol=h('div',{style:{display:'flex',gap:'8px'}});
+  [{k:'ma',l:'Mitarbeiter',p:'z.B. 900'},{k:'um',l:'Umsatz',p:'z.B. 800 Mio.'}].forEach(x=>{
+    const fw=h('div',{style:{flex:1,marginBottom:'10px'}});
+    fw.appendChild(h('div',{className:'field-label'},x.l));
+    const inp=h('input',{type:'text',placeholder:x.p});
+    inp.value=f[x.k]||'';
+    inp.addEventListener('input',e=>f[x.k]=e.target.value);
+    fw.appendChild(inp);
+    twoCol.appendChild(fw);
+  });
+  stammDiv.appendChild(twoCol);
+
+  const kkTa=h('textarea',{placeholder:'Bekannte Herausforderungen, Strategie, Wettbewerber, politische Situation...'});
+  kkTa.value=kk;
+  kkTa.addEventListener('input',e=>kk=e.target.value);
+  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Fließt in alle Stationen ein.'));
+  kontextDiv.appendChild(kkTa);
+
+  content.appendChild(stammDiv);
+  content.appendChild(kontextDiv);
+
+  function switchTab(t){
+    tab=t;
+    stammDiv.style.display=t==='stamm'?'block':'none';
+    kontextDiv.style.display=t==='kontext'?'block':'none';
+    tabStamm.style.background=t==='stamm'?'#ff6b00':'#1c2333';
+    tabStamm.style.color=t==='stamm'?'#fff':'#8b949e';
+    tabKontext.style.background=t==='kontext'?'#ff6b00':'#1c2333';
+    tabKontext.style.color=t==='kontext'?'#fff':'#8b949e';
+  }
+
+  const btns=h('div',{className:'modal-row'});
+  const saveB=h('button',{className:'btn-o',onclick:()=>{
+    if(!f.firma.trim()){alert('Bitte Firmenname eingeben.');return;}
+    if(isEdit){
+      state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
+      LS.set('ki21_kk_'+accId,kk);
+    } else {
+      const id='acc_'+Date.now();
+      state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
+      state.activeId=id;
+      LS.set('ki21_aid',id);
+      LS.set('ki21_kk_'+id,kk);
+    }
+    LS.set('ki21_acc',state.accounts);
+    m.remove();
+    if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
+    else renderHome();
+  }},isEdit?'Speichern':'Anlegen');
+  const cancelB=h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen');
+  saveB.style.flex='1';
+  btns.appendChild(saveB);
+  btns.appendChild(cancelB);
+  content.appendChild(btns);
+
+  const m=modal(isEdit?'Kunde bearbeiten':'Neuer Kunde',content,null);
+}
+
+function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
+
+function showStkModal(sitId,sitTitle){
+  const KEY='ki21_stk_'+state.activeId+'_'+sitId;
+  const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
+  ta.value=LS.get(KEY,'');
+  const content=h('div',{},
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für '+sitTitle+'. Fließen in den Prompt ein.'),
+    ta,
+    h('div',{className:'modal-row',style:{marginTop:'12px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);m.remove();renderStation(sitId);}},
+        'Speichern'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Kontext '+sitTitle,content,null);
+}
+
+function showMeinUnternehmen(){
+  let profil=LS.get('ki21_mu',{}).profil||'';
+  let bausteine=LS.get('ki21_mu',{}).bausteine||'';
+  let tab='profil';
+
+  const tabRow=h('div',{className:'tab-row'});
+  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmensprofil');
+  const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Angebotsbausteine');
+  tabRow.appendChild(t1);tabRow.appendChild(t2);
+
+  const d1=h('div',{});
+  const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...'});
+  ta1.value=profil;
+  ta1.addEventListener('input',e=>profil=e.target.value);
+  d1.appendChild(h('p',{className:'modal-desc'},'Unternehmensbeschreibung, Produkte, Lösungen, USP.'));
+  d1.appendChild(ta1);
+
+  const d2=h('div',{style:{display:'none'}});
+  const ta2=h('textarea',{placeholder:'Projektvorgehen:\nPhase 1: ...\n\nSupport:\n- ...'});
+  ta2.value=bausteine;
+  ta2.addEventListener('input',e=>bausteine=e.target.value);
+  d2.appendChild(h('p',{className:'modal-desc'},'Projektvorgehen, Support, Schulung, technische Voraussetzungen.'));
+  d2.appendChild(ta2);
+
+  function sw(t){
+    tab=t;
+    d1.style.display=t==='profil'?'block':'none';
+    d2.style.display=t==='bausteine'?'block':'none';
+    t1.style.background=t==='profil'?'#ff6b00':'#1c2333';t1.style.color=t==='profil'?'#fff':'#8b949e';
+    t2.style.background=t==='bausteine'?'#ff6b00':'#1c2333';t2.style.color=t==='bausteine'?'#fff':'#8b949e';
+  }
+
+  const content=h('div',{},tabRow,d1,d2,
+    h('div',{className:'modal-row',style:{marginTop:'12px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set('ki21_mu',{profil,bausteine});m.remove();}},
+        'Speichern'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Mein Unternehmen',content,null);
+}
+
+function showSettings(){
+  const hasKey=!!LS.get('ki21_apikey','');
+  let newKey='';
+  const status=h('div',{className:'status-box',
+    style:{background:hasKey?'rgba(46,160,67,.12)':'rgba(255,107,0,.12)',
+      border:'1px solid '+(hasKey?'rgba(46,160,67,.3)':'rgba(255,107,0,.3)')}},
+    h('div',{style:{fontSize:'20px',marginBottom:'4px'}},hasKey?'✅':'⚠️'),
+    h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasKey?'#2ea043':'#ff6b00'}},
+      hasKey?'API Key hinterlegt':'Kein API Key'),
+    h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
+      'Modell: Claude Haiku · ~0,02 € / Anfrage')
+  );
+  const inp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
+  inp.addEventListener('input',e=>newKey=e.target.value);
+  const saveB=h('button',{className:'btn-o',onclick:()=>{
+    if(!newKey.trim())return;
+    LS.set('ki21_apikey',newKey.trim());
+    m.remove();
+    alert('API Key gespeichert ✅');
+  }},'API Key speichern');
+
+  const content=h('div',{},status,
+    h('div',{style:{marginTop:'12px',marginBottom:'4px'}},
+      h('div',{className:'field-label'},hasKey?'Neuen Key eingeben':'API Key eingeben')),
+    inp,
+    h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 12px',lineHeight:'1.5'}},
+      'Sicher im Browser gespeichert. Nie übertragen.'),
+    saveB
+  );
+  if(hasKey){
+    content.appendChild(h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px',borderColor:'#30363d'},
+      onclick:()=>{if(confirm('API Key löschen?')){LS.set('ki21_apikey','');m.remove();}}},
+      'Key löschen'));
+  }
+  const m=modal('Einstellungen',content,null);
+}
+
+function showExport(){
+  const data={accounts:state.accounts,activeId:state.activeId,mu:LS.get('ki21_mu',{})};
+  const txt=JSON.stringify(data);
+  let copied=false;
+  const copyB=h('button',{className:'btn-o',onclick:()=>{
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
+      copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Backup kopieren',2000);
+    });
+  }},'Backup kopieren');
+  const content=h('div',{},
+    h('div',{className:'status-box',style:{background:'#1c2333',border:'1px solid #30363d'}},
+      h('div',{style:{fontSize:'28px',marginBottom:'6px'}},'💾'),
+      h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#e6edf3',marginBottom:'4px'}},
+        state.accounts.length+' Kunde'+(state.accounts.length!==1?'n':'')+' gespeichert'),
+      h('div',{style:{fontSize:'11px',color:'#8b949e'}},
+        new Date().toLocaleDateString('de-DE')+' · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr')
+    ),
+    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'12px'}},
+      'Backup kopieren → in Notizen → über Import wiederherstellen.'),
+    copyB
+  );
+  modal('Daten exportieren',content,null);
+}
+
+function showImport(){
+  const ta=h('textarea',{placeholder:'Export-Text hier einfügen...',style:{minHeight:'80px'}});
+  const content=h('div',{},
+    h('p',{className:'modal-desc'},'Export-Text einfügen und importieren.'),
+    ta,
+    h('div',{className:'modal-row',style:{marginTop:'8px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{
+        try{
+          const d=JSON.parse(ta.value);
+          if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
+          if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
+          if(d.mu){LS.set('ki21_mu',d.mu);}
+          m.remove();renderHome();
+        }catch(e){alert('Ungültiger Text.');}
+      }},'Importieren'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Daten importieren',content,null);
+}
+
+// ── START ──────────────────────────────────────────────────
+const savedView=LS.get('ki21_view','home');
+if(typeof savedView==='number'&&state.activeId){
+  renderStation(savedView);
+} else {
+  renderHome();
+}
+</script>
+</body>
+</html>
