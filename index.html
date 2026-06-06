@@ -990,9 +990,46 @@ function showMeinUnternehmen(){
   const m=modal('Mein Unternehmen',content,null);
 }
 
+async function pushToGitHub(){
+  const token=LS.get('ki21_github_token','');
+  if(!token){alert('Bitte zuerst GitHub Token in Einstellungen hinterlegen.');return;}
+
+  // Get current file SHA
+  const headers={
+    'Authorization':'token '+token,
+    'Accept':'application/vnd.github.v3+json',
+    'Content-Type':'application/json'
+  };
+
+  const shaResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{headers});
+  if(!shaResp.ok)throw new Error('GitHub Fehler: '+shaResp.status);
+  const shaData=await shaResp.json();
+  const sha=shaData.sha;
+
+  // Get current page content as base64
+  const currentHTML=document.documentElement.outerHTML;
+  const b64=btoa(unescape(encodeURIComponent(currentHTML)));
+
+  // Push update
+  const pushResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{
+    method:'PUT',
+    headers,
+    body:JSON.stringify({
+      message:'KI21 App Update '+new Date().toLocaleDateString('de-DE'),
+      content:b64,
+      sha:sha
+    })
+  });
+  if(!pushResp.ok)throw new Error('Push Fehler: '+pushResp.status);
+  return true;
+}
+
 function showSettings(){
   const hasKey=!!LS.get('ki21_apikey','');
+  const hasGHToken=!!LS.get('ki21_github_token','');
   let newKey='';
+  let newGHToken='';
+
   const status=h('div',{className:'status-box',
     style:{background:hasKey?'rgba(46,160,67,.12)':'rgba(255,107,0,.12)',
       border:'1px solid '+(hasKey?'rgba(46,160,67,.3)':'rgba(255,107,0,.3)')}},
@@ -1002,29 +1039,86 @@ function showSettings(){
     h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
       'Modell: Claude Haiku · ~0,02 € / Anfrage')
   );
-  const inp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
-  inp.addEventListener('input',e=>newKey=e.target.value);
-  const saveB=h('button',{className:'btn-o',onclick:()=>{
+
+  const apiInp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
+  apiInp.addEventListener('input',e=>newKey=e.target.value);
+  const saveApiB=h('button',{className:'btn-o',onclick:()=>{
     if(!newKey.trim())return;
     LS.set('ki21_apikey',newKey.trim());
     m.remove();
     alert('API Key gespeichert ✅');
   }},'API Key speichern');
 
+  // GitHub section
+  const ghStatus=h('div',{className:'status-box',
+    style:{background:hasGHToken?'rgba(46,160,67,.12)':'#1c2333',
+      border:'1px solid '+(hasGHToken?'rgba(46,160,67,.3)':'#30363d'),
+      marginTop:'14px'}},
+    h('div',{style:{fontSize:'20px',marginBottom:'4px'}},hasGHToken?'✅':'🐙'),
+    h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasGHToken?'#2ea043':'#e6edf3'}},
+      hasGHToken?'GitHub verbunden':'GitHub nicht verbunden'),
+    h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
+      hasGHToken?'Auto-Deploy aktiv':'Token einmalig hinterlegen')
+  );
+
+  const ghInp=h('input',{type:'password',placeholder:'ghp_...'});
+  ghInp.addEventListener('input',e=>newGHToken=e.target.value);
+  const saveGHB=h('button',{className:'btn-o',
+    style:{background:'#238636',marginTop:'8px'},
+    onclick:()=>{
+      if(!newGHToken.trim())return;
+      LS.set('ki21_github_token',newGHToken.trim());
+      m.remove();
+      alert('GitHub Token gespeichert ✅');
+    }},'GitHub Token speichern');
+
+  // Push button
+  const pushB=h('button',{className:'btn-o',
+    style:{background:'#238636',marginTop:'8px'},
+    onclick:async()=>{
+      pushB.disabled=true;
+      pushB.textContent='⏳ Wird hochgeladen...';
+      try{
+        await pushToGitHub();
+        pushB.textContent='✅ Deployed!';
+        setTimeout(()=>{pushB.textContent='🚀 App aktualisieren';pushB.disabled=false;},3000);
+      }catch(e){
+        alert('Fehler: '+e.message);
+        pushB.textContent='🚀 App aktualisieren';
+        pushB.disabled=false;
+      }
+    }
+  },'🚀 App aktualisieren');
+
   const content=h('div',{},status,
     h('div',{style:{marginTop:'12px',marginBottom:'4px'}},
-      h('div',{className:'field-label'},hasKey?'Neuen Key eingeben':'API Key eingeben')),
-    inp,
-    h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 12px',lineHeight:'1.5'}},
+      h('div',{className:'field-label'},hasKey?'Neuen API Key eingeben':'API Key eingeben')),
+    apiInp,
+    h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 8px',lineHeight:'1.5'}},
       'Sicher im Browser gespeichert. Nie übertragen.'),
-    saveB
+    saveApiB
   );
   if(hasKey){
     content.appendChild(h('button',{className:'btn',
       style:{width:'100%',marginTop:'8px',borderColor:'#30363d'},
       onclick:()=>{if(confirm('API Key löschen?')){LS.set('ki21_apikey','');m.remove();}}},
-      'Key löschen'));
+      'API Key löschen'));
   }
+
+  // GitHub section
+  content.appendChild(ghStatus);
+  if(hasGHToken){
+    content.appendChild(pushB);
+    content.appendChild(h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px'},
+      onclick:()=>{if(confirm('GitHub Token löschen?')){LS.set('ki21_github_token','');m.remove();}}},'GitHub Token löschen'));
+  } else {
+    content.appendChild(h('div',{style:{marginTop:'8px',marginBottom:'4px'}},
+      h('div',{className:'field-label'},'GitHub Token')));
+    content.appendChild(ghInp);
+    content.appendChild(saveGHB);
+  }
+
   const m=modal('Einstellungen',content,null);
 }
 
