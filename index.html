@@ -120,9 +120,9 @@ if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
-  s+='WICHTIG: Bei ROI-Berechnungen immer die korrekte Bezugsgröße verwenden.\n';
-  s+='Zeitersparnis gilt NUR für Mitarbeiter die direkt Kundentermine führen (Account Manager / Kundenbetreuer).\n';
-  s+='Nicht alle Mitarbeiter des Unternehmens. Konservativ rechnen.\n';
+  s+='PFLICHT: Kennzeichne jede Information: ✅ BESTÄTIGT / ⚠️ ANNAHME / ❓ KLÄREN\n';
+  s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
+  s+='Format Handlungsempfehlungen: → TUN: [was genau + wann]\n';
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
   if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
   if(cust.branche)s+='Branche: '+cust.branche+'\n';
@@ -149,8 +149,9 @@ const SITS=[
   {id:1,num:2,phase:'Phase 2',title:'Besuchsvorbereitung',icon:'📋',
    regel:'Ausgefüllte Qualifizierungs-Checkliste rein – Discovery-Frageleitfaden kommt raus.',
    felder:[
-     {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Checkliste aus Phase 1 mit Antworten:\nBudget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...'},
-     {id:'recherche',l:'Offene Qualifizierungsfragen',t:'ta',p:'Noch offene Fragen und neue Erkenntnisse...'}
+     {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
+     {id:'fragen',l:'Qualifizierungsfragen (von Claude – nicht überschreiben!)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'antworten',l:'Antworten aus dem Telefonat (hier eintragen)',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nBereite den Discovery-Termin vor bei ${c.firma||''}.\nAnsprechpartner: ${c.ap||''}\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nOffene Fragen:\n${f.recherche||''}\n\nTEIL A – KUNDEN- UND MARKTANALYSE:\n1. Relevante Unternehmensinformationen\n2. Branchentrends\n3. Aktuelle Themen und News\n4. Gesprächsansätze\n\nTEIL B – DISCOVERY-FRAGELEITFADEN:\n5. Fragen Ebene 1 – Situation verstehen\n6. Fragen Ebene 2 – Schmerz aufdecken\n7. Fragen Ebene 3 – Implikation vertiefen\n8. KPI-Fragen für ROI-Berechnung\n9. Die wichtigste Frage an alle\n10. Umgang mit Ausweichen`
   },
@@ -158,7 +159,8 @@ const SITS=[
    regel:'70% zuhören. Fragen stellen – Antworten eintragen. KPIs für ROI bereits hier ermitteln.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Besuchsvorbereitung',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
-     {id:'antworten',l:'Fragen für Discovery-Gespräch',t:'ta',p:'Fragen aus Phase 2 – Antworten während des Gesprächs eintragen...'}
+     {id:'fragen',l:'Discovery-Fragen (von Claude – nicht überschreiben!)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'antworten',l:'Antworten aus dem Discovery-Gespräch (hier eintragen)',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDiscovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nLeitfaden:\n${f.leitfaden||''}\n\nErkenntnisse:\n${f.antworten||''}\n\nTEIL A – SCHMERZANALYSE:\n1. Schmerzpunkte pro Entscheider\n2. Ursachen\n3. Auswirkungen wirtschaftlich + persönlich\n\nTEIL B – BUSINESS IMPACT:\n4. KPIs für ROI-Berechnung\n5. Konkrete Zahlen\n6. Business-Impact Schätzung\n\nTEIL C – STRATEGIE:\n7. Kaufargumente in Kundensprache\n8. Machtlage\n9. Empfohlener Demo-Pfad`
   },
@@ -182,7 +184,40 @@ const SITS=[
    felder:[
      {id:'discovery',l:'KPIs und Zahlen aus der Discovery',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`ROI-Berechnung für ${c.firma||''}.\n\nKPIs aus der Discovery:\n${f.discovery||''}\n\nWICHTIG: Zeitersparnis gilt NUR für Account Manager / Kundenbetreuer – nicht für alle Mitarbeiter des Unternehmens. Nur Mitarbeiter die direkt Kundentermine führen werden berücksichtigt. Bitte konservativ rechnen.\n\nTEIL A – QUANTITATIVER NUTZEN:\n1. Anzahl Account Manager (aus KPIs)\n2. Zeitersparnis pro AM in Stunden/Woche (nur Vorbereitung + Nachbereitung)\n3. Monetärer Wert der Zeitersparnis pro Jahr\n4. Realistischer Mehrertrag durch bessere Vorbereitung (+5-10% Abschlussquote)\n5. ROI % (Mehrertrag / Investition)\n6. Amortisationszeit in Wochen\n\nBitte alle Annahmen transparent ausweisen.\n\nTEIL B – QUALITATIVER NUTZEN:\n7. Höhere Qualität der Kundengespräche\n8. Bessere Einheitlichkeit im Team\n9. Schnellere Einarbeitung neuer Mitarbeiter\n\nTEIL C – MANAGEMENT SUMMARY:\n10. Executive Summary 3 Sätze\n11. Warum handeln? Warum jetzt?`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`ROI-Berechnung für ${c.firma||''}.
+
+KPIs aus der Discovery (NUR bestätigte Zahlen verwenden):
+${f.discovery||''}
+
+STRIKTE REGELN:
+- NUR Zahlen verwenden die der Kunde selbst genannt hat
+- Keine Schätzungen ohne explizite Kennzeichnung
+- Zeitersparnis NUR für Account Manager / Kundenbetreuer
+- Konservativ rechnen – lieber zu niedrig als zu hoch
+- JEDE Zahl mit Herkunft kennzeichnen: (vom Kunden bestätigt) oder (Annahme: Begründung)
+
+TEIL A – KURZFASSUNG (3 Sätze maximum):
+Die wichtigste ROI-Aussage auf den Punkt – für das Gespräch auswendig lernbar.
+Format: „Biplan spart Ihren X Account Managern Y Stunden/Woche – das sind Z € pro Jahr. ROI: X% in Y Wochen."
+
+TEIL B – DETAILBERECHNUNG (Schritt für Schritt):
+1. Anzahl AM: ___ (Quelle: ___)
+2. Zeitersparnis pro AM/Woche: ___ Std (Vorbereitung + Nachbereitung)
+3. Jahresstunden gesamt: AM × Stunden × 48 Wochen = ___
+4. Stundensatz: ___ € (Quelle: ___)
+5. Monetärer Wert: ___ €
+6. Mehrertrag Abschlussquote: ___ % Verbesserung × Auftragswert = ___ €
+7. Gesamtnutzen: ___ €
+8. Investition: ___ €
+9. ROI: ___ %
+10. Amortisation: ___ Wochen
+
+TEIL C – QUALITATIVER NUTZEN:
+Nur die 3 wichtigsten nicht-monetären Vorteile.
+
+TEIL D – NÄCHSTE SCHRITTE:
+→ TUN: ROI mit Entscheider besprechen – wann?
+→ ACHTUNG: Welche Zahl fehlt noch?\``
   },
   {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
@@ -280,6 +315,41 @@ function getActive(){return state.accounts.find(a=>a.id===state.activeId)||null;
 function getActiveCust(){return(getActive()||{cust:{}}).cust;}
 
 // ── RENDER HOME ────────────────────────────────────────────
+
+function getActiveScore(){
+  const aid=LS.get('ki21_aid',null);
+  if(!aid)return null;
+  return LS.get('ki21_score_'+aid,null);
+}
+
+function getScoreColor(){
+  const s=getActiveScore();
+  if(!s)return '#8b949e';
+  if(s>=8)return '#2ea043';
+  if(s>=5)return '#d29922';
+  return '#f85149';
+}
+
+function getScoreBg(){
+  const s=getActiveScore();
+  if(!s)return 'transparent';
+  if(s>=8)return 'rgba(46,160,67,.15)';
+  if(s>=5)return 'rgba(210,153,34,.15)';
+  return 'rgba(248,81,73,.15)';
+}
+
+function getScoreLabel(){
+  const s=getActiveScore();
+  if(!s)return '';
+  const emoji=s>=8?'🔥':s>=5?'✅':'⚠️';
+  return emoji+' '+s+'/10';
+}
+
+function saveScore(score){
+  const aid=LS.get('ki21_aid',null);
+  if(aid)LS.set('ki21_score_'+aid,score);
+}
+
 function renderHome(){
   const cust=getActiveCust();
   const app=document.getElementById('app');
@@ -294,7 +364,12 @@ function renderHome(){
       h('button',{className:'btn',onclick:()=>showImport()},'↓'),
       h('div',{className:'cust-btn',onclick:showKunde},
         h('div',{className:'cust-label'},'Kunde'),
-        h('div',{className:'cust-val'},cust.firma||'wählen →')
+        h('div',{style:{display:'flex',alignItems:'center',gap:'5px'}},
+          h('div',{className:'cust-val'},cust.firma||'wählen →'),
+          cust.firma?h('div',{id:'deal-score-nav',style:{fontSize:'10px',fontWeight:'800',
+            color:getScoreColor(),background:getScoreBg(),borderRadius:'3px',
+            padding:'1px 4px',whiteSpace:'nowrap'}},getScoreLabel()):null
+        )
       )
     )
   );
@@ -706,6 +781,21 @@ function renderStation(sitId){
         data.prompt=prompt;
         LS.set(KEY,data);
         resultLabel.textContent='✓ Claude Antwort';
+        // Extract deal score from result
+        const scoreMatch=result.match(/Score[:\s]+(\d+)[\/\s]*10/i)||
+                         result.match(/(\d+)\s*\/\s*10/)||
+                         result.match(/Bewertung[:\s]+(\d+)/i);
+        if(scoreMatch){
+          const score=parseInt(scoreMatch[1]);
+          if(score>=1&&score<=10){
+            saveScore(score);
+            const scoreEl=document.getElementById('deal-score-nav');
+            if(scoreEl){
+              scoreEl.textContent=(score>=8?'🔥':score>=5?'✅':'⚠️')+' '+score+'/10';
+              scoreEl.style.color=score>=8?'#2ea043':score>=5?'#d29922':'#f85149';
+            }
+          }
+        }
 
         // For Demo-Vorbereitung (sitId===3): generate compact summary
         if(sitId===3){
