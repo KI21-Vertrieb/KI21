@@ -146,23 +146,23 @@ const SITS=[
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi für ${mu&&mu.profil?'das folgende Unternehmen':'[Produkt]'} im deutschsprachigen Mittelstand.\n\nErstelle einen vollständigen Lead-Steckbrief:\n\nUnternehmen: ${c.firma||''}${c.ma?', '+c.ma+' Mitarbeiter':''}${c.um?', '+c.um+' Umsatz':''}\nBranche: ${c.branche||''}\nAnsprechpartner: ${c.ap||''}\nLead-Quelle: ${f.quelle||''}${f.trigger?'\nTrigger Event: '+f.trigger:''}${f.info?'\nErste Infos: '+f.info:''}\n\nTEIL A – UNTERNEHMENSANALYSE:\n1. Unternehmens-Snapshot – 5 Sätze inkl. relevanter News\n2. Aktuelle Branchensituation\n3. Ansprechpartner-Analyse\n4. Trigger Event Analyse\n5. Kaufsignal-Check\n6. Individueller Gesprächseinstieg\n\nTEIL B – QUALIFIZIERUNG:\n7. Qualifizierungs-Score 1-10\n8. Empfehlung\n\nTEIL C – QUALIFIZIERUNGSFRAGEN FÜRS TELEFONAT:\nROT – MUSS klären: Budget, Entscheider, Mitbewerber, Timeline, Prozess\nGELB – WICHTIG: Machtlage, Auslöser, Systemanbindungen\nGRÜN – SPÄTER: Cloud/On-Premise, Nutzeranzahl`
   },
-  {id:1,num:2,phase:'Phase 2',title:'Besuchsvorbereitung',icon:'📋',
-   regel:'Ausgefüllte Qualifizierungs-Checkliste rein – Discovery-Frageleitfaden kommt raus.',
+  {id:1,num:2,phase:'Phase 2',title:'Discovery vorbereiten',icon:'🔍',
+   regel:'Was muss ich fragen? Hypothesen bilden, SPIN-Fragen entwickeln, KPIs für ROI identifizieren.',
    felder:[
      {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
      {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Telefonat (hier eintragen)',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nBereite den Discovery-Termin vor bei ${c.firma||''}.\nAnsprechpartner: ${c.ap||''}\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nOffene Fragen:\n${f.recherche||''}\n\nTEIL A – KUNDEN- UND MARKTANALYSE:\n1. Relevante Unternehmensinformationen\n2. Branchentrends\n3. Aktuelle Themen und News\n4. Gesprächsansätze\n\nTEIL B – DISCOVERY-FRAGELEITFADEN:\n5. Fragen Ebene 1 – Situation verstehen\n6. Fragen Ebene 2 – Schmerz aufdecken\n7. Fragen Ebene 3 – Implikation vertiefen\n8. KPI-Fragen für ROI-Berechnung\n9. Die wichtigste Frage an alle\n10. Umgang mit Ausweichen`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nZIEL: Was muss ich fragen?\nVorbereitung Discovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nTEIL A – HYPOTHESEN (Top 3):\n1. Wo vermute ich den größten Schmerz?\n2. Welche KPIs brauche ich für den ROI?\n\nTEIL B – SPIN-FRAGELEITFADEN:\nFormat: Frage: ___ / Antwort: ___\n\nS – SITUATION (Ist-Zustand):\n3 Fragen zur aktuellen Situation\n\nP – PROBLEM (Schmerz aufdecken):\n3 Fragen zum eigentlichen Problem\n\nI – IMPLICATION (Auswirkungen):\n3 Fragen was das Problem kostet\n\nN – NEED-PAYOFF (Lösungsbedarf):\n2 Fragen zum Wert der Lösung\n\nTEIL C – KPI-FRAGEN FÜR ROI:\nWelche Zahlen muss ich erfragen? (AM-Anzahl, Zeitaufwand, Abschlussquote, Auftragswert)\n\nTEIL D – NÄCHSTE SCHRITTE:\n→ TUN: Konkrete Vorbereitung + wann`
   },
-  {id:2,num:3,phase:'Phase 3',title:'Discovery-Gespräch',icon:'🎯',
-   regel:'70% zuhören. Fragen stellen – Antworten eintragen. KPIs für ROI bereits hier ermitteln.',
+  {id:2,num:3,phase:'Phase 3',title:'Discovery auswerten',icon:'🎯',
+   regel:'Was habe ich gelernt? Antworten des Kunden auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Besuchsvorbereitung',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
      {id:'fragen',l:'Discovery-Fragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Discovery-Gespräch (hier eintragen)',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDiscovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nLeitfaden:\n${f.leitfaden||''}\n\nErkenntnisse:\n${f.antworten||''}\n\nTEIL A – SCHMERZANALYSE:\n1. Schmerzpunkte pro Entscheider\n2. Ursachen\n3. Auswirkungen wirtschaftlich + persönlich\n\nTEIL B – BUSINESS IMPACT:\n4. KPIs für ROI-Berechnung\n5. Konkrete Zahlen\n6. Business-Impact Schätzung\n\nTEIL C – STRATEGIE:\n7. Kaufargumente in Kundensprache\n8. Machtlage\n9. Empfohlener Demo-Pfad`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nZIEL: Was habe ich gelernt?\nDiscovery-Auswertung ${c.firma||''}, AP: ${c.ap||''}.\n\nSPIN-Leitfaden genutzt:\n${f.leitfaden||''}\n\nAntworten aus dem Gespräch:\n${f.antworten||''}\n\nTEIL A – WAS TUT WIRKLICH WEH? (Top 3):\nPro Schmerzpunkt: Schmerz / Ursache / Auswirkung / Wer leidet\n\nTEIL B – WAS KOSTET DAS?\nKonkrete Zahlen: Zeitverlust / Kosten / ROI-Potenzial\n\nTEIL C – WER KAUFT DESWEGEN?\nMachtlage: Wer will? / Wer bremst? / Wer entscheidet?\n\nTEIL D – DEMO-EMPFEHLUNG:\n→ Top 3 Themen die MÜSSEN in die Demo\n→ Was NICHT zeigen\n→ TUN: Nächster Schritt + wann`
   },
   {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
    regel:'Der Demo-Pfad kommt aus der Discovery. Zeige nur was der Kunde selbst genannt hat.',
@@ -323,6 +323,20 @@ function getActiveCust(){return(getActive()||{cust:{}}).cust;}
 
 // ── RENDER HOME ────────────────────────────────────────────
 
+
+function getResultLabel(sitId){
+  const labels={
+    0:'📋 Lead-Steckbrief',
+    1:'🔍 Discovery-Vorbereitung',
+    2:'🎯 Discovery-Auswertung',
+    3:'🎬 Demo-Leitfaden',
+    4:'📝 Besuchsbericht',
+    5:'💰 Business Case',
+    6:'🤝 Angebotsstrategie'
+  };
+  return labels[sitId]||'✓ Ergebnis';
+}
+
 function getActiveScore(){
   const aid=LS.get('ki21_aid',null);
   if(!aid)return null;
@@ -364,7 +378,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.4'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -593,7 +607,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.4'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -720,7 +734,7 @@ function renderStation(sitId){
   // Result box
   const resultBox=h('div',{className:'result-box',style:{display:data.result?'block':'none'}});
   const resultHead=h('div',{className:'result-head'});
-  const resultLabel=h('span',{className:'result-label'},'✓ Claude Antwort');
+  const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
   const resultBtns=h('div',{className:'result-btns'});
   const copyBtn=h('button',{className:'btn',onclick:()=>{
     const txt=data.result;
@@ -789,7 +803,7 @@ function renderStation(sitId){
         data.result=result;
         data.prompt=prompt;
         LS.set(KEY,data);
-        resultLabel.textContent='✓ Claude Antwort';
+        resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
         const scoreMatch=result.match(/Score[:\s]+(\d+)[\/\s]*10/i)||
                          result.match(/(\d+)\s*\/\s*10/)||
