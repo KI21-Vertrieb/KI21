@@ -150,7 +150,7 @@ const SITS=[
    regel:'Ausgefüllte Qualifizierungs-Checkliste rein – Discovery-Frageleitfaden kommt raus.',
    felder:[
      {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
-     {id:'fragen',l:'Qualifizierungsfragen (von Claude – nicht überschreiben!)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Telefonat (hier eintragen)',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nBereite den Discovery-Termin vor bei ${c.firma||''}.\nAnsprechpartner: ${c.ap||''}\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nOffene Fragen:\n${f.recherche||''}\n\nTEIL A – KUNDEN- UND MARKTANALYSE:\n1. Relevante Unternehmensinformationen\n2. Branchentrends\n3. Aktuelle Themen und News\n4. Gesprächsansätze\n\nTEIL B – DISCOVERY-FRAGELEITFADEN:\n5. Fragen Ebene 1 – Situation verstehen\n6. Fragen Ebene 2 – Schmerz aufdecken\n7. Fragen Ebene 3 – Implikation vertiefen\n8. KPI-Fragen für ROI-Berechnung\n9. Die wichtigste Frage an alle\n10. Umgang mit Ausweichen`
@@ -159,7 +159,7 @@ const SITS=[
    regel:'70% zuhören. Fragen stellen – Antworten eintragen. KPIs für ROI bereits hier ermitteln.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Besuchsvorbereitung',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
-     {id:'fragen',l:'Discovery-Fragen (von Claude – nicht überschreiben!)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'fragen',l:'Discovery-Fragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Discovery-Gespräch (hier eintragen)',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDiscovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nLeitfaden:\n${f.leitfaden||''}\n\nErkenntnisse:\n${f.antworten||''}\n\nTEIL A – SCHMERZANALYSE:\n1. Schmerzpunkte pro Entscheider\n2. Ursachen\n3. Auswirkungen wirtschaftlich + persönlich\n\nTEIL B – BUSINESS IMPACT:\n4. KPIs für ROI-Berechnung\n5. Konkrete Zahlen\n6. Business-Impact Schätzung\n\nTEIL C – STRATEGIE:\n7. Kaufargumente in Kundensprache\n8. Machtlage\n9. Empfohlener Demo-Pfad`
@@ -248,6 +248,7 @@ async function callClaude(prompt, onStream){
       model:'claude-haiku-4-5-20251001',
       max_tokens:4096,
       stream:true,
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}],
       messages:[{role:'user',content:prompt}]
     })
   });
@@ -266,6 +267,12 @@ async function callClaude(prompt, onStream){
         if(data==='[DONE]')continue;
         try{
           const parsed=JSON.parse(data);
+          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='tool_use'){
+            if(onStream)onStream(fullText+'\n🔍 Suche aktuelle Informationen...\n');
+          }
+          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='text'){
+            fullText='';
+          }
           if(parsed.type==='content_block_delta'&&parsed.delta?.text){
             fullText+=parsed.delta.text;
             if(onStream)onStream(fullText);
