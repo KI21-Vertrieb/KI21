@@ -122,7 +122,14 @@ function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
   s+='PFLICHT: Kennzeichne jede Information: ✅ BESTÄTIGT / ⚠️ ANNAHME / ❓ KLÄREN\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
-  s+='Format Handlungsempfehlungen: → TUN: [was genau + wann]\n';
+  s+='AUSGABE-REGELN (strikt einhalten):\n';
+  s+='- Maximal 5 Punkte pro Abschnitt\n';
+  s+='- Jeder Punkt: 1-2 Sätze, direkt und konkret\n';
+  s+='- Kein Fließtext, keine langen Erklärungen\n';
+  s+='- Kein Markdown: keine **, keine ###, keine ---\n';
+  s+='- Nur Deutsch\n';
+  s+='- Keine Einleitung, kein Fazit\n';
+  s+='- Am Ende: → TUN: [eine konkrete Aktion + wann]\n';
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
   if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
   if(cust.branche)s+='Branche: '+cust.branche+'\n';
@@ -146,8 +153,8 @@ const SITS=[
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi für ${mu&&mu.profil?'das folgende Unternehmen':'[Produkt]'} im deutschsprachigen Mittelstand.\n\nErstelle einen vollständigen Lead-Steckbrief:\n\nUnternehmen: ${c.firma||''}${c.ma?', '+c.ma+' Mitarbeiter':''}${c.um?', '+c.um+' Umsatz':''}\nBranche: ${c.branche||''}\nAnsprechpartner: ${c.ap||''}\nLead-Quelle: ${f.quelle||''}${f.trigger?'\nTrigger Event: '+f.trigger:''}${f.info?'\nErste Infos: '+f.info:''}\n\nTEIL A – UNTERNEHMENSANALYSE:\n1. Unternehmens-Snapshot – 5 Sätze inkl. relevanter News\n2. Aktuelle Branchensituation\n3. Ansprechpartner-Analyse\n4. Trigger Event Analyse\n5. Kaufsignal-Check\n6. Individueller Gesprächseinstieg\n\nTEIL B – QUALIFIZIERUNG:\n7. Qualifizierungs-Score 1-10\n8. Empfehlung\n\nTEIL C – QUALIFIZIERUNGSFRAGEN FÜRS TELEFONAT:\nROT – MUSS klären: Budget, Entscheider, Mitbewerber, Timeline, Prozess\nGELB – WICHTIG: Machtlage, Auslöser, Systemanbindungen\nGRÜN – SPÄTER: Cloud/On-Premise, Nutzeranzahl`
   },
-  {id:1,num:2,phase:'Phase 2',title:'Discovery vorbereiten',icon:'🔍',
-   regel:'Was muss ich fragen? Hypothesen bilden, SPIN-Fragen entwickeln, KPIs für ROI identifizieren.',
+  {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
+   regel:'Was muss ich fragen? Hypothesen bilden, Fragen entwickeln, KPIs für ROI identifizieren.',
    felder:[
      {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
      {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
@@ -155,8 +162,8 @@ const SITS=[
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nZIEL: Was muss ich fragen?\nVorbereitung Discovery bei ${c.firma||''}, AP: ${c.ap||''}.\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nTEIL A – HYPOTHESEN (Top 3):\n1. Wo vermute ich den größten Schmerz?\n2. Welche KPIs brauche ich für den ROI?\n\nTEIL B – SPIN-FRAGELEITFADEN:\nFormat: Frage: ___ / Antwort: ___\n\nS – SITUATION (Ist-Zustand):\n3 Fragen zur aktuellen Situation\n\nP – PROBLEM (Schmerz aufdecken):\n3 Fragen zum eigentlichen Problem\n\nI – IMPLICATION (Auswirkungen):\n3 Fragen was das Problem kostet\n\nN – NEED-PAYOFF (Lösungsbedarf):\n2 Fragen zum Wert der Lösung\n\nTEIL C – KPI-FRAGEN FÜR ROI:\nWelche Zahlen muss ich erfragen? (AM-Anzahl, Zeitaufwand, Abschlussquote, Auftragswert)\n\nTEIL D – NÄCHSTE SCHRITTE:\n→ TUN: Konkrete Vorbereitung + wann`
   },
-  {id:2,num:3,phase:'Phase 3',title:'Discovery auswerten',icon:'🎯',
-   regel:'Was habe ich gelernt? Antworten des Kunden auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
+  {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'🎯',
+   regel:'Was habe ich gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Besuchsvorbereitung',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
      {id:'fragen',l:'Discovery-Fragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
@@ -179,8 +186,8 @@ const SITS=[
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nTermin bei ${c.firma||''}, AP: ${c.ap||''}.\n\nStichworte:\n${f.stichworte||''}\n\nTEIL A – BESUCHSBERICHT:\n1. Zusammenfassung\n2. Reaktionen der Entscheider\n3. Machtlage\n4. Bestätigte Schmerzpunkte\n5. Einwände und Risiken\n6. Deal-Score 1-10\n\nTEIL B – NÄCHSTE SCHRITTE:\n7. Follow-up Mail – max. 5 Sätze\n8. Interne Notiz\n9. Nächste Schritte mit Datum`
   },
-  {id:5,num:6,phase:'Phase 6',title:'ROI / Business Case',icon:'💰',
-   regel:'Keine neuen Daten – alle KPIs stammen aus der Discovery.',
+  {id:5,num:6,phase:'Phase 6',title:'ROI-Rechnung',icon:'💰',
+   regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
    felder:[
      {id:'discovery',l:'KPIs und Zahlen aus der Discovery',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
    ],
@@ -378,7 +385,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.5'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.8'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -607,7 +614,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.5'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.8'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
