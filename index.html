@@ -151,7 +151,34 @@ const SITS=[
      {id:'trigger',l:'Trigger Event / Anlass',t:'text',p:'z.B. neuer GF, Wachstum, Pressemitteilung'},
      {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Was weißt du bereits?'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi für ${mu&&mu.profil?'das folgende Unternehmen':'[Produkt]'} im deutschsprachigen Mittelstand.\n\nErstelle einen vollständigen Lead-Steckbrief:\n\nUnternehmen: ${c.firma||''}${c.ma?', '+c.ma+' Mitarbeiter':''}${c.um?', '+c.um+' Umsatz':''}\nBranche: ${c.branche||''}\nAnsprechpartner: ${c.ap||''}\nLead-Quelle: ${f.quelle||''}${f.trigger?'\nTrigger Event: '+f.trigger:''}${f.info?'\nErste Infos: '+f.info:''}\n\nTEIL A – UNTERNEHMENSANALYSE:\n1. Unternehmens-Snapshot – 5 Sätze inkl. relevanter News\n2. Aktuelle Branchensituation\n3. Ansprechpartner-Analyse\n4. Trigger Event Analyse\n5. Kaufsignal-Check\n6. Individueller Gesprächseinstieg\n\nTEIL B – QUALIFIZIERUNG:\n7. Qualifizierungs-Score 1-10\n8. Empfehlung\n\nTEIL C – QUALIFIZIERUNGSFRAGEN FÜRS TELEFONAT:\nROT – MUSS klären: Budget, Entscheider, Mitbewerber, Timeline, Prozess\nGELB – WICHTIG: Machtlage, Auslöser, Systemanbindungen\nGRÜN – SPÄTER: Cloud/On-Premise, Nutzeranzahl`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
+Branche: ${c.branche||''} | AP: ${c.ap||''}
+Trigger: ${f.trigger||''} | Quelle: ${f.quelle||''}
+Infos: ${f.info||''}
+
+Liefere NUR dieses Format – keine Einleitung, kein Fazit:
+
+QUALIFIZIERUNGS-SCORE: X/10
+Begründung: [1 Satz]
+Empfehlung: sofort / später / nicht verfolgen
+
+TOP 5 ERKENNTNISSE:
+1. [✅/⚠️/❓] [1 Satz – konkret und belastbar]
+2. [✅/⚠️/❓] [1 Satz]
+3. [✅/⚠️/❓] [1 Satz]
+4. [✅/⚠️/❓] [1 Satz]
+5. [✅/⚠️/❓] [1 Satz]
+
+TOP 5 QUALIFIZIERUNGSFRAGEN:
+1. [ROT] Frage: ___ | Antwort: ___
+2. [ROT] Frage: ___ | Antwort: ___
+3. [GELB] Frage: ___ | Antwort: ___
+4. [GELB] Frage: ___ | Antwort: ___
+5. [GRÜN] Frage: ___ | Antwort: ___
+
+→ TUN: [eine konkrete Aktion + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
    regel:'Was muss ich fragen? Hypothesen bilden, Fragen entwickeln, KPIs für ROI identifizieren.',
@@ -160,7 +187,30 @@ const SITS=[
      {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Telefonat (hier eintragen)',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nZIEL: Was muss ich fragen?\nVorbereitung Gesprächsauswertung bei ${c.firma||''}, AP: ${c.ap||''}.\n\nQualifizierungsergebnisse:\n${f.checkliste||''}\n\nTEIL A – HYPOTHESEN (Top 3):\n1. Wo vermute ich den größten Schmerz?\n2. Welche KPIs brauche ich für den ROI?\n\nTEIL B – SPIN-FRAGELEITFADEN:\nFormat: Frage: ___ / Antwort: ___\n\nS – SITUATION (Ist-Zustand):\n3 Fragen zur aktuellen Situation\n\nP – PROBLEM (Schmerz aufdecken):\n3 Fragen zum eigentlichen Problem\n\nI – IMPLICATION (Auswirkungen):\n3 Fragen was das Problem kostet\n\nN – NEED-PAYOFF (Lösungsbedarf):\n2 Fragen zum Wert der Lösung\n\nTEIL C – KPI-FRAGEN FÜR ROI:\nWelche Zahlen muss ich erfragen? (AM-Anzahl, Zeitaufwand, Abschlussquote, Auftragswert)\n\nTEIL D – NÄCHSTE SCHRITTE:\n→ TUN: Konkrete Vorbereitung + wann`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Bedarfsanalyse vorbereiten: ${c.firma||''}, AP: ${c.ap||''}
+Qualifizierungsergebnisse: ${f.checkliste||''}
+
+Liefere NUR dieses Format:
+
+TOP 3 HYPOTHESEN:
+1. [Größter vermuteter Schmerz]
+2. [Was kostet das Problem vermutlich?]
+3. [Wer kauft deswegen?]
+
+TOP 5 FRAGEN FÜR DIE BEDARFSANALYSE:
+Format: Frage | Antwort: ___
+1. S: [Situation – Ist-Zustand]
+2. P: [Problem – Schmerz aufdecken]
+3. P: [Problem – Ursache]
+4. I: [Implication – was kostet das?]
+5. N: [Need-Payoff – Wert der Lösung]
+
+KPI-FRAGEN FÜR ROI:
+[3 konkrete Zahlen die ich erfragen muss]
+
+→ TUN: [eine konkrete Vorbereitung + wann]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'🎯',
    regel:'Was habe ich gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
@@ -169,14 +219,60 @@ const SITS=[
      {id:'fragen',l:'Fragen Bedarfsanalyse (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Antworten aus dem Gespräch (hier eintragen)',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nZIEL: Was habe ich gelernt?\nGesprächsauswertung ${c.firma||''}, AP: ${c.ap||''}.\n\nFrageleitfaden genutzt:\n${f.leitfaden||''}\n\nAntworten aus dem Gespräch:\n${f.antworten||''}\n\nTEIL A – WAS TUT WIRKLICH WEH? (Top 3):\nPro Schmerzpunkt: Schmerz / Ursache / Auswirkung / Wer leidet\n\nTEIL B – WAS KOSTET DAS?\nKonkrete Zahlen: Zeitverlust / Kosten / ROI-Potenzial\n\nTEIL C – WER KAUFT DESWEGEN?\nMachtlage: Wer will? / Wer bremst? / Wer entscheidet?\n\nTEIL D – DEMO-EMPFEHLUNG:\n→ Top 3 Themen die MÜSSEN in die Demo\n→ Was NICHT zeigen\n→ TUN: Nächster Schritt + wann`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Gesprächsauswertung: ${c.firma||''}, AP: ${c.ap||''}
+Antworten aus dem Gespräch: ${f.antworten||''}
+
+Liefere NUR dieses Format:
+
+TOP 5 ERKENNTNISSE:
+1. [✅/⚠️/❓] [Schmerz in Kundensprache]
+2. [✅/⚠️/❓] [Ursache]
+3. [✅/⚠️/❓] [Was kostet das konkret?]
+4. [✅/⚠️/❓] [Wer kauft deswegen?]
+5. [✅/⚠️/❓] [Machtlage – wer entscheidet?]
+
+TOP 3 FÜR DIE DEMO:
+1. [Muss gezeigt werden – warum]
+2. [Muss gezeigt werden – warum]
+3. [Muss gezeigt werden – warum]
+NICHT zeigen: [1 Punkt]
+
+ROI-BASIS:
+[Nur bestätigte Zahlen aus dem Gespräch]
+
+→ TUN: [nächster Schritt + wann]`
   },
   {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
    regel:'Der Demo-Pfad kommt aus der Discovery. Zeige nur was der Kunde selbst genannt hat.',
    felder:[
      {id:'discovery',l:'Discovery-Ergebnisse (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nDemo vorbereiten für ${c.firma||''}.\n\nDiscovery-Ergebnisse:\n${f.discovery||''}\n\nIndividueller Demo-Leitfaden:\n1. Relevante Themen aus Discovery\n2. Relevante Funktionen\n3. Nutzenargumente pro Entscheider\n4. Empfohlene Reihenfolge\n5. Demo-Einstieg\n6. Referenzkunden-Moment\n7. Einwände behandeln\n8. Abschluss – nächster Schritt`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Demo vorbereiten: ${c.firma||''}
+Erkenntnisse: ${f.discovery||''}
+
+Liefere NUR dieses Format:
+
+DEMO-EINSTIEG:
+[1 Satz – wie ich das Gespräch spiegele]
+
+TOP 5 DEMO-PUNKTE:
+1. [Thema – warum relevant für diesen Kunden]
+2. [Thema – warum relevant]
+3. [Thema – warum relevant]
+4. [Thema – warum relevant]
+5. [Thema – warum relevant]
+
+NICHT ZEIGEN:
+[1-2 Punkte die ablenken oder schaden]
+
+ABSCHLUSS-FRAGE:
+[Die eine Frage am Ende der Demo]
+
+→ TUN: [Demo-Vorbereitung + wann]`
   },
   {id:4,num:5,phase:'Phase 5',title:'Terminachbereitung',icon:'📝',
    regel:'Stichworte eingeben – strukturierter Bericht kommt raus – direkt ins CRM.',
@@ -184,47 +280,58 @@ const SITS=[
      {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Reaktionen, Einwände, Zusagen, nächste Schritte...'},
      {id:'ergebnis',l:'Strukturierter Bericht (zum Kopieren ins CRM)',t:'ta',p:'Ergebnis nach Generierung hier einfügen...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.\n\nTermin bei ${c.firma||''}, AP: ${c.ap||''}.\n\nStichworte:\n${f.stichworte||''}\n\nTEIL A – BESUCHSBERICHT:\n1. Zusammenfassung\n2. Reaktionen der Entscheider\n3. Machtlage\n4. Bestätigte Schmerzpunkte\n5. Einwände und Risiken\n6. Deal-Score 1-10\n\nTEIL B – NÄCHSTE SCHRITTE:\n7. Follow-up Mail – max. 5 Sätze\n8. Interne Notiz\n9. Nächste Schritte mit Datum`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Terminachbereitung: ${c.firma||''}, AP: ${c.ap||''}
+Stichworte: ${f.stichworte||''}
+
+Liefere NUR dieses Format:
+
+DEAL-SCORE: X/10 | [1 Satz Begründung]
+
+TOP 5 ERKENNTNISSE:
+1. [✅/⚠️/❓] [konkret – 1 Satz]
+2. [✅/⚠️/❓] [konkret – 1 Satz]
+3. [✅/⚠️/❓] [konkret – 1 Satz]
+4. [✅/⚠️/❓] [konkret – 1 Satz]
+5. [✅/⚠️/❓] [konkret – 1 Satz]
+
+FOLLOW-UP MAIL:
+Betreff: [Betreff]
+[3-4 Sätze mit direktem Gesprächsbezug]
+
+→ TUN: [nächster Schritt + wann]`
   },
   {id:5,num:6,phase:'Phase 6',title:'ROI-Rechnung',icon:'💰',
    regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
    felder:[
      {id:'discovery',l:'KPIs und Zahlen aus der Discovery',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`ROI-Berechnung für ${c.firma||''}.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-KPIs aus der Discovery (NUR bestätigte Zahlen verwenden):
+ROI-Rechnung für: ${c.firma||''}
+NUR bestätigte Kundenzahlen verwenden:
 ${f.discovery||''}
 
-STRIKTE REGELN:
-- NUR Zahlen verwenden die der Kunde selbst genannt hat
-- Keine Schätzungen ohne explizite Kennzeichnung
-- Zeitersparnis NUR für Account Manager / Kundenbetreuer
-- Konservativ rechnen – lieber zu niedrig als zu hoch
-- JEDE Zahl mit Herkunft kennzeichnen: (vom Kunden bestätigt) oder (Annahme: Begründung)
+Liefere NUR folgendes Format:
 
-TEIL A – KURZFASSUNG (3 Sätze maximum):
-Die wichtigste ROI-Aussage auf den Punkt – für das Gespräch auswendig lernbar.
-Format: „Biplan spart Ihren X Account Managern Y Stunden/Woche – das sind Z € pro Jahr. ROI: X% in Y Wochen."
+ROI-SATZ (auswendig lernbar):
+[„Biplan spart Ihren X AM Y Stunden/Woche – das sind Z€/Jahr. ROI: X% in Y Wochen."]
+Nur mit bestätigten Zahlen – fehlende Zahlen als ❓ markieren.
 
-TEIL B – DETAILBERECHNUNG (Schritt für Schritt):
-1. Anzahl AM: ___ (Quelle: ___)
-2. Zeitersparnis pro AM/Woche: ___ Std (Vorbereitung + Nachbereitung)
-3. Jahresstunden gesamt: AM × Stunden × 48 Wochen = ___
-4. Stundensatz: ___ € (Quelle: ___)
-5. Monetärer Wert: ___ €
-6. Mehrertrag Abschlussquote: ___ % Verbesserung × Auftragswert = ___ €
-7. Gesamtnutzen: ___ €
-8. Investition: ___ €
-9. ROI: ___ %
-10. Amortisation: ___ Wochen
+DETAILRECHNUNG (transparent):
+Anzahl AM: ___ (Quelle: ___)
+Zeitersparnis/Woche: ___ Std × ___ AM = ___ Std
+Jahreswert: ___ Std × ___ €/Std = ___ €
+Investition: ___ €
+ROI: ___ % | Amortisation: ___ Wochen
 
-TEIL C – QUALITATIVER NUTZEN:
-Nur die 3 wichtigsten nicht-monetären Vorteile.
+TOP 3 QUALITATIVER NUTZEN:
+1. [konkret – 1 Satz]
+2. [konkret – 1 Satz]
+3. [konkret – 1 Satz]
 
-TEIL D – NÄCHSTE SCHRITTE:
-→ TUN: ROI mit Entscheider besprechen – wann?
-→ ACHTUNG: Welche Zahl fehlt noch?\``
+→ TUN: [ROI-Gespräch vorbereiten + wann]\``
   },
   {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
@@ -235,7 +342,33 @@ TEIL D – NÄCHSTE SCHRITTE:
      {id:'paket',l:'Mein Angebot',t:'text',p:'z.B. On-Premise + Implementierung'},
      {id:'minimum',l:'Mein Mindestpreis',t:'text',p:'z.B. 140.000€'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Angebotserstellung für ${c.firma||''}, AP: ${c.ap||''}.\n\nErkenntnisse: ${f.erkenntnisse||''}\nBudget: ${f.budget||''}\nAngebot: ${f.paket||''}\nMindestpreis: ${f.minimum||''}\nEinwände: ${f.einwand||''}\n\nTEIL A – MANAGEMENT SUMMARY:\n1. Warum handeln?\n2. Warum jetzt?\n3. Warum diese Lösung?\n\nTEIL B – ANGEBOT:\n4. Ausgangssituation\n5. Leistungsumfang\n6. ROI-Zusammenfassung\n7. Investition im ROI-Kontext\n8. Nächste Schritte\n\nTEIL C – EINWANDBEHANDLUNG:\n9. Pro Einwand: Hintergrund, Gegenfrage, Antwort\n\nTEIL D – VERHANDLUNG:\n10. Preisdruck ohne nachzugeben\n11. Der eine Satz der dreht`
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Angebot: ${c.firma||''}, AP: ${c.ap||''}
+Erkenntnisse: ${f.erkenntnisse||''}
+Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}
+
+Liefere NUR dieses Format:
+
+ERÖFFNUNGSSATZ:
+[Warum handeln? Warum jetzt? – 2 Sätze in Kundensprache]
+
+TOP 5 KAUFARGUMENTE:
+1. [In Kundensprache – 1 Satz]
+2. [In Kundensprache – 1 Satz]
+3. [In Kundensprache – 1 Satz]
+4. [In Kundensprache – 1 Satz]
+5. [In Kundensprache – 1 Satz]
+
+TOP 3 EINWÄNDE + ANTWORTEN:
+1. Einwand: ___ | Antwort: ___
+2. Einwand: ___ | Antwort: ___
+3. Einwand: ___ | Antwort: ___
+
+DER EINE ABSCHLUSSSATZ:
+[Der Satz der die Entscheidung auslöst]
+
+→ TUN: [nächster Schritt + wann]`
   }
 ];
 
@@ -385,7 +518,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.8'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.9'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -614,7 +747,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.8'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.9'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
