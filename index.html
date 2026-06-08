@@ -608,127 +608,46 @@ function showFullscreen(title, text){
   modal(title,content,null);
 }
 
-async function transferAndGo(fromId, toId, result){
-  // Show loading overlay
-  const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.95);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
-  overlay.innerHTML='<div style="font-size:32px">⚡</div><div style="font-size:14px;color:#ff6b00;font-weight:700;">Wichtigstes wird extrahiert...</div><div style="font-size:12px;color:#8b949e;">Claude priorisiert für '+SITS[toId].title+'</div>';
-  document.body.appendChild(overlay);
+function transferAndGo(fromId, toId, result){
+  // Direct transfer - output is already compact
+  const nextKEY='ki21_st_'+state.activeId+'_'+toId;
+  const nextData=LS.get(nextKEY,{fv:{},result:''});
 
-  const extractMap={
-    0:{
-      f1:{fid:'checkliste', prompt:`Extrahiere aus diesem Qualifizierungs-Steckbrief die TOP 10 wichtigsten Erkenntnisse für die Besuchsvorbereitung.
-
-PRIORITÄT:
-1. Entscheider und Machtlage
-2. Budget und Timeline
-3. Schmerzpunkte und Kaufmotive
-4. Wettbewerber-Situation
-5. Risiken und Chancen
-
-Format: Nummerierte Liste, jeder Punkt max. 2 Sätze. Klar und direkt.
-
-Text:
-`},
-      f2:{fid:'fragen', prompt:`Extrahiere aus diesem Text die TOP 10 Qualifizierungsfragen fürs Telefonat.
-
-PRIORITÄT:
-1. ROT-Fragen zuerst (Budget, Entscheider, Timeline)
-2. GELB-Fragen (Machtlage, Auslöser)
-3. GRÜN-Fragen (Details)
-
-Format: Nummerierte Liste mit Priorität [ROT/GELB/GRÜN], kurz und präzise.
-
-Text:
-`}
-    },
-    1:{
-      f1:{fid:'leitfaden', prompt:`Extrahiere die TOP 10 wichtigsten Erkenntnisse aus dieser Besuchsvorbereitung.
-
-PRIORITÄT:
-1. Bestätigte Schmerzpunkte
-2. Entscheider und ihre Motive
-3. Wettbewerber-Situation
-4. Offene Risiken
-5. Strategische Hinweise
-
-Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
-
-Text:
-`},
-      f2:{fid:'fragen', prompt:`Extrahiere die TOP 10 wichtigsten Discovery-Fragen aus diesem Leitfaden.
-
-PRIORITÄT:
-1. Schmerz-Fragen (was kostet das Problem?)
-2. Ursachen-Fragen
-3. Auswirkungs-Fragen
-4. KPI-Fragen für ROI
-5. Entscheidungs-Fragen
-
-Format: Nummerierte Liste, jede Frage direkt formuliert.
-
-Text:
-`}
-    },
-    2:{
-      f1:{fid:'discovery', prompt:`Extrahiere die TOP 10 wichtigsten Discovery-Erkenntnisse für die Demo-Vorbereitung.
-
-PRIORITÄT:
-1. Bestätigte Schmerzpunkte in Kundensprache
-2. Was in der Demo gezeigt werden MUSS
-3. Was NICHT gezeigt werden soll
-4. Kaufargumente pro Entscheider
-5. Wettbewerber-Positionierung
-
-Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
-
-Text:
-`}
-    },
-    5:{
-      f1:{fid:'erkenntnisse', prompt:`Extrahiere die TOP 10 wichtigsten Erkenntnisse für die Angebotserstellung.
-
-PRIORITÄT:
-1. Bestätigte Schmerzpunkte in Kundensprache
-2. ROI-Zahlen und Business Case
-3. Entscheider-Motive
-4. Zu erwartende Einwände
-5. Nächste Schritte
-
-Format: Nummerierte Liste, jeder Punkt max. 2 Sätze.
-
-Text:
-`}
-    }
+  const fieldMap={
+    0:{f1:'checkliste', f2:'fragen'},
+    1:{f1:'leitfaden', f2:'fragen'},
+    2:{f1:'discovery'},
+    4:{f1:'discovery'},
+    5:{f1:'erkenntnisse'}
   };
 
-  try{
-    const nextKEY='ki21_st_'+state.activeId+'_'+toId;
-    const nextData=LS.get(nextKEY,{fv:{},result:''});
-    const map=extractMap[fromId];
-
-    if(map){
-      // Call Claude for each field
-      const fields=Object.values(map);
-      for(const f of fields){
-        const extracted=await callClaude(f.prompt+result,null);
-        if(extracted) nextData.fv[f.fid]=extracted;
+  const map=fieldMap[fromId];
+  if(map){
+    // Split result into two parts if needed
+    if(map.f2){
+      // Find split point - questions start after erkenntnisse
+      const lines=result.split('\n');
+      const splitKeywords={
+        0:'TOP 5 QUALIFIZIERUNGSFRAGEN',
+        1:'TOP 5 FRAGEN FÜR DIE BEDARFSANALYSE'
+      };
+      const splitKey=splitKeywords[fromId];
+      const splitIdx=lines.findIndex(l=>l.includes(splitKey));
+      if(splitIdx>0){
+        nextData.fv[map.f1]=lines.slice(0,splitIdx).join('\n').trim();
+        nextData.fv[map.f2]=lines.slice(splitIdx).join('\n').trim();
+      } else {
+        nextData.fv[map.f1]=result;
       }
+    } else {
+      nextData.fv[map.f1]=result;
     }
-
-    LS.set(nextKEY,nextData);
-  }catch(e){
-    console.error('Transfer error:',e);
-    // Fallback: copy full result
-    const nextKEY='ki21_st_'+state.activeId+'_'+toId;
-    const nextData=LS.get(nextKEY,{fv:{},result:''});
-    nextData.fv[Object.values(extractMap[fromId]||{})[0]?.fid||'leitfaden']=result;
-    LS.set(nextKEY,nextData);
-  }finally{
-    overlay.remove();
-    renderStation(toId);
   }
+
+  LS.set(nextKEY,nextData);
+  renderStation(toId);
 }
+
 
 function renderStation(sitId){
   const sit=SITS[sitId];
