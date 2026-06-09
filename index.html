@@ -295,6 +295,13 @@ DIE 5 WICHTIGSTEN ERKENNTNISSE:
 4. [✅/⚠️/❓] [konkret – 1 Satz]
 5. [✅/⚠️/❓] [konkret – 1 Satz]
 
+BESUCHSBERICHT (CRM-ready):
+Datum: ${new Date().toLocaleDateString('de-DE')||'___'}
+Teilnehmer: ${c.ap||'___'}
+Situation: [2-3 Sätze Zusammenfassung]
+Wichtigste Erkenntnisse: [3 Punkte]
+Nächste Schritte: [konkret + Datum]
+
 FOLLOW-UP MAIL:
 Betreff: [Betreff]
 [3-4 Sätze mit direktem Gesprächsbezug]
@@ -524,7 +531,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.1'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.2'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -710,7 +717,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.1'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.2'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -1147,7 +1154,64 @@ function showNeuerKunde(initial,accId){
   btns.appendChild(cancelB);
   content.appendChild(btns);
 
+  if(isEdit){
+    const pdfBtn=h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px',background:'rgba(255,107,0,.15)',color:'#ff6b00'},
+      onclick:()=>generateKundePDF(acc.id,acc.cust)},
+      '📄 Kundendossier als PDF');
+    content.appendChild(pdfBtn);
+  }
+
   const m=modal(isEdit?'Kunde bearbeiten':'Neuer Kunde',content,null);
+}
+
+
+function generateKundePDF(aid, cust){
+  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse','Gesprächsauswertung',
+    'Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Kundendossier – ${cust.firma||'Kunde'}</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#1a1a1a;font-size:13px;line-height:1.6;}
+    h1{color:#ff6b00;font-size:20px;border-bottom:2px solid #ff6b00;padding-bottom:8px;}
+    h2{color:#ff6b00;font-size:14px;margin-top:20px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+    .meta{color:#666;font-size:12px;margin-bottom:20px;}
+    .phase{background:#f8f8f8;border-left:3px solid #ff6b00;padding:12px;margin-bottom:12px;border-radius:4px;}
+    .phase-title{font-weight:700;font-size:13px;margin-bottom:6px;color:#ff6b00;}
+    .empty{color:#999;font-style:italic;}
+    pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;margin:0;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>Kundendossier</h1>
+  <div class="meta">
+    <strong>${cust.firma||'–'}</strong> | 
+    Branche: ${cust.branche||'–'} | 
+    MA: ${cust.ma||'–'} | 
+    Umsatz: ${cust.um||'–'}<br>
+    Ansprechpartner: ${cust.ap||'–'}<br>
+    Erstellt: ${new Date().toLocaleDateString('de-DE')}
+  </div>`;
+
+  for(let i=0;i<7;i++){
+    const key='ki21_st_'+aid+'_'+i;
+    const data=LS.get(key,{});
+    const result=data.result||'';
+    html+=`<div class="phase">
+      <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
+      ${result?`<pre>${result.replace(/</g,'&lt;')}</pre>`:'<div class="empty">Noch nicht bearbeitet</div>'}
+    </div>`;
+  }
+
+  html+=`</body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.html';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
