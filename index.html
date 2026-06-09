@@ -245,9 +245,9 @@ ROI-BASIS:
 → TUN: [nächster Schritt + wann]`
   },
   {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
-   regel:'Der Demo-Pfad kommt aus der Discovery. Zeige nur was der Kunde selbst genannt hat.',
+   regel:'Der Demo-Pfad kommt aus der Gesprächsauswertung. Zeige nur was der Kunde selbst genannt hat.',
    felder:[
-     {id:'discovery',l:'Discovery-Ergebnisse (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
+     {id:'discovery',l:'Gesprächsauswertung (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -302,41 +302,38 @@ Betreff: [Betreff]
 
 → TUN: [nächster Schritt + wann]`
   },
-  {id:5,num:6,phase:'Phase 6',title:'ROI-Rechnung',icon:'💰',
+  {id:5,num:6,phase:'Phase 6',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
    felder:[
-     {id:'discovery',l:'KPIs und Zahlen aus der Discovery',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
+     {id:'discovery',l:'KPIs aus der Gesprächsauswertung',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-ROI-Rechnung für: ${c.firma||''}
-NUR bestätigte Kundenzahlen verwenden:
-${f.discovery||''}
+Nutzen-Kosten-Analyse für: ${c.firma||''}
+KPIs aus der Gesprächsauswertung: ${f.discovery||''}
 
-Liefere NUR folgendes Format:
+Liefere NUR dieses Format – keine Berechnungen erfinden:
 
-ROI-SATZ (auswendig lernbar):
-[„Biplan spart Ihren X AM Y Stunden/Woche – das sind Z€/Jahr. ROI: X% in Y Wochen."]
-Nur mit bestätigten Zahlen – fehlende Zahlen als ❓ markieren.
+BESTÄTIGTE ZAHLEN AUS DEM GESPRÄCH:
+[Nur Zahlen die der Kunde selbst genannt hat – mit ✅]
+[Fehlende Zahlen mit ❓ kennzeichnen]
 
-DETAILRECHNUNG (transparent):
-Anzahl AM: ___ (Quelle: ___)
-Zeitersparnis/Woche: ___ Std × ___ AM = ___ Std
-Jahreswert: ___ Std × ___ €/Std = ___ €
-Investition: ___ €
-ROI: ___ % | Amortisation: ___ Wochen
+MÖGLICHE KENNZAHLEN DIE DER KUNDE ERRECHNEN KANN:
+→ [Kennzahl 1: Formel in Worten]
+→ [Kennzahl 2: Formel in Worten]
+→ [Kennzahl 3: Formel in Worten]
 
-TOP 3 QUALITATIVER NUTZEN:
-1. [konkret – 1 Satz]
-2. [konkret – 1 Satz]
-3. [konkret – 1 Satz]
+OFFENE FRAGEN FÜR DAS GESPRÄCH:
+❓ [Welche Zahl fehlt noch?]
+❓ [Welche Annahme muss validiert werden?]
 
-→ TUN: [ROI-Gespräch vorbereiten + wann]\``
+WICHTIG: Bitte gemeinsam mit dem Kunden validieren.
+KI21 liefert eine strukturierte Hypothese – keine verbindliche Berechnung.`
   },
   {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse aus Discovery, Demo, Nachbereitung',t:'ta',p:'Schmerzpunkte, KPIs, Einwände, Budget-Signale...'},
+     {id:'erkenntnisse',l:'Erkenntnisse aus Bedarfsanalyse, Demo, Nachbereitung',t:'ta',p:'Schmerzpunkte, KPIs, Einwände, Budget-Signale...'},
      {id:'budget',l:'Budget & Preisvorstellung',t:'text',p:'z.B. 180k€/Jahr'},
      {id:'einwand',l:'Erwartete Einwände',t:'text',p:'z.B. zu teuer, IT-Freigabe'},
      {id:'paket',l:'Mein Angebot',t:'text',p:'z.B. On-Premise + Implementierung'},
@@ -415,7 +412,7 @@ async function callClaude(prompt, onStream){
           }
           if(parsed.type==='content_block_delta'&&parsed.delta?.text){
             fullText+=parsed.delta.text;
-            if(onStream)onStream(fullText);
+            if(onStream)onStream(stripMd(fullText));
           }
         }catch(e){}
       }
@@ -464,6 +461,16 @@ function getActiveCust(){return(getActive()||{cust:{}}).cust;}
 // ── RENDER HOME ────────────────────────────────────────────
 
 
+
+function stripMd(text){
+  return text
+    .replace(/#{1,6}\s/g,'')
+    .replace(/\*\*([^*]+)\*\*/g,'$1')
+    .replace(/\*([^*]+)\*/g,'$1')
+    .replace(/^---+$/gm,'')
+    .replace(/^===+$/gm,'');
+}
+
 function getResultLabel(sitId){
   const labels={
     0:'📋 Lead-Steckbrief',
@@ -471,7 +478,7 @@ function getResultLabel(sitId){
     2:'🎯 Gesprächsauswertung',
     3:'🎬 Demo-Leitfaden',
     4:'📝 Terminachbereitung',
-    5:'💰 ROI-Rechnung',
+    5:'💰 Nutzen-Kosten-Analyse',
     6:'🤝 Angebotsstrategie'
   };
   return labels[sitId]||'✓ Ergebnis';
@@ -518,7 +525,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.9'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.0'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -562,7 +569,7 @@ function renderHome(){
     wrap.appendChild(row);
   });
 
-  wrap.appendChild(h('div',{className:'tagline'},'Nicht verwalten. Unterstützen.'));
+  wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(nav);
   app.appendChild(wrap);
   LS.set('ki21_view','home');
@@ -666,7 +673,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v1.9'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.0'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -923,13 +930,13 @@ Leitfaden:
           ]},
           1:{nextId:2, fields:[
             {fid:'leitfaden', label:'Ergebnisse Besuchsvorbereitung', extract:'full'},
-            {fid:'fragen', label:'Discovery-Fragen', extract:'discovery_questions'}
+            {fid:'fragen', label:'Bedarfsanalyse-Fragen', extract:'discovery_questions'}
           ]},
           2:{nextId:3, fields:[
-            {fid:'discovery', label:'Discovery-Ergebnisse', extract:'full'}
+            {fid:'discovery', label:'Gesprächsauswertung-Ergebnisse', extract:'full'}
           ]},
           4:{nextId:5, fields:[
-            {fid:'discovery', label:'KPIs aus der Discovery', extract:'full'}
+            {fid:'discovery', label:'KPIs aus der Gesprächsauswertung', extract:'full'}
           ]},
           5:{nextId:6, fields:[
             {fid:'erkenntnisse', label:'Erkenntnisse', extract:'full'}
