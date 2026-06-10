@@ -282,7 +282,9 @@ ABSCHLUSS-FRAGE:
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Terminachbereitung: ${c.firma||''}, AP: ${c.ap||''}
-Stichworte: ${f.stichworte||''}
+Stichworte aus dem Termin: ${f.stichworte||''}
+
+WICHTIG: Stelle KEINE Rückfragen. Erstelle sofort den Bericht aus den vorhandenen Stichworten.
 
 Liefere NUR dieses Format:
 
@@ -295,12 +297,12 @@ DIE 5 WICHTIGSTEN ERKENNTNISSE:
 4. [✅/⚠️/❓] [konkret – 1 Satz]
 5. [✅/⚠️/❓] [konkret – 1 Satz]
 
-BESUCHSBERICHT (CRM-ready):
-Datum: ${new Date().toLocaleDateString('de-DE')||'___'}
-Teilnehmer: ${c.ap||'___'}
-Situation: [2-3 Sätze Zusammenfassung]
-Wichtigste Erkenntnisse: [3 Punkte]
-Nächste Schritte: [konkret + Datum]
+BESUCHSBERICHT:
+Datum: [heute]
+Teilnehmer: ${c.ap||'Ansprechpartner'}
+Situation: [2 Sätze aus Stichworten]
+Erkenntnisse: [3 wichtigste Punkte]
+Nächste Schritte: [konkret + Zeitpunkt]
 
 FOLLOW-UP MAIL:
 Betreff: [Betreff]
@@ -470,11 +472,15 @@ function getActiveCust(){return(getActive()||{cust:{}}).cust;}
 
 function stripMd(text){
   return text
-    .replace(/#{1,6}\s/g,'')
+    .replace(/#{1,6}\s+/g,'')
+    .replace(/\*\*\*([^*]+)\*\*\*/g,'$1')
     .replace(/\*\*([^*]+)\*\*/g,'$1')
     .replace(/\*([^*]+)\*/g,'$1')
     .replace(/^---+$/gm,'')
-    .replace(/^===+$/gm,'');
+    .replace(/^===+$/gm,'')
+    .replace(/^>\s/gm,'')
+    .replace(/`([^`]+)`/g,'$1')
+    .trim();
 }
 
 function getResultLabel(sitId){
@@ -531,7 +537,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.2'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -555,8 +561,12 @@ function renderHome(){
       h('span',{className:'hero-b'},'Plus KI.')
     )
   );
-  wrap.appendChild(h('p',{style:{fontSize:'12px',color:'#8b949e',margin:'-8px 0 8px 0'}},
-    'Klarheit für die nächste Vertriebsentscheidung.'));
+  wrap.appendChild(h('p',{style:{fontSize:'13px',color:'#e6edf3',fontWeight:'600',margin:'-4px 0 4px 0'}},
+    'Vom Lead zur Gesprächsstrategie.'));
+  wrap.appendChild(h('p',{style:{fontSize:'12px',color:'#8b949e',margin:'0 0 4px 0'}},
+    'Mehr Klarheit für den nächsten Vertriebstermin.'));
+  wrap.appendChild(h('p',{style:{fontSize:'11px',color:'#484f58',margin:'0 0 12px 0'}},
+    'In 30 Minuten.'));
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
     textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Situation wählen');
@@ -717,7 +727,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.2'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
