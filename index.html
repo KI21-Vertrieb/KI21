@@ -537,7 +537,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.5'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.6'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -727,7 +727,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.5'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.6'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -786,7 +786,7 @@ function renderStation(sitId){
       });
       inp.value=data.fv[f.id]||'';
     } else if(f.t==='ta'){
-      inp=h('textarea',{placeholder:f.p||''});
+      inp=h('textarea',{placeholder:f.p||'','data-fid':f.id});
       if(f.big)inp.style.minHeight='200px';
       inp.value=data.fv[f.id]||'';
     } else {
@@ -941,6 +941,19 @@ function renderStation(sitId){
               scoreEl.textContent=(score>=8?'🔥':score>=5?'✅':'⚠️')+' '+score+'/10';
               scoreEl.style.color=score>=8?'#2ea043':score>=5?'#d29922':'#f85149';
             }
+          }
+        }
+        // Phase 5: Auto-extract Besuchsbericht into CRM field
+        if(sitId===4){
+          const berichtMatch=result.match(/BESUCHSBERICHT[:\s]*\n([\s\S]+?)(?=FOLLOW-UP MAIL|→ TUN|$)/i);
+          if(berichtMatch){
+            const berichtText=berichtMatch[1].trim();
+            data.fv=data.fv||{};
+            data.fv['ergebnis']=berichtText;
+            LS.set(KEY,data);
+            // Update the bericht field in UI
+            const berichtField=document.querySelector('textarea[data-fid="ergebnis"]');
+            if(berichtField)berichtField.value=berichtText;
           }
         }
 
