@@ -175,17 +175,16 @@ Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
 Trigger: ${f.trigger||''} | Infos: ${f.info||''}
 
-Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
 
 QUALIFIZIERUNGS-SCORE: X/10
 Empfehlung: sofort / später / nicht verfolgen
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz – konkret und belastbar]
-2. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
-3. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
-4. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
-5. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
+BESTÄTIGT: [bestätigte Fakten]
+ANNAHME: [plausible Annahmen]
+KLÄREN: [offene Punkte]
 
 DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 1. [ROT] Frage: ___ | Antwort: ___
@@ -573,7 +572,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.2'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.3'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -768,7 +767,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.2'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.3'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -939,7 +938,7 @@ function renderStation(sitId){
   // Show weiter button if result already exists (navigating back)
   if(data.result){
     // Show phase score
-    const em=data.result.match(/(?:SCORE|Score)[:\s]+(\d+)[\s]*\/[\s]*10/i)||data.result.match(/(\d+)\s*\/\s*10/);
+    const em=data.result.match(/(\d+)\s*\/\s*10/);
     if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
       const pse=document.getElementById('phase-score-'+sitId);
       if(pse){pse.textContent=es+'/10';pse.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';
@@ -985,9 +984,7 @@ function renderStation(sitId){
         LS.set(KEY,data);
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
-        const scoreMatch=result.match(/(?:SCORE|Score)[:\s]+(\d+)[\s]*\/[\s]*10/i)||
-                         result.match(/(?:QUALIFIZIERUNGS|BEDARFSANALYSE|DEMO|DEAL|NUTZEN|ABSCHLUSS)-SCORE[:\s]+(\d+)/i)||
-                         result.match(/(\d+)\s*\/\s*10/);
+        const scoreMatch=result.match(/(\d+)\s*\/\s*10/);
         if(scoreMatch){
           const score=parseInt(scoreMatch[1]);
           if(score>=1&&score<=10){
