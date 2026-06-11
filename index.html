@@ -144,7 +144,7 @@ function buildCtx(cust,mu,kk,stk){
 
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
-  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🎯',
+  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
    regel:'Triggerevent und erste Infos eingeben – Steckbrief und Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
@@ -211,7 +211,7 @@ KPI-FRAGEN FÜR ROI:
 
 → TUN: [eine konkrete Vorbereitung + wann]`
   },
-  {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'🎯',
+  {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'💡',
    regel:'Was habe ich gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Bedarfsanalyse',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
@@ -496,6 +496,20 @@ function getResultLabel(sitId){
   return labels[sitId]||'✓ Ergebnis';
 }
 
+
+function getPhaseScore(sitId){
+  const aid=LS.get('ki21_aid',null);
+  if(!aid)return null;
+  const data=LS.get('ki21_st_'+aid+'_'+sitId,{});
+  if(!data.result)return null;
+  const match=data.result.match(/(\d+)\s*\/\s*10/);
+  if(match){
+    const s=parseInt(match[1]);
+    return s>=1&&s<=10?s:null;
+  }
+  return null;
+}
+
 function getActiveScore(){
   const aid=LS.get('ki21_aid',null);
   if(!aid)return null;
@@ -505,24 +519,23 @@ function getActiveScore(){
 function getScoreColor(){
   const s=getActiveScore();
   if(!s)return '#8b949e';
-  if(s>=8)return '#2ea043';
-  if(s>=5)return '#d29922';
+  if(s>=7)return '#2ea043';
+  if(s>=4)return '#d29922';
   return '#f85149';
 }
 
 function getScoreBg(){
   const s=getActiveScore();
   if(!s)return 'transparent';
-  if(s>=8)return 'rgba(46,160,67,.15)';
-  if(s>=5)return 'rgba(210,153,34,.15)';
-  return 'rgba(248,81,73,.15)';
+  if(s>=7)return 'rgba(46,160,67,.2)';
+  if(s>=4)return 'rgba(210,153,34,.2)';
+  return 'rgba(248,81,73,.2)';
 }
 
 function getScoreLabel(){
   const s=getActiveScore();
   if(!s)return '';
-  const emoji=s>=8?'🔥':s>=5?'✅':'⚠️';
-  return emoji+' '+s+'/10';
+  return s+'/10';
 }
 
 function saveScore(score){
@@ -537,7 +550,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.7'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.8'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -545,14 +558,18 @@ function renderHome(){
       h('button',{className:'btn',onclick:()=>showImport()},'↓'),
       h('div',{className:'cust-btn',onclick:showKunde},
         h('div',{className:'cust-label'},'Kunde'),
-        h('div',{style:{display:'flex',alignItems:'center',gap:'5px'}},
-          h('div',{className:'cust-val'},cust.firma||'wählen →'),
-          cust.firma?h('div',{id:'deal-score-nav',style:{fontSize:'10px',fontWeight:'800',
-            color:getScoreColor(),background:getScoreBg(),borderRadius:'3px',
-            padding:'1px 4px',whiteSpace:'nowrap',maxWidth:'48px',overflow:'hidden',
-            textOverflow:'ellipsis'}},getScoreLabel()):null
-        )
-      )
+        h('div',{className:'cust-val'},cust.firma||'wählen →')
+      ),
+      cust.firma?h('div',{id:'deal-score-nav',style:{
+        fontSize:'11px',fontWeight:'800',
+        color:getScoreColor(),
+        background:getScoreBg(),
+        borderRadius:'4px',
+        padding:'2px 6px',
+        whiteSpace:'nowrap',
+        marginLeft:'4px',
+        alignSelf:'center'
+      }},getScoreLabel()):null
     )
   );
 
@@ -728,7 +745,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.7'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.8'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -939,8 +956,8 @@ function renderStation(sitId){
             saveScore(score);
             const scoreEl=document.getElementById('deal-score-nav');
             if(scoreEl){
-              scoreEl.textContent=(score>=8?'🔥':score>=5?'✅':'⚠️')+' '+score+'/10';
-              scoreEl.style.color=score>=8?'#2ea043':score>=5?'#d29922':'#f85149';
+              scoreEl.textContent=score+'/10';
+              scoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
             }
           }
         }
