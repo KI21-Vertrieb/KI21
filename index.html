@@ -120,7 +120,7 @@ if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
-  s+='PFLICHT: Kennzeichne jede Information: ✅ BESTÄTIGT / ⚠️ ANNAHME / ❓ KLÄREN\n';
+  s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
   s+='- Maximal 5 Punkte pro Abschnitt\n';
@@ -144,7 +144,7 @@ function buildCtx(cust,mu,kk,stk){
 
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
-  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔍',
+  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🎯',
    regel:'Triggerevent und erste Infos eingeben – Steckbrief und Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
@@ -163,11 +163,11 @@ QUALIFIZIERUNGS-SCORE: X/10
 Empfehlung: sofort / später / nicht verfolgen
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [✅/⚠️/❓] [1 Satz – konkret und belastbar]
-2. [✅/⚠️/❓] [1 Satz]
-3. [✅/⚠️/❓] [1 Satz]
-4. [✅/⚠️/❓] [1 Satz]
-5. [✅/⚠️/❓] [1 Satz]
+1. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz – konkret und belastbar]
+2. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
+3. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
+4. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
+5. [BESTÄTIGT/ANNAHME/KLÄREN] [1 Satz]
 
 DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 1. [ROT] Frage: ___ | Antwort: ___
@@ -226,11 +226,11 @@ Antworten aus dem Gespräch: ${f.antworten||''}
 Liefere NUR dieses Format:
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [✅/⚠️/❓] [Schmerz in Kundensprache]
-2. [✅/⚠️/❓] [Ursache]
-3. [✅/⚠️/❓] [Was kostet das konkret?]
-4. [✅/⚠️/❓] [Wer kauft deswegen?]
-5. [✅/⚠️/❓] [Machtlage]
+1. [BESTÄTIGT/ANNAHME/KLÄREN] [Schmerz in Kundensprache]
+2. [BESTÄTIGT/ANNAHME/KLÄREN] [Ursache]
+3. [BESTÄTIGT/ANNAHME/KLÄREN] [Was kostet das konkret?]
+4. [BESTÄTIGT/ANNAHME/KLÄREN] [Wer kauft deswegen?]
+5. [BESTÄTIGT/ANNAHME/KLÄREN] [Machtlage]
 
 DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 1. [Muss gezeigt werden – warum]
@@ -291,11 +291,11 @@ Liefere NUR dieses Format:
 DEAL-SCORE: X/10 | [1 Satz Begründung]
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [✅/⚠️/❓] [konkret – 1 Satz]
-2. [✅/⚠️/❓] [konkret – 1 Satz]
-3. [✅/⚠️/❓] [konkret – 1 Satz]
-4. [✅/⚠️/❓] [konkret – 1 Satz]
-5. [✅/⚠️/❓] [konkret – 1 Satz]
+1. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
+2. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
+3. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
+4. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
+5. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
 
 BESUCHSBERICHT:
 Datum: [heute]
@@ -537,7 +537,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.6'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.7'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -549,7 +549,8 @@ function renderHome(){
           h('div',{className:'cust-val'},cust.firma||'wählen →'),
           cust.firma?h('div',{id:'deal-score-nav',style:{fontSize:'10px',fontWeight:'800',
             color:getScoreColor(),background:getScoreBg(),borderRadius:'3px',
-            padding:'1px 4px',whiteSpace:'nowrap'}},getScoreLabel()):null
+            padding:'1px 4px',whiteSpace:'nowrap',maxWidth:'48px',overflow:'hidden',
+            textOverflow:'ellipsis'}},getScoreLabel()):null
         )
       )
     )
@@ -727,7 +728,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.6'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v2.7'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -1446,7 +1447,17 @@ function showSettings(){
 
 
 function showExport(){
-  const data={accounts:state.accounts,activeId:state.activeId,mu:LS.get('ki21_mu',{})};
+  const data={accounts:state.accounts,activeId:state.activeId,mu:LS.get('ki21_mu',{}),stationData:{},kontextData:{}};
+  state.accounts.forEach(acc=>{
+    for(let i=0;i<7;i++){
+      const sval=LS.get('ki21_st_'+acc.id+'_'+i,null);
+      if(sval)data.stationData['ki21_st_'+acc.id+'_'+i]=sval;
+      const kval=LS.get('ki21_stk_'+acc.id+'_'+i,null);
+      if(kval)data.kontextData['ki21_stk_'+acc.id+'_'+i]=kval;
+    }
+    const kkval=LS.get('ki21_kk_'+acc.id,null);
+    if(kkval)data.kontextData['ki21_kk_'+acc.id]=kkval;
+  });
   const txt=JSON.stringify(data);
   let copied=false;
   const copyB=h('button',{className:'btn-o',onclick:()=>{
@@ -1481,6 +1492,8 @@ function showImport(){
           if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
           if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
           if(d.mu){LS.set('ki21_mu',d.mu);}
+          if(d.stationData){Object.keys(d.stationData).forEach(k=>LS.set(k,d.stationData[k]));}
+          if(d.kontextData){Object.keys(d.kontextData).forEach(k=>LS.set(k,d.kontextData[k]));}
           m.remove();renderHome();
         }catch(e){alert('Ungültiger Text.');}
       }},'Importieren'),
