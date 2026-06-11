@@ -123,6 +123,8 @@ function buildCtx(cust,mu,kk,stk){
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
+  s+='- Stelle KEINE Rückfragen – liefere sofort den Output\n';
+  s+='- Nutze vorhandene Informationen – keine Nachfragen\n';
   s+='- Maximal 5 Punkte pro Abschnitt\n';
   s+='- Jeder Punkt: 1-2 Sätze, direkt und konkret\n';
   s+='- Kein Fließtext, keine langen Erklärungen\n';
@@ -131,6 +133,21 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Keine Einleitung, kein Fazit\n';
   s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
   s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
+  // Include results from all previous phases
+  if(stk){
+    const phaseNames=['Qualifizierung','Bedarfsanalyse','Gesprächsauswertung','Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+    const aid=LS.get('ki21_aid',null);
+    if(aid){
+      let prevResults='';
+      for(let i=0;i<7;i++){
+        const d=LS.get('ki21_st_'+aid+'_'+i,{});
+        if(d.result&&d.result.trim()){
+          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,500)+'\n';
+        }
+      }
+      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (Zusammenfassung):'+prevResults+'\n';
+    }
+  }
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
   if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
   if(cust.branche)s+='Branche: '+cust.branche+'\n';
@@ -180,7 +197,7 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 → TODO: [eine konkrete Aktion + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
-   regel:'Was muss ich fragen? Hypothesen bilden, Fragen entwickeln, KPIs für ROI identifizieren.',
+   regel:'Was möchten Sie fragen? Hypothesen bilden, Fragen entwickeln, KPIs für ROI identifizieren.',
    felder:[
      {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
      {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
@@ -190,30 +207,31 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 
 Bedarfsanalyse vorbereiten: ${c.firma||''}, AP: ${c.ap||''}
 Qualifizierungsergebnisse: ${f.checkliste||''}
-Offene Qualifizierungsfragen: ${f.fragen||''}
+Offene Fragen: ${f.fragen||''}
 
-Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
-DIE 5 WICHTIGSTEN FRAGEN FÜR DIE BEDARFSANALYSE:
-[Baue auf offenen Qualifizierungsfragen auf – nicht wiederholen was bereits beantwortet wurde]
+BEDARFSANALYSE-SCORE: X/10
+Begründung: [1 Satz]
+
+DIE 5 WICHTIGSTEN FRAGEN:
 1. S: [Situation] | Antwort: ___
-2. P: [Problem – Schmerz] | Antwort: ___
-3. P: [Problem – Ursache] | Antwort: ___
-4. I: [Implication – was kostet das?] | Antwort: ___
-5. N: [Need-Payoff – Wert der Lösung] | Antwort: ___
+2. P: [Problem] | Antwort: ___
+3. P: [Ursache] | Antwort: ___
+4. I: [Kosten des Problems] | Antwort: ___
+5. N: [Wert der Lösung] | Antwort: ___
 
 DIE 3 WICHTIGSTEN HYPOTHESEN:
-1. [Größter vermuteter Schmerz]
-2. [Was kostet das Problem?]
-3. [Wer kauft deswegen?]
+BESTÄTIGT: [was sicher ist]
+ANNAHME: [was plausibel ist]
+KLÄREN: [was offen bleibt]
 
-KPI-FRAGEN FÜR ROI:
-[3 Zahlen die ich erfragen muss]
+KPI-FRAGEN FÜR ROI: [3 konkrete Zahlen]
 
-→ TODO: [eine konkrete Vorbereitung + wann]`
+→ TODO: [konkrete Vorbereitung + wann]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'💡',
-   regel:'Was habe ich gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
+   regel:'Was haben Sie gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
    felder:[
      {id:'leitfaden',l:'Ergebnisse Bedarfsanalyse',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
      {id:'fragen',l:'Fragen Bedarfsanalyse (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
@@ -222,16 +240,17 @@ KPI-FRAGEN FÜR ROI:
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Gesprächsauswertung: ${c.firma||''}, AP: ${c.ap||''}
-Antworten aus dem Gespräch: ${f.antworten||''}
+Antworten: ${f.antworten||''}
 
-Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+
+GESPRÄCHS-SCORE: X/10
+Begründung: [1 Satz]
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [BESTÄTIGT/ANNAHME/KLÄREN] [Schmerz in Kundensprache]
-2. [BESTÄTIGT/ANNAHME/KLÄREN] [Ursache]
-3. [BESTÄTIGT/ANNAHME/KLÄREN] [Was kostet das konkret?]
-4. [BESTÄTIGT/ANNAHME/KLÄREN] [Wer kauft deswegen?]
-5. [BESTÄTIGT/ANNAHME/KLÄREN] [Machtlage]
+BESTÄTIGT: [bestätigte Fakten aus dem Gespräch]
+ANNAHME: [plausible Schlüsse]
+KLÄREN: [noch offene Punkte]
 
 DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 1. [Muss gezeigt werden – warum]
@@ -239,8 +258,7 @@ DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 3. [Muss gezeigt werden – warum]
 NICHT zeigen: [1 Punkt]
 
-ROI-BASIS:
-[Nur bestätigte Zahlen aus dem Gespräch]
+ROI-BASIS: [nur bestätigte Zahlen]
 
 → TODO: [nächster Schritt + wann]`
   },
@@ -254,23 +272,21 @@ ROI-BASIS:
 Demo vorbereiten: ${c.firma||''}
 Erkenntnisse: ${f.discovery||''}
 
-Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
-DEMO-EINSTIEG:
-[1 Satz – wie ich das Gespräch spiegele]
+DEMO-SCORE: X/10
+Begründung: [1 Satz – wie gut sind wir vorbereitet?]
+
+DEMO-EINSTIEG: [1 Satz]
 
 DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
-1. [Botschaft – warum relevant für diesen Kunden]
-2. [Botschaft – warum relevant]
-3. [Botschaft – warum relevant]
-4. [Botschaft – warum relevant]
-5. [Botschaft – warum relevant]
+BESTÄTIGT: [aus bestätigten Kundenbedürfnissen]
+ANNAHME: [plausible Botschaften]
+KLÄREN: [noch zu validieren]
 
-NICHT ZEIGEN:
-[1-2 Punkte die ablenken]
+NICHT ZEIGEN: [1-2 Punkte]
 
-ABSCHLUSS-FRAGE:
-[Die eine Frage am Ende der Demo]
+ABSCHLUSS-FRAGE: [Die eine Frage am Ende]
 
 → TODO: [Demo-Vorbereitung + wann]`
   },
@@ -288,6 +304,7 @@ Stichworte aus dem Termin: ${f.stichworte||''}
 WICHTIG: Stelle KEINE Rückfragen. Erstelle sofort den Bericht aus den vorhandenen Stichworten.
 
 Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
 DEAL-SCORE: X/10 | [1 Satz Begründung]
 
@@ -318,26 +335,32 @@ Betreff: [Betreff]
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Nutzen-Kosten-Analyse für: ${c.firma||''}
-KPIs aus der Gesprächsauswertung: ${f.discovery||''}
+Nutzen-Kosten-Analyse: ${c.firma||''}
+KPIs: ${f.discovery||''}
 
-Liefere NUR dieses Format – keine Berechnungen erfinden:
+WICHTIG: Keine Berechnungen ohne bestätigte Kundenzahlen.
 
-BESTÄTIGTE ZAHLEN AUS DEM GESPRÄCH:
-[Nur Zahlen die der Kunde selbst genannt hat – mit ✅]
-[Fehlende Zahlen mit ❓ kennzeichnen]
+NUTZEN-SCORE: X/10
+Begründung: [1 Satz – wie stark ist der Business Case?]
 
-MÖGLICHE KENNZAHLEN DIE DER KUNDE ERRECHNEN KANN:
-→ [Kennzahl 1: Formel in Worten]
-→ [Kennzahl 2: Formel in Worten]
-→ [Kennzahl 3: Formel in Worten]
+BESTÄTIGTE ZAHLEN:
+BESTÄTIGT: [nur vom Kunden genannte Zahlen]
+ANNAHME: [Schätzungen mit Kennzeichnung]
+KLÄREN: [fehlende Zahlen]
 
-OFFENE FRAGEN FÜR DAS GESPRÄCH:
-❓ [Welche Zahl fehlt noch?]
-❓ [Welche Annahme muss validiert werden?]
+MÖGLICHE KENNZAHLEN:
+→ [Formel 1 in Worten]
+→ [Formel 2 in Worten]
+→ [Formel 3 in Worten]
 
-WICHTIG: Bitte gemeinsam mit dem Kunden validieren.
-KI21 liefert eine strukturierte Hypothese – keine verbindliche Berechnung.`
+TOP 3 QUALITATIVER NUTZEN:
+1. [konkret]
+2. [konkret]
+3. [konkret]
+
+Bitte gemeinsam mit dem Kunden validieren.
+
+→ TODO: [nächster Schritt + wann]`
   },
   {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
@@ -354,25 +377,24 @@ Angebot: ${c.firma||''}, AP: ${c.ap||''}
 Erkenntnisse: ${f.erkenntnisse||''}
 Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}
 
-Liefere NUR dieses Format:
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
-ERÖFFNUNGSSATZ:
-[Warum handeln? Warum jetzt? – 2 Sätze in Kundensprache]
+ABSCHLUSS-SCORE: X/10
+Begründung: [1 Satz – Abschlusswahrscheinlichkeit?]
+
+ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
 
 DIE 5 WICHTIGSTEN KAUFARGUMENTE:
-1. [In Kundensprache – 1 Satz]
-2. [In Kundensprache – 1 Satz]
-3. [In Kundensprache – 1 Satz]
-4. [In Kundensprache – 1 Satz]
-5. [In Kundensprache – 1 Satz]
+BESTÄTIGT: [aus bestätigten Kundenbedürfnissen]
+ANNAHME: [plausible Argumente]
+KLÄREN: [noch zu validieren]
 
-DIE 3 WICHTIGSTEN EINWÄNDE + ANTWORTEN:
+DIE 3 WICHTIGSTEN EINWÄNDE:
 1. Einwand: ___ | Antwort: ___
 2. Einwand: ___ | Antwort: ___
 3. Einwand: ___ | Antwort: ___
 
-DER EINE ABSCHLUSSSATZ:
-[Der Satz der die Entscheidung auslöst]
+DER EINE ABSCHLUSSSATZ: [entscheidender Satz]
 
 → TODO: [nächster Schritt + wann]`
   }
@@ -551,7 +573,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.0'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.2'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -696,6 +718,7 @@ function transferAndGo(fromId, toId, result){
     0:{f1:'checkliste', f2:'fragen'},
     1:{f1:'leitfaden', f2:'fragen'},
     2:{f1:'discovery'},
+    3:{f1:'stichworte'},
     4:{f1:'discovery'},
     5:{f1:'erkenntnisse'}
   };
@@ -745,7 +768,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.0'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.2'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -957,9 +980,9 @@ function renderStation(sitId){
         LS.set(KEY,data);
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
-        const scoreMatch=result.match(/Score[:\s]+(\d+)[\/\s]*10/i)||
-                         result.match(/(\d+)\s*\/\s*10/)||
-                         result.match(/Bewertung[:\s]+(\d+)/i);
+        const scoreMatch=result.match(/(?:SCORE|Score)[:\s]+(\d+)[\s]*\/[\s]*10/i)||
+                         result.match(/(?:QUALIFIZIERUNGS|BEDARFSANALYSE|DEMO|DEAL|NUTZEN|ABSCHLUSS)-SCORE[:\s]+(\d+)/i)||
+                         result.match(/(\d+)\s*\/\s*10/);
         if(scoreMatch){
           const score=parseInt(scoreMatch[1]);
           if(score>=1&&score<=10){
@@ -976,6 +999,8 @@ function renderStation(sitId){
             if(phaseScoreEl){
               phaseScoreEl.textContent=score+'/10';
               phaseScoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
+              phaseScoreEl.style.background=score>=7?'rgba(46,160,67,.15)':score>=4?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
+              phaseScoreEl.style.display='inline';
             }
           }
         }
@@ -1214,6 +1239,11 @@ function showNeuerKunde(initial,accId){
   content.appendChild(btns);
 
   if(isEdit){
+    const crmBtn=h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px'},
+      onclick:()=>{m.remove();showCRMImport(accId);}},
+      '📥 CRM-Text importieren');
+    content.appendChild(crmBtn);
     const pdfBtn=h('button',{className:'btn',
       style:{width:'100%',marginTop:'8px',background:'rgba(255,107,0,.15)',color:'#ff6b00'},
       onclick:()=>generateKundePDF(accId,f)},
@@ -1224,6 +1254,101 @@ function showNeuerKunde(initial,accId){
   const m=modal(isEdit?'Kunde bearbeiten':'Neuer Kunde',content,null);
 }
 
+
+
+async function showCRMImport(accId){
+  const ta=h('textarea',{
+    placeholder:'CRM-Text, LinkedIn-Profil oder beliebige Kundeninformationen hier einfügen...',
+    style:{minHeight:'120px',width:'100%'}
+  });
+  const statusDiv=h('div',{style:{fontSize:'12px',color:'#8b949e',marginTop:'8px'}});
+  
+  const analyzeBtn=h('button',{className:'btn-o',style:{width:'100%',marginTop:'8px'},
+    onclick:async()=>{
+      const apiKey=LS.get('ki21_apikey','');
+      if(!apiKey){alert('Bitte API Key hinterlegen.');return;}
+      if(!ta.value.trim()){alert('Bitte Text einfügen.');return;}
+      
+      analyzeBtn.textContent='⏳ Analysiere...';
+      analyzeBtn.disabled=true;
+      
+      try{
+        const prompt=`Analysiere diesen Text und extrahiere strukturierte Informationen für ein B2B-Vertriebssystem.
+
+Text:
+${ta.value}
+
+Antworte NUR mit diesem JSON-Format (kein Markdown, kein Text davor/danach):
+{
+  "firma": "Firmenname oder leer",
+  "ap": "Ansprechpartner Name und Funktion oder leer", 
+  "branche": "Branche oder leer",
+  "ma": "Mitarbeiterzahl als Zahl oder leer",
+  "um": "Umsatz oder leer",
+  "kontext": "Alle relevanten Infos: Trigger Events, Herausforderungen, Notizen, persönliche Infos",
+  "persoenlich": "Persönliche Infos zur Person: Hobbys, Interessen, Karriere, LinkedIn-Infos"
+}`;
+
+        const resp=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-api-key':apiKey,
+            'anthropic-version':'2023-06-01',
+            'anthropic-dangerous-direct-browser-access':'true'
+          },
+          body:JSON.stringify({
+            model:'claude-haiku-4-5-20251001',
+            max_tokens:1024,
+            messages:[{role:'user',content:prompt}]
+          })
+        });
+        
+        const data=await resp.json();
+        const txt=data.content[0].text.trim();
+        const parsed=JSON.parse(txt);
+        
+        // Update customer data
+        const acc=state.accounts.find(a=>a.id===accId);
+        if(acc){
+          if(parsed.firma)acc.cust.firma=parsed.firma;
+          if(parsed.ap)acc.cust.ap=parsed.ap;
+          if(parsed.branche)acc.cust.branche=parsed.branche;
+          if(parsed.ma)acc.cust.ma=parsed.ma;
+          if(parsed.um)acc.cust.um=parsed.um;
+          LS.set('ki21_acc',state.accounts);
+          
+          // Update kontext
+          if(parsed.kontext||parsed.persoenlich){
+            let kk=LS.get('ki21_kk_'+accId,'')||'';
+            if(parsed.kontext)kk+=(kk?'\n\n':'')+parsed.kontext;
+            if(parsed.persoenlich)kk+=(kk?'\n\nPERSÖNLICH:\n':'')+parsed.persoenlich;
+            LS.set('ki21_kk_'+accId,kk);
+          }
+        }
+        
+        statusDiv.innerHTML='<span style="color:#2ea043">✓ Importiert: '+
+          [parsed.firma,parsed.ap,parsed.branche].filter(Boolean).join(' · ')+'</span>';
+        analyzeBtn.textContent='✓ Fertig – Fenster schließen';
+        analyzeBtn.onclick=()=>m.remove();
+        
+      }catch(e){
+        statusDiv.textContent='Fehler: '+e.message;
+        analyzeBtn.textContent='CRM-Text analysieren';
+        analyzeBtn.disabled=false;
+      }
+    }
+  },'CRM-Text analysieren');
+  
+  const content=h('div',{},
+    h('p',{style:{fontSize:'12px',color:'#8b949e',marginBottom:'8px'}},
+      'Fügen Sie beliebigen Text ein – CRM-Export, LinkedIn-Profil, E-Mail oder Notizen. Claude erkennt und verteilt die Informationen automatisch.'),
+    ta,
+    analyzeBtn,
+    statusDiv
+  );
+  const m=modal('📥 CRM-Text importieren',content,null);
+}
 
 function generateKundePDF(aid, cust){
   const SITS_LABELS=['Qualifizierung','Bedarfsanalyse','Gesprächsauswertung',
