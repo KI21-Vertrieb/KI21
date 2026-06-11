@@ -327,7 +327,7 @@ Betreff: [Betreff]
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:5,num:6,phase:'Phase 6',title:'Nutzen-Kosten-Analyse',icon:'💰',
+  {id:5,num:6,phase:'Phase 6',title:'Wirtschaftlicher Nutzen',icon:'💰',
    regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
    felder:[
      {id:'discovery',l:'KPIs aus der Gesprächsauswertung',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
@@ -512,7 +512,7 @@ function getResultLabel(sitId){
     2:'🎯 Gesprächsauswertung',
     3:'🎬 Demo-Leitfaden',
     4:'📝 Terminachbereitung',
-    5:'💰 Nutzen-Kosten-Analyse',
+    5:'💰 Wirtschaftlicher Nutzen',
     6:'🤝 Angebotsstrategie'
   };
   return labels[sitId]||'✓ Ergebnis';
@@ -572,7 +572,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.3'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.4'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -608,18 +608,27 @@ function renderHome(){
     'In 30 Minuten.'));
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
-    textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Situation wählen');
+    textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Was bereiten Sie vor?');
   wrap.appendChild(sitLabel);
 
-  SITS.forEach(sit=>{
+  const groups=[
+    {label:'Neuen Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1 + 2'},
+    {label:'Bedarfsanalyse auswerten', icon:'💡', primary:2, sub:'Phase 3'},
+    {label:'Demo vorbereiten', icon:'🎬', primary:3, sub:'Phase 4'},
+    {label:'Termin nachbereiten', icon:'📝', primary:4, sub:'Phase 5'},
+    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:5, sub:'Phase 6'},
+    {label:'Angebot & Abschluss', icon:'🤝', primary:6, sub:'Phase 7'},
+  ];
+
+  groups.forEach(g=>{
     const row=h('div',{className:'sit-row',onclick:()=>{
-      if(!state.activeId){state.pendingSit=sit.id;showKunde();}
-      else renderStation(sit.id);
+      if(!state.activeId){state.pendingSit=g.primary;showKunde();}
+      else renderStation(g.primary);
     }},
-      h('span',{className:'sit-icon'},sit.icon),
+      h('span',{className:'sit-icon'},g.icon),
       h('div',{style:{flex:1}},
-        h('div',{className:'sit-phase'},sit.phase),
-        h('div',{className:'sit-title'},sit.title)
+        h('div',{className:'sit-title'},g.label),
+        h('div',{className:'sit-phase'},g.sub)
       ),
       h('span',{className:'sit-arrow'},'›')
     );
@@ -767,7 +776,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.3'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.4'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
