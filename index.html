@@ -1338,9 +1338,21 @@ Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
           }
         }
         
-        statusDiv.innerHTML='<span style="color:#2ea043">✓ Importiert: '+
-          [parsed.firma,parsed.ap,parsed.branche].filter(Boolean).join(' · ')+'</span>';
-        analyzeBtn.textContent='✓ Fertig – Fenster schließen';
+        // Build confirmation
+        const lines=[];
+        if(parsed.firma)lines.push('✅ Firma: '+parsed.firma);
+        if(parsed.ap)lines.push('✅ Ansprechpartner: '+parsed.ap);
+        if(parsed.branche)lines.push('✅ Branche: '+parsed.branche);
+        if(parsed.ma)lines.push('✅ Mitarbeiter: '+parsed.ma);
+        if(parsed.um)lines.push('✅ Umsatz: '+parsed.um);
+        if(parsed.kontext)lines.push('✅ Kontext: importiert');
+        if(parsed.persoenlich)lines.push('✅ Persönliche Infos: importiert');
+
+        statusDiv.innerHTML='<div style="margin-top:10px;padding:10px;background:rgba(46,160,67,.1);border-radius:6px;border:1px solid rgba(46,160,67,.3);">'+
+          '<div style="font-size:11px;font-weight:700;color:#2ea043;margin-bottom:6px;letter-spacing:.5px;">IMPORTIERT:</div>'+
+          lines.map(l=>'<div style="font-size:12px;color:#e6edf3;padding:2px 0;">'+l+'</div>').join('')+
+          '</div>';
+        analyzeBtn.textContent='✓ Schließen';
         analyzeBtn.onclick=()=>m.remove();
         
       }catch(e){
