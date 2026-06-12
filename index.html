@@ -163,7 +163,7 @@ function buildCtx(cust,mu,kk,stk){
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
   {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
-   regel:'Triggerevent und erste Infos eingeben – Steckbrief und Qualifizierungsfragen kommen raus.',
+   regel:'Trigger Event eingeben – Top 5 Erkenntnisse und Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
      {id:'trigger',l:'Trigger Event / Anlass',t:'text',p:'z.B. neuer GF, Wachstum, Pressemitteilung'},
@@ -196,11 +196,11 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 → TODO: [eine konkrete Aktion + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
-   regel:'Was möchten Sie fragen? Hypothesen bilden, Fragen entwickeln, KPIs für ROI identifizieren.',
+   regel:'Qualifizierungsergebnisse eingeben – Top 5 Fragen für die Bedarfsanalyse kommen raus.',
    felder:[
      {id:'checkliste',l:'Qualifizierungsergebnisse',t:'ta',p:'Ergebnisse aus Phase 1...'},
-     {id:'fragen',l:'Qualifizierungsfragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
-     {id:'antworten',l:'Antworten aus dem Telefonat (hier eintragen)',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
+     {id:'fragen',l:'Fragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'antworten',l:'Ihre Antworten',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -230,11 +230,11 @@ KPI-FRAGEN FÜR ROI: [3 konkrete Zahlen]
 → TODO: [konkrete Vorbereitung + wann]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'💡',
-   regel:'Was haben Sie gelernt? Antworten auswerten – Schmerz, Ursachen, Kosten, Machtlage.',
+   regel:'Antworten aus dem Gespräch eingeben – Top 5 Erkenntnisse und Demo-Empfehlung kommen raus.',
    felder:[
-     {id:'leitfaden',l:'Ergebnisse Bedarfsanalyse',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
-     {id:'fragen',l:'Fragen Bedarfsanalyse (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
-     {id:'antworten',l:'Antworten aus dem Gespräch (hier eintragen)',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
+     {id:'leitfaden',l:'Ergebnisse aus Phase 2',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
+     {id:'fragen',l:'Fragen (von Claude)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'antworten',l:'Ihre Antworten',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -507,9 +507,9 @@ function stripMd(text){
 
 function getResultLabel(sitId){
   const labels={
-    0:'📋 Lead-Steckbrief',
-    1:'📋 Bedarfsanalyse',
-    2:'🎯 Gesprächsauswertung',
+    0:'🔎 Lead-Steckbrief',
+    1:'📋 Bedarfsanalyse-Vorbereitung',
+    2:'💡 Gesprächsauswertung',
     3:'🎬 Demo-Leitfaden',
     4:'📝 Terminachbereitung',
     5:'💰 Wirtschaftlicher Nutzen',
@@ -572,7 +572,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.4'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -776,7 +776,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.4'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.5'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -813,7 +813,7 @@ function renderStation(sitId){
   const stkBtn=h('button',{className:'btn',
     style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d'},
     onclick:()=>showStkModal(sitId,sit.title)
-  },'Kontext '+sit.title);
+  },'Kontext'+(sit.title.length>12?sit.title.substring(0,12)+'...':sit.title));
   phaseNav.appendChild(stkBtn);
   if(sitId<SITS.length-1){
     phaseNav.appendChild(h('button',{className:'btn',
@@ -1072,11 +1072,11 @@ Leitfaden:
             {fid:'fragen', label:'Qualifizierungsfragen', extract:'checkliste'}
           ]},
           1:{nextId:2, fields:[
-            {fid:'leitfaden', label:'Ergebnisse Besuchsvorbereitung', extract:'full'},
+            {fid:'leitfaden', label:'Ergebnisse aus Phase 2', extract:'full'},
             {fid:'fragen', label:'Bedarfsanalyse-Fragen', extract:'discovery_questions'}
           ]},
           2:{nextId:3, fields:[
-            {fid:'discovery', label:'Gesprächsauswertung-Ergebnisse', extract:'full'}
+            {fid:'discovery', label:'Erkenntnisse aus Gesprächsauswertung', extract:'full'}
           ]},
           4:{nextId:5, fields:[
             {fid:'discovery', label:'KPIs aus der Gesprächsauswertung', extract:'full'}
@@ -1284,21 +1284,16 @@ async function showCRMImport(accId){
       analyzeBtn.disabled=true;
       
       try{
-        const prompt=`Analysiere diesen Text und extrahiere strukturierte Informationen für ein B2B-Vertriebssystem.
+        const prompt=`Du extrahierst Informationen aus einem Text für ein B2B-Vertriebssystem.
 
 Text:
 ${ta.value}
 
-Antworte NUR mit diesem JSON-Format (kein Markdown, kein Text davor/danach):
-{
-  "firma": "Firmenname oder leer",
-  "ap": "Ansprechpartner Name und Funktion oder leer", 
-  "branche": "Branche oder leer",
-  "ma": "Mitarbeiterzahl als Zahl oder leer",
-  "um": "Umsatz oder leer",
-  "kontext": "Alle relevanten Infos: Trigger Events, Herausforderungen, Notizen, persönliche Infos",
-  "persoenlich": "Persönliche Infos zur Person: Hobbys, Interessen, Karriere, LinkedIn-Infos"
-}`;
+WICHTIG: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Markdown. Keine Erklärung. Kein Text davor oder danach. Nur das JSON-Objekt.
+
+{"firma":"","ap":"","branche":"","ma":"","um":"","kontext":"","persoenlich":""}
+
+Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
 
         const resp=await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',
@@ -1316,8 +1311,13 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, kein Text davor/danach):
         });
         
         const data=await resp.json();
-        const txt=data.content[0].text.trim();
-        const parsed=JSON.parse(txt);
+        let txt=data.content[0].text.trim();
+        // Strip markdown code blocks if present
+        txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+        // Extract JSON object if wrapped in other text
+        const jsonMatch=txt.match(/\{[\s\S]*\}/);
+        if(!jsonMatch)throw new Error('Kein JSON gefunden');
+        const parsed=JSON.parse(jsonMatch[0]);
         
         // Update customer data
         const acc=state.accounts.find(a=>a.id===accId);
@@ -1424,7 +1424,7 @@ function showStkModal(sitId,sitTitle){
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Kontext '+sitTitle,content,null);
+  const m=modal('Kontext'+sitTitle,content,null);
 }
 
 function showMeinUnternehmen(){
