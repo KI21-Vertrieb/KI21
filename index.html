@@ -152,7 +152,14 @@ function buildCtx(cust,mu,kk,stk){
   if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
   if(cust.branche)s+='Branche: '+cust.branche+'\n';
   if(cust.ma)s+='Mitarbeiter: '+cust.ma+'\n';
-  if(cust.um)s+='Umsatz: '+cust.um+'\n';
+  if(cust.um){
+    // Format large numbers to Mio. €
+    let umDisplay=cust.um;
+    const umNum=parseFloat(String(cust.um).replace(/[^0-9.]/g,''));
+    if(umNum>=1000000)umDisplay=(umNum/1000000).toFixed(1)+' Mio. €';
+    else if(umNum>=1000)umDisplay=(umNum/1000).toFixed(1)+' Tsd. €';
+    s+='Umsatz: '+umDisplay+'\n';
+  }
   if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
@@ -572,7 +579,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.6'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.7'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙'),
@@ -776,7 +783,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.6'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.7'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showMeinUnternehmen},'Mein Unternehmen'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -1326,7 +1333,14 @@ Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
           if(parsed.ap)acc.cust.ap=parsed.ap;
           if(parsed.branche)acc.cust.branche=parsed.branche;
           if(parsed.ma)acc.cust.ma=parsed.ma;
-          if(parsed.um)acc.cust.um=parsed.um;
+          if(parsed.um){
+            // Normalize umsatz to readable format
+            const rawUm=String(parsed.um).replace(/[^0-9.]/g,'');
+            const numUm=parseFloat(rawUm);
+            if(numUm>=1000000)acc.cust.um=(numUm/1000000).toFixed(0)+' Mio. €';
+            else if(numUm>=1000)acc.cust.um=(numUm/1000).toFixed(0)+' Tsd. €';
+            else acc.cust.um=parsed.um;
+          }
           LS.set('ki21_acc',state.accounts);
           
           // Update kontext
