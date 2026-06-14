@@ -579,7 +579,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.9'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.10'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -986,6 +986,19 @@ function renderStation(sitId){
       if(result){
         data.result=result;
         data.prompt=prompt;
+        // Phase 2: auto-fill fragen field with generated questions
+        if(sitId===1){
+          const lines=result.split('\n');
+          const splitIdx=lines.findIndex(l=>l.includes('DIE 5 WICHTIGSTEN FRAGEN'));
+          if(splitIdx>=0){
+            const fragen=lines.slice(splitIdx).join('\n').trim();
+            data.fv=data.fv||{};
+            data.fv.fragen=fragen;
+            // Update textarea in DOM
+            const ta=document.querySelector('[data-fid="fragen"]');
+            if(ta)ta.value=fragen;
+          }
+        }
         LS.set(KEY,data);
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
