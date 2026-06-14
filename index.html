@@ -170,17 +170,16 @@ function buildCtx(cust,mu,kk,stk){
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
   {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
-   regel:'Trigger Event eingeben – Top 5 Erkenntnisse und Qualifizierungsfragen kommen raus.',
+   regel:'Trigger und Herausforderungen eingeben – Top 5 Erkenntnisse und Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
-     {id:'trigger',l:'Trigger Event / Anlass',t:'text',p:'z.B. neuer GF, Wachstum, Pressemitteilung'},
-     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Was weißt du bereits?'}
+     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
-Trigger: ${f.trigger||''} | Infos: ${f.info||''}
+Trigger: ${f.info||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
@@ -780,8 +779,9 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.7'),
+    h('span',{style:{fontSize:'12px',color:'#8b949e',fontWeight:'600',marginLeft:'6px',whiteSpace:'nowrap'}},sit.num+' · '+sit.title),
     h('div',{className:'nav-right'},
+      cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -792,7 +792,6 @@ function renderStation(sitId){
   const header=h('div',{className:'st-header'},
     h('button',{className:'st-back',onclick:renderHome},'←'),
     h('div',{style:{flex:1}},
-      h('div',{className:'st-phase'},sit.phase),
       h('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},
         h('div',{className:'st-title'},sit.icon+' '+sit.title),
         h('span',{
@@ -804,7 +803,6 @@ function renderStation(sitId){
       )
     )
   );
-  if(cust.firma)header.appendChild(h('div',{className:'st-cust'},cust.firma));
   wrap.appendChild(header);
 
   // Phase nav
@@ -814,9 +812,11 @@ function renderStation(sitId){
   }
   phaseNav.appendChild(h('div',{style:{flex:1}}));
   const stkBtn=h('button',{className:'btn',
-    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d'},
-    onclick:()=>showStkModal(sitId,sit.title)
-  },'Kontext'+(sit.title.length>12?sit.title.substring(0,12)+'...':sit.title));
+    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 10px'},
+    onclick:()=>showStkModal(sitId,sit.title)},
+    h('span',{style:{fontSize:'11px'}},'Kontext'),
+    h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
+  );
   phaseNav.appendChild(stkBtn);
   if(sitId<SITS.length-1){
     phaseNav.appendChild(h('button',{className:'btn',
@@ -879,7 +879,8 @@ function renderStation(sitId){
   wrap.appendChild(fieldsDiv);
 
   // Generate button
-  const genBtn=h('button',{className:'btn-o',onclick:generate},'⚡ Mit Claude generieren');
+  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse generieren','⚡ Gesprächsauswertung generieren','⚡ Demo-Strategie generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
+  const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
     data={fv:{},result:''};
     LS.set(KEY,data);
@@ -1107,7 +1108,7 @@ Leitfaden:
     }finally{
       loading=false;
       genBtn.disabled=false;
-      genBtn.textContent='⚡ Mit Claude generieren';
+      genBtn.textContent=genLabels[sitId]||'⚡ Mit Claude generieren';
     }
   }
 
