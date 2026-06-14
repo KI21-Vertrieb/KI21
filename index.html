@@ -762,6 +762,11 @@ function transferAndGo(fromId, toId, result){
 }
 
 
+
+function scoreColor(s){
+  const colors=['#ffaaaa','#ff8080','#ff5555','#ee2222','#cc0000','#aa0000','#aabbff','#7799ff','#4466ee','#2244cc','#0022aa'];
+  return colors[Math.max(0,Math.min(10,s))]||'#8b949e';
+}
 function renderStation(sitId){
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
@@ -790,7 +795,6 @@ function renderStation(sitId){
 
   // Header - icon + score only, title in nav
   const header=h('div',{className:'st-header'},
-    h('button',{className:'st-back',onclick:renderHome},'←'),
     h('div',{style:{flex:1}},
       h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
         h('div',{className:'st-title'},sit.icon),
@@ -954,12 +958,11 @@ function renderStation(sitId){
     const em=data.result.match(/(\d+)\s*\/\s*10/);
     if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
       const pse=document.getElementById('phase-score-'+sitId);
-      if(pse){pse.textContent=es;pse.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';
-      pse.style.background=es>=7?'rgba(46,160,67,.15)':es>=4?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
+      if(pse){pse.textContent=es;pse.style.color=scoreColor(es);
+      pse.style.background='transparent';
       pse.style.display='inline-block';}
       const navLabel=document.getElementById('nav-phase-label');
-      if(navLabel){navLabel.textContent=sit.num+' · '+sit.title+' · '+es;
-      navLabel.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';}
+      if(navLabel){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'</span>';}
     },50);}}
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},4:{nextId:5},5:{nextId:6}
@@ -1017,16 +1020,15 @@ function renderStation(sitId){
             const phaseScoreEl=document.getElementById('phase-score-'+sitId);
             if(phaseScoreEl){
               phaseScoreEl.textContent=score;
-              phaseScoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
-              phaseScoreEl.style.background=score>=7?'rgba(46,160,67,.15)':score>=4?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
+              phaseScoreEl.style.color=scoreColor(score);
+              phaseScoreEl.style.background='transparent';
               phaseScoreEl.style.display='inline-block';
             }
             // Update nav label with score
             const navLabel=document.getElementById('nav-phase-label');
             if(navLabel){
-              const sit=SITS[sitId];
-              navLabel.textContent=sit.num+' · '+sit.title+' · '+score;
-              navLabel.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
+              const sit2=SITS[sitId];
+              navLabel.innerHTML=sit2.num+' · '+sit2.title+' · <span style="color:'+scoreColor(score)+'">'+score+'</span>';
             }
           }
         }
