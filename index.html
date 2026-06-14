@@ -779,7 +779,7 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'12px',color:'#8b949e',fontWeight:'600',marginLeft:'6px',whiteSpace:'nowrap'}},sit.num+' · '+sit.title),
+    h('span',{id:'nav-phase-label',style:{fontSize:'12px',color:'#8b949e',fontWeight:'700',marginLeft:'6px',whiteSpace:'nowrap'}},sit.num+' · '+sit.title),
     h('div',{className:'nav-right'},
       cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
@@ -788,16 +788,16 @@ function renderStation(sitId){
 
   const wrap=h('div',{className:'station-wrap'});
 
-  // Header
+  // Header - icon + score only, title in nav
   const header=h('div',{className:'st-header'},
     h('button',{className:'st-back',onclick:renderHome},'←'),
     h('div',{style:{flex:1}},
-      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},
-        h('div',{className:'st-title'},sit.icon+' '+sit.title),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+        h('div',{className:'st-title'},sit.icon),
         h('span',{
           id:'phase-score-'+sitId,
           style:{
-            fontSize:'11px',fontWeight:'700',borderRadius:'4px',padding:'2px 6px',
+            fontSize:'15px',fontWeight:'700',borderRadius:'4px',padding:'2px 6px',
             color:'#8b949e',background:'transparent',display:'none'
           }},'')
       )
@@ -954,9 +954,13 @@ function renderStation(sitId){
     const em=data.result.match(/(\d+)\s*\/\s*10/);
     if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
       const pse=document.getElementById('phase-score-'+sitId);
-      if(pse){pse.textContent=es+'/10';pse.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';
+      if(pse){pse.textContent=es;pse.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';
       pse.style.background=es>=7?'rgba(46,160,67,.15)':es>=4?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
-      pse.style.display='inline-block';}},50);}}
+      pse.style.display='inline-block';}
+      const navLabel=document.getElementById('nav-phase-label');
+      if(navLabel){navLabel.textContent=sit.num+' · '+sit.title+' · '+es;
+      navLabel.style.color=es>=7?'#2ea043':es>=4?'#d29922':'#f85149';}
+    },50);}}
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},4:{nextId:5},5:{nextId:6}
     };
@@ -1012,10 +1016,17 @@ function renderStation(sitId){
             // Update phase score in station header
             const phaseScoreEl=document.getElementById('phase-score-'+sitId);
             if(phaseScoreEl){
-              phaseScoreEl.textContent=score+'/10';
+              phaseScoreEl.textContent=score;
               phaseScoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
               phaseScoreEl.style.background=score>=7?'rgba(46,160,67,.15)':score>=4?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
               phaseScoreEl.style.display='inline-block';
+            }
+            // Update nav label with score
+            const navLabel=document.getElementById('nav-phase-label');
+            if(navLabel){
+              const sit=SITS[sitId];
+              navLabel.textContent=sit.num+' · '+sit.title+' · '+score;
+              navLabel.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
             }
           }
         }
