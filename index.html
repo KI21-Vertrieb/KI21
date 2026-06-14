@@ -16,7 +16,7 @@ html,body{background:#0d1117;color:#e6edf3;min-height:100vh;font-family:'DM Sans
 .nav-right{display:flex;gap:5px;align-items:center;}
 .btn{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:5px;
   padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:7px;padding:12px;
+.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:7px;padding:9px;
   font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
 .btn-o:disabled{background:#484f58;cursor:not-allowed;}
 .cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
@@ -764,8 +764,9 @@ function transferAndGo(fromId, toId, result){
 
 
 function scoreColor(s){
-  const colors=['#ffaaaa','#ff8080','#ff5555','#ee2222','#cc0000','#aa0000','#aabbff','#7799ff','#4466ee','#2244cc','#0022aa'];
-  return colors[Math.max(0,Math.min(10,s))]||'#8b949e';
+  if(s>=7)return '#2ea043';
+  if(s>=4)return '#d29922';
+  return '#f85149';
 }
 function renderStation(sitId){
   const sit=SITS[sitId];
@@ -797,7 +798,7 @@ function renderStation(sitId){
   const header=h('div',{className:'st-header'},
     h('div',{style:{flex:1}},
       h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
-        h('div',{className:'st-title'},sit.icon),
+
         h('span',{
           id:'phase-score-'+sitId,
           style:{
@@ -810,13 +811,13 @@ function renderStation(sitId){
   wrap.appendChild(header);
 
   // Phase nav
-  const phaseNav=h('div',{className:'phase-nav'});
+  const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch'}});
   if(sitId>0){
     phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
   }
   phaseNav.appendChild(h('div',{style:{flex:1}}));
   const stkBtn=h('button',{className:'btn',
-    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 10px'},
+    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
     onclick:()=>showStkModal(sitId,sit.title)},
     h('span',{style:{fontSize:'11px'}},'Kontext'),
     h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
@@ -958,11 +959,11 @@ function renderStation(sitId){
     const em=data.result.match(/(\d+)\s*\/\s*10/);
     if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
       const pse=document.getElementById('phase-score-'+sitId);
-      if(pse){pse.textContent=es;pse.style.color=scoreColor(es);
+      if(pse){pse.textContent=es+'/10';pse.style.color=scoreColor(es);
       pse.style.background='transparent';
       pse.style.display='inline-block';}
       const navLabel=document.getElementById('nav-phase-label');
-      if(navLabel){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'</span>';}
+      if(navLabel){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'/10</span>';}
     },50);}}
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},4:{nextId:5},5:{nextId:6}
@@ -1019,7 +1020,7 @@ function renderStation(sitId){
             // Update phase score in station header
             const phaseScoreEl=document.getElementById('phase-score-'+sitId);
             if(phaseScoreEl){
-              phaseScoreEl.textContent=score;
+              phaseScoreEl.textContent=score+'/10';
               phaseScoreEl.style.color=scoreColor(score);
               phaseScoreEl.style.background='transparent';
               phaseScoreEl.style.display='inline-block';
@@ -1028,7 +1029,7 @@ function renderStation(sitId){
             const navLabel=document.getElementById('nav-phase-label');
             if(navLabel){
               const sit2=SITS[sitId];
-              navLabel.innerHTML=sit2.num+' · '+sit2.title+' · <span style="color:'+scoreColor(score)+'">'+score+'</span>';
+              navLabel.innerHTML=sit2.num+' · '+sit2.title+' · <span style="color:'+scoreColor(score)+'">'+score+'/10</span>';
             }
           }
         }
