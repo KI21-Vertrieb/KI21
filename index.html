@@ -579,7 +579,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.11'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.12'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -987,9 +987,14 @@ function renderStation(sitId){
         data.result=result;
         data.prompt=prompt;
         // Phase 2: auto-fill fragen field with generated questions
-        if(sitId===1){
+        if(sitId===0){
           const lines=result.split('\n');
-          const splitIdx=lines.findIndex(l=>l.includes('DIE 5 WICHTIGSTEN FRAGEN'));
+          const keywords=['DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN','QUALIFIZIERUNGSFRAGEN','TOP 5 FRAGEN','DIE 5 WICHTIGSTEN FRAGEN'];
+          let splitIdx=-1;
+          for(const kw of keywords){
+            splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
+            if(splitIdx>=0)break;
+          }
           if(splitIdx>=0){
             const fragen=lines.slice(splitIdx).join('\n').trim();
             data.fv=data.fv||{};
@@ -1113,7 +1118,7 @@ Leitfaden:
       genBtn.disabled=false;
       genBtn.textContent=genLabels[sitId]||'⚡ Mit Claude generieren';
       // Phase 2: re-render to show auto-filled fragen field
-      if(sitId===1){
+      if(sitId===0){
         const d=LS.get(KEY,{fv:{},result:''});
         if(d.fv&&d.fv.fragen){setTimeout(()=>renderStation(sitId),100);}
       }
