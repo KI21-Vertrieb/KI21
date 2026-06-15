@@ -487,7 +487,7 @@ function stripMd(text){
 function getResultLabel(sitId){
   const labels={
     0:'🔎 Lead-Steckbrief',
-    1:'📋 Bedarfsanalyse',
+    1:'📋 Bedarfsanalyse & Demo',
     2:'📝 Besuchsbericht',
     3:'💰 Wirtschaftlicher Nutzen',
     4:'🤝 Abschlussstrategie'
@@ -549,7 +549,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.30'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.33'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -658,37 +658,39 @@ function showFullscreen(title, text){
 async function loadMoreDetails(sitId, stData){
   const apiKey=LS.get('ki21_apikey','');
   if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
-  const cust=state.activeCustomer||{};
-  const mu=LS.get('ki21_mu',{});
+  const KEY='ki21_st_'+state.activeId+'_'+sitId;
 
-  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:
-
-${stData.result||''}
-
-Liefere jetzt eine AUSFÜHRLICHE Version mit:
-- Detaillierte Begründung jedes Punktes
-- Zusätzliche Hintergrundinformationen
-- Weitere relevante Erkenntnisse
-- Konkrete Beispiele und Formulierungen
-Nur Deutsch, kein Markdown.`;
+  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
 
   const overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
-  const closeBtn=h('button',{className:'btn',style:{alignSelf:'flex-end',marginBottom:'12px'},onclick:()=>overlay.remove()},'✕ Schließen');
+  const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
+  const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
+  const copyBtn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(body.textContent)},'Kopieren');
+  topRow.appendChild(closeBtn);
+  topRow.appendChild(copyBtn);
   const title=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},'Ausführliche Details');
-  const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}}, '⏳ Wird geladen...');
-  overlay.appendChild(closeBtn);
+  const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},
+    stData.detail?stData.detail:'⏳ Wird geladen...');
+  overlay.appendChild(topRow);
   overlay.appendChild(title);
   overlay.appendChild(body);
   document.body.appendChild(overlay);
 
+  if(stData.detail){return;}
+
   try{
-    const txt=await callClaude(detailPrompt,apiKey,(t)=>{body.textContent=t;});
-    body.textContent=txt;
+    const txt=await callClaude(detailPrompt,(t)=>{body.textContent=t;});
+    if(txt){
+      body.textContent=txt;
+      stData.detail=txt;
+      LS.set(KEY,stData);
+    }
   }catch(e){
     body.textContent='Fehler: '+e.message;
   }
 }
+
 
 function transferAndGo(fromId, toId, result){
   // Direct transfer - output is already compact
@@ -841,7 +843,9 @@ function renderStation(sitId){
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
     data.result='';
+    data.result2='';
     data.summary='';
+    data.detail='';
     LS.set(KEY,data);
     renderStation(sitId);
   }},'↺');
@@ -896,6 +900,14 @@ function renderStation(sitId){
     style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
     onclick:()=>loadMoreDetails(sitId,data)},'Mehr Details');
   resultBtns.appendChild(moreBtn);
+  // PDF button for Phase 0 (Lead-Steckbrief) and Phase 2 (Nachbereitung)
+  if(sitId===0||sitId===2){
+    const pdfBtn=h('button',{className:'btn',
+      style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
+      onclick:()=>showPDF(sit.title,data.result,getActiveCust())
+    },'PDF');
+    resultBtns.appendChild(pdfBtn);
+  }
   resultBtns.appendChild(shareBtn);
   resultHead.appendChild(resultLabel);
   resultHead.appendChild(resultBtns);
@@ -1528,6 +1540,70 @@ function showStkModal(sitId,sitTitle){
     )
   );
   const m=modal('Kontext'+sitTitle,content,null);
+}
+
+function showPDF(title,text,cust){
+  const lines=text.split('\n');
+  let html='';
+  lines.forEach(line=>{
+    const t=line.trim();
+    if(!t){html+='<br>';return;}
+    // Headings
+    if(t.startsWith('# ')){html+=`<h1>${t.slice(2)}</h1>`;return;}
+    if(t.startsWith('## ')){html+=`<h2>${t.slice(3)}</h2>`;return;}
+    // Score line
+    if(t.match(/SCORE:\s*\d+\/10/i)){html+=`<p class="score">${t}</p>`;return;}
+    // Section headers (ALL CAPS ending with :)
+    if(t===t.toUpperCase()&&t.endsWith(':')&&t.length>3){html+=`<h3>${t}</h3>`;return;}
+    // BESTÄTIGT / ANNAHME / KLÄREN
+    if(t.startsWith('BESTÄTIGT:')||t.startsWith('ANNAHME:')||t.startsWith('KLÄREN:')){
+      const parts=t.split(':');
+      html+=`<p><strong>${parts[0]}:</strong>${parts.slice(1).join(':')}</p>`;return;
+    }
+    // TODO line
+    if(t.startsWith('→ TODO')||t.startsWith('→')){html+=`<p class="todo">${t}</p>`;return;}
+    // Numbered items
+    if(t.match(/^\d+\./)){html+=`<p class="item">${t}</p>`;return;}
+    // Normal
+    html+=`<p>${t}</p>`;
+  });
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>KI21 – ${title}</title>
+<style>
+  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a1a;
+    max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;}
+  .header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px;}
+  .header h1{font-size:20px;color:#ff6b00;margin:0 0 4px;}
+  .header .meta{font-size:11px;color:#666;}
+  h1{font-size:16px;color:#ff6b00;margin:16px 0 4px;}
+  h2{font-size:14px;color:#333;margin:14px 0 4px;}
+  h3{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+    color:#666;margin:16px 0 4px;border-bottom:1px solid #eee;padding-bottom:4px;}
+  p{margin:4px 0;}
+  p.score{font-weight:700;font-size:13px;color:#ff6b00;margin:8px 0;}
+  p.item{padding-left:12px;}
+  p.todo{background:#fff8f0;border-left:3px solid #ff6b00;padding:6px 10px;margin:12px 0;font-weight:600;}
+  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #eee;
+    font-size:10px;color:#999;text-align:center;}
+  @media print{body{margin:20px;}.no-print{display:none;}}
+</style>
+</head><body>
+<div class="header">
+  <h1>KI21 – ${title}</h1>
+  <div class="meta">${cust&&cust.firma?cust.firma+' · ':''}${cust&&cust.ap?cust.ap+' · ':''}${new Date().toLocaleDateString('de-DE')}</div>
+</div>
+${html}
+<div class="footer">Erstellt mit KI21 · ki21-vertrieb.github.io</div>
+<div class="no-print" style="text-align:center;margin-top:20px;">
+  <button onclick="window.print()" style="background:#ff6b00;color:#fff;border:none;
+    padding:10px 24px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
+    Als PDF speichern
+  </button>
+</div>
+</body></html>`);
+  win.document.close();
 }
 
 function showMeinUnternehmen(initialTab){
