@@ -179,11 +179,10 @@ function buildCtx(cust,mu,kk,stk){
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
   {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
-   regel:'Trigger und Herausforderungen eingeben – Top 5 Erkenntnisse und Qualifizierungsfragen kommen raus.',
+   regel:'Herausforderungen eingeben – Erkenntnisse + Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
      {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
-     {id:'fragen',l:'Qualifizierungsfragen (von KI21)',t:'ta',p:'Wird automatisch befüllt...',post:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...',post:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -213,53 +212,21 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 → TODO: [eine konkrete Aktion + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
-   regel:'Qualifizierungsergebnisse eingeben – Top 5 Fragen für die Bedarfsanalyse kommen raus.',
+   regel:'SPIN-Fragen stellen, Antworten eintragen – Erkenntnisse + Demo-Empfehlung kommen raus.',
    felder:[
-     {id:'checkliste',l:'Qualifizierung · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 1 hier einfügen...'},
-     {id:'antworten',l:'Deine Antworten',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
+     {id:'spin',l:'SPIN-Fragen (von KI21)',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
+     {id:'antworten',l:'Deine Antworten',t:'ta',p:'S: ...\nP: ...\nP: ...\nI: ...\nN: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Bedarfsanalyse vorbereiten: ${c.firma||''}, AP: ${c.ap||''}
-Qualifizierungsergebnisse: ${f.checkliste||''}
-Offene Fragen: ${f.fragen||''}
+Bedarfsanalyse abschließen: ${c.firma||''}, AP: ${c.ap||''}
+SPIN-Fragen: ${f.spin||''}
+Antworten des Kunden: ${f.antworten||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Gib einen realen Score als Zahl aus, z.B. "7/10" – niemals "X/10".
 
 BEDARFSANALYSE-SCORE: [Zahl]/10
-Begründung: [1 Satz]
-
-DIE 5 WICHTIGSTEN FRAGEN:
-1. S: [Situation] | Antwort: ___
-2. P: [Problem] | Antwort: ___
-3. P: [Ursache] | Antwort: ___
-4. I: [Kosten des Problems] | Antwort: ___
-5. N: [Wert der Lösung] | Antwort: ___
-
-DIE 3 WICHTIGSTEN HYPOTHESEN:
-BESTÄTIGT: [was sicher ist]
-ANNAHME: [was plausibel ist]
-KLÄREN: [was offen bleibt]
-
-KPIs-FRAGEN FÜR ROI: [3 konkrete Zahlen]
-
-→ TODO: [konkrete Vorbereitung + wann]`
-  },
-  {id:2,num:3,phase:'Phase 3',title:'Gesprächsergebnisse',icon:'💡',
-   regel:'Antworten aus dem Gespräch eingeben – Top 5 Erkenntnisse und Demo-Empfehlung kommen raus.',
-   felder:[
-     {id:'leitfaden',l:'Bedarfsanalyse · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
-     {id:'antworten',l:'Deine Antworten',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
-   ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
-
-Gesprächsergebnisse: ${c.firma||''}, AP: ${c.ap||''}
-Antworten: ${f.antworten||''}
-
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
-
-GESPRÄCHS-SCORE: [Zahl]/10
 Begründung: [1 Satz]
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
@@ -273,14 +240,14 @@ DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 3. [Muss gezeigt werden – warum]
 NICHT zeigen: [1 Punkt]
 
-ROI-BASIS: [nur bestätigte Zahlen]
+KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
-   regel:'Der Demo-Pfad kommt aus der Gesprächsergebnisse. Zeige nur was der Kunde selbst genannt hat.',
+  {id:2,num:3,phase:'Phase 3',title:'Demo-Vorbereitung',icon:'🎬',
+   regel:'Der Demo-Pfad kommt aus der Bedarfsanalyse. Zeige nur was der Kunde selbst genannt hat.',
    felder:[
-     {id:'discovery',l:'Gesprächsergebnisse (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
+     {id:'discovery',l:'Bedarfsanalyse · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -295,100 +262,96 @@ Begründung: [1 Satz – wie gut sind wir vorbereitet?]
 DEMO-EINSTIEG: [1 Satz]
 
 DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
-BESTÄTIGT: [aus bestätigten Kundenbedürfnissen]
-ANNAHME: [plausible Botschaften]
-KLÄREN: [noch zu validieren]
+1. [Botschaft – welches Kundenproblem wird gelöst]
+2. [Botschaft – welches Kundenproblem wird gelöst]
+3. [Botschaft – welches Kundenproblem wird gelöst]
+4. [Botschaft – welches Kundenproblem wird gelöst]
+5. [Botschaft – welches Kundenproblem wird gelöst]
 
-NICHT ZEIGEN: [1-2 Punkte]
+DIE 3 DEMO-SCHRITTE:
+1. [Was zeigen – warum – erwartete Reaktion]
+2. [Was zeigen – warum – erwartete Reaktion]
+3. [Was zeigen – warum – erwartete Reaktion]
 
-ABSCHLUSS-FRAGE: [Die eine Frage am Ende]
+MÖGLICHE EINWÄNDE IN DER DEMO:
+1. Einwand: ___ | Antwort: ___
+2. Einwand: ___ | Antwort: ___
 
 → TODO: [Demo-Vorbereitung + wann]`
   },
-  {id:4,num:5,phase:'Phase 5',title:'Terminachbereitung',icon:'📝',
-   regel:'Stichworte eingeben – strukturierter Bericht kommt raus – direkt ins CRM.',
+  {id:3,num:4,phase:'Phase 4',title:'Nachbereitung',icon:'📝',
+   regel:'Was wurde besprochen? Nächste Schritte und Follow-up Mail kommen raus.',
    felder:[
-     {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Reaktionen, Einwände, Zusagen, nächste Schritte...'},
-     {id:'ergebnis',l:'Strukturierter Bericht (zum Kopieren ins CRM)',t:'ta',p:'Ergebnis nach Generierung hier einfügen...'}
+     {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Terminachbereitung: ${c.firma||''}, AP: ${c.ap||''}
-Stichworte aus dem Termin: ${f.stichworte||''}
-
-WICHTIG: Stelle KEINE Rückfragen. Erstelle sofort den Bericht aus den vorhandenen Stichworten.
-
-Liefere NUR dieses Format:
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
+Stichworte: ${f.stichworte||''}
 
 DEAL-SCORE: [Zahl]/10 | [1 Satz Begründung]
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE:
-1. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
-2. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
-3. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
-4. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
-5. [BESTÄTIGT/ANNAHME/KLÄREN] [konkret – 1 Satz]
-
 BESUCHSBERICHT:
 Datum: [heute]
-Teilnehmer: ${c.ap||'Ansprechpartner'}
-Situation: [2 Sätze aus Stichworten]
-Erkenntnisse: [3 wichtigste Punkte]
-Nächste Schritte: [konkret + Zeitpunkt]
+Teilnehmer: [AP + eigene Person]
+Besprochene Themen: [3-5 Punkte]
+Ergebnis: [1 Satz]
+
+DIE 3 NÄCHSTEN SCHRITTE:
+1. [Aktion] | Verantwortlich: ___ | Bis: ___
+2. [Aktion] | Verantwortlich: ___ | Bis: ___
+3. [Aktion] | Verantwortlich: ___ | Bis: ___
 
 FOLLOW-UP MAIL:
-Betreff: [Betreff]
-[3-4 Sätze mit direktem Gesprächsbezug]
+Betreff: [präzise]
+[Mail-Text – kurz, konkret, nächster Schritt klar]
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:5,num:6,phase:'Phase 6',title:'Wirtschaftlicher Nutzen',icon:'💰',
-   regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
+  {id:4,num:5,phase:'Phase 5',title:'Wirtschaftlicher Nutzen',icon:'💰',
+   regel:'KPIs eingeben – Nutzen-Kosten-Analyse und ROI kommen raus.',
    felder:[
-     {id:'discovery',l:'KPIs aus der Gesprächsergebnisse',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
+     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'},
+     {id:'paket',l:'Geplantes Angebot / Lösung',t:'text',p:'z.B. Biplan Professional, 5 Nutzer'},
+     {id:'budget',l:'Geschätztes Budget / Investition',t:'text',p:'z.B. 25.000 € / Jahr'},
+     {id:'minimum',l:'Mindestpreis',t:'text',p:'z.B. 18.000 €'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Nutzen-Kosten-Analyse: ${c.firma||''}
-KPIs: ${f.discovery||''}
+Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
+KPIs und Erkenntnisse: ${f.erkenntnisse||''}
+Geplante Lösung: ${f.paket||''}
+Investition: ${f.budget||''}
 
-WICHTIG: Keine Berechnungen ohne bestätigte Kundenzahlen.
+WICHTIG: Nutzen in "schafft Kapazität" formulieren, nicht "spart".
+WICHTIG: ROI ehrlich darstellen – auch negativen ROI zeigen wenn zutreffend.
+WICHTIG: Bitte gemeinsam mit dem Kunden validieren.
 
 NUTZEN-SCORE: [Zahl]/10
-Begründung: [1 Satz – wie stark ist der Business Case?]
+Begründung: [1 Satz]
 
-BESTÄTIGTE ZAHLEN:
-BESTÄTIGT: [nur vom Kunden genannte Zahlen]
-ANNAHME: [Schätzungen mit Kennzeichnung]
-KLÄREN: [fehlende Zahlen]
+WIRTSCHAFTLICHER NUTZEN:
+1. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
+2. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
+3. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
 
-MÖGLICHE KENNZAHLEN:
-→ [Formel 1 in Worten]
-→ [Formel 2 in Worten]
-→ [Formel 3 in Worten]
-
-TOP 3 QUALITATIVER NUTZEN:
-1. [konkret]
-2. [konkret]
-3. [konkret]
-
-Bitte gemeinsam mit dem Kunden validieren.
+GESAMTNUTZEN: ___ €/Jahr
+INVESTITION: ${f.budget||'___'} €/Jahr
+ROI: [Nutzen / Investition] | Amortisation: ___ Monate
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:6,num:7,phase:'Phase 7',title:'Angebot & Abschluss',icon:'🤝',
-   regel:'Angebot = Kundenwissen + Unternehmenswissen + Erkenntnisse aus allen Phasen.',
+  {id:5,num:6,phase:'Phase 6',title:'Angebot & Abschluss',icon:'🤝',
+   regel:'Erkenntnisse + Angebot eingeben – Abschlussstrategie und Einwandbehandlung kommen raus.',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse aus Bedarfsanalyse, Demo, Nachbereitung',t:'ta',p:'Schmerzpunkte, KPIs, Einwände, Budget-Signale...'},
-     {id:'budget',l:'Budget & Preisvorstellung',t:'text',p:'z.B. 180k€/Jahr'},
-     {id:'einwand',l:'Erwartete Einwände',t:'text',p:'z.B. zu teuer, IT-Freigabe'},
-     {id:'paket',l:'Mein Angebot',t:'text',p:'z.B. On-Premise + Implementierung'},
-     {id:'minimum',l:'Mein Mindestpreis',t:'text',p:'z.B. 140.000€'}
+     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
+     {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
+     {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
+     {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Angebot: ${c.firma||''}, AP: ${c.ap||''}
+Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
 Erkenntnisse: ${f.erkenntnisse||''}
 Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}
 
@@ -588,7 +551,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.24'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.25'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -625,12 +588,12 @@ function renderHome(){
   wrap.appendChild(sitLabel);
 
   const groups=[
-    {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1 + 2'},
-    {label:'Gesprächsergebnisse', icon:'💡', primary:2, sub:'Phase 3'},
-    {label:'Demo vorbereiten', icon:'🎬', primary:3, sub:'Phase 4'},
-    {label:'Termin nachbereiten', icon:'📝', primary:4, sub:'Phase 5'},
-    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:5, sub:'Phase 6'},
-    {label:'Angebot & Abschluss', icon:'🤝', primary:6, sub:'Phase 7'},
+    {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1'},
+    {label:'Bedarfsanalyse abschließen', icon:'📋', primary:1, sub:'Phase 2'},
+    {label:'Demo vorbereiten', icon:'🎬', primary:2, sub:'Phase 3'},
+    {label:'Termin nachbereiten', icon:'📝', primary:3, sub:'Phase 4'},
+    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:4, sub:'Phase 5'},
+    {label:'Angebot & Abschluss', icon:'🤝', primary:5, sub:'Phase 6'},
   ];
 
   groups.forEach(g=>{
@@ -736,21 +699,26 @@ function transferAndGo(fromId, toId, result){
   const nextData=LS.get(nextKEY,{fv:{},result:''});
 
   const fieldMap={
-    1:{f1:'leitfaden'},
-    2:{f1:'discovery'},
-    3:{f1:'stichworte'},
-    4:{f1:'discovery'},
-    5:{f1:'erkenntnisse'}
+    1:{f1:'discovery'},
+    2:{f1:'stichworte'},
+    3:{f1:'erkenntnisse'},
+    4:{f1:'erkenntnisse'}
   };
 
-  // Phase 1→2: combine erkenntnisse + fragen + antworten into checkliste
+  // Phase 1→2: transfer SPIN-Fragen + Antworten
   if(fromId===0){
     const curKEY='ki21_sit_'+state.activeId+'_0';
     const curData=LS.get(curKEY,{fv:{},result:''});
-    const parts=[];
-    if(result)parts.push(result);
-    if(curData.fv&&curData.fv.antworten)parts.push('DEINE ANTWORTEN:\n'+curData.fv.antworten);
-    nextData.fv['checkliste']=parts.join('\n\n');
+    // Extract SPIN questions from result
+    const lines=result.split('\n');
+    const spinKeywords=['DIE 5 WICHTIGSTEN FRAGEN','SPIN-FRAGEN','BEDARFSANALYSE-FRAGEN'];
+    let splitIdx=-1;
+    for(const kw of spinKeywords){
+      splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
+      if(splitIdx>=0)break;
+    }
+    // If no SPIN found, use full result as spin
+    nextData.fv['spin']=splitIdx>=0?lines.slice(splitIdx).join('\n').trim():result;
     LS.set(nextKEY,nextData);
     state.pendingSit=null;
     renderStation(toId);
@@ -983,7 +951,7 @@ function renderStation(sitId){
       if(navLabel&&sitId===0){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'/10</span>';}
     },50);}}
     const nextMapInit={
-      0:{nextId:1},1:{nextId:2},2:{nextId:3},4:{nextId:5},5:{nextId:6}
+      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4},4:{nextId:5}
     };
     if(nextMapInit[sitId]){
       const nextId=nextMapInit[sitId].nextId;
