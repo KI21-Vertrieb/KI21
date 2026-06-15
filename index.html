@@ -250,7 +250,7 @@ SPIN-Fragen: ${f.spin||''}
 Antworten des Kunden: ${f.antworten||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
-WICHTIG: Gib einen realen Score als Zahl aus, z.B. "7/10" – niemals "X/10".
+WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 
 BEDARFSANALYSE-SCORE: [Zahl]/10
 Begründung: [1 Satz]
@@ -266,26 +266,7 @@ DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 3. [Muss gezeigt werden – warum]
 NICHT zeigen: [1 Punkt]
 
-KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
-
-→ TODO: [nächster Schritt + wann]`
-  },
-  {id:2,num:3,phase:'Phase 3',title:'Demo-Vorbereitung',icon:'🎬',
-   regel:'Der Demo-Pfad kommt aus der Bedarfsanalyse. Zeige nur was der Kunde selbst genannt hat.',
-   felder:[
-     {id:'discovery',l:'Bedarfsanalyse · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...',big:true}
-   ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
-
-Demo vorbereiten: ${c.firma||''}
-Erkenntnisse: ${f.discovery||''}
-
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
-
-DEMO-SCORE: [Zahl]/10
-Begründung: [1 Satz – wie gut sind wir vorbereitet?]
-
-DEMO-EINSTIEG: [1 Satz]
+DEMO-EINSTIEG: [1 Satz in Kundensprache]
 
 DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
 1. [Botschaft – welches Kundenproblem wird gelöst]
@@ -294,18 +275,11 @@ DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
 4. [Botschaft – welches Kundenproblem wird gelöst]
 5. [Botschaft – welches Kundenproblem wird gelöst]
 
-DIE 3 DEMO-SCHRITTE:
-1. [Was zeigen – warum – erwartete Reaktion]
-2. [Was zeigen – warum – erwartete Reaktion]
-3. [Was zeigen – warum – erwartete Reaktion]
+KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
 
-MÖGLICHE EINWÄNDE IN DER DEMO:
-1. Einwand: ___ | Antwort: ___
-2. Einwand: ___ | Antwort: ___
-
-→ TODO: [Demo-Vorbereitung + wann]`
+→ TODO: [nächster Schritt + wann]`
   },
-  {id:3,num:4,phase:'Phase 4',title:'Nachbereitung',icon:'📝',
+  {id:2,num:3,phase:'Phase 3',title:'Nachbereitung',icon:'📝',
    regel:'Was wurde besprochen? Nächste Schritte und Follow-up Mail kommen raus.',
    felder:[
      {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
@@ -334,7 +308,7 @@ Betreff: [präzise]
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:4,num:5,phase:'Phase 5',title:'Wirtschaftlicher Nutzen',icon:'💰',
+  {id:3,num:4,phase:'Phase 4',title:'Wirtschaftlicher Nutzen',icon:'💰',
    regel:'KPIs eingeben – Nutzen-Kosten-Analyse und ROI kommen raus.',
    felder:[
      {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'},
@@ -367,7 +341,7 @@ ROI: [Nutzen / Investition] | Amortisation: ___ Monate
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:5,num:6,phase:'Phase 6',title:'Angebot & Abschluss',icon:'🤝',
+  {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Erkenntnisse + Angebot eingeben – Abschlussstrategie und Einwandbehandlung kommen raus.',
    felder:[
      {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
@@ -514,10 +488,9 @@ function getResultLabel(sitId){
   const labels={
     0:'🔎 Lead-Steckbrief',
     1:'📋 Bedarfsanalyse',
-    2:'🎬 Demo-Strategie',
-    3:'📝 Besuchsbericht',
-    4:'💰 Wirtschaftlicher Nutzen',
-    5:'🤝 Abschlussstrategie'
+    2:'📝 Besuchsbericht',
+    3:'💰 Wirtschaftlicher Nutzen',
+    4:'🤝 Abschlussstrategie'
   };
   return labels[sitId]||'✓ Ergebnis';
 }
@@ -576,7 +549,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.27'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.28'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -615,10 +588,9 @@ function renderHome(){
   const groups=[
     {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1'},
     {label:'Bedarfsanalyse abschließen', icon:'📋', primary:1, sub:'Phase 2'},
-    {label:'Demo vorbereiten', icon:'🎬', primary:2, sub:'Phase 3'},
-    {label:'Termin nachbereiten', icon:'📝', primary:3, sub:'Phase 4'},
-    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:4, sub:'Phase 5'},
-    {label:'Angebot & Abschluss', icon:'🤝', primary:5, sub:'Phase 6'},
+    {label:'Termin nachbereiten', icon:'📝', primary:2, sub:'Phase 3'},
+    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:3, sub:'Phase 4'},
+    {label:'Angebot & Abschluss', icon:'🤝', primary:4, sub:'Phase 5'},
   ];
 
   groups.forEach(g=>{
@@ -724,10 +696,9 @@ function transferAndGo(fromId, toId, result){
   const nextData=LS.get(nextKEY,{fv:{},result:''});
 
   const fieldMap={
-    1:{f1:'discovery'},
-    2:{f1:'stichworte'},
-    3:{f1:'erkenntnisse'},
-    4:{f1:'erkenntnisse'}
+    1:{f1:'stichworte'},
+    2:{f1:'erkenntnisse'},
+    3:{f1:'erkenntnisse'}
   };
 
   // Phase 1→2: transfer SPIN-Fragen + Antworten
@@ -866,7 +837,7 @@ function renderStation(sitId){
   wrap.appendChild(fieldsDiv);
 
   // Generate button
-  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse abschließen','⚡ Demo-Strategie generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
+  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse abschließen','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
     data.result='';
@@ -1048,7 +1019,7 @@ function renderStation(sitId){
       if(navLabel&&sitId===0){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'/10</span>';}
     },50);}}
     const nextMapInit={
-      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4},4:{nextId:5}
+      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
     };
     if(nextMapInit[sitId]&&!sit.build2){
       const nextId=nextMapInit[sitId].nextId;
