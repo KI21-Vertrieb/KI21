@@ -144,7 +144,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
   // Include results from all previous phases
   if(stk){
-    const phaseNames=['Qualifizierung','Bedarfsanalyse','Gesprächsauswertung','Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+    const phaseNames=['Qualifizierung','Bedarfsanalyse','Gesprächsergebnisse','Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
     const aid=LS.get('ki21_aid',null);
     if(aid){
       let prevResults='';
@@ -244,16 +244,16 @@ KPIs-FRAGEN FÜR ROI: [3 konkrete Zahlen]
 
 → TODO: [konkrete Vorbereitung + wann]`
   },
-  {id:2,num:3,phase:'Phase 3',title:'Gesprächsauswertung',icon:'💡',
+  {id:2,num:3,phase:'Phase 3',title:'Gesprächsergebnisse',icon:'💡',
    regel:'Antworten aus dem Gespräch eingeben – Top 5 Erkenntnisse und Demo-Empfehlung kommen raus.',
    felder:[
-     {id:'leitfaden',l:'Ergebnisse aus Phase 2',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
-     {id:'fragen',l:'Fragen (von KI21)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'leitfaden',l:'Ergebnisse aus Phase 2 · Bedarfsanalyse',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
+     {id:'fragen',l:'Fragen aus Phase 2 · Bedarfsanalyse',t:'ta',p:'Wird automatisch befüllt...'},
      {id:'antworten',l:'Ihre Antworten',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
-Gesprächsauswertung: ${c.firma||''}, AP: ${c.ap||''}
+Gesprächsergebnisse: ${c.firma||''}, AP: ${c.ap||''}
 Antworten: ${f.antworten||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
@@ -277,9 +277,9 @@ ROI-BASIS: [nur bestätigte Zahlen]
 → TODO: [nächster Schritt + wann]`
   },
   {id:3,num:4,phase:'Phase 4',title:'Demo-Vorbereitung',icon:'🎬',
-   regel:'Der Demo-Pfad kommt aus der Gesprächsauswertung. Zeige nur was der Kunde selbst genannt hat.',
+   regel:'Der Demo-Pfad kommt aus der Gesprächsergebnisse. Zeige nur was der Kunde selbst genannt hat.',
    felder:[
-     {id:'discovery',l:'Gesprächsauswertung (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
+     {id:'discovery',l:'Gesprächsergebnisse (aus Phase 3)',t:'ta',p:'Ergebnisse aus Phase 3 hier einfügen...',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -345,7 +345,7 @@ Betreff: [Betreff]
   {id:5,num:6,phase:'Phase 6',title:'Wirtschaftlicher Nutzen',icon:'💰',
    regel:'Keine neuen Daten – alle KPIs stammen aus der Bedarfsanalyse.',
    felder:[
-     {id:'discovery',l:'KPIs aus der Gesprächsauswertung',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
+     {id:'discovery',l:'KPIs aus der Gesprächsergebnisse',t:'ta',p:'KPIs aus Phase 3:\nZeitaufwand: ...\nMitarbeiter: ...\nAbschlussquote: ...\nAuftragswert: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -524,7 +524,7 @@ function getResultLabel(sitId){
   const labels={
     0:'🔎 Lead-Steckbrief',
     1:'📋 Bedarfsanalyse-Vorbereitung',
-    2:'💡 Gesprächsauswertung',
+    2:'💡 Gesprächsergebnisse',
     3:'🎬 Demo-Leitfaden',
     4:'📝 Terminachbereitung',
     5:'💰 Wirtschaftlicher Nutzen',
@@ -587,7 +587,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.19'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.20'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -625,7 +625,7 @@ function renderHome(){
 
   const groups=[
     {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1 + 2'},
-    {label:'Bedarfsanalyse auswerten', icon:'💡', primary:2, sub:'Phase 3'},
+    {label:'Gesprächsergebnisse', icon:'💡', primary:2, sub:'Phase 3'},
     {label:'Demo vorbereiten', icon:'🎬', primary:3, sub:'Phase 4'},
     {label:'Termin nachbereiten', icon:'📝', primary:4, sub:'Phase 5'},
     {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:5, sub:'Phase 6'},
@@ -877,7 +877,7 @@ function renderStation(sitId){
   wrap.appendChild(fieldsDiv);
 
   // Generate button
-  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse generieren','⚡ Gesprächsauswertung generieren','⚡ Demo-Strategie generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
+  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse generieren','⚡ Gesprächsergebnisse generieren','⚡ Demo-Strategie generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
     data.result='';
@@ -1079,14 +1079,14 @@ Leitfaden:
             {fid:'fragen', label:'Qualifizierungsfragen', extract:'checkliste'}
           ]},
           1:{nextId:2, fields:[
-            {fid:'leitfaden', label:'Ergebnisse aus Phase 2', extract:'full'},
+            {fid:'leitfaden', label:'Ergebnisse aus Phase 2 · Bedarfsanalyse', extract:'full'},
             {fid:'fragen', label:'Bedarfsanalyse-Fragen', extract:'discovery_questions'}
           ]},
           2:{nextId:3, fields:[
-            {fid:'discovery', label:'Erkenntnisse aus Gesprächsauswertung', extract:'full'}
+            {fid:'discovery', label:'Erkenntnisse aus Gesprächsergebnisse', extract:'full'}
           ]},
           4:{nextId:5, fields:[
-            {fid:'discovery', label:'KPIs aus der Gesprächsauswertung', extract:'full'}
+            {fid:'discovery', label:'KPIs aus der Gesprächsergebnisse', extract:'full'}
           ]},
           5:{nextId:6, fields:[
             {fid:'erkenntnisse', label:'Erkenntnisse', extract:'full'}
@@ -1388,7 +1388,7 @@ Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
 }
 
 function generateKundePDF(aid, cust){
-  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse','Gesprächsauswertung',
+  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse','Gesprächsergebnisse',
     'Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
 
   let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
