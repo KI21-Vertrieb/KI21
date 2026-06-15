@@ -182,7 +182,9 @@ const SITS=[
    regel:'Trigger und Herausforderungen eingeben – Top 5 Erkenntnisse und Qualifizierungsfragen kommen raus.',
    felder:[
      {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
-     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'}
+     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
+     {id:'fragen',l:'Qualifizierungsfragen (von KI21)',t:'ta',p:'Wird automatisch befüllt...'},
+     {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
@@ -213,7 +215,7 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
    regel:'Qualifizierungsergebnisse eingeben – Top 5 Fragen für die Bedarfsanalyse kommen raus.',
    felder:[
-     {id:'checkliste',l:'Qualifizierung · Erkenntnisse & Fragen',t:'ta',p:'Ergebnisse aus Phase 1...'},
+     {id:'checkliste',l:'Qualifizierung · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 1 hier einfügen...'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'Budget: ...\nEntscheider: ...\nMitbewerber: ...\nTimeline: ...\nMachtlage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -247,7 +249,7 @@ KPIs-FRAGEN FÜR ROI: [3 konkrete Zahlen]
   {id:2,num:3,phase:'Phase 3',title:'Gesprächsergebnisse',icon:'💡',
    regel:'Antworten aus dem Gespräch eingeben – Top 5 Erkenntnisse und Demo-Empfehlung kommen raus.',
    felder:[
-     {id:'leitfaden',l:'Bedarfsanalyse · Erkenntnisse & Fragen',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
+     {id:'leitfaden',l:'Bedarfsanalyse · Erkenntnisse & Antworten',t:'ta',p:'Ergebnisse aus Phase 2 hier einfügen...'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'Schmerz: ...\nUrsachen: ...\nKPIs: ...\nBudget-Signal: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -586,7 +588,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.22'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.23'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -734,35 +736,30 @@ function transferAndGo(fromId, toId, result){
   const nextData=LS.get(nextKEY,{fv:{},result:''});
 
   const fieldMap={
-    0:{f1:'checkliste', f2:'fragen'},
-    1:{f1:'leitfaden', f2:'fragen'},
+    1:{f1:'leitfaden'},
     2:{f1:'discovery'},
     3:{f1:'stichworte'},
     4:{f1:'discovery'},
     5:{f1:'erkenntnisse'}
   };
 
+  // Phase 1→2: combine erkenntnisse + fragen + antworten into checkliste
+  if(fromId===0){
+    const curKEY='ki21_sit_'+state.activeId+'_0';
+    const curData=LS.get(curKEY,{fv:{},result:''});
+    const parts=[];
+    if(result)parts.push(result);
+    if(curData.fv&&curData.fv.antworten)parts.push('DEINE ANTWORTEN:\n'+curData.fv.antworten);
+    nextData.fv['checkliste']=parts.join('\n\n');
+    LS.set(nextKEY,nextData);
+    state.pendingSit=null;
+    renderStation(toId);
+    return;
+  }
+
   const map=fieldMap[fromId];
   if(map){
-    // Split result into two parts if needed
-    if(map.f2){
-      // Find split point - questions start after erkenntnisse
-      const lines=result.split('\n');
-      const splitKeywords={
-        0:'TOP 5 QUALIFIZIERUNGSFRAGEN',
-        1:'TOP 5 FRAGEN FÜR DIE BEDARFSANALYSE'
-      };
-      const splitKey=splitKeywords[fromId];
-      const splitIdx=lines.findIndex(l=>l.includes(splitKey));
-      if(splitIdx>0){
-        nextData.fv[map.f1]=lines.slice(0,splitIdx).join('\n').trim();
-        nextData.fv[map.f2]=lines.slice(splitIdx).join('\n').trim();
-      } else {
-        nextData.fv[map.f1]=result;
-      }
-    } else {
-      nextData.fv[map.f1]=result;
-    }
+    nextData.fv[map.f1]=result;
   }
 
   LS.set(nextKEY,nextData);
@@ -994,6 +991,20 @@ function renderStation(sitId){
       if(result){
         data.result=result;
         data.prompt=prompt;
+        // Phase 1: auto-fill fragen field
+        if(sitId===0){
+          const lines=result.split('\n');
+          const keywords=['DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN','QUALIFIZIERUNGSFRAGEN','TOP 5 QUALIFIZIERUNGSFRAGEN'];
+          let splitIdx=-1;
+          for(const kw of keywords){
+            splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
+            if(splitIdx>=0)break;
+          }
+          if(splitIdx>=0){
+            data.fv=data.fv||{};
+            data.fv.fragen=lines.slice(splitIdx).join('\n').trim();
+          }
+        }
         LS.set(KEY,data);
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
