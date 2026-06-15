@@ -209,7 +209,33 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 4. [GELB] Frage: ___ | Antwort: ___
 5. [GRÜN] Frage: ___ | Antwort: ___
 
-→ TODO: [eine konkrete Aktion + wann]`
+→ TODO: [eine konkrete Aktion + wann]`,
+   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
+Bekannte Herausforderungen: ${f.info||''}
+Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
+
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
+
+QUALIFIZIERUNGS-SCORE FINAL: [Zahl]/10
+Empfehlung: sofort / später / nicht verfolgen
+Begründung: [1 Satz]
+
+DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert):
+BESTÄTIGT: [jetzt bestätigte Fakten inkl. Antworten]
+ANNAHME: [verbleibende Annahmen]
+KLÄREN: [noch offene Punkte]
+
+DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
+1. S: [Situation] | Antwort: ___
+2. P: [Problem] | Antwort: ___
+3. P: [Ursache] | Antwort: ___
+4. I: [Kosten des Problems] | Antwort: ___
+5. N: [Wert der Lösung] | Antwort: ___
+
+→ TODO: [nächster Schritt + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse',icon:'📋',
    regel:'SPIN-Fragen stellen, Antworten eintragen – Erkenntnisse + Demo-Empfehlung kommen raus.',
@@ -551,7 +577,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.25'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.26'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -936,6 +962,78 @@ function renderStation(sitId){
       fw.appendChild(taWrap);
       postDiv.appendChild(fw);
     });
+
+    // Second generate button (build2) if available
+    if(sit.build2){
+      const result2Box=h('div',{className:'result-box',style:{display:data.result2?'block':'none',marginTop:'10px'}});
+      const result2Head=h('div',{className:'result-head'});
+      const result2Label=h('span',{className:'result-label'},'🏁 Qualifizierung · Abschluss');
+      const result2Btns=h('div',{className:'result-btns'});
+      const copy2Btn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(data.result2||'')},'Kopieren');
+      const zoom2Btn=h('button',{className:'btn',onclick:()=>showFullscreenEdit('Qualifizierung Abschluss',data.result2||'',()=>{})},'⛶');
+      result2Btns.appendChild(copy2Btn);
+      result2Btns.appendChild(zoom2Btn);
+      result2Head.appendChild(result2Label);
+      result2Head.appendChild(result2Btns);
+      const result2Body=h('div',{className:'result-body'});
+      result2Body.textContent=data.result2||'';
+      result2Box.appendChild(result2Head);
+      result2Box.appendChild(result2Body);
+
+      const weiter2Row=h('div',{style:{display:'none',marginTop:'8px'}});
+      const gen2Btn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
+        const fv=data.fv||{};
+        if(!fv.antworten||!fv.antworten.trim()){
+          alert('Bitte zuerst deine Antworten eintragen.');return;
+        }
+        const cust=getActiveCust();
+        const mu=LS.get('ki21_mu',{});
+        const kk=LS.get('ki21_kk_'+state.activeId,'');
+        const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+        const prompt2=sit.build2(fv,cust,mu,kk,stk);
+        gen2Btn.disabled=true;
+        gen2Btn.textContent='⏳ KI21 antwortet...';
+        result2Box.style.display='block';
+        result2Body.textContent='';
+        const r2=await callClaude(prompt2,(t)=>{result2Body.textContent=t;});
+        if(r2){
+          data.result2=r2;
+          LS.set(KEY,data);
+          result2Body.textContent=r2;
+          // Extract SPIN questions and transfer to Phase 2
+          const lines2=r2.split('\n');
+          const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
+          if(spinIdx>=0){
+            const nextKEY2='ki21_sit_'+state.activeId+'_1';
+            const nextData2=LS.get(nextKEY2,{fv:{},result:''});
+            nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
+            LS.set(nextKEY2,nextData2);
+          }
+          weiter2Row.style.display='block';
+          // Update nav score
+          const ems2=[...r2.matchAll(/(\d+)\s*\/\s*10/g)];
+          const em2=ems2.length?ems2[ems2.length-1]:null;
+          if(em2){
+            const s2=parseInt(em2[1]);
+            const navLabel=document.getElementById('nav-phase-label');
+            if(navLabel&&sitId===0){navLabel.innerHTML=sit.num+' · '+sit.title+' · <span style="color:'+scoreColor(s2)+'">'+s2+'/10</span>';}
+          }
+        }
+        gen2Btn.disabled=false;
+        gen2Btn.textContent='⚡ Qualifizierung abschließen';
+      }},'⚡ Qualifizierung abschließen');
+      postDiv.appendChild(gen2Btn);
+      postDiv.appendChild(result2Box);
+
+      // Weiter button after build2
+      const weiter2Btn=h('button',{className:'btn-o',style:{marginTop:'8px'},
+        onclick:()=>transferAndGo(sitId,1,data.result2||data.result)
+      },'Weiter zu Bedarfsanalyse →');
+      weiter2Row.appendChild(weiter2Btn);
+      postDiv.appendChild(weiter2Row);
+      if(data.result2)weiter2Row.style.display='block';
+    }
+
     wrap.appendChild(postDiv);
   }
 
@@ -953,7 +1051,7 @@ function renderStation(sitId){
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4},4:{nextId:5}
     };
-    if(nextMapInit[sitId]){
+    if(nextMapInit[sitId]&&!sit.build2){
       const nextId=nextMapInit[sitId].nextId;
       const wb=h('button',{
         style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
@@ -1102,7 +1200,7 @@ Leitfaden:
           ]}
         };
 
-        if(nextMap[sitId]){
+        if(nextMap[sitId]&&!sit.build2){
           const next=nextMap[sitId];
           const weiterBtn=h('button',{
             style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
