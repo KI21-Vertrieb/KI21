@@ -172,6 +172,8 @@ function buildCtx(cust,mu,kk,stk){
   if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
+  const bwData=LS.get('ki21_branchenwissen',{});
+  if(bwData&&bwData.inhalt)s+='\nBranchenspezifisches Vertriebswissen:\n'+bwData.inhalt+'\n';
   if(stk)s+='\nZusätzlicher Kontext:\n'+stk+'\n';
   return s+'--- ENDE KONTEXT ---\n\n';
 }
@@ -549,7 +551,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.33'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.34'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1609,12 +1611,14 @@ ${html}
 function showMeinUnternehmen(initialTab){
   let profil=LS.get('ki21_mu',{}).profil||'';
   let bausteine=LS.get('ki21_mu',{}).bausteine||'';
+  let bw=LS.get('ki21_branchenwissen',{});
   let tab=initialTab||'profil';
 
   const tabRow=h('div',{className:'tab-row'});
-  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmensprofil');
-  const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Angebotsbausteine');
-  tabRow.appendChild(t1);tabRow.appendChild(t2);
+  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmen');
+  const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Bausteine');
+  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'🧠 Branchenwissen');
+  tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);
 
   const d1=h('div',{});
   const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...'});
@@ -1630,15 +1634,121 @@ function showMeinUnternehmen(initialTab){
   d2.appendChild(h('p',{className:'modal-desc'},'Projektvorgehen, Support, Schulung, technische Voraussetzungen.'));
   d2.appendChild(ta2);
 
+  // Branchenwissen Tab
+  const d3=h('div',{style:{display:'none'}});
+
+  // Status
+  const bwStatus=h('div',{style:{marginBottom:'12px'}});
+  const updateBwStatus=()=>{
+    bwStatus.innerHTML='';
+    if(bw.inhalt){
+      const lines=bw.inhalt.split('\n').filter(l=>l.trim()).length;
+      bwStatus.appendChild(h('div',{style:{background:'rgba(46,160,67,.1)',border:'1px solid rgba(46,160,67,.3)',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
+        h('div',{style:{fontSize:'12px',fontWeight:'700',color:'#2ea043',marginBottom:'2px'}},'🧠 Branchenwissen aktiv'),
+        h('div',{style:{fontSize:'11px',color:'#8b949e'}},lines+' Erkenntnisse · Erstellt: '+(bw.datum||''))
+      ));
+    } else {
+      bwStatus.appendChild(h('div',{style:{background:'rgba(139,148,158,.1)',border:'1px solid #30363d',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
+        h('div',{style:{fontSize:'12px',color:'#8b949e'}}),'Noch nicht generiert'
+      ));
+    }
+  };
+  updateBwStatus();
+
+  // Input fields
+  const bwBranche=h('input',{type:'text',placeholder:'z.B. Business Intelligence / CPM',className:'field-input'});
+  const bwProdukte=h('input',{type:'text',placeholder:'z.B. Planungssoftware, BI, Forecasting',className:'field-input'});
+  const bwZiel=h('input',{type:'text',placeholder:'z.B. Mittelstand 100–5.000 MA mit SAP',className:'field-input'});
+  const bwRegion=h('input',{type:'text',placeholder:'z.B. Deutschland / DACH',className:'field-input'});
+
+  if(bw.branche)bwBranche.value=bw.branche;
+  if(bw.produkte)bwProdukte.value=bw.produkte;
+  if(bw.ziel)bwZiel.value=bw.ziel;
+  if(bw.region)bwRegion.value=bw.region;
+
+  const bwResult=h('div',{style:{display:bw.inhalt?'block':'none',marginTop:'10px'}});
+  const bwBody=h('div',{style:{fontSize:'11px',color:'#e6edf3',lineHeight:'1.6',whiteSpace:'pre-wrap',maxHeight:'200px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
+  bwBody.textContent=bw.inhalt||'';
+  bwResult.appendChild(bwBody);
+
+  const bwBtn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
+    const branche=bwBranche.value.trim();
+    const produkte=bwProdukte.value.trim();
+    const ziel=bwZiel.value.trim();
+    const region=bwRegion.value.trim();
+    if(!branche||!produkte){alert('Bitte mindestens Branche und Produkte eingeben.');return;}
+    bwBtn.disabled=true;
+    bwBtn.textContent='⏳ Branchenwissen wird generiert...';
+    bwResult.style.display='block';
+    bwBody.textContent='';
+
+    const prompt=`Du bist ein erfahrener B2B-Vertriebsexperte.
+
+Generiere eine strukturierte Vertriebswissensbasis für:
+Branche: ${branche}
+Produkte/Lösungen: ${produkte}
+Zielkunden: ${ziel||'Mittelstand'}
+Region: ${region||'DACH'}
+
+Erstelle mindestens 30 konkrete Erkenntnisse in diesen Kategorien:
+
+SCHMERZPUNKTE:
+(typische Probleme die Kunden in dieser Branche haben)
+
+KAUFTRIGGER:
+(Ereignisse/Situationen die zur Kaufentscheidung führen)
+
+LEITFRAGEN:
+(konkrete Discovery-Fragen für den Ersttermin)
+
+EINWÄNDE:
+(typische Einwände und kurze Antworten)
+
+ROI-ARGUMENTE:
+(messbare Nutzenpunkte mit typischen Zahlen)
+
+STAKEHOLDER:
+(typische Entscheider und ihre Prioritäten)
+
+ERFOLGSFAKTOREN:
+(was Projekte in dieser Branche erfolgreich macht)
+
+Nur konkrete, praxisnahe Erkenntnisse. Keine Marketingfloskeln. Keine Produktwerbung. Deutsch.`;
+
+    const result=await callClaude(prompt,(t)=>{bwBody.textContent=t;});
+    if(result){
+      bw={inhalt:result,branche,produkte,ziel,region,datum:new Date().toLocaleDateString('de-DE')};
+      LS.set('ki21_branchenwissen',bw);
+      updateBwStatus();
+    }
+    bwBtn.disabled=false;
+    bwBtn.textContent=bw.inhalt?'🔄 Neu generieren':'🧠 Branchenwissen generieren';
+  }},bw.inhalt?'🔄 Neu generieren':'🧠 Branchenwissen generieren');
+
+  d3.appendChild(h('p',{className:'modal-desc'},'KI21 generiert automatisch branchenspezifisches Vertriebswissen – Schmerzpunkte, Kauftrigger, Leitfragen, Einwände und ROI-Argumente.'));
+  d3.appendChild(bwStatus);
+  d3.appendChild(h('div',{className:'field-label'},'Branche'));
+  d3.appendChild(bwBranche);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Produkte / Lösungen'));
+  d3.appendChild(bwProdukte);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Zielkunden'));
+  d3.appendChild(bwZiel);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Region'));
+  d3.appendChild(bwRegion);
+  d3.appendChild(bwBtn);
+  d3.appendChild(bwResult);
+
   function sw(t){
     tab=t;
     d1.style.display=t==='profil'?'block':'none';
     d2.style.display=t==='bausteine'?'block':'none';
+    d3.style.display=t==='bw'?'block':'none';
     t1.style.background=t==='profil'?'#ff6b00':'#1c2333';t1.style.color=t==='profil'?'#fff':'#8b949e';
     t2.style.background=t==='bausteine'?'#ff6b00':'#1c2333';t2.style.color=t==='bausteine'?'#fff':'#8b949e';
+    t3.style.background=t==='bw'?'#ff6b00':'#1c2333';t3.style.color=t==='bw'?'#fff':'#8b949e';
   }
 
-  const content=h('div',{},tabRow,d1,d2,
+  const content=h('div',{},tabRow,d1,d2,d3,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set('ki21_mu',{profil,bausteine});m.remove();}},
         'Speichern'),
