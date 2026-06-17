@@ -412,9 +412,9 @@ async function callClaude(prompt, onStream){
     },
     body:JSON.stringify({
       model:'claude-haiku-4-5-20251001',
-      max_tokens:8192,
+      max_tokens:16000,
       stream:true,
-      tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}],
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:6}],
       messages:[{role:'user',content:prompt}]
     })
   });
@@ -574,7 +574,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.40'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.41'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -667,16 +667,21 @@ function showFullscreen(title, text){
       outline:'none',resize:'none',lineHeight:'1.8',WebkitTextFillColor:'#e6edf3'}
   });
   ta.value=text;
-  const copyB=h('button',{className:'btn-o',
-    style:{marginTop:'10px'},
+  const btnRow=h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}});
+  const copyB=h('button',{className:'btn-o',style:{flex:'1'},
     onclick:()=>{
       if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{
-        copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren & Schließen',2000);
+        copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren',2000);
       });
     }
-  },'Kopieren & Schließen');
-  const content=h('div',{},ta,copyB);
-  modal(title,content,null);
+  },'Kopieren');
+  const closeB=h('button',{className:'btn',style:{flex:'1'},
+    onclick:()=>m.remove()
+  },'Schließen');
+  btnRow.appendChild(copyB);
+  btnRow.appendChild(closeB);
+  const content=h('div',{},ta,btnRow);
+  const m=modal(title,content,null);
 }
 
 
@@ -1692,7 +1697,7 @@ function showMeinUnternehmen(initialTab){
   const updateBwStatus=()=>{
     bwStatus.innerHTML='';
     if(bw.inhalt){
-      const lines=bw.inhalt.split('\n').filter(l=>l.trim()).length;
+      const lines=(bw.inhalt.match(/Status:/g)||[]).length;
       bwStatus.appendChild(h('div',{style:{background:'rgba(46,160,67,.1)',border:'1px solid rgba(46,160,67,.3)',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
         h('div',{style:{fontSize:'12px',fontWeight:'700',color:'#2ea043',marginBottom:'2px'}},'🧠 Branchenwissen aktiv'),
         h('div',{style:{fontSize:'11px',color:'#8b949e'}},lines+' Erkenntnisse · Erstellt: '+(bw.datum||''))
@@ -1742,72 +1747,77 @@ function showMeinUnternehmen(initialTab){
     bwResult.style.display='block';
     bwBody.textContent='';
 
-    const prompt=`Du bist ein erfahrener B2B-Vertriebsexperte.
+    const prompt=`Du bist ein erfahrener B2B-Vertriebsexperte und Rechercheur.
 
-Erzeuge branchenspezifisches Vertriebswissen auf Basis bekannter öffentlich dokumentierter Success Stories, Referenzprojekte und typischer Case Studies relevanter Anbieter.
+AUFGABE: Recherchiere AKTIV mit der dir verfügbaren Websuche nach echten KPIs, Erfahrungswerten und Success Stories der folgenden Anbieter für die genannte Branche, und erstelle daraus eine Vertriebswissensbasis.
 
 Branche: ${branche}
 Produkte/Lösungen: ${produkte}
 Zielkunden: ${ziel||'Mittelstand'}
 Region: ${region||'DACH'}
 
-Nutze, soweit bekannt, Muster aus Anbietern wie Anaplan, Jedox, Board, OneStream, Oracle, SAP, IBM, Pigment, Vena und vergleichbaren Lösungen.
+Relevante Anbieter zur Recherche: Anaplan, Jedox, Board, OneStream, Oracle EPM, SAP Analytics Cloud, IBM Planning Analytics, Pigment, Vena Solutions, und vergleichbare Lösungen.
+
+RECHERCHE-AUFTRAG (nutze die Websuche aktiv, mindestens 3-5 Suchanfragen):
+- Suche gezielt nach Success Stories, Case Studies und Kundenreferenzen dieser Anbieter in der genannten Branche
+- Suche nach konkreten KPIs: Zeitersparnis, Kosteneinsparung, Prozessbeschleunigung, Genauigkeitsverbesserung
+- Suche nach typischen Schmerzpunkten und Kauftriggern in Fachartikeln/Branchenpublikationen
 
 WICHTIGE REGELN:
-- Behaupte NICHT, live im Internet gesucht zu haben
-- Erfinde KEINE Quellen oder Zahlen
-- Nutze NUR Muster die plausibel aus realen Success Stories ableitbar sind
-- Wenn keine belastbare Quelle bekannt ist: als "Hypothese" kennzeichnen
-- Wettbewerber-Stories nur zur Erkennung von Schmerzpunkten, Triggern und Fragen nutzen
+- Wenn du eine Quelle per Websuche gefunden hast: nenne den Anbieter/die Quelle und kennzeichne als "Status: recherchiert"
+- Wenn du dich auf dein Trainingswissen ohne aktuelle Suche stützt: kennzeichne als "Status: Erfahrungswissen"
+- Wenn du unsicher bist: kennzeichne als "Status: Hypothese"
+- Erfinde NIEMALS konkrete Zahlen oder Quellen die nicht existieren
+- Bei KPIs: nenne konkrete Bandbreiten die du gefunden/recherchiert hast (z.B. "30-50% Zeitersparnis laut Jedox Case Study") – stelle KEINE Rückfragen an den Nutzer, sondern liefere die KPIs direkt aus deiner Recherche
 
-FORMAT – je 6 Einträge pro Kategorie:
+FORMAT – erstelle GENAU diese Mengen, unabhängig von der Gesamtlänge:
 
-SCHMERZPUNKTE:
+SCHMERZPUNKTE (8 Einträge):
 Titel: [kurzer Name]
-Erkenntnis: [1 prägnanter Satz – kein Fließtext, keine erfundenen Zahlen]
+Erkenntnis: [1 prägnanter Satz]
 Frage: [1 konkrete Discovery-Frage]
-Quelle: [Anbieter/Story falls bekannt, sonst "Branchenmuster"]
-Status: [belegtes Muster / plausible Hypothese]
+Quelle: [Anbieter/Story]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-KAUFTRIGGER:
+KAUFTRIGGER (6 Einträge):
 [gleiches Format]
 
-LEITFRAGEN:
+LEITFRAGEN (8 Einträge):
 Frage: [konkrete Discovery-Frage]
 Kontext: [wann stellen]
-Status: [belegtes Muster / plausible Hypothese]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-EINWÄNDE:
+EINWÄNDE (6 Einträge):
 Einwand: [typische Formulierung]
 Antwort: [1 Satz Kernargument]
 Rückfrage: [1 Frage]
-Status: [belegtes Muster / plausible Hypothese]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-ROI-ARGUMENTE:
-Titel: [kurzer Name]
-Erkenntnis: [Nutzenpunkt ohne erfundene Zahlen]
-Frage: [wie beim Kunden validieren?]
-Status: [belegtes Muster / plausible Hypothese]
-
-ERFAHRUNGS-KPIS:
+ERFAHRUNGS-KPIS (10 Einträge – das Wichtigste, hier maximale Recherchetiefe):
 Titel: [konkrete Kennzahl, z.B. "Zeitaufwand Reporting", "Forecast-Genauigkeit", "Planungszyklus-Dauer"]
-Bandbreite: [typische Größenordnung als Spanne, z.B. "20-40% Zeitersparnis" oder "Reduktion von 10 auf 3-4 Tage" – nur Bandbreiten nennen die du aus bekannten Referenzprojekten/Branchenpublikationen ableiten kannst]
-Einordnung: [1 Satz: für welche Unternehmensgröße/Situation gilt diese Bandbreite typischerweise]
-Frage: [wie die konkrete Zahl beim Kunden erheben?]
-Status: [belegtes Muster / plausible Hypothese – bei KPIs besonders sorgfältig prüfen]
+Bandbreite: [konkrete Zahl/Spanne aus Recherche, z.B. "30-50% Zeitersparnis" oder "von 10 auf 3-4 Tage reduziert"]
+Quelle: [Anbieter/Case Study/Fachartikel - so konkret wie möglich]
+Einordnung: [für welche Unternehmensgröße/Situation gilt das typischerweise]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-STAKEHOLDER:
+ROI-ARGUMENTE (6 Einträge):
+Titel: [kurzer Name]
+Erkenntnis: [Nutzenpunkt]
+Quelle: [Anbieter/Story]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
+
+STAKEHOLDER (6 Einträge):
 Typ: [Entscheider-Rolle]
 Priorität: [was treibt ihn an]
 Einstiegsfrage: [1 konkrete Frage]
-Status: [belegtes Muster / plausible Hypothese]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-ERFOLGSFAKTOREN:
+ERFOLGSFAKTOREN (6 Einträge):
 Titel: [kurzer Name]
 Erkenntnis: [was erfolgreiche Projekte gemeinsam haben]
-Status: [belegtes Muster / plausible Hypothese]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln. Bei ERFAHRUNGS-KPIS: Bandbreiten statt exakter Zahlen, und nur wenn du eine plausible Quelle/Größenordnung kennst – sonst Kategorie mit "Keine belastbare Bandbreite ohne weitere Recherche bekannt" befüllen.`
+Halte dich STRIKT an die geforderte Anzahl pro Kategorie (insgesamt 56 Einträge). Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
 
     const result=await callClaude(prompt,(t)=>{bwBody.textContent=t;});
     if(result){
