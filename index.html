@@ -574,7 +574,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.39'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.40'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1719,10 +1719,16 @@ function showMeinUnternehmen(initialTab){
   const bwResult=h('div',{style:{display:bw.inhalt?'block':'none',marginTop:'10px'}});
   const bwBody=h('div',{style:{fontSize:'11px',color:'#e6edf3',lineHeight:'1.6',whiteSpace:'pre-wrap',maxHeight:'160px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px',opacity:'.7'}});
   bwBody.textContent=bw.inhalt||'';
-  const bwShowToggle=h('button',{className:'btn',style:{marginTop:'6px',fontSize:'10px'},
+  const bwToggleRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
+  const bwShowToggle=h('button',{className:'btn',style:{fontSize:'10px'},
     onclick:()=>{bwBody.style.display=bwBody.style.display==='none'?'block':'none';}
   },'Erkenntnisse anzeigen / verbergen');
-  bwResult.appendChild(bwShowToggle);
+  const bwZoomBtn=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>showFullscreen('Branchenwissen',bwBody.textContent||'')
+  },'⛶ Zoom');
+  bwToggleRow.appendChild(bwShowToggle);
+  bwToggleRow.appendChild(bwZoomBtn);
+  bwResult.appendChild(bwToggleRow);
   bwResult.appendChild(bwBody);
 
   const bwBtn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
@@ -1783,6 +1789,13 @@ Erkenntnis: [Nutzenpunkt ohne erfundene Zahlen]
 Frage: [wie beim Kunden validieren?]
 Status: [belegtes Muster / plausible Hypothese]
 
+ERFAHRUNGS-KPIS:
+Titel: [konkrete Kennzahl, z.B. "Zeitaufwand Reporting", "Forecast-Genauigkeit", "Planungszyklus-Dauer"]
+Bandbreite: [typische Größenordnung als Spanne, z.B. "20-40% Zeitersparnis" oder "Reduktion von 10 auf 3-4 Tage" – nur Bandbreiten nennen die du aus bekannten Referenzprojekten/Branchenpublikationen ableiten kannst]
+Einordnung: [1 Satz: für welche Unternehmensgröße/Situation gilt diese Bandbreite typischerweise]
+Frage: [wie die konkrete Zahl beim Kunden erheben?]
+Status: [belegtes Muster / plausible Hypothese – bei KPIs besonders sorgfältig prüfen]
+
 STAKEHOLDER:
 Typ: [Entscheider-Rolle]
 Priorität: [was treibt ihn an]
@@ -1794,7 +1807,7 @@ Titel: [kurzer Name]
 Erkenntnis: [was erfolgreiche Projekte gemeinsam haben]
 Status: [belegtes Muster / plausible Hypothese]
 
-Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
+Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln. Bei ERFAHRUNGS-KPIS: Bandbreiten statt exakter Zahlen, und nur wenn du eine plausible Quelle/Größenordnung kennst – sonst Kategorie mit "Keine belastbare Bandbreite ohne weitere Recherche bekannt" befüllen.`
 
     const result=await callClaude(prompt,(t)=>{bwBody.textContent=t;});
     if(result){
@@ -1806,7 +1819,7 @@ Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
     bwBtn.textContent=bw.inhalt?'🔄 Neu generieren':'🧠 Branchenwissen generieren';
   }},bw.inhalt?'🔄 Neu generieren':'🧠 Branchenwissen generieren');
 
-  d3.appendChild(h('p',{className:'modal-desc'},'KI21 generiert automatisch branchenspezifisches Vertriebswissen – Schmerzpunkte, Kauftrigger, Leitfragen, Einwände und ROI-Argumente.'));
+  d3.appendChild(h('p',{className:'modal-desc'},'KI21 generiert automatisch branchenspezifisches Vertriebswissen – Schmerzpunkte, Kauftrigger, Leitfragen, Einwände, Erfahrungs-KPIs und ROI-Argumente.'));
   d3.appendChild(bwStatus);
   d3.appendChild(h('div',{className:'field-label'},'Branche'));
   d3.appendChild(bwBranche);
