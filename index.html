@@ -142,6 +142,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Keine Einleitung, kein Fazit\n';
   s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
   s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
+  s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
   // Include results from all previous phases
   if(stk){
     const phaseNames=['Qualifizierung','Bedarfsanalyse','Gesprächsergebnisse','Demo-Vorbereitung','Terminachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
@@ -195,6 +196,7 @@ Trigger: ${f.info||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
+WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
 
 QUALIFIZIERUNGS-SCORE: [Zahl]/10
 Empfehlung: sofort / später / nicht verfolgen
@@ -236,6 +238,8 @@ DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
 3. P: [Ursache] | Antwort: ___
 4. I: [Kosten des Problems] | Antwort: ___
 5. N: [Wert der Lösung] | Antwort: ___
+
+WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort hinter "Antwort:". Das Wort "___" MUSS exakt so stehen bleiben – es ist ein Platzhalter, den der Verkäufer erst nach dem nächsten Gespräch ausfüllt.
 
 → TODO: [nächster Schritt + wann]`
   },
@@ -574,7 +578,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.44'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.46'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1720,10 +1724,10 @@ function showMeinUnternehmen(initialTab){
   tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);
 
   const d1=h('div',{});
-  const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...'});
+  const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...\nMitbewerber/Alternativen: ... (z.B. auch Inhouse-Lösungen oder Module großer ERP-Anbieter, nicht nur direkte Wettbewerber)'});
   ta1.value=profil;
   ta1.addEventListener('input',e=>profil=e.target.value);
-  d1.appendChild(h('p',{className:'modal-desc'},'Unternehmensbeschreibung, Produkte, Lösungen, USP.'));
+  d1.appendChild(h('p',{className:'modal-desc'},'Unternehmensbeschreibung, Produkte, Lösungen, USP, Mitbewerber.'));
   d1.appendChild(ta1);
 
   const d2=h('div',{style:{display:'none'}});
