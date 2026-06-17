@@ -574,7 +574,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.43'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.44'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1680,20 +1680,19 @@ function renderBranchenwissen(text){
       inEntry=false;
       return;
     }
-    // Field lines like "Titel: ...", "Bandbreite: ...", "Status: ..."
+    // Field lines like "Pattern: ...", "Kennzahl: ...", "Confidence: ..."
     const fieldMatch=t.match(/^([A-ZÄÖÜa-zäöü]+):\s*(.*)$/);
     if(fieldMatch){
       const field=fieldMatch[1];
       const value=fieldMatch[2];
-      if(field==='Titel'||field==='Frage'||field==='Einwand'||field==='Typ'){
+      if(field==='Pattern'||field==='Kennzahl'||field==='Rolle'||field==='Einwand'||field==='Insight'||field==='Frage'||field==='Titel'||field==='Typ'){
         if(inEntry)html+='</div>';
         counter++;
-        const statusColor=field==='Titel'?'#fff':'#fff';
         html+=`<div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
-          <div style="font-size:11px;font-weight:700;color:${statusColor};margin-bottom:3px;">${counter}. ${value}</div>`;
+          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;">${counter}. ${value}</div>`;
         inEntry=true;
-      } else if(field==='Status'){
-        const badge=value.includes('recherchiert')?'🔍':value.includes('Erfahrungswissen')?'🟡':'🟠';
+      } else if(field==='Confidence'||field==='Status'){
+        const badge=value.toLowerCase().includes('hoch')||value.includes('recherchiert')?'🟢':value.toLowerCase().includes('mittel')||value.includes('Erfahrungswissen')?'🟡':'🔴';
         html+=`<div style="font-size:9px;color:#8b949e;margin-top:4px;">${badge} ${value}</div></div>`;
         inEntry=false;
       } else {
@@ -1769,6 +1768,21 @@ function showMeinUnternehmen(initialTab){
   if(intel.ziel)intelZiel.value=intel.ziel;
   if(intel.region)intelRegion.value=intel.region;
 
+  const intelResult=h('div',{style:{display:intel.inhalt?'block':'none',marginTop:'10px'}});
+  const intelBody=h('div',{style:{lineHeight:'1.5',maxHeight:'280px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
+  intelBody.innerHTML=renderBranchenwissen(intel.inhalt||'');
+  const intelToggleRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
+  const intelShowToggle=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>{intelBody.style.display=intelBody.style.display==='none'?'block':'none';}
+  },'Erkenntnisse anzeigen / verbergen');
+  const intelZoomBtn=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>showFullscreen('KI21 Intelligence',intel.inhalt||'')
+  },'⛶ Zoom');
+  intelToggleRow.appendChild(intelShowToggle);
+  intelToggleRow.appendChild(intelZoomBtn);
+  intelResult.appendChild(intelToggleRow);
+  intelResult.appendChild(intelBody);
+
   const intelBtn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
     const branche=intelBranche.value.trim();
     const produkte=intelProdukte.value.trim();
@@ -1777,6 +1791,7 @@ function showMeinUnternehmen(initialTab){
     if(!branche||!produkte){alert('Bitte mindestens Branche und Produkte eingeben.');return;}
     intelBtn.disabled=true;
     intelBtn.textContent='⏳ KI21 Intelligence wird erstellt...';
+    intelResult.style.display='block';
     updateIntelStatus('⏳ Recherche läuft – das kann einen Moment dauern...');
 
     const prompt=`Du bist der KI21 Intelligence Builder.
@@ -1839,12 +1854,13 @@ Confidence: [hoch/mittel/niedrig]
 
 ÜBERRASCHUNGSFAKTOR (genau 1):
 Insight: [ein Gedanke, den viele Unternehmen in diesem Bereich übersehen - echter Aha-Moment]
+Confidence: [hoch/mittel/niedrig]
 
 Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn eine Kategorie wenig Substanz hat, liefere weniger Einträge statt zu erfinden.`;
 
     let result;
     try{
-      result=await callClaude(prompt,null);
+      result=await callClaude(prompt,(t)=>{intelBody.style.whiteSpace='pre-wrap';intelBody.style.fontSize='11px';intelBody.style.color='#8b949e';intelBody.textContent=t;});
     }catch(e){
       result=null;
     }
@@ -1852,6 +1868,8 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
       intel={inhalt:result,branche,produkte,ziel,region,erstellt:true,datum:new Date().toLocaleDateString('de-DE')};
       LS.set('ki21_intelligence',intel);
       updateIntelStatus('✅ KI21 Intelligence erfolgreich erstellt und gespeichert.');
+      intelBody.style.whiteSpace='normal';
+      intelBody.innerHTML=renderBranchenwissen(result);
     } else {
       updateIntelStatus();
       alert('Erstellung fehlgeschlagen. Bitte erneut versuchen.');
@@ -1860,7 +1878,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
     intelBtn.textContent=intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen';
   }},intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen');
 
-  d3.appendChild(h('p',{className:'modal-desc'},'KI21 baut im Hintergrund eine Wissensbasis aus Branchenmustern auf, die automatisch in alle Phasen einfließt. Keine Rohdaten-Anzeige - nur das verdichtete Ergebnis wird genutzt.'));
+  d3.appendChild(h('p',{className:'modal-desc'},'KI21 verdichtet branchenspezifische Erkenntnisse zu robusten Business Patterns, die automatisch in alle Phasen einfließen.'));
   d3.appendChild(intelStatus);
   d3.appendChild(h('div',{className:'field-label'},'Branche'));
   d3.appendChild(intelBranche);
@@ -1871,6 +1889,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Region'));
   d3.appendChild(intelRegion);
   d3.appendChild(intelBtn);
+  d3.appendChild(intelResult);
 
   function sw(t){
     tab=t;
