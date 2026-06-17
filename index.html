@@ -310,38 +310,56 @@ Betreff: [präzise]
 
 → TODO: [nächster Schritt + wann]`
   },
-  {id:3,num:4,phase:'Phase 4',title:'Wirtschaftlicher Nutzen',icon:'💰',
-   regel:'KPIs eingeben – Nutzen-Kosten-Analyse und ROI kommen raus.',
+  {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
+   regel:'KPIs eingeben – Benchmark-Nutzen, individueller Nutzen und ROI kommen raus.',
    felder:[
      {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'},
      {id:'paket',l:'Geplantes Angebot / Lösung',t:'text',p:'z.B. Biplan Professional, 5 Nutzer'},
      {id:'budget',l:'Geschätztes Budget / Investition',t:'text',p:'z.B. 25.000 € / Jahr'},
      {id:'minimum',l:'Mindestpreis',t:'text',p:'z.B. 18.000 €'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
 Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
-KPIs und Erkenntnisse: ${f.erkenntnisse||''}
+Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
+KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahlen vorhanden'}
 Geplante Lösung: ${f.paket||''}
 Investition: ${f.budget||''}
 
-WICHTIG: Nutzen in "schafft Kapazität" formulieren, nicht "spart".
-WICHTIG: ROI ehrlich darstellen – auch negativen ROI zeigen wenn zutreffend.
-WICHTIG: Bitte gemeinsam mit dem Kunden validieren.
+GRUNDPRINZIP: KI21 ist ein Entscheidungswerkzeug, kein Analysewerkzeug. Optimiere auf Entscheidungsqualität, nicht auf Textmenge.
+
+WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
+- Du nutzt dein bekanntes Erfahrungswissen über typische Größenordnungen vergleichbarer Projekte – KEINE Live-Recherche.
+- Erfinde KEINE konkreten Firmennamen oder Quellen die du nicht kennst.
+- Wenn die KPIs des Kunden fehlen oder unklar sind, formuliere das als gezielte Rückfrage statt zu raten.
+- Nutzen in "schafft Kapazität für ___" formulieren, nicht "spart".
+- ROI ehrlich darstellen – auch negativen oder unsicheren ROI zeigen wenn zutreffend.
+- Berücksichtige die Unternehmensgröße: ein Benchmark für Konzerne darf nicht ungefiltert auf den Mittelstand übertragen werden – skaliere plausibel und kennzeichne Schätzungen als Schätzung.
+
+FORMAT – GENAU SO, NICHT MEHR:
 
 NUTZEN-SCORE: [Zahl]/10
-Begründung: [1 Satz]
 
-WIRTSCHAFTLICHER NUTZEN:
-1. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
-2. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
-3. [Nutzen – schafft Kapazität für ___] | Wert: ___ €/Jahr
+BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
+[1 Satz mit typischer Größenordnung, wenn plausibel einschätzbar – sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] [🟢/🟡/🔴]
 
-GESAMTNUTZEN: ___ €/Jahr
+IHR BUSINESS CASE (basierend auf den Kundenangaben):
+[1 Satz mit geschätztem Nutzen basierend auf den genannten KPIs – falls keine KPIs vorhanden: "Noch keine konkreten Zahlen vom Kunden – siehe Rückfragen unten"]
+
+WICHTIGSTES VERKAUFSARGUMENT:
+[1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
+
+GESAMTNUTZEN: ___ €/Jahr (oder "noch zu validieren")
 INVESTITION: ${f.budget||'___'} €/Jahr
-ROI: [Nutzen / Investition] | Amortisation: ___ Monate
+ROI / AMORTISATION: [Verhältnis + Monate, oder "noch nicht berechenbar – Zahlen fehlen"]
 
-→ TODO: [nächster Schritt + wann]`
+OFFENE RÜCKFRAGEN AN DEN KUNDEN (nur falls KPIs fehlen, max. 3):
+1. [konkrete Frage]
+2. [konkrete Frage]
+
+→ TODO: [nächster Schritt + wann]
+
+Bitte gemeinsam mit dem Kunden validieren.`
   },
   {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Erkenntnisse + Angebot eingeben – Abschlussstrategie und Einwandbehandlung kommen raus.',
@@ -394,7 +412,7 @@ async function callClaude(prompt, onStream){
     },
     body:JSON.stringify({
       model:'claude-haiku-4-5-20251001',
-      max_tokens:4096,
+      max_tokens:8192,
       stream:true,
       tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}],
       messages:[{role:'user',content:prompt}]
@@ -404,6 +422,7 @@ async function callClaude(prompt, onStream){
   const reader=resp.body.getReader();
   const decoder=new TextDecoder();
   let fullText='';
+  let blockText='';
   while(true){
     const {done,value}=await reader.read();
     if(done)break;
@@ -416,19 +435,23 @@ async function callClaude(prompt, onStream){
         try{
           const parsed=JSON.parse(data);
           if(parsed.type==='content_block_start'&&parsed.content_block?.type==='tool_use'){
-            if(onStream)onStream(fullText+'\n🔍 Suche aktuelle Informationen...\n');
+            if(onStream)onStream(stripMd(fullText)+'\n🔍 Suche aktuelle Informationen...\n');
           }
           if(parsed.type==='content_block_start'&&parsed.content_block?.type==='text'){
-            fullText='';
+            blockText='';
           }
           if(parsed.type==='content_block_delta'&&parsed.delta?.text){
-            fullText+=parsed.delta.text;
-            if(onStream)onStream(stripMd(fullText));
+            blockText+=parsed.delta.text;
+            if(onStream)onStream(stripMd(fullText+blockText));
+          }
+          if(parsed.type==='content_block_stop'){
+            if(blockText){fullText+=(fullText?'\n':'')+blockText;blockText='';}
           }
         }catch(e){}
       }
     }
   }
+  if(blockText){fullText+=(fullText?'\n':'')+blockText;}
   return fullText;
 }
 
@@ -551,7 +574,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.34'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.39'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -662,7 +685,7 @@ async function loadMoreDetails(sitId, stData){
   if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
 
-  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
+  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Falls es sich um eine Nutzen-Kosten-/ROI-Analyse handelt: vollständige Herleitung der Benchmark-Einschätzung (welche Größenordnung/Branche wurde angenommen, Skalierungslogik, alternative Szenarien konservativ/realistisch/optimistisch), klare Kennzeichnung was "belegtes Erfahrungswissen" vs. "plausible Schätzung" ist\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
 
   const overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
@@ -722,6 +745,33 @@ function transferAndGo(fromId, toId, result){
     LS.set(nextKEY,nextData);
     state.pendingSit=null;
     renderStation(toId);
+    return;
+  }
+
+  // Phase 2→3 (Nachbereitung → Nutzen-Kosten-Analyse): KPI-Extraktion statt Volltext
+  if(fromId===2&&toId===3){
+    nextData.fv['erkenntnisse']='⏳ KPIs werden extrahiert...';
+    LS.set(nextKEY,nextData);
+    renderStation(toId);
+
+    (async()=>{
+      const kpiPrompt=`Hier ist ein Besuchsbericht aus einem Kundentermin:\n\n${result}\n\nExtrahiere AUSSCHLIESSLICH die konkreten Zahlen, KPIs und wirtschaftlich relevanten Fakten, die der Kunde genannt hat (z.B. Zeitaufwand, Mitarbeiterzahlen, Kosten, Stückzahlen, Fehlerquoten, Durchlaufzeiten).\n\nFormat: kurze Stichpunkte, eine Zahl/Aussage pro Zeile. Keine Einleitung, kein Fließtext. Wenn keine konkreten Zahlen genannt wurden, schreibe: "Keine konkreten KPIs im Gespräch genannt – bitte beim Kunden nachfragen."`;
+
+      try{
+        const kpiResult=await callClaude(kpiPrompt,null);
+        if(kpiResult){
+          const freshData=LS.get(nextKEY,{fv:{},result:''});
+          freshData.fv['erkenntnisse']=kpiResult;
+          LS.set(nextKEY,freshData);
+          renderStation(toId);
+        }
+      }catch(e){
+        const freshData=LS.get(nextKEY,{fv:{},result:''});
+        freshData.fv['erkenntnisse']=result;
+        LS.set(nextKEY,freshData);
+        renderStation(toId);
+      }
+    })();
     return;
   }
 
@@ -1667,8 +1717,12 @@ function showMeinUnternehmen(initialTab){
   if(bw.region)bwRegion.value=bw.region;
 
   const bwResult=h('div',{style:{display:bw.inhalt?'block':'none',marginTop:'10px'}});
-  const bwBody=h('div',{style:{fontSize:'11px',color:'#e6edf3',lineHeight:'1.6',whiteSpace:'pre-wrap',maxHeight:'200px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
+  const bwBody=h('div',{style:{fontSize:'11px',color:'#e6edf3',lineHeight:'1.6',whiteSpace:'pre-wrap',maxHeight:'160px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px',opacity:'.7'}});
   bwBody.textContent=bw.inhalt||'';
+  const bwShowToggle=h('button',{className:'btn',style:{marginTop:'6px',fontSize:'10px'},
+    onclick:()=>{bwBody.style.display=bwBody.style.display==='none'?'block':'none';}
+  },'Erkenntnisse anzeigen / verbergen');
+  bwResult.appendChild(bwShowToggle);
   bwResult.appendChild(bwBody);
 
   const bwBtn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
@@ -1684,36 +1738,63 @@ function showMeinUnternehmen(initialTab){
 
     const prompt=`Du bist ein erfahrener B2B-Vertriebsexperte.
 
-Generiere eine strukturierte Vertriebswissensbasis für:
+Erzeuge branchenspezifisches Vertriebswissen auf Basis bekannter öffentlich dokumentierter Success Stories, Referenzprojekte und typischer Case Studies relevanter Anbieter.
+
 Branche: ${branche}
 Produkte/Lösungen: ${produkte}
 Zielkunden: ${ziel||'Mittelstand'}
 Region: ${region||'DACH'}
 
-Erstelle mindestens 30 konkrete Erkenntnisse in diesen Kategorien:
+Nutze, soweit bekannt, Muster aus Anbietern wie Anaplan, Jedox, Board, OneStream, Oracle, SAP, IBM, Pigment, Vena und vergleichbaren Lösungen.
+
+WICHTIGE REGELN:
+- Behaupte NICHT, live im Internet gesucht zu haben
+- Erfinde KEINE Quellen oder Zahlen
+- Nutze NUR Muster die plausibel aus realen Success Stories ableitbar sind
+- Wenn keine belastbare Quelle bekannt ist: als "Hypothese" kennzeichnen
+- Wettbewerber-Stories nur zur Erkennung von Schmerzpunkten, Triggern und Fragen nutzen
+
+FORMAT – je 6 Einträge pro Kategorie:
 
 SCHMERZPUNKTE:
-(typische Probleme die Kunden in dieser Branche haben)
+Titel: [kurzer Name]
+Erkenntnis: [1 prägnanter Satz – kein Fließtext, keine erfundenen Zahlen]
+Frage: [1 konkrete Discovery-Frage]
+Quelle: [Anbieter/Story falls bekannt, sonst "Branchenmuster"]
+Status: [belegtes Muster / plausible Hypothese]
 
 KAUFTRIGGER:
-(Ereignisse/Situationen die zur Kaufentscheidung führen)
+[gleiches Format]
 
 LEITFRAGEN:
-(konkrete Discovery-Fragen für den Ersttermin)
+Frage: [konkrete Discovery-Frage]
+Kontext: [wann stellen]
+Status: [belegtes Muster / plausible Hypothese]
 
 EINWÄNDE:
-(typische Einwände und kurze Antworten)
+Einwand: [typische Formulierung]
+Antwort: [1 Satz Kernargument]
+Rückfrage: [1 Frage]
+Status: [belegtes Muster / plausible Hypothese]
 
 ROI-ARGUMENTE:
-(messbare Nutzenpunkte mit typischen Zahlen)
+Titel: [kurzer Name]
+Erkenntnis: [Nutzenpunkt ohne erfundene Zahlen]
+Frage: [wie beim Kunden validieren?]
+Status: [belegtes Muster / plausible Hypothese]
 
 STAKEHOLDER:
-(typische Entscheider und ihre Prioritäten)
+Typ: [Entscheider-Rolle]
+Priorität: [was treibt ihn an]
+Einstiegsfrage: [1 konkrete Frage]
+Status: [belegtes Muster / plausible Hypothese]
 
 ERFOLGSFAKTOREN:
-(was Projekte in dieser Branche erfolgreich macht)
+Titel: [kurzer Name]
+Erkenntnis: [was erfolgreiche Projekte gemeinsam haben]
+Status: [belegtes Muster / plausible Hypothese]
 
-Nur konkrete, praxisnahe Erkenntnisse. Keine Marketingfloskeln. Keine Produktwerbung. Deutsch.`;
+Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
 
     const result=await callClaude(prompt,(t)=>{bwBody.textContent=t;});
     if(result){
