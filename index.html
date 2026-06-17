@@ -412,7 +412,7 @@ async function callClaude(prompt, onStream){
     },
     body:JSON.stringify({
       model:'claude-haiku-4-5-20251001',
-      max_tokens:16000,
+      max_tokens:20000,
       stream:true,
       tools:[{type:'web_search_20250305',name:'web_search',max_uses:6}],
       messages:[{role:'user',content:prompt}]
@@ -574,7 +574,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.41'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.42'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1663,6 +1663,51 @@ ${html}
   win.document.close();
 }
 
+function renderBranchenwissen(text){
+  if(!text)return '';
+  const lines=text.split('\n');
+  let html='';
+  let counter=0;
+  let inEntry=false;
+  lines.forEach(line=>{
+    const t=line.trim();
+    if(!t)return;
+    // Category headers (ALL CAPS followed by colon, optionally with count in parens)
+    if(/^[A-ZÄÖÜ\- ]+(\s*\(\d+.*\))?:$/.test(t)){
+      if(inEntry)html+='</div>';
+      html+=`<div style="margin:14px 0 8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;border-bottom:1px solid #30363d;padding-bottom:4px;">${t.replace(/:$/,'')}</div>`;
+      counter=0;
+      inEntry=false;
+      return;
+    }
+    // Field lines like "Titel: ...", "Bandbreite: ...", "Status: ..."
+    const fieldMatch=t.match(/^([A-ZÄÖÜa-zäöü]+):\s*(.*)$/);
+    if(fieldMatch){
+      const field=fieldMatch[1];
+      const value=fieldMatch[2];
+      if(field==='Titel'||field==='Frage'||field==='Einwand'||field==='Typ'){
+        if(inEntry)html+='</div>';
+        counter++;
+        const statusColor=field==='Titel'?'#fff':'#fff';
+        html+=`<div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+          <div style="font-size:11px;font-weight:700;color:${statusColor};margin-bottom:3px;">${counter}. ${value}</div>`;
+        inEntry=true;
+      } else if(field==='Status'){
+        const badge=value.includes('recherchiert')?'🔍':value.includes('Erfahrungswissen')?'🟡':'🟠';
+        html+=`<div style="font-size:9px;color:#8b949e;margin-top:4px;">${badge} ${value}</div></div>`;
+        inEntry=false;
+      } else {
+        html+=`<div style="font-size:10px;color:#c9d1d9;line-height:1.4;"><span style="color:#8b949e;">${field}:</span> ${value}</div>`;
+      }
+      return;
+    }
+    // Fallback: plain line
+    html+=`<div style="font-size:10px;color:#c9d1d9;">${t}</div>`;
+  });
+  if(inEntry)html+='</div>';
+  return html;
+}
+
 function showMeinUnternehmen(initialTab){
   let profil=LS.get('ki21_mu',{}).profil||'';
   let bausteine=LS.get('ki21_mu',{}).bausteine||'';
@@ -1722,14 +1767,14 @@ function showMeinUnternehmen(initialTab){
   if(bw.region)bwRegion.value=bw.region;
 
   const bwResult=h('div',{style:{display:bw.inhalt?'block':'none',marginTop:'10px'}});
-  const bwBody=h('div',{style:{fontSize:'11px',color:'#e6edf3',lineHeight:'1.6',whiteSpace:'pre-wrap',maxHeight:'160px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px',opacity:'.7'}});
-  bwBody.textContent=bw.inhalt||'';
+  const bwBody=h('div',{style:{lineHeight:'1.5',maxHeight:'280px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
+  bwBody.innerHTML=renderBranchenwissen(bw.inhalt||'');
   const bwToggleRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
   const bwShowToggle=h('button',{className:'btn',style:{fontSize:'10px'},
     onclick:()=>{bwBody.style.display=bwBody.style.display==='none'?'block':'none';}
   },'Erkenntnisse anzeigen / verbergen');
   const bwZoomBtn=h('button',{className:'btn',style:{fontSize:'10px'},
-    onclick:()=>showFullscreen('Branchenwissen',bwBody.textContent||'')
+    onclick:()=>showFullscreen('Branchenwissen',bw.inhalt||'')
   },'⛶ Zoom');
   bwToggleRow.appendChild(bwShowToggle);
   bwToggleRow.appendChild(bwZoomBtn);
@@ -1793,11 +1838,17 @@ Antwort: [1 Satz Kernargument]
 Rückfrage: [1 Frage]
 Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-ERFAHRUNGS-KPIS (10 Einträge – das Wichtigste, hier maximale Recherchetiefe):
+ERFAHRUNGS-KPIS (15 Einträge – das Wichtigste, hier maximale Recherchetiefe):
 Titel: [konkrete Kennzahl, z.B. "Zeitaufwand Reporting", "Forecast-Genauigkeit", "Planungszyklus-Dauer"]
-Bandbreite: [konkrete Zahl/Spanne aus Recherche, z.B. "30-50% Zeitersparnis" oder "von 10 auf 3-4 Tage reduziert"]
+Bandbreite: [WICHTIG: bevorzugt absolute Einheiten statt nur Prozent – Stunden/Woche, Tage, Wochen, Euro/Jahr, Anzahl Personen/FTE. Beispiel: "von 3 Tagen auf 4 Stunden reduziert" oder "spart ca. 15.000-25.000 €/Jahr" oder "1 FTE weniger im Reporting nötig". Prozentangaben nur ergänzend, nie als einzige Zahl.]
 Quelle: [Anbieter/Case Study/Fachartikel - so konkret wie möglich]
 Einordnung: [für welche Unternehmensgröße/Situation gilt das typischerweise]
+Status: [recherchiert / Erfahrungswissen / Hypothese]
+
+QUALITATIVE KPIS (8 Einträge – nicht in Zahlen ausdrückbare, aber verkaufsrelevante Verbesserungen):
+Titel: [z.B. "Entscheidungsgeschwindigkeit", "Zusammenarbeit Fachbereiche", "Planungssicherheit"]
+Verbesserung: [konkrete qualitative Veränderung, z.B. "Geschäftsführung trifft Entscheidungen im Meeting statt eine Woche später nach Excel-Abstimmung"]
+Quelle: [Anbieter/Case Study/Fachartikel]
 Status: [recherchiert / Erfahrungswissen / Hypothese]
 
 ROI-ARGUMENTE (6 Einträge):
@@ -1817,13 +1868,15 @@ Titel: [kurzer Name]
 Erkenntnis: [was erfolgreiche Projekte gemeinsam haben]
 Status: [recherchiert / Erfahrungswissen / Hypothese]
 
-Halte dich STRIKT an die geforderte Anzahl pro Kategorie (insgesamt 56 Einträge). Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
+Halte dich STRIKT an die geforderte Anzahl pro Kategorie (insgesamt 69 Einträge). Nur Deutsch. Kein Fließtext. Keine Marketingfloskeln.`
 
-    const result=await callClaude(prompt,(t)=>{bwBody.textContent=t;});
+    const result=await callClaude(prompt,(t)=>{bwBody.style.whiteSpace='pre-wrap';bwBody.style.fontSize='11px';bwBody.style.color='#8b949e';bwBody.textContent=t;});
     if(result){
       bw={inhalt:result,branche,produkte,ziel,region,datum:new Date().toLocaleDateString('de-DE')};
       LS.set('ki21_branchenwissen',bw);
       updateBwStatus();
+      bwBody.style.whiteSpace='normal';
+      bwBody.innerHTML=renderBranchenwissen(result);
     }
     bwBtn.disabled=false;
     bwBtn.textContent=bw.inhalt?'🔄 Neu generieren':'🧠 Branchenwissen generieren';
