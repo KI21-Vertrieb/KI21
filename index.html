@@ -346,8 +346,10 @@ WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
 KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - GESAMTNUTZEN und ROI dürfen NUR aus regelmäßigem, wiederkehrendem Nutzen bestehen (Zeitersparnis, Fehlerreduktion, schnellere Standardprozesse) – Posten, die JEDES Jahr in ähnlicher Höhe anfallen.
 - Schadens- oder Krisen-Szenarien (z.B. "X € Schaden pro Vorfall, falls Y% vermeidbar") NIEMALS in GESAMTNUTZEN oder ROI einrechnen. Das sind Verkettungen mehrerer unbestätigter Annahmen (Häufigkeit × Vermeidbarkeit × Schadenshöhe) und gehören separat als "ZUSÄTZLICHES POTENZIAL" mit eigener Warnung.
+- ERFINDE KEINE FACHBEGRIFFE ODER HÄUFIGKEITEN: Wenn du ein vom Kunden genanntes Ereignis beschreibst (z.B. einen Lieferkettenschock), erfinde dafür KEINEN klingenden Fachbegriff (z.B. "Schockzyklus") und KEINE Häufigkeitsangabe (z.B. "3-4 pro Jahr"), wenn der Kunde das nicht selbst so genannt hat. Beschreibe es stattdessen in eigenen, neutralen Worten und kennzeichne Häufigkeit/Definition als KLÄREN, statt sie wie eine feststehende Größe zu präsentieren.
 - Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
 - EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
+- ARBEITSAUFWAND IN TAGEN STATT STUNDEN AB 8H: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben im gesamten Output (laufender Nutzen, Benchmark, KPIs).
 - PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
 
 FORMAT – GENAU SO, NICHT MEHR:
@@ -591,7 +593,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.55'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.58'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1199,17 +1201,17 @@ function renderStation(sitId){
           }
         }
 
-        // For Demo-Vorbereitung (sitId===3): generate compact summary
+        // For Nutzen-Kosten-Analyse (sitId===3): generate compact summary for next customer conversation
         if(sitId===3){
           demoSummaryBox.style.display='block';
           demoSummaryBody.textContent='⏳ Kurzfassung wird erstellt...';
           try{
-            const summaryPrompt=`Erstelle aus diesem Demo-Leitfaden eine kompakte Kurzfassung für den Verkäufer.
+            const summaryPrompt=`Erstelle aus dieser Nutzen-Kosten-Analyse eine kompakte Kurzfassung für das nächste Kundengespräch (z.B. Demo oder Abschlussgespräch).
 
-KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH im Leitfaden unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. Wenn der Leitfaden keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl.
+KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als "unvalidiert" oder "🔴" gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
 
 Format:
-🎯 DEMO-ZIEL: [1 Satz was wir erreichen wollen]
+🎯 GESPRÄCHSZIEL: [1 Satz was wir erreichen wollen]
 
 TOP 5 PUNKTE DIE ZÄHLEN:
 1. [wichtigster Punkt]
@@ -1221,9 +1223,9 @@ TOP 5 PUNKTE DIE ZÄHLEN:
 ⚠️ UNBEDINGT VERMEIDEN:
 - [1-2 Punkte]
 
-💡 ABSCHLUSS-FRAGE: [Die eine Frage am Ende der Demo]
+💡 ABSCHLUSS-FRAGE: [Die eine Frage am Ende des Gesprächs]
 
-Leitfaden:
+Nutzen-Kosten-Analyse:
 `+result;
             const summary=await callClaude(summaryPrompt,null);
             if(summary){
