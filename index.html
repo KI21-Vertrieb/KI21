@@ -23,6 +23,18 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
   display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .nav-brand{font-size:16px;font-weight:800;color:var(--text);cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
 .nav-right{display:flex;gap:5px;align-items:center;}
+.subnav{background:var(--bg);border-bottom:1px solid var(--border);padding:6px 14px;
+  display:flex;align-items:center;gap:8px;}
+.subnav-badge{background:rgba(255,107,0,.15);color:#ff6b00;border-radius:50%;
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;}
+.subnav-text{font-size:11px;color:var(--text2);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.settings-group-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:2px;}
+.phase-badge{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;}
+.phase-badge-done{background:rgba(46,160,67,.15);color:#2ea043;}
+.phase-badge-progress{background:rgba(255,107,0,.15);color:#ff6b00;}
+.phase-badge-empty{background:rgba(139,148,158,.1);color:var(--text3);}
 .btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;
   padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-o{background:#ff6b00;border:none;color:#fff;border-radius:7px;padding:5px 12px;
@@ -74,10 +86,10 @@ select option{background:var(--bg3);}
 .btn-reset{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:7px;
   padding:5px 10px;font-size:14px;cursor:pointer;}
 .result-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
-.result-head{background:var(--bg3);padding:8px 12px;display:flex;align-items:center;
+.result-head{background:var(--bg3);padding:8px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;
   justify-content:space-between;border-bottom:1px solid var(--border);}
 .result-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;}
-.result-btns{display:flex;gap:6px;}
+.result-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .result-body{padding:12px;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);
   white-space:pre-wrap;max-height:350px;overflow-y:auto;}
 .result-foot{text-align:center;font-size:10px;color:var(--text3);padding:6px;border-top:1px solid var(--border);}
@@ -93,13 +105,19 @@ select option{background:var(--bg3);}
 .tab-btn{flex:1;padding:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .modal-desc{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5;}
 .modal-row{display:flex;gap:8px;margin-top:8px;}
-.acc-row{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);
+.acc-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);
   border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;}
 .acc-row.active{background:rgba(255,107,0,.12);border-color:rgba(255,107,0,.3);}
 .acc-name{font-size:13px;font-weight:600;color:var(--text);}
 .acc-sub{font-size:10px;color:var(--text2);}
 .acc-btns{display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:auto;}
 .acc-active{font-size:9px;color:#ff6b00;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.acc-avatar{width:34px;height:34px;border-radius:8px;background:rgba(255,107,0,.12);color:#ff6b00;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.acc-meta{display:flex;gap:8px;align-items:center;margin-top:2px;}
+.acc-phase-chip{font-size:9px;color:var(--text2);background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;padding:1px 6px;}
+.acc-score-chip{font-size:10px;font-weight:800;color:#2ea043;}
 .status-box{border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;}
 </style>
 </head>
@@ -131,6 +149,7 @@ function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
+  s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase.\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
   s+='- Stelle KEINE Rückfragen – liefere sofort den Output\n';
@@ -350,7 +369,6 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - BENCHMARKS NICHT UNGEPRÜFT ÜBERTRAGEN: Wenn du eine Vergleichszahl aus der KI21 Intelligence nutzt (z.B. "Vorher X, Nachher Y" für einen bestimmten Use Case), prüfe ob sie zur GENAUEN Situation des Kunden passt – insbesondere ob die Ausgangsgrößenordnung übereinstimmt (z.B. ein Benchmark "von Tagen auf Minuten" passt NICHT automatisch auf eine Kundensituation, die von "Wochen" spricht, auch wenn beide um "schnellere Reaktion" gehen). Wenn du einen Intelligence-Benchmark auf eine andere Größenordnung übertragen willst, sage das explizit ("übertragen von einem Benchmark für X auf die hier größere Ausgangslage Y") statt die übertragene Zahl wie eine direkt passende Kundenzahl zu präsentieren.
 - Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
 - EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
-- ARBEITSAUFWAND IN TAGEN STATT STUNDEN AB 8H: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben im gesamten Output (laufender Nutzen, Benchmark, KPIs).
 - PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
 
 FORMAT – GENAU SO, NICHT MEHR:
@@ -587,6 +605,37 @@ function saveScore(score){
   if(aid)LS.set('ki21_score_'+aid,score);
 }
 
+function renderResultText(text){
+  if(!text)return document.createTextNode('');
+  const div=document.createElement('div');
+  div.style.cssText='white-space:pre-wrap;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);';
+  const lines=text.split('\n');
+  lines.forEach((line,i)=>{
+    const span=document.createElement('span');
+    if(line.startsWith('BESTÄTIGT:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">BESTÄTIGT</span>'+escHtml(line.slice('BESTÄTIGT:'.length));
+    } else if(line.startsWith('ANNAHME:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
+    } else if(line.startsWith('KLÄREN:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+    } else {
+      span.textContent=line;
+    }
+    div.appendChild(span);
+    if(i<lines.length-1)div.appendChild(document.createElement('br'));
+  });
+  return div;
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function getPhaseStatus(sitId){
+  if(!state.activeId)return 'empty';
+  const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
+  if(data&&data.result)return 'done';
+  if(data&&data.fv&&Object.values(data.fv).some(v=>v&&v.trim&&v.trim()))return 'progress';
+  return 'empty';
+}
+
 function renderHome(){
   const cust=getActiveCust();
   const app=document.getElementById('app');
@@ -594,7 +643,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.60'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.63'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -639,6 +688,9 @@ function renderHome(){
   ];
 
   groups.forEach(g=>{
+    const status=getPhaseStatus(g.primary);
+    const badgeLabel=status==='done'?'Fertig':status==='progress'?'In Arbeit':'Offen';
+    const badgeClass='phase-badge phase-badge-'+status;
     const row=h('div',{className:'sit-row',onclick:()=>{
       if(!state.activeId){state.pendingSit=g.primary;showKunde();}
       else renderStation(g.primary);
@@ -648,7 +700,7 @@ function renderHome(){
         h('div',{className:'sit-title'},g.label),
         h('div',{className:'sit-phase'},g.sub)
       ),
-      h('span',{className:'sit-arrow'},'›')
+      h('span',{className:badgeClass},badgeLabel)
     );
     wrap.appendChild(row);
   });
@@ -680,17 +732,31 @@ function showFullscreenEdit(title, text, onSave){
 }
 
 function showFullscreen(title, text){
+  let editing=false;
+  const readDiv=h('div',{
+    style:{width:'100%',minHeight:'calc(100vh - 160px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'13px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      lineHeight:'1.85',whiteSpace:'pre-wrap',overflowY:'auto'}
+  },text);
   const ta=h('textarea',{
     style:{width:'100%',height:'calc(100vh - 160px)',background:'#1c2333',
       border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
       fontSize:'13px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
-      outline:'none',resize:'none',lineHeight:'1.8',WebkitTextFillColor:'#e6edf3'}
+      outline:'none',resize:'none',lineHeight:'1.8',WebkitTextFillColor:'#e6edf3',display:'none'}
   });
   ta.value=text;
+  const editToggle=h('button',{className:'btn',style:{fontSize:'10px'},onclick:()=>{
+    editing=!editing;
+    readDiv.style.display=editing?'none':'block';
+    ta.style.display=editing?'block':'none';
+    editToggle.textContent=editing?'👁 Lesen':'✎ Bearbeiten';
+  }},'✎ Bearbeiten');
   const btnRow=h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}});
   const copyB=h('button',{className:'btn-o',style:{flex:'1'},
     onclick:()=>{
-      if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{
+      const txt=editing?ta.value:text;
+      if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
         copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren',2000);
       });
     }
@@ -700,7 +766,8 @@ function showFullscreen(title, text){
   },'Schließen');
   btnRow.appendChild(copyB);
   btnRow.appendChild(closeB);
-  const content=h('div',{},ta,btnRow);
+  const topRow=h('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'8px'}},editToggle);
+  const content=h('div',{},topRow,readDiv,ta,btnRow);
   const m=modal(title,content,null);
 }
 
@@ -833,11 +900,14 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{id:'nav-phase-label',style:{fontSize:'12px',color:'#8b949e',fontWeight:'700',marginLeft:'6px',whiteSpace:'nowrap'}},sit.num+' · '+sit.title),
     h('div',{className:'nav-right'},
       cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
+  );
+  const subNav=h('div',{className:'subnav'},
+    h('span',{className:'subnav-badge'},String(sitId+1)),
+    h('span',{id:'nav-phase-label',className:'subnav-text'},'von '+SITS.length+' · '+sit.title)
   );
 
   const wrap=h('div',{className:'station-wrap'});
@@ -988,7 +1058,8 @@ function renderStation(sitId){
   resultBtns.appendChild(shareBtn);
   resultHead.appendChild(resultLabel);
   resultHead.appendChild(resultBtns);
-  const resultBody=h('div',{className:'result-body'},data.result||'');
+  const resultBody=h('div',{className:'result-body'});
+  resultBody.appendChild(renderResultText(data.result||''));
   // Weiter button
   const weiterRow=h('div',{style:{padding:'8px 12px',borderTop:'1px solid #30363d',display:'none'}});
   resultBox.appendChild(resultHead);
@@ -1035,7 +1106,7 @@ function renderStation(sitId){
       result2Head.appendChild(result2Label);
       result2Head.appendChild(result2Btns);
       const result2Body=h('div',{className:'result-body'});
-      result2Body.textContent=data.result2||'';
+      result2Body.innerHTML='';result2Body.appendChild(renderResultText(data.result2||''));
       result2Box.appendChild(result2Head);
       result2Box.appendChild(result2Body);
 
@@ -1144,6 +1215,7 @@ function renderStation(sitId){
       if(result){
         data.result=result;
         data.prompt=prompt;
+        resultBody.innerHTML='';resultBody.appendChild(renderResultText(result));
         // Phase 1: auto-fill fragen field
         if(sitId===0){
           const lines=result.split('\n');
@@ -1252,10 +1324,21 @@ Nutzen-Kosten-Analyse:
   }
 
   app.appendChild(nav);
+  app.appendChild(subNav);
   app.appendChild(wrap);
 }
 
 // ── MODALS ─────────────────────────────────────────────────
+function getAccPhaseInfo(accId){
+  let furthest=-1;
+  for(let i=0;i<5;i++){
+    const data=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(data&&data.result)furthest=i;
+  }
+  const score=LS.get('ki21_score_'+accId,null);
+  return {phaseIdx:furthest,score};
+}
+
 function showKunde(){
   const m=modal('Kunde wählen', buildKundeContent(), null);
 
@@ -1267,14 +1350,21 @@ function showKunde(){
         textTransform:'uppercase',color:'#8b949e',marginBottom:'8px'}},'Zuletzt verwendet'));
 
       state.accounts.forEach(a=>{
+        const info=getAccPhaseInfo(a.id);
+        const initials=(a.cust.firma||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+        const phaseLabel=info.phaseIdx>=0?'Phase '+(info.phaseIdx+1):'Neu';
         const row=h('div',{className:'acc-row'+(a.id===state.activeId?' active':''),
           onclick:()=>{state.activeId=a.id;LS.set('ki21_aid',a.id);m.remove();
             if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
             else renderHome();}
         },
+          h('div',{className:'acc-avatar'},initials),
           h('div',{style:{flex:1,minWidth:0}},
             h('div',{className:'acc-name'},a.cust.firma),
-            h('div',{className:'acc-sub'},(a.cust.ap||'')+(a.cust.branche?' · '+a.cust.branche:''))
+            h('div',{className:'acc-meta'},
+              h('span',{className:'acc-phase-chip'},phaseLabel),
+              info.score?h('span',{className:'acc-score-chip'},'★ '+info.score+'/10'):null
+            )
           ),
           h('div',{className:'acc-btns'},
             a.id===state.activeId?h('span',{className:'acc-active'},'aktiv'):h('span',{},''),
@@ -2072,6 +2162,7 @@ function showSettings(){
       'Claude Haiku · ~0,02 € / Anfrage')
   );
   const menuItems=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'14px'}},
+    h('div',{className:'settings-group-title'},'Unternehmen & Daten'),
     h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
       onclick:()=>{m.remove();showMeinUnternehmen();}},
       '🏢  Mein Unternehmen'),
@@ -2086,10 +2177,10 @@ function showSettings(){
       '↓  Backup wiederherstellen')
   );
   const content=h('div',{},menuItems,
-    h('div',{style:{borderTop:'1px solid var(--border)',marginBottom:'14px'}}),
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'Darstellung'),
     fsLabel,fsRow,
     modeLabel,modeRow,
-    h('div',{style:{borderTop:'1px solid var(--border)',marginBottom:'14px'}}),
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'API-Zugang'),
     status,
     h('div',{className:'field-label'},hasKey?'Neuen Key eingeben':'Key eingeben'),
     inp,
