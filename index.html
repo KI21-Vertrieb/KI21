@@ -320,7 +320,7 @@ Betreff: [präzise]
    felder:[
      {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'},
      {id:'paket',l:'Geplantes Angebot / Lösung',t:'text',p:'z.B. Biplan Professional, 5 Nutzer'},
-     {id:'budget',l:'Geschätztes Budget / Investition',t:'text',p:'z.B. 25.000 € / Jahr'},
+     {id:'budget',l:'Investition (einmalig + Jahreslizenz)',t:'text',p:'z.B. "15.000 € Onboarding einmalig + 12.000 €/Jahr Lizenz"'},
      {id:'minimum',l:'Mindestpreis',t:'text',p:'z.B. 18.000 €'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
@@ -346,6 +346,7 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - Schadens- oder Krisen-Szenarien (z.B. "X € Schaden pro Vorfall, falls Y% vermeidbar") NIEMALS in GESAMTNUTZEN oder ROI einrechnen. Das sind Verkettungen mehrerer unbestätigter Annahmen (Häufigkeit × Vermeidbarkeit × Schadenshöhe) und gehören separat als "ZUSÄTZLICHES POTENZIAL" mit eigener Warnung.
 - Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
 - EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
+- PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
 
 FORMAT – GENAU SO, NICHT MEHR:
 
@@ -360,9 +361,9 @@ IHR BUSINESS CASE (basierend auf den Kundenangaben):
 WICHTIGSTES VERKAUFSARGUMENT:
 [1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
 
-LAUFENDER NUTZEN (jährlich, wiederkehrend): ___ €/Jahr (oder "noch zu validieren")
-INVESTITION: ${f.budget||'___'} €/Jahr
-ROI / AMORTISATION (nur auf laufenden Nutzen): [Verhältnis + Monate, oder "noch nicht berechenbar – Zahlen fehlen"]
+LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
+INVESTITION: ${f.budget||'___'} – geglättet auf ___ €/Monat (über 3 Jahre)
+ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition über 3 Jahre" – oder "noch nicht berechenbar – Zahlen fehlen"]
 
 ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
 [Nur falls relevant: 1 Satz, klar als unvalidierte Hypothese gekennzeichnet, NICHT in obigem ROI enthalten] 🔴 unvalidiert
@@ -588,7 +589,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.50'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.52'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1794,8 +1795,16 @@ function showMeinUnternehmen(initialTab){
   const intelZoomBtn=h('button',{className:'btn',style:{fontSize:'10px'},
     onclick:()=>showFullscreen('KI21 Intelligence',intel.inhalt||'')
   },'⛶ Zoom');
+  const intelCopyBtn=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>{
+      if(navigator.clipboard)navigator.clipboard.writeText(intel.inhalt||'').then(()=>{
+        intelCopyBtn.textContent='✓ Kopiert';setTimeout(()=>intelCopyBtn.textContent='Kopieren',2000);
+      });
+    }
+  },'Kopieren');
   intelToggleRow.appendChild(intelShowToggle);
   intelToggleRow.appendChild(intelZoomBtn);
+  intelToggleRow.appendChild(intelCopyBtn);
   intelResult.appendChild(intelToggleRow);
   intelResult.appendChild(intelBody);
 
