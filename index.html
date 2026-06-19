@@ -31,7 +31,8 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .subnav-text{font-size:11px;color:var(--text2);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .settings-group-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
   color:var(--text3);margin-bottom:2px;}
-.phase-badge{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;cursor:pointer;}
+.phase-badge{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;cursor:pointer;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 .phase-badge-done{background:rgba(46,160,67,.15);color:#2ea043;}
 .phase-badge-progress{background:rgba(255,107,0,.15);color:#ff6b00;}
 .phase-badge-empty{background:rgba(139,148,158,.1);color:var(--text3);}
@@ -370,6 +371,7 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
 - EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
 - PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
+- ARBEITSWERT STATT VOLLER RANGE: Wenn du eine Benchmark-Bandbreite nennst (z.B. "300-600 Stunden/Jahr"), rechne für die eigentliche ROI-Berechnung NICHT mit der ganzen Range, sondern mit einem konkreten Arbeitswert – standardmäßig dem arithmetischen Mittelwert (z.B. "450 Stunden/Jahr"). Weiche davon nur ab, wenn das Unternehmensprofil eine plausible Anpassung rechtfertigt (z.B. mehrere Werke/Sparten → Wert nach oben anpassen; sehr kleines Unternehmen → nach unten), und nenne dann explizit den Grund. Zeige IMMER beides: die Range UND den verwendeten Arbeitswert (z.B. "Typische Range: 300-600 Stunden/Jahr → für diese Berechnung verwendet: 450 Stunden/Jahr (Mittelwert)"). Ergänze am Ende des Outputs den Hinweis: "Die Berechnung basiert auf anonymisierten Erfahrungswerten vergleichbarer Unternehmen. Sobald belastbare unternehmensspezifische Kennzahlen vorliegen, sollten diese die Annahmen ersetzen."
 
 FORMAT – GENAU SO, NICHT MEHR:
 
@@ -407,11 +409,24 @@ Bitte gemeinsam mit dem Kunden validieren.`
      {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
      {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build:(f,c,mu,kk,stk)=>{
+     const ca=LS.get('ki21_case_assumptions_'+state.activeId,null);
+     let caBlock='';
+     if(ca&&(ca.working_value||ca.monthly_benefit)){
+       caBlock='\n\nBEREITS ERMITTELTE BUSINESS-CASE-ANNAHMEN (aus Phase 4, NICHT neu herleiten, sondern wiederverwenden):\n'
+         +(ca.manual_effort_range?'Benchmark-Range: '+ca.manual_effort_range+'\n':'')
+         +(ca.working_value?'Verwendeter Arbeitswert: '+ca.working_value+(ca.adjustment?' ('+ca.adjustment+')':'')+'\n':'')
+         +(ca.monthly_benefit?'Laufender Nutzen: '+ca.monthly_benefit+'\n':'')
+         +(ca.monthly_investment?'Investition (geglättet): '+ca.monthly_investment+'\n':'')
+         +(ca.roi_statement?'ROI-Aussage: '+ca.roi_statement+'\n':'')
+         +(ca.confidence?'Confidence: '+ca.confidence+'\n':'')
+         +'Nutze diese Werte als Grundlage für die Nutzenargumentation, statt sie neu zu schätzen.\n';
+     }
+     return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
 Erkenntnisse: ${f.erkenntnisse||''}
-Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}
+Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}`+caBlock+`
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
@@ -432,7 +447,8 @@ DIE 3 WICHTIGSTEN EINWÄNDE:
 
 DER EINE ABSCHLUSSSATZ: [entscheidender Satz]
 
-→ TODO: [nächster Schritt + wann]`
+→ TODO: [nächster Schritt + wann]`;
+   }
   }
 ];
 
@@ -643,7 +659,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.64'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.66'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1330,6 +1346,27 @@ Nutzen-Kosten-Analyse:
             }
           }catch(e){
             demoSummaryBody.textContent='Kurzfassung konnte nicht erstellt werden.';
+          }
+
+          // Extract structured case assumptions for reuse in Phase 5 (per-opportunity, not global)
+          try{
+            const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
+
+Format exakt so:
+{"manual_effort_range":"<Bandbreite z.B. '300-600 Stunden/Jahr', oder leer falls nicht vorhanden>","working_value":"<verwendeter Arbeitswert/Mittelwert, z.B. '450 Stunden/Jahr'>","adjustment":"<kurze Begründung falls vom Mittelwert abgewichen wurde, sonst 'Mittelwert ohne Anpassung'>","confidence":"<hoch|mittel|niedrig>","monthly_benefit":"<geglätteter Nutzen pro Monat, z.B. '3.200 €/Monat'>","monthly_investment":"<geglättete Investition pro Monat, z.B. '1.389 €/Monat'>","roi_statement":"<1 Satz Nutzen vs Investition>"}
+
+Nur Werte verwenden die im Text unten tatsächlich vorkommen. Wenn ein Feld nicht ermittelbar ist, leeren String verwenden.
+
+Analyse:
+`+result;
+            const caseJson=await callClaude(caseExtractPrompt,null);
+            if(caseJson){
+              const cleaned=caseJson.replace(/```json|```/g,'').trim();
+              const parsed=JSON.parse(cleaned);
+              LS.set('ki21_case_assumptions_'+state.activeId,parsed);
+            }
+          }catch(e){
+            // Non-critical: case assumptions extraction failure shouldn't block the main result
           }
         }
 
