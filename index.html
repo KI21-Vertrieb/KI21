@@ -150,7 +150,8 @@ function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
-  s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase.\n';
+  s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Das gilt AUCH wenn die Kundenangabe selbst in Stunden kam (z.B. "40-60 Stunden/Monat" → "5-7,5 Arbeitstage/Monat"), UND für jede aufsummierte oder hochgerechnete Jahres-/Monatszahl, nicht nur für Einzelfall-Nennungen. Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase, konsequent über den gesamten Output.\n';
+  s+='KRITISCH: Wenn du irgendwo im Output die Verlässlichkeit einer Aussage/Zahl kennzeichnest, nutze AUSSCHLIESSLICH die Worte BELASTBAR (basiert auf konkreten, vom Kunden genannten Daten), PLAUSIBEL (basiert auf Benchmark/Erfahrungswert aus KI21 Intelligence, nicht kundenspezifisch verifiziert) oder SPEKULATIV (Hypothese, noch zu validieren) – NIEMALS Emoji-Punkte wie 🟢/🟡/🔴 oder Ampelfarben ohne Wort. Schreibe immer zuerst den Bewertungstext, dann das Label in Großbuchstaben direkt danach oder davor (z.B. "Typische Range: 300-600 Stunden/Jahr PLAUSIBEL"). Das gilt konsequent für jede Confidence-Angabe im gesamten Output, nicht nur an einer Stelle.\n';
   s+='KRITISCH: Bei Umrechnung von Stunden/Monat in Vollzeitäquivalente (FTE) rechne korrekt: 1 FTE entspricht ca. 160-170 Stunden/Monat (Vollzeitstelle). Also z.B. 50-100 Stunden/Monat entspricht ca. 0,3-0,6 FTE, NICHT mehreren ganzen FTE. Prüfe jede FTE-Angabe rechnerisch nach, bevor du sie nennst – ein häufiger Fehler ist, Stunden/Monat mit der Anzahl beteiligter Personen zu verwechseln, statt durch die Stunden einer vollen Stelle zu teilen.\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
@@ -383,7 +384,7 @@ FORMAT – GENAU SO, NICHT MEHR:
 NUTZEN-SCORE: [Zahl]/10
 
 BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
-[1 Satz mit typischer Größenordnung/Range, wenn plausibel einschätzbar – sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] [🟢/🟡/🔴]
+[1 Satz mit typischer Größenordnung/Range, wenn plausibel einschätzbar – sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BELASTBAR/PLAUSIBEL/SPEKULATIV: [wähle EIN passendes Wort]
 ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben, z.B. "450 Stunden/Jahr (Mittelwert aus 300-600)" – nur weglassen wenn BENCHMARK keine Zahlen-Range enthielt]
 
 IHR BUSINESS CASE (basierend auf den Kundenangaben):
@@ -649,6 +650,8 @@ function renderResultText(text){
       span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
     } else if(rest.startsWith('NICE-TO-HAVE:')){
       span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
+    } else if(/\b(BELASTBAR|PLAUSIBEL|SPEKULATIV)\b/.test(line)){
+      span.innerHTML=highlightConfidenceWords(line);
     } else {
       span.textContent=line;
     }
@@ -658,6 +661,13 @@ function renderResultText(text){
   return div;
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightConfidenceWords(line){
+  let escaped=escHtml(line);
+  escaped=escaped.replace(/\bBELASTBAR\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;">BELASTBAR</span>');
+  escaped=escaped.replace(/\bPLAUSIBEL\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;">PLAUSIBEL</span>');
+  escaped=escaped.replace(/\bSPEKULATIV\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;">SPEKULATIV</span>');
+  return escaped;
+}
 
 function getPhaseStatus(sitId){
   if(!state.activeId)return 'empty';
@@ -674,7 +684,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.73'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.74'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
