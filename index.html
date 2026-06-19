@@ -384,8 +384,8 @@ FORMAT – GENAU SO, NICHT MEHR:
 NUTZEN-SCORE: [Zahl]/10
 
 BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
-[1 Satz mit typischer Größenordnung/Range, wenn plausibel einschätzbar – sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BELASTBAR/PLAUSIBEL/SPEKULATIV: [wähle EIN passendes Wort]
-ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben, z.B. "450 Stunden/Jahr (Mittelwert aus 300-600)" – nur weglassen wenn BENCHMARK keine Zahlen-Range enthielt]
+[1 Satz mit typischer Größenordnung/Range – ab 8 Stunden/Periode IMMER in Arbeitstage umrechnen, z.B. "20-30 Arbeitstage/Monat" statt "160-240 Stunden/Monat" – wenn plausibel einschätzbar, sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BELASTBAR/PLAUSIBEL/SPEKULATIV: [wähle EIN passendes Wort]
+ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben – WENN das Ergebnis 8 Stunden oder mehr pro Periode ergibt, IMMER in Arbeitstage à 8h umrechnen und ausgeben, z.B. nicht "200 Stunden/Monat" sondern "25 Arbeitstage/Monat (Mittelwert aus 20-30 Arbeitstagen, entspricht 160-240 Stunden)" – nur weglassen wenn BENCHMARK keine Zahlen-Range enthielt]
 
 IHR BUSINESS CASE (basierend auf den Kundenangaben):
 [1 Satz mit geschätztem Nutzen basierend auf den genannten KPIs – falls keine KPIs vorhanden: "Noch keine konkreten Zahlen vom Kunden – siehe Rückfragen unten"]
@@ -398,7 +398,7 @@ INVESTITION: ${f.budget||'___'} – geglättet auf ___ €/Monat (über 3 Jahre)
 ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition über 3 Jahre" – oder "noch nicht berechenbar – Zahlen fehlen"]
 
 ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
-[Nur falls relevant: 1 Satz, klar als unvalidierte Hypothese gekennzeichnet, NICHT in obigem ROI enthalten] 🔴 unvalidiert
+[Nur falls relevant: 1 Satz, beginnend mit KLÄREN: oder ANNAHME:, klar als SPEKULATIV gekennzeichnet, NICHT in obigem ROI enthalten]
 
 OFFENE RÜCKFRAGEN AN DEN KUNDEN (nur falls KPIs fehlen, max. 3):
 1. [konkrete Frage]
@@ -684,7 +684,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.74'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.77'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1358,7 +1358,7 @@ function renderStation(sitId){
           try{
             const summaryPrompt=`Erstelle aus dieser Nutzen-Kosten-Analyse eine kompakte Kurzfassung für das nächste Kundengespräch (z.B. Demo oder Abschlussgespräch).
 
-KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als "unvalidiert" oder "🔴" gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
+KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als SPEKULATIV gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
 
 Format:
 🎯 GESPRÄCHSZIEL: [1 Satz was wir erreichen wollen]
