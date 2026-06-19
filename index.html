@@ -151,9 +151,10 @@ function buildCtx(cust,mu,kk,stk){
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
   s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um und nenne die Tage-Zahl (z.B. "480-960 Stunden/Jahr" → "60-120 Arbeitstage/Jahr"). Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase.\n';
+  s+='KRITISCH: Bei Umrechnung von Stunden/Monat in Vollzeitäquivalente (FTE) rechne korrekt: 1 FTE entspricht ca. 160-170 Stunden/Monat (Vollzeitstelle). Also z.B. 50-100 Stunden/Monat entspricht ca. 0,3-0,6 FTE, NICHT mehreren ganzen FTE. Prüfe jede FTE-Angabe rechnerisch nach, bevor du sie nennst – ein häufiger Fehler ist, Stunden/Monat mit der Anzahl beteiligter Personen zu verwechseln, statt durch die Stunden einer vollen Stelle zu teilen.\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
-  s+='- Stelle KEINE Rückfragen – liefere sofort den Output\n';
+  s+='- KRITISCHSTE REGEL: Liefere IMMER sofort den vollständigen Output im vorgegebenen Format – auch wenn Informationen fehlen, unsicher oder unvollständig wirken. STELLE NIEMALS eine Rückfrage VOR dem Output und warte NICHT auf eine Antwort, bevor du lieferst. Fehlende oder unsichere Daten gehören in die Kennzeichnung ANNAHME/KLÄREN oder eine etwaige Rückfragen-Sektion AM ENDE des Outputs, NIEMALS als eigene Frage oder Meta-Kommentar davor. Du bekommst in diesem Schritt keine Antwort auf eine Vorab-Frage – also stelle keine, sondern arbeite mit dem was im Feld steht.\n';
   s+='- Nutze vorhandene Informationen – keine Nachfragen\n';
   s+='- Maximal 5 Punkte pro Abschnitt\n';
   s+='- Jeder Punkt: 1-2 Sätze, direkt und konkret\n';
@@ -228,11 +229,11 @@ ANNAHME: [plausible Annahmen]
 KLÄREN: [offene Punkte]
 
 DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
-1. [ROT] Frage: ___ | Antwort: ___
-2. [ROT] Frage: ___ | Antwort: ___
-3. [GELB] Frage: ___ | Antwort: ___
-4. [GELB] Frage: ___ | Antwort: ___
-5. [GRÜN] Frage: ___ | Antwort: ___
+1. KRITISCH: ___ | Antwort: ___
+2. KRITISCH: ___ | Antwort: ___
+3. WICHTIG: ___ | Antwort: ___
+4. WICHTIG: ___ | Antwort: ___
+5. NICE-TO-HAVE: ___ | Antwort: ___
 
 → TODO: [eine konkrete Aktion + wann]`,
    build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -352,7 +353,6 @@ Investition: ${f.budget||''}
 
 GRUNDPRINZIP: KI21 ist ein Entscheidungswerkzeug, kein Analysewerkzeug. Optimiere auf Entscheidungsqualität, nicht auf Textmenge.
 
-KRITISCHSTE REGEL: Liefere IMMER sofort den vollständigen Output im Format unten – auch wenn Informationen fehlen oder unsicher sind. STELLE NIEMALS eine Rückfrage VOR dem Output und warte NICHT auf eine Antwort, bevor du den Business Case lieferst. Fehlende Daten gehören AUSSCHLIESSLICH in die Sektion "OFFENE RÜCKFRAGEN AN DEN KUNDEN" am ENDE des Outputs, nicht als eigene Frage davor. Du bekommst in diesem Schritt keine Antwort auf eine Vorab-Frage – also stelle keine.
 DAS IST KEIN WIDERSPRUCH zur Regel "keine Zahlen erfinden": Alle Daten im Feld "Erkenntnisse & KPIs" sind bereits vom Kunden im vorherigen Gespräch genannte, echte Angaben – behandle sie als BESTÄTIGT. Wenn eine Zahl im Feld unklar oder unvollständig wirkt, kennzeichne sie im Output als ANNAHME oder KLÄREN statt vorher zu fragen ob du sie nutzen darfst – genau dafür existiert die Kennzeichnung. Die Lösung für Unsicherheit ist die Kennzeichnung im Output, NIEMALS eine Frage davor.
 
 WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
@@ -628,12 +628,21 @@ function renderResultText(text){
   const lines=text.split('\n');
   lines.forEach((line,i)=>{
     const span=document.createElement('span');
+    const numMatch=line.match(/^(\d+\.\s*)/);
+    const prefix=numMatch?numMatch[1]:'';
+    const rest=numMatch?line.slice(prefix.length):line;
     if(line.startsWith('BESTÄTIGT:')){
       span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">BESTÄTIGT</span>'+escHtml(line.slice('BESTÄTIGT:'.length));
     } else if(line.startsWith('ANNAHME:')){
       span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
     } else if(line.startsWith('KLÄREN:')){
       span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+    } else if(rest.startsWith('KRITISCH:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KRITISCH</span>'+escHtml(rest.slice('KRITISCH:'.length));
+    } else if(rest.startsWith('WICHTIG:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
+    } else if(rest.startsWith('NICE-TO-HAVE:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
     } else {
       span.textContent=line;
     }
@@ -659,7 +668,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.67'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.70'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
