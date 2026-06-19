@@ -308,14 +308,18 @@ KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
 → TODO: [nächster Schritt + wann]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Nachbereitung',icon:'📝',
-   regel:'Was wurde besprochen? Nächste Schritte und Follow-up Mail kommen raus.',
+   regel:'Was wurde in DIESEM Termin besprochen? Nächste Schritte und Follow-up Mail kommen raus.',
    felder:[
-     {id:'stichworte',l:'Stichworte aus dem Termin',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
+     {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true},
+     {id:'stichworte',l:'Was wurde in diesem Termin NEU besprochen?',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
-Stichworte: ${f.stichworte||''}
+Kontext aus vorheriger Bedarfsanalyse (zur Einordnung, NICHT der heutige Termin): ${f.kontext||'(kein Kontext vorhanden)'}
+NEUE Stichworte aus dem heutigen Termin: ${f.stichworte||'(noch keine Eingabe)'}
+
+WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer ist, weise im Output unter KLÄREN klar darauf hin, dass die heutigen Gesprächsnotizen noch fehlen – aber liefere trotzdem sofort den vollständigen Output basierend auf dem verfügbaren Kontext.
 
 DEAL-SCORE: [Zahl]/10 | [1 Satz Begründung]
 
@@ -668,7 +672,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.70'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.71'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -870,7 +874,7 @@ function transferAndGo(fromId, toId, result){
   const nextData=LS.get(nextKEY,{fv:{},result:''});
 
   const fieldMap={
-    1:{f1:'stichworte'},
+    1:{f1:'kontext'},
     2:{f1:'erkenntnisse'},
     3:{f1:'erkenntnisse'}
   };
@@ -1011,6 +1015,12 @@ function renderStation(sitId){
       inp=h('textarea',{placeholder:f.p||'','data-fid':f.id});
       if(f.big)inp.style.minHeight='200px';
       inp.value=data.fv[f.id]||'';
+      if(f.readonly){
+        inp.readOnly=true;
+        inp.style.opacity='0.6';
+        inp.style.cursor='default';
+        inp.style.minHeight='80px';
+      }
     } else {
       inp=h('input',{type:'text',placeholder:f.p||''});
       inp.value=data.fv[f.id]||'';
