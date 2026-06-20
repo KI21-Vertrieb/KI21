@@ -251,8 +251,9 @@ WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann K
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 
 QUALIFIZIERUNGS-SCORE FINAL: [Zahl]/10
+Bewerte anhand von 4 Kriterien (je 0-2,5 Punkte, dann summieren und runden): (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
+Begründung: [1 Satz, der die 4 Kriterien kurz benennt]
 Empfehlung: sofort / später / nicht verfolgen
-Begründung: [1 Satz]
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert):
 BESTÄTIGT: [jetzt bestätigte Fakten inkl. Antworten]
@@ -630,9 +631,31 @@ function getScoreLabel(){
   return s+'/10';
 }
 
-function saveScore(score){
+function attachScoreLongPress(el,begruendung){
+  if(!begruendung)return;
+  let pressTimer=null;
+  const start=()=>{pressTimer=setTimeout(()=>{alert('Begründung: '+begruendung);},550);};
+  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
+  el.style.cursor='pointer';
+  el.addEventListener('touchstart',start);
+  el.addEventListener('touchend',cancel);
+  el.addEventListener('touchmove',cancel);
+  el.addEventListener('mousedown',start);
+  el.addEventListener('mouseup',cancel);
+  el.addEventListener('mouseleave',cancel);
+}
+
+function extractBegruendung(text){
+  const m=text.match(/Begründung:\s*(.+)/);
+  return m?m[1].trim().split('\n')[0]:'';
+}
+
+function saveScore(score,begruendung){
   const aid=LS.get('ki21_aid',null);
-  if(aid)LS.set('ki21_score_'+aid,score);
+  if(aid){
+    LS.set('ki21_score_'+aid,score);
+    if(begruendung)LS.set('ki21_score_reason_'+aid,begruendung);
+  }
 }
 
 function renderResultText(text){
@@ -691,7 +714,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.85'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.87'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -709,6 +732,14 @@ function renderHome(){
       }},getScoreLabel()):null
     )
   );
+  setTimeout(()=>{
+    const scoreElInit=document.getElementById('deal-score-nav');
+    const aidInit=LS.get('ki21_aid',null);
+    if(scoreElInit&&aidInit){
+      const savedReason=LS.get('ki21_score_reason_'+aidInit,'');
+      if(savedReason)attachScoreLongPress(scoreElInit,savedReason);
+    }
+  },0);
 
   const wrap=h('div',{className:'wrap'},
     h('div',{className:'hero'},
@@ -1325,13 +1356,15 @@ function renderStation(sitId){
         if(scoreMatch){
           const score=parseInt(scoreMatch[1]);
           if(score>=1&&score<=10){
-            saveScore(score);
+            const begr=extractBegruendung(result);
+            saveScore(score,begr);
             // Update main nav score
             const scoreEl=document.getElementById('deal-score-nav');
             if(scoreEl){
               scoreEl.textContent=score+'/10';
               scoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
               scoreEl.style.background=score>=7?'rgba(46,160,67,.2)':score>=4?'rgba(210,153,34,.2)':'rgba(248,81,73,.2)';
+              attachScoreLongPress(scoreEl,begr);
             }
 
             // Update nav label with score (only Phase 1)
