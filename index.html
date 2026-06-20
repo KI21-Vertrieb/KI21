@@ -655,6 +655,16 @@ function attachScoreLongPress(el,begruendung){
     tip.appendChild(hintEl);
     tip.addEventListener('click',()=>tip.remove());
     document.body.appendChild(tip);
+    setTimeout(()=>{
+      const dismissOnAnyClick=()=>{
+        const t=document.getElementById('score-tooltip');
+        if(t)t.remove();
+        document.removeEventListener('click',dismissOnAnyClick);
+        document.removeEventListener('touchstart',dismissOnAnyClick);
+      };
+      document.addEventListener('click',dismissOnAnyClick);
+      document.addEventListener('touchstart',dismissOnAnyClick);
+    },100);
   };
   const start=(e)=>{
     fired=false;
@@ -730,6 +740,18 @@ function highlightConfidenceWords(line){
   return escaped;
 }
 
+function getPhaseScoreInfo(sitId){
+  if(!state.activeId)return {score:null,reason:''};
+  const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
+  if(!data||!data.result)return {score:null,reason:''};
+  const matches=[...data.result.matchAll(/(\d+)\s*\/\s*10/g)];
+  const m=matches.length?matches[matches.length-1]:null;
+  if(!m)return {score:null,reason:''};
+  const score=parseInt(m[1]);
+  if(score<1||score>10)return {score:null,reason:''};
+  return {score,reason:extractBegruendung(data.result)};
+}
+
 function getPhaseStatus(sitId){
   if(!state.activeId)return 'empty';
   const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
@@ -745,7 +767,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.92'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.94'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -805,6 +827,12 @@ function renderHome(){
     const badgeLabel=status==='done'?'Fertig':status==='progress'?'In Arbeit':'Offen';
     const badgeClass='phase-badge phase-badge-'+status;
     const badge=h('span',{className:badgeClass},badgeLabel);
+    const phaseScoreInfo=getPhaseScoreInfo(g.primary);
+    const scoreChip=phaseScoreInfo.score?h('span',{
+      style:{fontSize:'10px',fontWeight:'800',color:scoreColor(phaseScoreInfo.score),
+        marginRight:'6px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTouchCallout:'none'}
+    },phaseScoreInfo.score+'/10'):null;
+    if(scoreChip&&phaseScoreInfo.reason)attachScoreLongPress(scoreChip,phaseScoreInfo.reason);
     let pressTimer=null;
     let suppressClick=false;
     const startPress=(e)=>{
@@ -843,6 +871,7 @@ function renderHome(){
         h('div',{className:'sit-title'},g.label),
         h('div',{className:'sit-phase'},g.sub)
       ),
+      scoreChip,
       badge
     );
     wrap.appendChild(row);
@@ -1044,7 +1073,7 @@ function renderStation(sitId){
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
     h('div',{className:'nav-right'},
-      cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
+      cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -1166,7 +1195,8 @@ function renderStation(sitId){
   demoSummaryHead.appendChild(demoSummaryLabel);
   demoSummaryHead.appendChild(demoSummaryBtns);
   const demoSummaryBody=h('div',{className:'result-body',
-    style:{fontSize:'13px',lineHeight:'1.7'}},data.summary||'');
+    style:{fontSize:'13px',lineHeight:'1.7'}});
+  demoSummaryBody.appendChild(renderResultText(data.summary||''));
   demoSummaryBox.appendChild(demoSummaryHead);
   demoSummaryBox.appendChild(demoSummaryBody);
   wrap.appendChild(demoSummaryBox);
@@ -1278,7 +1308,7 @@ function renderStation(sitId){
         if(r2){
           data.result2=r2;
           LS.set(KEY,data);
-          result2Body.textContent=r2;
+          result2Body.innerHTML='';result2Body.appendChild(renderResultText(r2));
           // Extract SPIN questions and transfer to Phase 2
           const lines2=r2.split('\n');
           const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
@@ -1442,7 +1472,8 @@ function renderStation(sitId){
           try{
             const summaryPrompt=`Erstelle aus dieser Nutzen-Kosten-Analyse eine kompakte Kurzfassung für das nächste Kundengespräch (z.B. Demo oder Abschlussgespräch).
 
-KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als ZU VALIDIEREN gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
+KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. KEINE eigene Mittelwertbildung oder Neuberechnung aus einer Bandbreite (z.B. wenn die Analyse "9-13,5 Arbeitstage" sagt, schreibe NICHT "11 Arbeitstage" – übernimm die Bandbreite unverändert als "9-13,5 Arbeitstage"). Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als ZU VALIDIEREN gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
+KRITISCH: Übernimm die Konfidenz-Kennzeichnung aus der Analyse (BESTÄTIGT/ARBEITSWERT/ANNAHME/ZU VALIDIEREN). Wenn ein Punkt in der Kurzfassung auf eine BESTÄTIGT-Aussage zurückgeht, kennzeichne ihn auch hier als BESTÄTIGT (gleiche Schreibweise, am Anfang der jeweiligen Zeile/des Punkts). Erfinde keine neue Sicherheit, die im Original nicht vorhanden war.
 
 Format:
 🎯 GESPRÄCHSZIEL: [1 Satz was wir erreichen wollen]
@@ -1463,7 +1494,7 @@ Nutzen-Kosten-Analyse:
 `+result;
             const summary=await callClaude(summaryPrompt,null);
             if(summary){
-              demoSummaryBody.textContent=summary;
+              demoSummaryBody.innerHTML='';demoSummaryBody.appendChild(renderResultText(summary));
               data.summary=summary;
               LS.set(KEY,data);
             }
