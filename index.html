@@ -634,15 +634,32 @@ function getScoreLabel(){
 function attachScoreLongPress(el,begruendung){
   if(!begruendung)return;
   let pressTimer=null;
-  const start=()=>{pressTimer=setTimeout(()=>{alert('Begründung: '+begruendung);},550);};
+  let fired=false;
+  const showTooltip=()=>{
+    const existing=document.getElementById('score-tooltip');
+    if(existing)existing.remove();
+    const tip=document.createElement('div');
+    tip.id='score-tooltip';
+    tip.textContent=begruendung;
+    tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
+      'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
+      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);';
+    document.body.appendChild(tip);
+    setTimeout(()=>{if(tip.parentNode)tip.remove();},5000);
+  };
+  const start=(e)=>{
+    fired=false;
+    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
+  };
   const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
   el.style.cursor='pointer';
-  el.addEventListener('touchstart',start);
+  el.addEventListener('touchstart',start,{passive:true});
   el.addEventListener('touchend',cancel);
   el.addEventListener('touchmove',cancel);
   el.addEventListener('mousedown',start);
   el.addEventListener('mouseup',cancel);
   el.addEventListener('mouseleave',cancel);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 
 function extractBegruendung(text){
@@ -714,7 +731,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.87'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.88'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
