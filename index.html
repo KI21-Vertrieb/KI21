@@ -641,12 +641,18 @@ function attachScoreLongPress(el,begruendung){
     if(existing)existing.remove();
     const tip=document.createElement('div');
     tip.id='score-tooltip';
-    tip.textContent=begruendung;
     tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
       'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
-      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);';
+      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;';
+    const textEl=document.createElement('div');
+    textEl.textContent=begruendung;
+    const hintEl=document.createElement('div');
+    hintEl.textContent='Tippen zum Schließen';
+    hintEl.style.cssText='font-size:9px;color:#8b949e;margin-top:6px;text-align:right;';
+    tip.appendChild(textEl);
+    tip.appendChild(hintEl);
+    tip.addEventListener('click',()=>tip.remove());
     document.body.appendChild(tip);
-    setTimeout(()=>{if(tip.parentNode)tip.remove();},5000);
   };
   const start=(e)=>{
     fired=false;
@@ -735,7 +741,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.89'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.91'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -749,7 +755,10 @@ function renderHome(){
         borderRadius:'4px',
         padding:'2px 5px',
         whiteSpace:'nowrap',
-        flexShrink:'0'
+        flexShrink:'0',
+        WebkitUserSelect:'none',
+        userSelect:'none',
+        WebkitTouchCallout:'none'
       }},getScoreLabel()):null
     )
   );
@@ -1282,7 +1291,11 @@ function renderStation(sitId){
           if(em2){
             const s2=parseInt(em2[1]);
             const navLabel=document.getElementById('nav-phase-label');
-            if(navLabel){navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span style="color:'+scoreColor(s2)+'">'+s2+'/10</span>';}
+            if(navLabel){
+              navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(s2)+'">'+s2+'/10</span>';
+              const badgeEl=document.getElementById('phase-score-badge');
+              if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,extractBegruendung(r2));}
+            }
           }
         }
         gen2Btn.disabled=false;
@@ -1312,7 +1325,11 @@ function renderStation(sitId){
       const pse=document.getElementById('phase-score-'+sitId);
       if(pse){}
       const navLabel=document.getElementById('nav-phase-label');
-      if(navLabel){navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span style="color:'+scoreColor(es)+'">'+es+'/10</span>';}
+      if(navLabel){
+        navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(es)+'">'+es+'/10</span>';
+        const badgeEl=document.getElementById('phase-score-badge');
+        if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,extractBegruendung(data.result));}
+      }
     },50);}}
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
@@ -1385,16 +1402,18 @@ function renderStation(sitId){
               scoreEl.textContent=score+'/10';
               scoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
               scoreEl.style.background=score>=7?'rgba(46,160,67,.2)':score>=4?'rgba(210,153,34,.2)':'rgba(248,81,73,.2)';
+              scoreEl.style.userSelect='none';
+              scoreEl.style.WebkitUserSelect='none';
+              scoreEl.style.WebkitTouchCallout='none';
               attachScoreLongPress(scoreEl,begr);
             }
 
-            // Update nav label with score (only Phase 1)
+            // Update nav label with score (all phases)
             const navLabel=document.getElementById('nav-phase-label');
             if(navLabel){
-              const sit2=SITS[sitId];
-              if(sitId===0){
-                navLabel.innerHTML=sit2.num+' · '+sit2.title+' · <span style="color:'+scoreColor(score)+'">'+score+'/10</span>';
-              }
+              navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(score)+'">'+score+'/10</span>';
+              const badgeEl=document.getElementById('phase-score-badge');
+              if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,begr);}
             }
           }
         }
