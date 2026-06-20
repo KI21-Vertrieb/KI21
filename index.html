@@ -802,7 +802,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.97'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.99'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -870,6 +870,14 @@ function renderHome(){
     wrap.appendChild(h('div',{style:{fontSize:'11px',color:'#ff6b00',background:'rgba(255,107,0,.08)',
       border:'1px solid rgba(255,107,0,.25)',borderRadius:'6px',padding:'8px 10px',marginBottom:'14px',lineHeight:'1.5'}},
       'KI21 Schnellstart aktiv – das Dossier basiert teilweise auf Arbeitshypothesen und Branchenwissen. Alle Annahmen sollten im Kundengespräch validiert werden.'));
+    if(cust.firma){
+      wrap.appendChild(h('button',{className:'btn-o',style:{width:'100%',marginBottom:'16px'},
+        onclick:()=>runAutopilot()
+      },'⚡ Schnellstart jetzt ausführen'));
+    } else {
+      wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text2)',marginBottom:'16px'}},
+        'Bitte zuerst einen Kunden auswählen, um den Schnellstart zu nutzen.'));
+    }
   }
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
@@ -1058,49 +1066,42 @@ async function runAutopilot(){
   }
   app.appendChild(progBox);
 
-  // Phase 0 (Qualifizierung) should already exist - if not, skip ahead with whatever fv exists
+  // Non-invasive: only READ Phase 1 (Qualifizierung) input fields, never write to real phase data
+  const phase1Data=LS.get('ki21_st_'+state.activeId+'_0',{fv:{},result:''});
+  const dossierResults=[];
   let prevResult='';
+
   for(let i=0;i<5;i++){
     const sit=SITS[i];
-    const KEY='ki21_st_'+state.activeId+'_'+i;
-    const data=LS.get(KEY,{fv:{},result:''});
-
-    // Carry forward minimal context from previous phase into this phase's primary text field, if empty
-    if(i>0&&prevResult){
+    // Build a synthetic field-value object for this phase, fed only by the chain of previous in-memory results
+    let fv={};
+    if(i===0){
+      fv=phase1Data.fv||{};
+    } else {
       const textFieldId=sit.felder.find(f=>f.t==='ta'&&!f.readonly);
-      if(textFieldId&&!data.fv[textFieldId.id]){
-        data.fv[textFieldId.id]=prevResult;
-        LS.set(KEY,data);
-      }
       const ctxFieldId=sit.felder.find(f=>f.readonly);
-      if(ctxFieldId&&!data.fv[ctxFieldId.id]){
-        data.fv[ctxFieldId.id]=prevResult;
-        LS.set(KEY,data);
-      }
+      if(ctxFieldId)fv[ctxFieldId.id]=prevResult;
+      if(textFieldId)fv[textFieldId.id]=prevResult;
+      // For phases with additional fields (e.g. paket/budget in Phase 4/5), leave them empty -
+      // the Schnellstart prompt rules instruct the model to use BRANCHENHYPOTHESE for missing data.
     }
 
-    const stk=LS.get('ki21_stk_'+state.activeId+'_'+i,'');
+    const stk='';
     try{
-      const prompt=sit.build(data.fv,cust,mu,kk,stk);
+      const prompt=sit.build(fv,cust,mu,kk,stk);
       const result=await callClaude(prompt,null);
       if(result){
-        data.result=result;
-        LS.set(KEY,data);
+        dossierResults.push({title:sit.title,result});
         prevResult=result;
         stepEls[i].textContent='✓ '+phaseNamesShort[i];
         stepEls[i].style.color='#2ea043';
-        // Save score if present
-        const scoreMatches=[...result.matchAll(/(\d+)\s*\/\s*10/g)];
-        const scoreMatch=scoreMatches.length?scoreMatches[0]:null;
-        if(scoreMatch){
-          const score=parseInt(scoreMatch[1]);
-          if(score>=1&&score<=10)saveScore(score,extractBegruendung(result));
-        }
       } else {
+        dossierResults.push({title:sit.title,result:'(Keine Antwort erhalten)'});
         stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (fehlgeschlagen)';
         stepEls[i].style.color='#f85149';
       }
     }catch(e){
+      dossierResults.push({title:sit.title,result:'(Fehler: '+e.message+')'});
       stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (Fehler: '+e.message+')';
       stepEls[i].style.color='#f85149';
     }
@@ -1108,10 +1109,73 @@ async function runAutopilot(){
 
   progBox.appendChild(h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#2ea043',marginTop:'16px'}},
     '✅ Opportunity-Dossier erfolgreich erstellt.'));
-  const doneBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
-    onclick:()=>renderStation(0)
+  const showBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
+    onclick:()=>showAutopilotDossier(cust,dossierResults)
   },'Dossier ansehen →');
-  progBox.appendChild(doneBtn);
+  progBox.appendChild(showBtn);
+  // Keep results available for immediate PDF export without re-running
+  state.lastAutopilotDossier={cust,dossierResults};
+}
+
+function showAutopilotDossier(cust,dossierResults){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const wrap=h('div',{style:{padding:'16px',maxWidth:'600px',margin:'0 auto'}});
+  const headerRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}});
+  headerRow.appendChild(h('div',{style:{fontSize:'16px',fontWeight:'800'}},'⚡ KI21 Schnellstart-Dossier'));
+  headerRow.appendChild(h('button',{className:'btn',onclick:renderHome},'✕'));
+  wrap.appendChild(headerRow);
+  wrap.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text2)',marginBottom:'14px'}},
+    cust.firma||''));
+
+  const exportBtn=h('button',{className:'btn-o',style:{width:'100%',marginBottom:'16px'},
+    onclick:()=>exportAutopilotPDF(cust,dossierResults)
+  },'📄 Als PDF exportieren');
+  wrap.appendChild(exportBtn);
+
+  dossierResults.forEach(d=>{
+    const box=h('div',{className:'result-box',style:{marginBottom:'14px'}});
+    const head=h('div',{className:'result-head'});
+    head.appendChild(h('span',{className:'result-label'},d.title));
+    box.appendChild(head);
+    const body=h('div',{className:'result-body'});
+    body.appendChild(renderResultText(d.result));
+    box.appendChild(body);
+    wrap.appendChild(box);
+  });
+
+  app.appendChild(wrap);
+}
+
+function exportAutopilotPDF(cust,dossierResults){
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Schnellstart-Dossier – ${cust.firma||'Kunde'}</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#1a1a1a;padding:30px;max-width:800px;margin:0 auto;}
+    h1{color:#ff6b00;font-size:20px;margin-bottom:4px;}
+    .meta{font-size:12px;color:#666;margin-bottom:20px;}
+    .phase{margin-bottom:24px;page-break-inside:avoid;}
+    .phase-title{font-size:14px;font-weight:bold;color:#ff6b00;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;}
+    pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;}
+    .banner{background:#fff3e6;border:1px solid #ff6b00;border-radius:6px;padding:10px;font-size:11px;margin-bottom:20px;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>⚡ KI21 Schnellstart-Dossier</h1>
+  <div class="meta">${cust.firma||'–'} | Erstellt: ${new Date().toLocaleDateString('de-DE')}</div>
+  <div class="banner">Dieses Dossier wurde automatisch erstellt und kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen. Alle Annahmen sollten im nächsten Kundengespräch validiert werden.</div>`;
+  dossierResults.forEach(d=>{
+    html+=`<div class="phase"><div class="phase-title">${d.title}</div><pre>${(d.result||'').replace(/</g,'&lt;')}</pre></div>`;
+  });
+  html+=`</body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='Schnellstart-Dossier_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function transferAndGo(fromId, toId, result){
@@ -1588,11 +1652,6 @@ function renderStation(sitId){
               if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,begr);}
             }
           }
-        }
-        // Schnellstart: after Phase 1 completes, automatically run through all remaining phases
-        if(sitId===0&&LS.get('ki21_schnellstart',false)){
-          setTimeout(()=>{runAutopilot();},800);
-          return;
         }
         // Phase 5: Auto-extract Besuchsbericht into CRM field
         if(sitId===4){
