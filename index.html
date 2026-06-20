@@ -328,7 +328,8 @@ NEUE Stichworte aus dem heutigen Termin: ${f.stichworte||'(noch keine Eingabe)'}
 
 WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen KLÄREN-Punkt INNERHALB des Outputs (z.B. "KLÄREN: Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "DEAL-SCORE:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
 
-DEAL-SCORE: [Zahl]/10 | [1 Satz Begründung]
+DEAL-SCORE: [Zahl]/10
+Begründung: [1 Satz]
 
 BESUCHSBERICHT:
 Datum: [heute]
@@ -643,7 +644,8 @@ function attachScoreLongPress(el,begruendung){
     tip.id='score-tooltip';
     tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
       'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
-      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;';
+      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;'+
+      '-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;';
     const textEl=document.createElement('div');
     textEl.textContent=begruendung;
     const hintEl=document.createElement('div');
@@ -672,6 +674,8 @@ function attachScoreLongPress(el,begruendung){
 function extractBegruendung(text){
   const m=text.match(/Begründung:\s*(.+)/);
   if(m)return m[1].trim().split('\n')[0];
+  const pipeMatch=text.match(/\d+\s*\/\s*10\s*\|\s*(.+)/);
+  if(pipeMatch)return pipeMatch[1].trim().split('\n')[0];
   const fallback=text.match(/Empfehlung:\s*(.+)/);
   if(fallback)return fallback[1].trim().split('\n')[0];
   return '';
@@ -741,7 +745,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.91'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.92'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
