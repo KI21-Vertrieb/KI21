@@ -44,7 +44,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
   padding:3px 8px;cursor:pointer;}
 .cust-label{font-size:8px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;line-height:1.3;}
-.cust-val{font-size:11px;font-weight:700;color:#ff6b00;line-height:1.3;max-width:100px;
+.cust-val{font-size:11px;font-weight:700;color:#ff6b00;line-height:1.3;max-width:180px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .wrap{padding:12px 14px;max-width:500px;margin:0 auto;}
 .hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin:10px 0 16px;}
@@ -151,6 +151,8 @@ if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
+  s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
+  s+='KRITISCH: Wenn dieselben Kernfakten (z.B. eine konkrete Zahl wie "6 Arbeitstage pro Szenario") bereits in einem vorherigen Kontext-Abschnitt erwähnt wurden, wiederhole sie in dieser Phase nur EINMAL ausführlich (meist in den ERKENNTNISSE/BESTÄTIGT-Abschnitten) und referenziere sie danach kurz, statt sie in jedem Abschnitt erneut vollständig auszuschreiben. Ziel: Wiederholungen über die Phasen hinweg reduzieren, ohne wichtige Fakten wegzulassen.\n';
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
   s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um, indem du die Stundenzahl DURCH 8 TEILST (z.B. 600-1.200 Stunden ÷ 8 = 75-150 Arbeitstage, NICHT 600-1.200 Arbeitstage – die Maßeinheit ändert sich, der Zahlenwert wird kleiner). Rechne diese Division bei JEDER Umrechnung explizit nach, bevor du das Ergebnis hinschreibst. Das gilt AUCH wenn die Kundenangabe selbst in Stunden kam (z.B. "40-60 Stunden/Monat" → "5-7,5 Arbeitstage/Monat"), UND für jede aufsummierte oder hochgerechnete Jahres-/Monatszahl, nicht nur für Einzelfall-Nennungen. Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase, konsequent über den gesamten Output.\n';
@@ -395,6 +397,12 @@ FORMAT – GENAU SO, NICHT MEHR:
 
 NUTZEN-SCORE: [Zahl]/10
 
+IN 30 SEKUNDEN:
+- Nutzen-Score: [Zahl]/10
+- Größter Schmerz: [1 kurzer Satz, das wichtigste Problem des Kunden]
+- Wichtigste offene Frage: [1 Satz, die kritischste noch zu klärende Frage]
+- Empfohlener nächster Schritt: [1 kurzer Satz]
+
 BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
 [1 Satz mit typischer Größenordnung/Range – ab 8 Stunden/Periode IMMER in Arbeitstage umrechnen, z.B. "20-30 Arbeitstage/Monat" statt "160-240 Stunden/Monat" – wenn plausibel einschätzbar, sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BESTÄTIGT/ARBEITSWERT/ZU VALIDIEREN: [wähle EIN passendes Wort]
 ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben – WENN das Ergebnis 8 Stunden oder mehr pro Periode ergibt, IMMER in Arbeitstage à 8h umrechnen und ausgeben, z.B. nicht "200 Stunden/Monat" sondern "25 Arbeitstage/Monat (Mittelwert aus 20-30 Arbeitstagen, entspricht 160-240 Stunden)" – nur weglassen wenn BENCHMARK keine Zahlen-Range enthielt]
@@ -407,7 +415,7 @@ WICHTIGSTES VERKAUFSARGUMENT:
 
 LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
 INVESTITION: ${f.budget||'___'} – geglättet auf ___ €/Monat (über 3 Jahre)
-ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition über 3 Jahre" – oder "noch nicht berechenbar – Zahlen fehlen"]
+ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat als vorläufiger Business Case auf Basis der verwendeten Arbeitswerte, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition – vorläufiger Business Case, finale Validierung im nächsten Gespräch erforderlich" – oder "noch nicht berechenbar – Zahlen fehlen". Vermeide eine einzelne, zu sicher wirkende Prozentzahl (z.B. "ROI 250%") ohne den Hinweis, dass sie auf Arbeitswerten/Annahmen basiert.]
 
 ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
 [Nur falls relevant: 1 Satz, beginnend mit KLÄREN:, der NUR die MECHANIK beschreibt (was würde passieren, welche Faktoren spielen eine Rolle) – OHNE jede €-Zahl, OHNE Bandbreite, OHNE Sensitivitätsrechnung. Beispiel: "KLÄREN: Schnellere Szenario-Rechnung könnte einen Teil der Schäden aus Lieferkettenschocks vermeiden – Häufigkeit und Vermeidbarkeit müssen mit dem Kunden konkret durchgesprochen werden, bevor sich das beziffern lässt." NIEMALS eine Zahl in diesem Abschnitt, auch nicht in Klammern oder als "wenn X dann Y"-Beispiel.]
@@ -452,6 +460,17 @@ WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann K
 
 ABSCHLUSS-SCORE: [Zahl]/10
 Begründung: [1 Satz – Abschlusswahrscheinlichkeit?]
+Score-Erläuterung (auf einen Blick):
++ [1 positiver Faktor, z.B. "Sponsor vorhanden"]
++ [1 positiver Faktor, z.B. "Schmerz bestätigt"]
+– [1 negativer/offener Faktor, z.B. "IT-Abhängigkeit"]
+– [1 negativer/offener Faktor, z.B. "ROI noch nicht vollständig validiert"]
+
+IN 30 SEKUNDEN:
+- Abschluss-Score: [Zahl]/10
+- Größter Hebel für den Abschluss: [1 kurzer Satz]
+- Wichtigste offene Frage: [1 Satz]
+- Empfohlener nächster Schritt: [1 kurzer Satz]
 
 ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
 
@@ -753,7 +772,7 @@ function getPhaseScoreInfo(sitId){
   const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
   if(!data||!data.result)return {score:null,reason:''};
   const matches=[...data.result.matchAll(/(\d+)\s*\/\s*10/g)];
-  const m=matches.length?matches[matches.length-1]:null;
+  const m=matches.length?matches[0]:null;
   if(!m)return {score:null,reason:''};
   const score=parseInt(m[1]);
   if(score<1||score>10)return {score:null,reason:''};
@@ -775,7 +794,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.95'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.96'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1329,7 +1348,7 @@ function renderStation(sitId){
           weiter2Row.style.display='block';
           // Update nav score
           const ems2=[...r2.matchAll(/(\d+)\s*\/\s*10/g)];
-          const em2=ems2.length?ems2[ems2.length-1]:null;
+          const em2=ems2.length?ems2[0]:null;
           if(em2){
             const s2=parseInt(em2[1]);
             const navLabel=document.getElementById('nav-phase-label');
@@ -1362,7 +1381,7 @@ function renderStation(sitId){
   if(data.result){
     // Show phase score
     const ems=[...data.result.matchAll(/(\d+)\s*\/\s*10/g)];
-    const em=ems.length?ems[ems.length-1]:null;
+    const em=ems.length?ems[0]:null;
     if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
       const pse=document.getElementById('phase-score-'+sitId);
       if(pse){}
@@ -1432,7 +1451,7 @@ function renderStation(sitId){
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
         const scoreMatches=[...result.matchAll(/(\d+)\s*\/\s*10/g)];
-        const scoreMatch=scoreMatches.length?scoreMatches[scoreMatches.length-1]:null;
+        const scoreMatch=scoreMatches.length?scoreMatches[0]:null;
         if(scoreMatch){
           const score=parseInt(scoreMatch[1]);
           if(score>=1&&score<=10){
