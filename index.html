@@ -156,11 +156,11 @@ function buildCtx(cust,mu,kk,stk){
     s+='Du verfügst nur über begrenzte Informationen. Nutze vorhandene Fakten maximal aus.\n';
     s+='Ergänze fehlende Informationen AUSSCHLIESSLICH als: ANNAHME, ARBEITSWERT, BRANCHENHYPOTHESE oder ZU KLÄREN. Erfinde NIEMALS bestätigte Aussagen oder bestätigte Zahlen.\n';
     s+='KRITISCH: Trenne noch strenger als sonst zwischen BESTÄTIGT (vom Kunden tatsächlich genannt), ANNAHME (direkt aus dem Gesagten abgeleitet) und BRANCHENHYPOTHESE (allgemeines Branchenwissen, NICHT aus diesem Kunden abgeleitet). Wenn eine Zahl wie "120-160 Stunden Konsolidierungsaufwand" oder "9-18 Monate Projektlaufzeit" NICHT vom Kunden bestätigt wurde, kennzeichne sie unmissverständlich als BRANCHENHYPOTHESE, nicht als ANNAHME – das macht den Unterschied zwischen "aus diesem Gespräch abgeleitet" und "generisches Branchenwissen" sichtbar.\n';
-    s+='KRITISCH: Wenn der vorläufige Business Case/ROI auf Basis der vorhandenen Informationen NEGATIV oder NICHT SELBSTTRAGEND ausfällt, akzeptiere das offen und sage es klar (z.B. "Auf Basis der bisherigen Informationen ist der Case noch nicht selbsttragend"). Versuche NICHT, das Ergebnis durch zusätzliche, unbestätigte Potenziale oder Argumente zu kompensieren oder zu relativieren. Ein ehrlich negativer Schnellstart-Befund ist wertvoller als ein künstlich positiv gerechneter.\n';
+    s+='KRITISCH: Wenn der vorläufige Business Case/ROI auf Basis der vorhandenen Informationen NEGATIV oder NICHT SELBSTTRAGEND ausfällt, akzeptiere das offen und sage es klar (z.B. "Auf Basis der bisherigen Informationen ist der Case noch nicht selbsttragend"). Versuche NICHT, das Ergebnis durch zusätzliche, unbestätigte Potenziale oder Argumente zu kompensieren oder zu relativieren. Ein ehrlich negativer Befund in der Opportunity-Vorschau ist wertvoller als ein künstlich positiv gerechneter.\n';
     s+='KRITISCH: Bleibe bei ROI-Rechnungen besonders konservativ. Nutze Bereiche/Arbeitswerte statt scheinbar exakter Einzelzahlen, und mache deutlich, dass die Berechnung auf BRANCHENHYPOTHESEN beruht, solange keine Kundenzahlen vorliegen.\n';
     s+='KRITISCH: Lege den Fokus stärker auf Discovery als auf Fakten-Suggestion. Formuliere mehr offene, gezielte Rückfragen statt viele konkrete Zahlen zu präsentieren, die noch nicht belastbar sind – das Ziel ist Gesprächsvorbereitung, nicht eine scheinbar fertige Analyse.\n';
     s+='Wenn Informationen fehlen: leite aus Branche und Situation plausible Hypothesen ab, kennzeichne sie eindeutig als BRANCHENHYPOTHESE, und leite daraus gezielte Rückfragen ab. Das Ziel ist ein hochwertiges Arbeitsdokument für den Vertrieb, nicht absolute Gewissheit.\n';
-    s+='Beginne den Output mit: "⚡ KI21 SCHNELLSTART – Dieses Dossier wurde automatisch aus den bisher verfügbaren Informationen erstellt. Es kombiniert bestätigte Fakten, Branchenwissen, typische Muster und plausible Arbeitshypothesen. Alle Annahmen sollten im nächsten Kundengespräch validiert werden."\n';
+    s+='Beginne den Output mit: "🔍 OPPORTUNITY-VORSCHAU – Dies ist ein erster Überblick, keine vollständige Analyse. Die Vorschau kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen, um typische Herausforderungen zu antizipieren und erste Gesprächs-Hypothesen zu entwickeln. Sie ersetzt nicht die Qualifizierung, das Kundengespräch oder die Validierung von Annahmen im vollständigen KI21-Prozess."\n';
     s+='Direkt danach, vor dem eigentlichen Inhalt, schätze grob ein (keine exakte Berechnung nötig, nur Orientierung): "Bestätigte Informationen: XX % | Arbeitshypothesen/Branchenwissen: XX % | Noch zu validierende Punkte: XX %" (die drei Werte sollten sich ungefähr zu 100% aufsummieren).\n';
   }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
@@ -808,7 +808,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.03'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.04'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1029,7 +1029,7 @@ async function runAutopilot(){
   app.innerHTML='';
   const progBox=h('div',{style:{padding:'20px 16px',maxWidth:'500px',margin:'0 auto'}});
   progBox.appendChild(h('div',{style:{fontSize:'15px',fontWeight:'800',marginBottom:'14px'}},
-    '⚡ KI21 erstellt Ihr Opportunity-Dossier'));
+    '🔍 KI21 erstellt Ihre Opportunity-Vorschau'));
   const stepEls=[];
   for(let i=0;i<5;i++){
     const stepEl=h('div',{style:{fontSize:'13px',padding:'8px 0',color:'var(--text2)'}},
@@ -1056,7 +1056,7 @@ async function runAutopilot(){
       if(ctxFieldId)fv[ctxFieldId.id]=prevResult;
       if(textFieldId)fv[textFieldId.id]=prevResult;
       // For phases with additional fields (e.g. paket/budget in Phase 4/5), leave them empty -
-      // the Schnellstart prompt rules instruct the model to use BRANCHENHYPOTHESE for missing data.
+      // the Opportunity-Vorschau prompt rules instruct the model to use BRANCHENHYPOTHESE for missing data.
     }
 
     const stk='';
@@ -1081,14 +1081,14 @@ async function runAutopilot(){
   }
 
   progBox.appendChild(h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#2ea043',marginTop:'16px'}},
-    '✅ Opportunity-Dossier erfolgreich erstellt.'));
+    '✅ Opportunity-Vorschau erfolgreich erstellt.'));
   // Automatically download as PDF/HTML so the result is never lost
   exportAutopilotPDF(cust,dossierResults);
   progBox.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text2)',marginTop:'6px'}},
-    '📄 Dossier wurde automatisch heruntergeladen.'));
+    '📄 Vorschau wurde automatisch heruntergeladen.'));
   const showBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
     onclick:()=>showAutopilotDossier(cust,dossierResults)
-  },'Dossier ansehen →');
+  },'Vorschau ansehen →');
   progBox.appendChild(showBtn);
   // Keep results available for immediate PDF export without re-running
   state.lastAutopilotDossier={cust,dossierResults};
@@ -1099,7 +1099,7 @@ function showAutopilotDossier(cust,dossierResults){
   app.innerHTML='';
   const wrap=h('div',{style:{padding:'16px',maxWidth:'600px',margin:'0 auto'}});
   const headerRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}});
-  headerRow.appendChild(h('div',{style:{fontSize:'16px',fontWeight:'800'}},'⚡ KI21 Schnellstart-Dossier'));
+  headerRow.appendChild(h('div',{style:{fontSize:'16px',fontWeight:'800'}},'🔍 Opportunity-Vorschau'));
   headerRow.appendChild(h('button',{className:'btn',onclick:renderHome},'✕'));
   wrap.appendChild(headerRow);
   wrap.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text2)',marginBottom:'14px'}},
@@ -1126,20 +1126,20 @@ function showAutopilotDossier(cust,dossierResults){
 
 function exportAutopilotPDF(cust,dossierResults){
   let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Schnellstart-Dossier – ${cust.firma||'Kunde'}</title>
+  <title>Opportunity-Vorschau – ${cust.firma||'Kunde'}</title>
   <style>
     body{font-family:Arial,sans-serif;color:#1a1a1a;padding:30px;max-width:800px;margin:0 auto;}
-    h1{color:#ff6b00;font-size:20px;margin-bottom:4px;}
+    h1{color:#7c3aed;font-size:20px;margin-bottom:4px;}
     .meta{font-size:12px;color:#666;margin-bottom:20px;}
     .phase{margin-bottom:24px;page-break-inside:avoid;}
-    .phase-title{font-size:14px;font-weight:bold;color:#ff6b00;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;}
+    .phase-title{font-size:14px;font-weight:bold;color:#7c3aed;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;}
     pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;}
-    .banner{background:#fff3e6;border:1px solid #ff6b00;border-radius:6px;padding:10px;font-size:11px;margin-bottom:20px;}
+    .banner{background:#f3eeff;border:1px solid #7c3aed;border-radius:6px;padding:10px;font-size:11px;margin-bottom:20px;}
     @media print{body{padding:10px;}}
   </style></head><body>
-  <h1>⚡ KI21 Schnellstart-Dossier</h1>
+  <h1>🔍 Opportunity-Vorschau</h1>
   <div class="meta">${cust.firma||'–'} | Erstellt: ${new Date().toLocaleDateString('de-DE')}</div>
-  <div class="banner">Dieses Dossier wurde automatisch erstellt und kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen. Alle Annahmen sollten im nächsten Kundengespräch validiert werden.</div>`;
+  <div class="banner">Diese Vorschau wurde automatisch erstellt und kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen. Sie ersetzt nicht die vollständige KI21-Qualifizierung – alle Annahmen sollten im Kundengespräch validiert und über den vollständigen Prozess vertieft werden.</div>`;
   dossierResults.forEach(d=>{
     html+=`<div class="phase"><div class="phase-title">${d.title}</div><pre>${(d.result||'').replace(/</g,'&lt;')}</pre></div>`;
   });
@@ -1148,7 +1148,7 @@ function exportAutopilotPDF(cust,dossierResults){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download='Schnellstart-Dossier_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.html';
+  a.download='Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.html';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1365,7 +1365,7 @@ function renderStation(sitId){
         if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
         runAutopilot();
       }
-    },'⚡ Schnellstart!'));
+    },'🔍 Opportunity-Vorschau erstellen'));
   }
 
   // Summary box (Demo-Vorbereitung only)
@@ -1713,7 +1713,22 @@ Analyse:
           }
         }
 
-        // Note: Weiter-button already handled by nextMapInit above
+        // Populate Weiter-button after fresh generation (was previously only shown on page reload)
+        weiterRow.innerHTML='';
+        const nextMapAfterGen={
+          0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
+        };
+        if(nextMapAfterGen[sitId]&&!sit.build2){
+          const nextIdAfterGen=nextMapAfterGen[sitId].nextId;
+          const wbAfterGen=h('button',{
+            style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
+              padding:'5px 12px',fontSize:'11px',fontWeight:'700',cursor:'pointer',
+              fontFamily:'DM Sans,sans-serif',width:'100%'},
+            onclick:()=>transferAndGo(sitId,nextIdAfterGen,result)
+          },'Weiter zu '+SITS[nextIdAfterGen].title+' →');
+          weiterRow.appendChild(wbAfterGen);
+          weiterRow.style.display='block';
+        }
       }
     }catch(e){
       alert('Fehler: '+e.message);
@@ -2544,9 +2559,9 @@ function showSettings(){
   },'☀️ Light');
   const modeRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},modeDark,modeLight);
 
-  // Schnellstart toggle
+  // Opportunity-Vorschau toggle
   const ssActive=LS.get('ki21_schnellstart',false);
-  const ssLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'⚡ KI21 Schnellstart (Autopilot)');
+  const ssLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'🔍 Opportunity-Vorschau');
   const ssOff=h('button',{className:'btn',
     style:{flex:1,fontWeight:!ssActive?'700':'400',borderColor:!ssActive?'#ff6b00':'#30363d',color:!ssActive?'#ff6b00':'#8b949e'},
     onclick:()=>{LS.set('ki21_schnellstart',false);m.remove();showSettings();}
@@ -2557,7 +2572,7 @@ function showSettings(){
   },'EIN');
   const ssRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'6px'}},ssOff,ssOn);
   const ssDesc=h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'14px',lineHeight:'1.4'}},
-    'Wenn aktiv, erscheint in Phase 1 ein "⚡ Schnellstart!"-Button, der automatisch alle 5 Phasen mit Branchenhypothesen durchläuft.');
+    'Wenn aktiv, erscheint in Phase 1 ein Button für eine erste Opportunity-Vorschau auf Basis von Branchenwissen und Arbeitshypothesen. Ersetzt nicht die vollständige Qualifizierung – empfohlen für kleinere oder frühe Leads, nicht für strategisch wichtige Opportunities.');
   let newKey='';
   const inp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
   inp.style.marginTop='8px';
