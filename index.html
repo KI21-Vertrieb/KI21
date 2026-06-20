@@ -155,6 +155,10 @@ function buildCtx(cust,mu,kk,stk){
     s+='SCHNELLSTART-MODUS AKTIV\n';
     s+='Du verfügst nur über begrenzte Informationen. Nutze vorhandene Fakten maximal aus.\n';
     s+='Ergänze fehlende Informationen AUSSCHLIESSLICH als: ANNAHME, ARBEITSWERT, BRANCHENHYPOTHESE oder ZU KLÄREN. Erfinde NIEMALS bestätigte Aussagen oder bestätigte Zahlen.\n';
+    s+='KRITISCH: Trenne noch strenger als sonst zwischen BESTÄTIGT (vom Kunden tatsächlich genannt), ANNAHME (direkt aus dem Gesagten abgeleitet) und BRANCHENHYPOTHESE (allgemeines Branchenwissen, NICHT aus diesem Kunden abgeleitet). Wenn eine Zahl wie "120-160 Stunden Konsolidierungsaufwand" oder "9-18 Monate Projektlaufzeit" NICHT vom Kunden bestätigt wurde, kennzeichne sie unmissverständlich als BRANCHENHYPOTHESE, nicht als ANNAHME – das macht den Unterschied zwischen "aus diesem Gespräch abgeleitet" und "generisches Branchenwissen" sichtbar.\n';
+    s+='KRITISCH: Wenn der vorläufige Business Case/ROI auf Basis der vorhandenen Informationen NEGATIV oder NICHT SELBSTTRAGEND ausfällt, akzeptiere das offen und sage es klar (z.B. "Auf Basis der bisherigen Informationen ist der Case noch nicht selbsttragend"). Versuche NICHT, das Ergebnis durch zusätzliche, unbestätigte Potenziale oder Argumente zu kompensieren oder zu relativieren. Ein ehrlich negativer Schnellstart-Befund ist wertvoller als ein künstlich positiv gerechneter.\n';
+    s+='KRITISCH: Bleibe bei ROI-Rechnungen besonders konservativ. Nutze Bereiche/Arbeitswerte statt scheinbar exakter Einzelzahlen, und mache deutlich, dass die Berechnung auf BRANCHENHYPOTHESEN beruht, solange keine Kundenzahlen vorliegen.\n';
+    s+='KRITISCH: Lege den Fokus stärker auf Discovery als auf Fakten-Suggestion. Formuliere mehr offene, gezielte Rückfragen statt viele konkrete Zahlen zu präsentieren, die noch nicht belastbar sind – das Ziel ist Gesprächsvorbereitung, nicht eine scheinbar fertige Analyse.\n';
     s+='Wenn Informationen fehlen: leite aus Branche und Situation plausible Hypothesen ab, kennzeichne sie eindeutig als BRANCHENHYPOTHESE, und leite daraus gezielte Rückfragen ab. Das Ziel ist ein hochwertiges Arbeitsdokument für den Vertrieb, nicht absolute Gewissheit.\n';
     s+='Beginne den Output mit: "⚡ KI21 SCHNELLSTART – Dieses Dossier wurde automatisch aus den bisher verfügbaren Informationen erstellt. Es kombiniert bestätigte Fakten, Branchenwissen, typische Muster und plausible Arbeitshypothesen. Alle Annahmen sollten im nächsten Kundengespräch validiert werden."\n';
     s+='Direkt danach, vor dem eigentlichen Inhalt, schätze grob ein (keine exakte Berechnung nötig, nur Orientierung): "Bestätigte Informationen: XX % | Arbeitshypothesen/Branchenwissen: XX % | Noch zu validierende Punkte: XX %" (die drei Werte sollten sich ungefähr zu 100% aufsummieren).\n';
@@ -756,7 +760,7 @@ function renderResultText(text){
       span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
     } else if(rest.startsWith('NICE-TO-HAVE:')){
       span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
-    } else if(/\b(BESTÄTIGT|ARBEITSWERT|ZU VALIDIEREN)\b/.test(line)&&!line.startsWith('BESTÄTIGT:')){
+    } else if(/\b(BESTÄTIGT|ARBEITSWERT|ZU VALIDIEREN|BRANCHENHYPOTHESE|ZU KLÄREN)\b/.test(line)&&!line.startsWith('BESTÄTIGT:')){
       span.innerHTML=highlightConfidenceWords(line);
     } else {
       span.textContent=line;
@@ -772,6 +776,8 @@ function highlightConfidenceWords(line){
   escaped=escaped.replace(/\bBESTÄTIGT\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;">BESTÄTIGT</span>');
   escaped=escaped.replace(/\bARBEITSWERT\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;">ARBEITSWERT</span>');
   escaped=escaped.replace(/\bZU VALIDIEREN\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;">ZU VALIDIEREN</span>');
+  escaped=escaped.replace(/\bBRANCHENHYPOTHESE\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;border-radius:4px;padding:1px 6px;">BRANCHENHYPOTHESE</span>');
+  escaped=escaped.replace(/\bZU KLÄREN\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;">ZU KLÄREN</span>');
   return escaped;
 }
 
@@ -802,7 +808,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.99'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.01'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -846,39 +852,6 @@ function renderHome(){
     'In 30 Minuten.'));
 
   const schnellstartActive=LS.get('ki21_schnellstart',false);
-  const ssToggleRow=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',
-    background:'var(--bg2)',border:'1px solid '+(schnellstartActive?'#ff6b00':'var(--border)'),
-    borderRadius:'8px',padding:'10px 12px',marginBottom:'14px'}});
-  ssToggleRow.appendChild(h('div',{style:{fontSize:'12px',fontWeight:'700',
-    color:schnellstartActive?'#ff6b00':'var(--text)'}},'⚡ KI21 Schnellstart'));
-  const ssBtnRow=h('div',{style:{display:'flex',gap:'4px'}});
-  const ssOffBtn=h('button',{style:{fontSize:'10px',fontWeight:'700',padding:'4px 10px',
-    borderRadius:'5px',border:'1px solid var(--border)',cursor:'pointer',
-    background:schnellstartActive?'transparent':'#ff6b00',
-    color:schnellstartActive?'var(--text2)':'#fff'},
-    onclick:()=>{LS.set('ki21_schnellstart',false);renderHome();}},'AUS');
-  const ssOnBtn=h('button',{style:{fontSize:'10px',fontWeight:'700',padding:'4px 10px',
-    borderRadius:'5px',border:'1px solid var(--border)',cursor:'pointer',
-    background:schnellstartActive?'#ff6b00':'transparent',
-    color:schnellstartActive?'#fff':'var(--text2)'},
-    onclick:()=>{LS.set('ki21_schnellstart',true);renderHome();}},'EIN');
-  ssBtnRow.appendChild(ssOffBtn);
-  ssBtnRow.appendChild(ssOnBtn);
-  ssToggleRow.appendChild(ssBtnRow);
-  wrap.appendChild(ssToggleRow);
-  if(schnellstartActive){
-    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'#ff6b00',background:'rgba(255,107,0,.08)',
-      border:'1px solid rgba(255,107,0,.25)',borderRadius:'6px',padding:'8px 10px',marginBottom:'14px',lineHeight:'1.5'}},
-      'KI21 Schnellstart aktiv – das Dossier basiert teilweise auf Arbeitshypothesen und Branchenwissen. Alle Annahmen sollten im Kundengespräch validiert werden.'));
-    if(cust.firma){
-      wrap.appendChild(h('button',{className:'btn-o',style:{width:'100%',marginBottom:'16px'},
-        onclick:()=>runAutopilot()
-      },'⚡ Schnellstart jetzt ausführen'));
-    } else {
-      wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text2)',marginBottom:'16px'}},
-        'Bitte zuerst einen Kunden auswählen, um den Schnellstart zu nutzen.'));
-    }
-  }
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
     textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Was bereiten Sie vor?');
@@ -1109,6 +1082,10 @@ async function runAutopilot(){
 
   progBox.appendChild(h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#2ea043',marginTop:'16px'}},
     '✅ Opportunity-Dossier erfolgreich erstellt.'));
+  // Automatically download as PDF/HTML so the result is never lost
+  exportAutopilotPDF(cust,dossierResults);
+  progBox.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text2)',marginTop:'6px'}},
+    '📄 Dossier wurde automatisch heruntergeladen.'));
   const showBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
     onclick:()=>showAutopilotDossier(cust,dossierResults)
   },'Dossier ansehen →');
@@ -1380,6 +1357,16 @@ function renderStation(sitId){
   genRow.appendChild(genBtn);
   genRow.appendChild(resetBtn);
   wrap.appendChild(genRow);
+
+  if(sitId===0&&LS.get('ki21_schnellstart',false)){
+    wrap.appendChild(h('button',{className:'btn-o',
+      style:{width:'100%',marginTop:'8px',background:'linear-gradient(135deg,#ff6b00,#ff9233)'},
+      onclick:()=>{
+        if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
+        runAutopilot();
+      }
+    },'⚡ Schnellstart!'));
+  }
 
   // Summary box (Demo-Vorbereitung only)
   const demoSummaryBox=h('div',{className:'result-box',
@@ -2556,6 +2543,21 @@ function showSettings(){
     onclick:()=>{applyMode(false);m.remove();showSettings();}
   },'☀️ Light');
   const modeRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},modeDark,modeLight);
+
+  // Schnellstart toggle
+  const ssActive=LS.get('ki21_schnellstart',false);
+  const ssLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'⚡ KI21 Schnellstart (Autopilot)');
+  const ssOff=h('button',{className:'btn',
+    style:{flex:1,fontWeight:!ssActive?'700':'400',borderColor:!ssActive?'#ff6b00':'#30363d',color:!ssActive?'#ff6b00':'#8b949e'},
+    onclick:()=>{LS.set('ki21_schnellstart',false);m.remove();showSettings();}
+  },'AUS');
+  const ssOn=h('button',{className:'btn',
+    style:{flex:1,fontWeight:ssActive?'700':'400',borderColor:ssActive?'#ff6b00':'#30363d',color:ssActive?'#ff6b00':'#8b949e'},
+    onclick:()=>{LS.set('ki21_schnellstart',true);m.remove();showSettings();}
+  },'EIN');
+  const ssRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'6px'}},ssOff,ssOn);
+  const ssDesc=h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'14px',lineHeight:'1.4'}},
+    'Wenn aktiv, erscheint in Phase 1 ein "⚡ Schnellstart!"-Button, der automatisch alle 5 Phasen mit Branchenhypothesen durchläuft.');
   let newKey='';
   const inp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
   inp.style.marginTop='8px';
@@ -2595,6 +2597,8 @@ function showSettings(){
     h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'Darstellung'),
     fsLabel,fsRow,
     modeLabel,modeRow,
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'Funktionen'),
+    ssLabel,ssRow,ssDesc,
     h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'API-Zugang'),
     status,
     h('div',{className:'field-label'},hasKey?'Neuen Key eingeben':'Key eingeben'),
