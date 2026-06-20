@@ -151,6 +151,14 @@ if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk){
   let s='--- KONTEXT ---\n';
+  if(LS.get('ki21_schnellstart',false)){
+    s+='SCHNELLSTART-MODUS AKTIV\n';
+    s+='Du verfügst nur über begrenzte Informationen. Nutze vorhandene Fakten maximal aus.\n';
+    s+='Ergänze fehlende Informationen AUSSCHLIESSLICH als: ANNAHME, ARBEITSWERT, BRANCHENHYPOTHESE oder ZU KLÄREN. Erfinde NIEMALS bestätigte Aussagen oder bestätigte Zahlen.\n';
+    s+='Wenn Informationen fehlen: leite aus Branche und Situation plausible Hypothesen ab, kennzeichne sie eindeutig als BRANCHENHYPOTHESE, und leite daraus gezielte Rückfragen ab. Das Ziel ist ein hochwertiges Arbeitsdokument für den Vertrieb, nicht absolute Gewissheit.\n';
+    s+='Beginne den Output mit: "⚡ KI21 SCHNELLSTART – Dieses Dossier wurde automatisch aus den bisher verfügbaren Informationen erstellt. Es kombiniert bestätigte Fakten, Branchenwissen, typische Muster und plausible Arbeitshypothesen. Alle Annahmen sollten im nächsten Kundengespräch validiert werden."\n';
+    s+='Direkt danach, vor dem eigentlichen Inhalt, schätze grob ein (keine exakte Berechnung nötig, nur Orientierung): "Bestätigte Informationen: XX % | Arbeitshypothesen/Branchenwissen: XX % | Noch zu validierende Punkte: XX %" (die drei Werte sollten sich ungefähr zu 100% aufsummieren).\n';
+  }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
   s+='KRITISCH: Wenn dieselben Kernfakten (z.B. eine konkrete Zahl wie "6 Arbeitstage pro Szenario") bereits in einem vorherigen Kontext-Abschnitt erwähnt wurden, wiederhole sie in dieser Phase nur EINMAL ausführlich (meist in den ERKENNTNISSE/BESTÄTIGT-Abschnitten) und referenziere sie danach kurz, statt sie in jedem Abschnitt erneut vollständig auszuschreiben. Ziel: Wiederholungen über die Phasen hinweg reduzieren, ohne wichtige Fakten wegzulassen.\n';
   s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
@@ -794,7 +802,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.96'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v3.97'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -836,6 +844,33 @@ function renderHome(){
     'Mehr Klarheit für den nächsten Vertriebstermin.'));
   wrap.appendChild(h('p',{style:{fontSize:'11px',color:'var(--text3)',margin:'0 0 12px 0'}},
     'In 30 Minuten.'));
+
+  const schnellstartActive=LS.get('ki21_schnellstart',false);
+  const ssToggleRow=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',
+    background:'var(--bg2)',border:'1px solid '+(schnellstartActive?'#ff6b00':'var(--border)'),
+    borderRadius:'8px',padding:'10px 12px',marginBottom:'14px'}});
+  ssToggleRow.appendChild(h('div',{style:{fontSize:'12px',fontWeight:'700',
+    color:schnellstartActive?'#ff6b00':'var(--text)'}},'⚡ KI21 Schnellstart'));
+  const ssBtnRow=h('div',{style:{display:'flex',gap:'4px'}});
+  const ssOffBtn=h('button',{style:{fontSize:'10px',fontWeight:'700',padding:'4px 10px',
+    borderRadius:'5px',border:'1px solid var(--border)',cursor:'pointer',
+    background:schnellstartActive?'transparent':'#ff6b00',
+    color:schnellstartActive?'var(--text2)':'#fff'},
+    onclick:()=>{LS.set('ki21_schnellstart',false);renderHome();}},'AUS');
+  const ssOnBtn=h('button',{style:{fontSize:'10px',fontWeight:'700',padding:'4px 10px',
+    borderRadius:'5px',border:'1px solid var(--border)',cursor:'pointer',
+    background:schnellstartActive?'#ff6b00':'transparent',
+    color:schnellstartActive?'#fff':'var(--text2)'},
+    onclick:()=>{LS.set('ki21_schnellstart',true);renderHome();}},'EIN');
+  ssBtnRow.appendChild(ssOffBtn);
+  ssBtnRow.appendChild(ssOnBtn);
+  ssToggleRow.appendChild(ssBtnRow);
+  wrap.appendChild(ssToggleRow);
+  if(schnellstartActive){
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'#ff6b00',background:'rgba(255,107,0,.08)',
+      border:'1px solid rgba(255,107,0,.25)',borderRadius:'6px',padding:'8px 10px',marginBottom:'14px',lineHeight:'1.5'}},
+      'KI21 Schnellstart aktiv – das Dossier basiert teilweise auf Arbeitshypothesen und Branchenwissen. Alle Annahmen sollten im Kundengespräch validiert werden.'));
+  }
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
     textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Was bereiten Sie vor?');
@@ -1002,6 +1037,82 @@ async function loadMoreDetails(sitId, stData){
   }
 }
 
+
+async function runAutopilot(){
+  const cust=getActiveCust();
+  const mu=LS.get('ki21_mu',{});
+  const kk=LS.get('ki21_kk_'+state.activeId,'');
+  const phaseNamesShort=['Qualifizierung','Bedarfsanalyse','Nachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const progBox=h('div',{style:{padding:'20px 16px',maxWidth:'500px',margin:'0 auto'}});
+  progBox.appendChild(h('div',{style:{fontSize:'15px',fontWeight:'800',marginBottom:'14px'}},
+    '⚡ KI21 erstellt Ihr Opportunity-Dossier'));
+  const stepEls=[];
+  for(let i=0;i<5;i++){
+    const stepEl=h('div',{style:{fontSize:'13px',padding:'8px 0',color:'var(--text2)'}},
+      '⏳ '+phaseNamesShort[i]);
+    stepEls.push(stepEl);
+    progBox.appendChild(stepEl);
+  }
+  app.appendChild(progBox);
+
+  // Phase 0 (Qualifizierung) should already exist - if not, skip ahead with whatever fv exists
+  let prevResult='';
+  for(let i=0;i<5;i++){
+    const sit=SITS[i];
+    const KEY='ki21_st_'+state.activeId+'_'+i;
+    const data=LS.get(KEY,{fv:{},result:''});
+
+    // Carry forward minimal context from previous phase into this phase's primary text field, if empty
+    if(i>0&&prevResult){
+      const textFieldId=sit.felder.find(f=>f.t==='ta'&&!f.readonly);
+      if(textFieldId&&!data.fv[textFieldId.id]){
+        data.fv[textFieldId.id]=prevResult;
+        LS.set(KEY,data);
+      }
+      const ctxFieldId=sit.felder.find(f=>f.readonly);
+      if(ctxFieldId&&!data.fv[ctxFieldId.id]){
+        data.fv[ctxFieldId.id]=prevResult;
+        LS.set(KEY,data);
+      }
+    }
+
+    const stk=LS.get('ki21_stk_'+state.activeId+'_'+i,'');
+    try{
+      const prompt=sit.build(data.fv,cust,mu,kk,stk);
+      const result=await callClaude(prompt,null);
+      if(result){
+        data.result=result;
+        LS.set(KEY,data);
+        prevResult=result;
+        stepEls[i].textContent='✓ '+phaseNamesShort[i];
+        stepEls[i].style.color='#2ea043';
+        // Save score if present
+        const scoreMatches=[...result.matchAll(/(\d+)\s*\/\s*10/g)];
+        const scoreMatch=scoreMatches.length?scoreMatches[0]:null;
+        if(scoreMatch){
+          const score=parseInt(scoreMatch[1]);
+          if(score>=1&&score<=10)saveScore(score,extractBegruendung(result));
+        }
+      } else {
+        stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (fehlgeschlagen)';
+        stepEls[i].style.color='#f85149';
+      }
+    }catch(e){
+      stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (Fehler: '+e.message+')';
+      stepEls[i].style.color='#f85149';
+    }
+  }
+
+  progBox.appendChild(h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#2ea043',marginTop:'16px'}},
+    '✅ Opportunity-Dossier erfolgreich erstellt.'));
+  const doneBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
+    onclick:()=>renderStation(0)
+  },'Dossier ansehen →');
+  progBox.appendChild(doneBtn);
+}
 
 function transferAndGo(fromId, toId, result){
   // Direct transfer - output is already compact
@@ -1477,6 +1588,11 @@ function renderStation(sitId){
               if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,begr);}
             }
           }
+        }
+        // Schnellstart: after Phase 1 completes, automatically run through all remaining phases
+        if(sitId===0&&LS.get('ki21_schnellstart',false)){
+          setTimeout(()=>{runAutopilot();},800);
+          return;
         }
         // Phase 5: Auto-extract Besuchsbericht into CRM field
         if(sitId===4){
