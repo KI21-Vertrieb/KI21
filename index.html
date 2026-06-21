@@ -383,14 +383,16 @@ KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahl
 Geplante Lösung: ${f.paket||''}
 Investition: ${f.budget||''}
 
-GRUNDPRINZIP: KI21 ist ein Entscheidungswerkzeug, kein Analysewerkzeug. Optimiere auf Entscheidungsqualität, nicht auf Textmenge.
+WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTES VERKAUFSARGUMENT" UND in "IN 30 SEKUNDEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
+
+UNSICHERE PROZENTANGABEN VORSICHTIG FORMULIEREN: Wenn eine vom Kunden genannte oder abgeleitete Prozentzahl (z.B. "+20-25% Forecast-Verbesserung", "30% mehr Abschlussquote") noch nicht durch eigene Messung des Kunden bestätigt ist, formuliere sie nicht als feststehende Tatsache. Nutze stattdessen Formulierungen wie "Der Kunde nennt X% als Zielgröße – die tatsächliche Verbesserung sollte im Pilotbetrieb mit echten Zahlen validiert werden" statt die Prozentzahl unkommentiert mehrfach als Fakt zu wiederholen (auch nicht in Follow-up-Mails oder Eröffnungssätzen).
 
 DAS IST KEIN WIDERSPRUCH zur Regel "keine Zahlen erfinden": Alle Daten im Feld "Erkenntnisse & KPIs" sind bereits vom Kunden im vorherigen Gespräch genannte, echte Angaben – behandle sie als BESTÄTIGT. Wenn eine Zahl im Feld unklar oder unvollständig wirkt, kennzeichne sie im Output als ANNAHME oder KLÄREN statt vorher zu fragen ob du sie nutzen darfst – genau dafür existiert die Kennzeichnung. Die Lösung für Unsicherheit ist die Kennzeichnung im Output, NIEMALS eine Frage davor.
 
 WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
 - Du nutzt dein bekanntes Erfahrungswissen über typische Größenordnungen vergleichbarer Projekte – KEINE Live-Recherche.
 - Erfinde KEINE konkreten Firmennamen oder Quellen die du nicht kennst.
-- Wenn die KPIs des Kunden fehlen oder unklar sind, formuliere das als gezielte Rückfrage statt zu raten.
+- Wenn das Feld "KPIs und Erkenntnisse aus dem Gespräch" leer oder dünn ist: Durchsuche ZUERST den Abschnitt "BISHERIGE ERGEBNISSE" oben (Qualifizierung, Bedarfsanalyse) nach bereits genannten KPIs (z.B. Abschlussquote, Teamgröße, Umsatzpotenzial, Zykluszeiten) und nutze diese als BESTÄTIGT für eine vorläufige Analyse. NIEMALS die gesamte Nutzen-Kosten-Analyse verweigern oder erst nach Gesprächsnotizen fragen, nur weil DIESES Feld leer ist – ein fehlender Besuchsbericht ist eine Zusatzquelle, keine Voraussetzung. Nur wirklich fehlende Einzelwerte (die auch in den bisherigen Ergebnissen nicht vorkommen) als ANNAHME kennzeichnen oder in die Rückfragen-Sektion am Ende aufnehmen.
 - Nutzen in "schafft Kapazität für ___" formulieren, nicht "spart".
 - ROI ehrlich darstellen – auch negativen oder unsicheren ROI zeigen wenn zutreffend.
 - Berücksichtige die Unternehmensgröße: ein Benchmark für Konzerne darf nicht ungefiltert auf den Mittelstand übertragen werden – skaliere plausibel und kennzeichne Schätzungen als Schätzung.
@@ -808,7 +810,7 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.04'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.05'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1941,9 +1943,14 @@ ${ta.value}
 
 WICHTIG: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Markdown. Keine Erklärung. Kein Text davor oder danach. Nur das JSON-Objekt.
 
-{"firma":"","ap":"","branche":"","ma":"","um":"","kontext":"","persoenlich":""}
+{"firma":"","ap":"","branche":"","ma":"","um":"","kontext":"","persoenlich":"","herausforderungen":""}
 
-Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
+Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.
+
+WICHTIG zur Unterscheidung von "kontext" und "herausforderungen":
+- "kontext": dauerhafte, strukturelle Informationen über das Unternehmen (Branche, Aufbau, Standorte, Teamgröße, allgemeine Beschreibung der Lage) – Dinge, die über viele Monate gültig bleiben.
+- "herausforderungen": konkrete, aktuelle Herausforderungen, Probleme oder Kauftrigger, die JETZT die Vertriebssituation antreiben (z.B. "Forecast-Qualität schlecht", "neues CRM eingeführt aber kaum genutzt", "Geschäftsführer fordert Verbesserung"). Das sind die Dinge, die direkt eine Qualifizierungsfrage auslösen würden.
+Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nicht alles in beide Felder.`;
 
         const resp=await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',
@@ -1993,6 +2000,14 @@ Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
             if(parsed.persoenlich)kk+=(kk?'\n\nPERSÖNLICH:\n':'')+parsed.persoenlich;
             LS.set('ki21_kk_'+accId,kk);
           }
+
+          // Update Phase 1 "Bekannte Herausforderungen / Vermutungen" (mergen, nicht überschreiben)
+          if(parsed.herausforderungen){
+            const st0=LS.get('ki21_st_'+accId+'_0',{fv:{},result:''});
+            if(!st0.fv)st0.fv={};
+            st0.fv.info=(st0.fv.info?st0.fv.info+'\n\n':'')+parsed.herausforderungen;
+            LS.set('ki21_st_'+accId+'_0',st0);
+          }
         }
         
         // Build confirmation
@@ -2003,6 +2018,7 @@ Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.`;
         if(parsed.ma)lines.push('✅ Mitarbeiter: '+parsed.ma);
         if(parsed.um)lines.push('✅ Umsatz: '+parsed.um);
         if(parsed.kontext)lines.push('✅ Kontext: importiert');
+        if(parsed.herausforderungen)lines.push('✅ Herausforderungen (Phase 1): importiert');
         if(parsed.persoenlich)lines.push('✅ Persönliche Infos: importiert');
 
         statusDiv.innerHTML='<div style="margin-top:10px;padding:10px;background:rgba(46,160,67,.1);border-radius:6px;border:1px solid rgba(46,160,67,.3);">'+
