@@ -38,8 +38,8 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .phase-badge-empty{background:rgba(139,148,158,.1);color:var(--text3);}
 .btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;
   padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:7px;padding:5px 12px;
-  font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
+.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:6px;padding:4px 10px;
+  font-size:10.5px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
 .btn-o:disabled{background:#484f58;cursor:not-allowed;}
 .cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
   padding:3px 8px;cursor:pointer;}
@@ -80,8 +80,8 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
   padding:9px 11px;font-size:var(--fs-input,12px);font-family:'DM Sans',sans-serif;color:var(--text);
   outline:none;-webkit-text-fill-color:var(--text);-webkit-user-select:text;user-select:text;
-  caret-color:#ff6b00;}
-input:focus,select:focus,textarea:focus{border-color:#ff6b00;}
+  caret-color:#ff6b00;border-left:3px solid rgba(255,107,0,.55);}
+input:focus,select:focus,textarea:focus{border-color:#ff6b00;border-left:3px solid #ff6b00;}
 textarea{resize:vertical;min-height:110px;line-height:1.6;}
 select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238b949e' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;padding-right:26px;}
@@ -262,9 +262,8 @@ function buildCtx(cust,mu,kk,stk){
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
   {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
-   regel:'Herausforderungen eingeben – Erkenntnisse + Qualifizierungsfragen kommen raus.',
+   regel:'Lohnt es sich, diese Opportunity weiterzuverfolgen?',
    felder:[
-     {id:'quelle',l:'Wie kam der Lead?',t:'select',opts:['Inbound – Empfehlung','Inbound – Website','Kaltakquise – LinkedIn','Kaltakquise – Telefon','Messe / Event','Bestandskunde']},
      {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...',post:true}
    ],
@@ -328,7 +327,7 @@ WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste
 → TODO: [nächster Schritt + wann]`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo-Empfehlung',icon:'📋',
-   regel:'Die wichtigsten Fragen stellen. Antworten erfassen. Bedarfsanalyse und Demo-Empfehlung automatisch erzeugen.',
+   regel:'Was braucht der Kunde wirklich?',
    felder:[
      {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
@@ -370,9 +369,9 @@ KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
 → TODO: [nächster Schritt + wann]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Nachbereitung',icon:'📝',
-   regel:'Was wurde in DIESEM Termin besprochen? Nächste Schritte und Follow-up Mail kommen raus.',
+   regel:'Was ist im letzten Termin passiert?',
    felder:[
-     {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true},
+     {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true,hidden:true},
      {id:'stichworte',l:'Was wurde in diesem Termin NEU besprochen?',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -404,19 +403,16 @@ Betreff: [präzise]
 → TODO: [nächster Schritt + wann]`
   },
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
-   regel:'KPIs eingeben – Benchmark-Nutzen, individueller Nutzen und ROI kommen raus.',
+   regel:'Warum lohnt sich die Investition wirtschaftlich?',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'},
-     {id:'paket',l:'Geplantes Angebot / Lösung',t:'text',p:'z.B. Biplan Professional, 5 Nutzer'},
-     {id:'budget',l:'Investition (einmalig + Jahreslizenz)',t:'text',p:'z.B. "15.000 € Onboarding einmalig + 12.000 €/Jahr Lizenz"'}
+     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
 Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
 Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
 KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahlen vorhanden'}
-Geplante Lösung: ${f.paket||''}
-Investition: ${f.budget||''}
+Verfügbare Angebotsbausteine/Preise (aus "Mein Unternehmen"): ${mu.bausteine||'keine hinterlegt – Investition allgemein/ungefähr einschätzen oder als KLÄREN markieren'}
 
 WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTES VERKAUFSARGUMENT" UND in "IN 30 SEKUNDEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
 
@@ -463,7 +459,7 @@ WICHTIGSTES VERKAUFSARGUMENT:
 [1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
 
 LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
-INVESTITION: ${f.budget||'___'} – geglättet auf ___ €/Monat (über 3 Jahre)
+INVESTITION: [aus den Angebotsbausteinen oben ableiten, z.B. "KI21 Compact, 2.900 €"] – geglättet auf ___ €/Monat (über 3 Jahre)
 ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat als vorläufiger Business Case auf Basis der verwendeten Arbeitswerte, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition – vorläufiger Business Case, finale Validierung im nächsten Gespräch erforderlich" – oder "noch nicht berechenbar – Zahlen fehlen". Vermeide eine einzelne, zu sicher wirkende Prozentzahl (z.B. "ROI 250%") ohne den Hinweis, dass sie auf Arbeitswerten/Annahmen basiert.]
 
 ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
@@ -478,7 +474,7 @@ OFFENE RÜCKFRAGEN AN DEN KUNDEN (nur falls KPIs fehlen, max. 3):
 Bitte gemeinsam mit dem Kunden validieren.`
   },
   {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
-   regel:'Erkenntnisse + Angebot eingeben – Abschlussstrategie und Einwandbehandlung kommen raus.',
+   regel:'Wie gewinnen wir den Auftrag?',
    felder:[
      {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
      {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
@@ -802,14 +798,22 @@ async function callClaudeJSON(prompt){
   }catch(e){return null;}
 }
 
-function buildHealthPrompt(cust,allResults){
-  let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Phasen-Ergebnisse. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
+function buildHealthPrompt(cust,allResults,kontext){
+  let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
+  if(kontext)s+='--- Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,2000)+'\n\n';
   allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
-  s+=`Bewerte anhand drei Komponenten: (A) Strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation - max. 6 Kriterien), (B) Verhaltenssignale (positive Kaufsignale vs. Warnsignale), (C) Informationsqualität (wie vollständig/belastbar ist die Einschätzung).
+  s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
+
+KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
+
+Beispiele für deutliche SENKUNG: Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
+Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
+
+Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
 Antworte AUSSCHLIESSLICH mit folgendem JSON, keine Erklärung davor/danach:
-{"score":<Zahl 0-100>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
+{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
 Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, leeres Array.`;
   return s;
 }
@@ -823,8 +827,9 @@ async function refreshOpportunityHealth(accId){
     const d=LS.get('ki21_st_'+accId+'_'+i,null);
     if(d&&d.result)allResults.push({title:sit.title,text:d.result});
   });
-  if(!allResults.length)return;
-  const prompt=buildHealthPrompt(cust,allResults);
+  const kontext=LS.get('ki21_kk_'+accId,'');
+  if(!allResults.length&&!kontext)return;
+  const prompt=buildHealthPrompt(cust,allResults,kontext);
   const json=await callClaudeJSON(prompt);
   if(json&&typeof json.score==='number'){
     LS.set('ki21_health_'+accId,{
@@ -894,15 +899,6 @@ function toggleHealthSignal(accId,text,origin,type,refreshFn){
   if(refreshFn)refreshFn();
 }
 
-function addManualHealthSignal(accId,text,type,refreshFn){
-  if(!text||!text.trim())return;
-  const manual=getHealthManual(accId);
-  manual.added.push({text:text.trim(),type,active:true});
-  LS.set('ki21_health_manual_'+accId,manual);
-  renderHealthBadgeIfPresent();
-  if(refreshFn)refreshFn();
-}
-
 function showOpportunityHealthDetail(accId){
   const render=()=>{
     const health=getOpportunityHealth(accId);
@@ -933,19 +929,8 @@ function showOpportunityHealthDetail(accId){
     section('Warnsignale',health.warning,'#f85149');
     section('Offene Punkte',health.open,'#8b949e');
 
-    const addRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'16px'}});
-    const addInput=h('input',{type:'text',placeholder:'Signal hinzufügen…',style:{flex:'1',background:'#1d2533',border:'1px solid #30363d',borderRadius:'6px',color:'#e6edf3',padding:'6px 8px',fontSize:'12px'}});
-    const addBtn=h('button',{className:'btn-o',style:{fontSize:'12px',padding:'6px 10px'},onclick:()=>{
-      addManualHealthSignal(accId,addInput.value,'positive',render);
-      addInput.value='';
-    }},'+ Positiv');
-    const addWarnBtn=h('button',{className:'btn',style:{fontSize:'12px',padding:'6px 10px',color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
-      addManualHealthSignal(accId,addInput.value,'warning',render);
-      addInput.value='';
-    }},'+ Warnung');
-    addRow.appendChild(addInput);addRow.appendChild(addBtn);addRow.appendChild(addWarnBtn);
-    content.appendChild(addRow);
-    content.appendChild(h('div',{style:{fontSize:'10px',color:'#484f58',marginTop:'10px'}},'Tippen auf ein Signal blendet es aus/ein. Manuelle Eingaben haben immer Vorrang.'));
+    content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
+      'Neue Info über den Kunden? Einfach ins Feld "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
   };
   const content=h('div',{});
   const m=modal('❤️ Opportunity Health',content,null);
@@ -1054,7 +1039,6 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.12'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
@@ -1507,7 +1491,7 @@ function renderStation(sitId){
   const stkBtn=h('button',{className:'btn',
     style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
     onclick:()=>showStkModal(sitId,sit.title)},
-    h('span',{style:{fontSize:'11px'}},'Kontext'),
+    h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
     h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
   );
   phaseNav.appendChild(stkBtn);
@@ -1524,7 +1508,7 @@ function renderStation(sitId){
 
   // Fields
   const fieldsDiv=h('div',{});
-  sit.felder.filter(f=>!f.post).forEach(f=>{
+  sit.felder.filter(f=>!f.post&&!f.hidden).forEach(f=>{
     const fw=h('div',{className:'field-wrap'});
     fw.appendChild(h('div',{className:'field-label'},f.l));
     let inp;
@@ -1585,17 +1569,8 @@ function renderStation(sitId){
   // Generate button
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
-  const resetBtn=h('button',{className:'btn-reset',onclick:()=>{
-    data.result='';
-    data.result2='';
-    data.summary='';
-    data.detail='';
-    LS.set(KEY,data);
-    renderStation(sitId);
-  }},'↺');
   const genRow=h('div',{className:'gen-row'});
   genRow.appendChild(genBtn);
-  genRow.appendChild(resetBtn);
   wrap.appendChild(genRow);
 
   if(sitId===0&&LS.get('ki21_schnellstart',false)){
@@ -1641,7 +1616,16 @@ function renderStation(sitId){
       copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);
     });
   }},'Kopieren');
-  const fullBtn=h('button',{className:'btn',onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
+  const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
+  const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
+    if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
+    data.result='';
+    data.result2='';
+    data.summary='';
+    data.detail='';
+    LS.set(KEY,data);
+    renderStation(sitId);
+  }},'🗑');
   const shareBtn=h('button',{className:'btn',
     style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
     onclick:()=>{
@@ -1664,6 +1648,7 @@ function renderStation(sitId){
     resultBtns.appendChild(pdfBtn);
   }
   resultBtns.appendChild(shareBtn);
+  resultBtns.appendChild(delBtn);
   resultHead.appendChild(resultLabel);
   resultHead.appendChild(resultBtns);
   const resultBody=h('div',{className:'result-body'});
@@ -2061,7 +2046,7 @@ function showNeuerKunde(initial,accId){
   const tabStamm=h('button',{className:'tab-btn',
     style:{background:'#ff6b00',color:'#fff'},onclick:()=>switchTab('stamm')},'Stammdaten');
   const tabKontext=h('button',{className:'tab-btn',
-    style:{background:'#1c2333',color:'#8b949e'},onclick:()=>switchTab('kontext')},'Kontext Kunde');
+    style:{background:'#1c2333',color:'#8b949e'},onclick:()=>switchTab('kontext')},'Ergänzungen');
   tabRow.appendChild(tabStamm);
   tabRow.appendChild(tabKontext);
   content.appendChild(tabRow);
@@ -2122,6 +2107,7 @@ function showNeuerKunde(initial,accId){
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
       LS.set('ki21_kk_'+accId,kk);
+      refreshOpportunityHealth(accId);
     } else {
       const id='acc_'+Date.now();
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
@@ -2238,6 +2224,7 @@ Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nich
             if(parsed.kontext)kk+=(kk?'\n\n':'')+parsed.kontext;
             if(parsed.persoenlich)kk+=(kk?'\n\nPERSÖNLICH:\n':'')+parsed.persoenlich;
             LS.set('ki21_kk_'+accId,kk);
+            refreshOpportunityHealth(accId);
           }
 
           // Update Phase 1 "Bekannte Herausforderungen / Vermutungen" (mergen, nicht überschreiben)
@@ -2342,7 +2329,7 @@ function showStkModal(sitId,sitTitle){
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Kontext'+sitTitle,content,null);
+  const m=modal('Ergänzungen'+sitTitle,content,null);
 }
 
 function showPDF(title,text,cust){
@@ -2970,6 +2957,12 @@ if(typeof savedView==='number'&&state.activeId){
 } else {
   renderHome();
 }
+(function(){
+  const v=document.createElement('div');
+  v.textContent='v4.14';
+  v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
+  document.body.appendChild(v);
+})();
 </script>
 </body>
 </html>
