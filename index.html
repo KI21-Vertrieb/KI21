@@ -1026,7 +1026,7 @@ function renderHealthBadgeIfPresent(){
   const health=aid?getOpportunityHealth(aid):null;
   if(!health){el.style.display='none';return;}
   el.style.display='';
-  el.textContent='Opp '+health.score;
+  el.textContent='Opportunity '+health.score+'/100';
   const color=getHealthColor(health.score);
   el.style.color=color;
   el.style.borderColor=color;
@@ -1606,17 +1606,22 @@ function renderStation(sitId){
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
     h('div',{className:'nav-right'},
-      makeTopHealthBadge(),
-      cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'170px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
-  const subNav=h('div',{className:'subnav'},
-    h('span',{className:'subnav-badge'},String(sitId+1)),
-    h('span',{id:'nav-phase-label',className:'subnav-text'},'von '+SITS.length+' · '+sit.title)
-  );
 
   const wrap=h('div',{className:'station-wrap'});
+
+  const headBlock=h('div',{style:{borderBottom:'1px solid var(--border)',paddingBottom:'12px',marginBottom:'12px'}},
+    cust.firma?h('button',{className:'nav-brand',onclick:showKunde,style:{fontSize:'16px',fontWeight:'800',padding:'0',marginBottom:'4px',display:'block',textAlign:'left',width:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},cust.firma):null,
+    makeTopHealthBadge(),
+    h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'12px'}},
+      h('span',{className:'subnav-badge'},String(sitId+1)),
+      h('span',{className:'subnav-text',style:{fontSize:'12px'}},'von '+SITS.length+' · '+sit.title)
+    ),
+    h('div',{className:'regel',style:{display:'block',marginTop:'12px',marginBottom:'0'}},sit.regel)
+  );
+  wrap.appendChild(headBlock);
 
   // Phase nav
   const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch'}});
@@ -1638,8 +1643,6 @@ function renderStation(sitId){
       onclick:()=>renderStation(sitId+1)
     },SITS[sitId+1].title+' →'));
   }
-  // Regel
-  wrap.appendChild(h('div',{className:'regel',style:{display:'block'}},sit.regel));
   wrap.appendChild(phaseNav);
 
   // Fields
@@ -2723,7 +2726,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.23';
+const KI21_VERSION='v4.24';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3093,7 +3096,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.23';
+  v.textContent='v4.24';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
