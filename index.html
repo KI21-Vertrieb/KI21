@@ -266,8 +266,8 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
   s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
   s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
-  // Include results from all previous phases
-  if(stk){
+  // Include results from all previous phases as internal context (not as visible input fields)
+  {
     const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo-Empfehlung','Nachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
     const aid=LS.get('ki21_aid',null);
     if(aid){
@@ -275,10 +275,10 @@ function buildCtx(cust,mu,kk,stk){
       for(let i=0;i<5;i++){
         const d=LS.get('ki21_st_'+aid+'_'+i,{});
         if(d.result&&d.result.trim()){
-          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,500)+'\n';
+          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,800)+'\n';
         }
       }
-      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (Zusammenfassung):'+prevResults+'\n';
+      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (interner Kontext):'+prevResults+'\n';
     }
   }
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
@@ -411,7 +411,7 @@ WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo-Empfehlung',icon:'📋',
    regel:'Was braucht der Kunde wirklich?',
    felder:[
-     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
+     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -1615,10 +1615,12 @@ function renderStation(sitId){
       inp=h('input',{type:'text',placeholder:f.p||''});
       inp.value=data.fv[f.id]||'';
     }
-    inp.addEventListener('input',e=>{
-      data.fv[f.id]=e.target.value;
-      LS.set(KEY,data);
-    });
+    if(!f.readonly){
+      inp.addEventListener('input',e=>{
+        data.fv[f.id]=e.target.value;
+        LS.set(KEY,data);
+      });
+    }
     if(f.t==='ta'){
       const taWrap=h('div',{style:{position:'relative'}});
       const fsBtn=h('button',{
@@ -1626,9 +1628,10 @@ function renderStation(sitId){
           background:'rgba(255,107,0,.2)',border:'1px solid rgba(255,107,0,.4)',
           color:'#ff6b00',borderRadius:'4px',padding:'2px 7px',fontSize:'12px',
           cursor:'pointer',zIndex:10,lineHeight:'1.5'},
-        onclick:()=>showFullscreenEdit(f.l,inp.value,(v)=>{
-          inp.value=v; data.fv[f.id]=v; LS.set(KEY,data);
-        })
+        onclick:()=>{
+          if(f.readonly){ showFullscreen(f.l,(data.fv&&data.fv[f.id])||''); }
+          else showFullscreenEdit(f.l,inp.value,(v)=>{ inp.value=v; data.fv[f.id]=v; LS.set(KEY,data); });
+        }
       },'⛶');
       taWrap.appendChild(inp);
       taWrap.appendChild(fsBtn);
@@ -1645,7 +1648,7 @@ function renderStation(sitId){
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const genRow=h('div',{className:'gen-row'});
   genRow.appendChild(genBtn);
-  wrap.appendChild(genRow);
+  if(sitId!==3)wrap.appendChild(genRow); // Phase 4 ist eine reine Ausgabephase und startet automatisch
 
   if(sitId===0&&LS.get('ki21_schnellstart',false)){
     wrap.appendChild(h('button',{className:'btn-o',
@@ -1797,43 +1800,20 @@ function renderStation(sitId){
             nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
             LS.set(nextKEY2,nextData2);
           }
-          weiter2Row.style.display='block';
+          // Weiter-Button unten entfernt; SPIN-Fragen wurden bereits intern an Phase 2 übertragen.
         }
         gen2Btn.disabled=false;
         gen2Btn.textContent='⚡ Qualifizierung abschließen';
       }},'⚡ Qualifizierung abschließen');
       postDiv.appendChild(gen2Btn);
       postDiv.appendChild(result2Box);
-
-      // Weiter button after build2
-      const weiter2Btn=h('button',{className:'btn-o',style:{marginTop:'8px'},
-        onclick:()=>transferAndGo(sitId,1,data.result2||data.result)
-      },'Weiter zu Bedarfsanalyse →');
-      weiter2Row.appendChild(weiter2Btn);
-      postDiv.appendChild(weiter2Row);
-      if(data.result2)weiter2Row.style.display='block';
+      // Untere Weiter-Navigation entfernt: Transferlogik bleibt intern verfügbar, aber ohne zusätzlichen Button.
     }
 
     wrap.appendChild(postDiv);
   }
 
-  // Show weiter button if result already exists (navigating back)
-  if(data.result){
-    const nextMapInit={
-      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
-    };
-    if(nextMapInit[sitId]&&!sit.build2){
-      const nextId=nextMapInit[sitId].nextId;
-      const wb=h('button',{
-        style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
-          padding:'5px 12px',fontSize:'11px',fontWeight:'700',cursor:'pointer',
-          fontFamily:'DM Sans,sans-serif',width:'100%'},
-        onclick:()=>transferAndGo(sitId,nextId,data.result)
-      },'Weiter zu '+SITS[nextId].title+' →');
-      weiterRow.appendChild(wb);
-      weiterRow.style.display='block';
-    }
-  }
+  // Untere Weiter-Navigation entfernt. Phasenwechsel erfolgt oben; notwendige Transfers laufen intern.
 
   async function generate(){
     if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
@@ -1963,22 +1943,7 @@ Analyse:
           }
         }
 
-        // Populate Weiter-button after fresh generation (was previously only shown on page reload)
-        weiterRow.innerHTML='';
-        const nextMapAfterGen={
-          0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
-        };
-        if(nextMapAfterGen[sitId]&&!sit.build2){
-          const nextIdAfterGen=nextMapAfterGen[sitId].nextId;
-          const wbAfterGen=h('button',{
-            style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
-              padding:'5px 12px',fontSize:'11px',fontWeight:'700',cursor:'pointer',
-              fontFamily:'DM Sans,sans-serif',width:'100%'},
-            onclick:()=>transferAndGo(sitId,nextIdAfterGen,result)
-          },'Weiter zu '+SITS[nextIdAfterGen].title+' →');
-          weiterRow.appendChild(wbAfterGen);
-          weiterRow.style.display='block';
-        }
+        // Untere Weiter-Navigation entfernt. Keine zusätzlichen Ergebnis-Buttons am unteren Rand.
       }
     }catch(e){
       alert('Fehler: '+e.message);
@@ -1993,6 +1958,9 @@ Analyse:
   app.appendChild(nav);
   app.appendChild(subNav);
   app.appendChild(wrap);
+  if(sitId===3 && !data.result && !loading){
+    setTimeout(()=>{ if(!loading) generate(); },250);
+  }
 }
 
 // ── MODALS ─────────────────────────────────────────────────
@@ -2002,8 +1970,7 @@ function getAccPhaseInfo(accId){
     const data=LS.get('ki21_st_'+accId+'_'+i,null);
     if(data&&data.result)furthest=i;
   }
-  const score=LS.get('ki21_score_'+accId,null);
-  return {phaseIdx:furthest,score};
+  return {phaseIdx:furthest,score:null};
 }
 
 function showKunde(){
@@ -2983,7 +2950,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.18';
+  v.textContent='v4.19';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
