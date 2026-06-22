@@ -135,6 +135,37 @@ const LS={
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
 };
 
+// ── PDF EXPORT HELPER (echte PDF-Erzeugung, kein HTML-Download) ──
+let _html2pdfPromise=null;
+function loadHtml2Pdf(){
+  if(window.html2pdf)return Promise.resolve();
+  if(_html2pdfPromise)return _html2pdfPromise;
+  _html2pdfPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('html2pdf konnte nicht geladen werden'));
+    document.head.appendChild(s);
+  });
+  return _html2pdfPromise;
+}
+function exportHtmlAsPdf(html,filename){
+  loadHtml2Pdf().then(()=>{
+    const el=document.createElement('div');
+    el.innerHTML=html;
+    document.body.appendChild(el);
+    window.html2pdf().from(el).set({
+      margin:10,
+      filename:filename,
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).save().then(()=>{document.body.removeChild(el);});
+  }).catch(e=>{
+    alert('PDF-Erzeugung fehlgeschlagen: '+e.message+'\nBitte Internetverbindung prüfen.');
+  });
+}
+
 // ── STATE ──────────────────────────────────────────────────
 const state={
   view: LS.get('ki21_view','home'),
@@ -744,6 +775,181 @@ function saveScore(score,begruendung){
   }
 }
 
+// ── OPPORTUNITY HEALTH ──────────────────────────────────────
+async function callClaudeJSON(prompt){
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey)return null;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!resp.ok)return null;
+    const json=await resp.json();
+    let text=(json.content||[]).map(b=>b.text||'').join('');
+    text=text.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+    return JSON.parse(text);
+  }catch(e){return null;}
+}
+
+function buildHealthPrompt(cust,allResults){
+  let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Phasen-Ergebnisse. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
+  s+='KUNDE: '+(cust.firma||'')+'\n\n';
+  allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
+  s+=`Bewerte anhand drei Komponenten: (A) Strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation - max. 6 Kriterien), (B) Verhaltenssignale (positive Kaufsignale vs. Warnsignale), (C) Informationsqualität (wie vollständig/belastbar ist die Einschätzung).
+
+Antworte AUSSCHLIESSLICH mit folgendem JSON, keine Erklärung davor/danach:
+{"score":<Zahl 0-100>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
+Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, leeres Array.`;
+  return s;
+}
+
+async function refreshOpportunityHealth(accId){
+  if(!accId)return;
+  const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust;
+  if(!cust||!cust.firma)return;
+  const allResults=[];
+  SITS.forEach((sit,i)=>{
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&d.result)allResults.push({title:sit.title,text:d.result});
+  });
+  if(!allResults.length)return;
+  const prompt=buildHealthPrompt(cust,allResults);
+  const json=await callClaudeJSON(prompt);
+  if(json&&typeof json.score==='number'){
+    LS.set('ki21_health_'+accId,{
+      score:Math.max(0,Math.min(100,Math.round(json.score))),
+      label:json.label||'',
+      structuralOpenCount:json.structuralOpenCount||0,
+      positive:json.positive||[],
+      warning:json.warning||[],
+      open:json.open||[],
+      ts:Date.now()
+    });
+    renderHealthBadgeIfPresent();
+  }
+}
+
+function getHealthManual(accId){
+  return LS.get('ki21_health_manual_'+accId,{added:[],removedAutoTexts:[]});
+}
+
+function getOpportunityHealth(accId){
+  const auto=LS.get('ki21_health_'+accId,null);
+  if(!auto)return null;
+  const manual=getHealthManual(accId);
+  const positive=(auto.positive||[]).filter(s=>!manual.removedAutoTexts.includes(s.text)).map(s=>({text:s.text,origin:'AUTO',type:'positive'}));
+  const warning=(auto.warning||[]).filter(s=>!manual.removedAutoTexts.includes(s.text)).map(s=>({text:s.text,origin:'AUTO',type:'warning'}));
+  const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open'}));
+  manual.added.forEach(m=>{
+    if(m.active===false)return;
+    if(m.type==='positive')positive.push({text:m.text,origin:'MANUELL',type:'positive'});
+    else if(m.type==='warning')warning.push({text:m.text,origin:'MANUELL',type:'warning'});
+    else open.push({text:m.text,origin:'MANUELL',type:'open'});
+  });
+  const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
+  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
+  let score=auto.score+manualPositiveCount*3-manualWarningCount*3;
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  const provisional=(auto.structuralOpenCount||0)>3;
+  return {score,label:auto.label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+}
+
+function renderHealthBadgeIfPresent(){
+  const el=document.getElementById('health-badge-nav');
+  if(!el)return;
+  const aid=LS.get('ki21_aid',null);
+  const health=aid?getOpportunityHealth(aid):null;
+  if(!health){el.style.display='none';return;}
+  el.style.display='';
+  el.textContent='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
+  el.style.color=health.score>=70?'#2ea043':health.score>=40?'#d29922':'#f85149';
+  el.style.background=health.score>=70?'rgba(46,160,67,.2)':health.score>=40?'rgba(210,153,34,.2)':'rgba(248,81,73,.2)';
+}
+
+function toggleHealthSignal(accId,text,origin,type,refreshFn){
+  const manual=getHealthManual(accId);
+  if(origin==='AUTO'){
+    const idx=manual.removedAutoTexts.indexOf(text);
+    if(idx>=0)manual.removedAutoTexts.splice(idx,1);
+    else manual.removedAutoTexts.push(text);
+  }else{
+    const item=manual.added.find(m=>m.text===text&&m.type===type);
+    if(item)item.active=item.active===false?true:false;
+  }
+  LS.set('ki21_health_manual_'+accId,manual);
+  renderHealthBadgeIfPresent();
+  if(refreshFn)refreshFn();
+}
+
+function addManualHealthSignal(accId,text,type,refreshFn){
+  if(!text||!text.trim())return;
+  const manual=getHealthManual(accId);
+  manual.added.push({text:text.trim(),type,active:true});
+  LS.set('ki21_health_manual_'+accId,manual);
+  renderHealthBadgeIfPresent();
+  if(refreshFn)refreshFn();
+}
+
+function showOpportunityHealthDetail(accId){
+  const render=()=>{
+    const health=getOpportunityHealth(accId);
+    if(!health){m.remove();return;}
+    content.innerHTML='';
+    const scoreLine=h('div',{style:{fontSize:'22px',fontWeight:'800',marginBottom:'4px'}},
+      health.score+'/100 – '+(health.label||''));
+    content.appendChild(scoreLine);
+    if(health.provisional){
+      content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
+        '⚠ Vorläufige Bewertung, da viele kritische Informationen noch offen sind.'));
+    }else{
+      content.appendChild(h('div',{style:{marginBottom:'14px'}}));
+    }
+    function section(title,items,color){
+      content.appendChild(h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e',marginTop:'14px',marginBottom:'6px'}},title));
+      if(!items.length){content.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
+      items.forEach(it=>{
+        const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
+          onclick:()=>toggleHealthSignal(accId,it.text,it.origin,it.type,render)},
+          h('span',{style:{fontSize:'9px',fontWeight:'700',color:color,border:'1px solid '+color,borderRadius:'4px',padding:'1px 5px',flexShrink:'0'}},it.origin),
+          h('span',{style:{color:it.origin==='MANUELL'&&getHealthManual(accId).added.find(m=>m.text===it.text)?.active===false?'#484f58':'#e6edf3',textDecoration:it.origin==='MANUELL'&&getHealthManual(accId).added.find(m=>m.text===it.text)?.active===false?'line-through':'none'}},it.text)
+        );
+        content.appendChild(row);
+      });
+    }
+    section('Positive Signale',health.positive,'#2ea043');
+    section('Warnsignale',health.warning,'#f85149');
+    section('Offene Punkte',health.open,'#8b949e');
+
+    const addRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'16px'}});
+    const addInput=h('input',{type:'text',placeholder:'Signal hinzufügen…',style:{flex:'1',background:'#1d2533',border:'1px solid #30363d',borderRadius:'6px',color:'#e6edf3',padding:'6px 8px',fontSize:'12px'}});
+    const addBtn=h('button',{className:'btn-o',style:{fontSize:'12px',padding:'6px 10px'},onclick:()=>{
+      addManualHealthSignal(accId,addInput.value,'positive',render);
+      addInput.value='';
+    }},'+ Positiv');
+    const addWarnBtn=h('button',{className:'btn',style:{fontSize:'12px',padding:'6px 10px',color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
+      addManualHealthSignal(accId,addInput.value,'warning',render);
+      addInput.value='';
+    }},'+ Warnung');
+    addRow.appendChild(addInput);addRow.appendChild(addBtn);addRow.appendChild(addWarnBtn);
+    content.appendChild(addRow);
+    content.appendChild(h('div',{style:{fontSize:'10px',color:'#484f58',marginTop:'10px'}},'Tippen auf ein Signal blendet es aus/ein. Manuelle Eingaben haben immer Vorrang.'));
+  };
+  const content=h('div',{});
+  const m=modal('❤️ Opportunity Health',content,null);
+  render();
+}
+
 function renderResultText(text){
   if(!text)return document.createTextNode('');
   const div=document.createElement('div');
@@ -777,6 +983,38 @@ function renderResultText(text){
   return div;
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightResultHTML(text){
+  if(!text)return '';
+  const lines=text.split('\n');
+  return lines.map(line=>{
+    const numMatch=line.match(/^(\d+\.\s*)/);
+    const prefix=numMatch?numMatch[1]:'';
+    const rest=numMatch?line.slice(prefix.length):line;
+    if(line.startsWith('BESTÄTIGT:')){
+      return '<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;margin-right:6px;">BESTÄTIGT</span>'+escHtml(line.slice('BESTÄTIGT:'.length));
+    } else if(line.startsWith('ANNAHME:')){
+      return '<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
+    } else if(line.startsWith('KLÄREN:')){
+      return '<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+    } else if(rest.startsWith('KRITISCH:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;margin-right:6px;">KRITISCH</span>'+escHtml(rest.slice('KRITISCH:'.length));
+    } else if(rest.startsWith('WICHTIG:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
+    } else if(rest.startsWith('NICE-TO-HAVE:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
+    } else if(/\b(BESTÄTIGT|ARBEITSWERT|ZU VALIDIEREN|BRANCHENHYPOTHESE|ZU KLÄREN)\b/.test(line)&&!line.startsWith('BESTÄTIGT:')){
+      let escaped=escHtml(line);
+      escaped=escaped.replace(/\bBESTÄTIGT\b/g,'<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;">BESTÄTIGT</span>');
+      escaped=escaped.replace(/\bARBEITSWERT\b/g,'<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;">ARBEITSWERT</span>');
+      escaped=escaped.replace(/\bZU VALIDIEREN\b/g,'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;">ZU VALIDIEREN</span>');
+      escaped=escaped.replace(/\bBRANCHENHYPOTHESE\b/g,'<span style="font-size:10px;font-weight:700;background:#f1ebfb;color:#6f42c1;border-radius:4px;padding:1px 6px;">BRANCHENHYPOTHESE</span>');
+      escaped=escaped.replace(/\bZU KLÄREN\b/g,'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;">ZU KLÄREN</span>');
+      return escaped;
+    } else {
+      return escHtml(line);
+    }
+  }).join('<br>');
+}
 function highlightConfidenceWords(line){
   let escaped=escHtml(line);
   escaped=escaped.replace(/\bBESTÄTIGT\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;">BESTÄTIGT</span>');
@@ -814,33 +1052,32 @@ function renderHome(){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.07'),
+    h('span',{style:{fontSize:'9px',color:'#484f58',marginLeft:'2px',fontWeight:'400'}},'v4.10'),
     h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙'),
       h('div',{className:'cust-btn',onclick:showKunde},
         h('div',{className:'cust-label'},'Kunde'),
         h('div',{className:'cust-val'},cust.firma||'wählen →')
       ),
-      cust.firma&&getActiveScore()?h('div',{id:'deal-score-nav',style:{
+      cust.firma?h('div',{id:'health-badge-nav',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);},style:{
         fontSize:'11px',fontWeight:'700',
-        color:getScoreColor(),
-        background:getScoreBg(),
         borderRadius:'4px',
         padding:'2px 5px',
         whiteSpace:'nowrap',
         flexShrink:'0',
+        cursor:'pointer',
+        display:getOpportunityHealth(state.activeId)?'':'none',
         WebkitUserSelect:'none',
         userSelect:'none',
         WebkitTouchCallout:'none'
-      }},getScoreLabel()):null
+      }},''):null
     )
   );
   setTimeout(()=>{
-    const scoreElInit=document.getElementById('deal-score-nav');
+    renderHealthBadgeIfPresent();
     const aidInit=LS.get('ki21_aid',null);
-    if(scoreElInit&&aidInit){
-      const savedReason=LS.get('ki21_score_reason_'+aidInit,'');
-      if(savedReason)attachScoreLongPress(scoreElInit,savedReason);
+    if(aidInit&&cust.firma&&!LS.get('ki21_health_'+aidInit,null)){
+      refreshOpportunityHealth(aidInit);
     }
   },0);
 
@@ -1147,17 +1384,10 @@ function exportAutopilotPDF(cust,dossierResults){
   <div class="meta">${cust.firma||'–'} | Erstellt: ${new Date().toLocaleDateString('de-DE')}</div>
   <div class="banner">Diese Vorschau wurde automatisch erstellt und kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen. Sie ersetzt nicht die vollständige KI21-Qualifizierung – alle Annahmen sollten im Kundengespräch validiert und über den vollständigen Prozess vertieft werden.</div>`;
   dossierResults.forEach(d=>{
-    html+=`<div class="phase"><div class="phase-title">${d.title}</div><pre>${(d.result||'').replace(/</g,'&lt;')}</pre></div>`;
+    html+=`<div class="phase"><div class="phase-title">${d.title}</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(d.result||'')}</div></div>`;
   });
   html+=`</body></html>`;
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.html';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
@@ -1616,6 +1846,7 @@ function renderStation(sitId){
           }
         }
         LS.set(KEY,data);
+        if(state.activeId)refreshOpportunityHealth(state.activeId);
         resultLabel.textContent=getResultLabel(sitId);
         // Extract deal score from result
         const scoreMatches=[...result.matchAll(/(\d+)\s*\/\s*10/g)];
@@ -2083,19 +2314,13 @@ function generateKundePDF(aid, cust){
     const result=data.result||'';
     html+=`<div class="phase">
       <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
-      ${result?`<pre>${result.replace(/</g,'&lt;')}</pre>`:'<div class="empty">Noch nicht bearbeitet</div>'}
+      ${result?`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(result)}</div>`:'<div class="empty">Noch nicht bearbeitet</div>'}
     </div>`;
   }
 
   html+=`</body></html>`;
 
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.html';
-  a.click();
-  URL.revokeObjectURL(url);
+  exportHtmlAsPdf(html,'KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
 }
 
 function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
