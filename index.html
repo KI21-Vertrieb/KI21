@@ -124,6 +124,67 @@ select option{background:var(--bg3);}
   border-radius:4px;padding:1px 6px;}
 .acc-score-chip{font-size:10px;font-weight:800;color:#2ea043;}
 .status-box{border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;}
+
+/* v4.26 compact phase header */
+.nav-station-info{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.nav-station-customer{
+  max-width:150px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:800;
+  color:#ff6b00;
+  background:transparent;
+  border:0;
+  padding:0;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.nav-station-health{
+  font-size:10.5px !important;
+  font-weight:800 !important;
+  border-radius:6px !important;
+  padding:4px 7px !important;
+  white-space:nowrap !important;
+}
+.station-compact-head{
+  border-bottom:1px solid var(--border);
+  padding:8px 0 10px;
+  margin-bottom:10px;
+}
+.station-compact-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:7px;
+}
+.station-compact-title{
+  font-size:12px;
+  color:var(--text2);
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.station-compact-rule{
+  font-size:12px;
+  color:var(--text2);
+  line-height:1.45;
+  border-left:2px solid #ff6b00;
+  padding-left:10px;
+}
+@media(max-width:380px){
+  .nav-station-customer{max-width:105px;font-size:10px;}
+  .nav-station-health{font-size:10px !important;padding:4px 6px !important;}
+  .nav-right{gap:4px;}
+}
+
 </style>
 </head>
 <body>
@@ -1020,18 +1081,20 @@ function makeTopHealthBadge(){
 }
 
 function renderHealthBadgeIfPresent(){
-  const el=document.getElementById('health-badge-nav');
-  if(!el)return;
+  const els=[document.getElementById('health-badge-nav'),document.getElementById('health-badge-station')].filter(Boolean);
+  if(!els.length)return;
   const aid=LS.get('ki21_aid',null);
   const health=aid?getOpportunityHealth(aid):null;
-  if(!health){el.style.display='none';return;}
-  el.style.display='';
-  el.textContent='Opportunity '+health.score+'/100';
-  const color=getHealthColor(health.score);
-  el.style.color=color;
-  el.style.borderColor=color;
-  el.style.background=getHealthBg(health.score);
-  el.title='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
+  els.forEach(el=>{
+    if(!health){el.style.display='none';return;}
+    el.style.display='';
+    el.textContent='Opportunity '+health.score+'/100';
+    const color=getHealthColor(health.score);
+    el.style.color=color;
+    el.style.borderColor=color;
+    el.style.background=getHealthBg(health.score);
+    el.title='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
+  });
 }
 
 function toggleHealthSignal(accId,text,origin,type,refreshFn){
@@ -1605,21 +1668,21 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('div',{className:'nav-right'},
+    h('div',{className:'nav-right nav-station-info'},
+      h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},''),
+      cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
 
   const wrap=h('div',{className:'station-wrap'});
 
-  const headBlock=h('div',{style:{borderBottom:'1px solid var(--border)',paddingBottom:'12px',marginBottom:'12px'}},
-    cust.firma?h('button',{className:'nav-brand',onclick:showKunde,style:{fontSize:'16px',fontWeight:'800',padding:'0',marginBottom:'4px',display:'block',textAlign:'left',width:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},cust.firma):null,
-    makeTopHealthBadge(),
-    h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'12px'}},
+  const headBlock=h('div',{className:'station-compact-head'},
+    h('div',{className:'station-compact-line'},
       h('span',{className:'subnav-badge'},String(sitId+1)),
-      h('span',{className:'subnav-text',style:{fontSize:'12px'}},'von '+SITS.length+' · '+sit.title)
+      h('span',{className:'station-compact-title'},'von '+SITS.length+' · '+sit.title)
     ),
-    h('div',{className:'regel',style:{display:'block',marginTop:'12px',marginBottom:'0'}},sit.regel)
+    h('div',{className:'station-compact-rule'},sit.regel)
   );
   wrap.appendChild(headBlock);
 
@@ -2725,7 +2788,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.25';
+const KI21_VERSION='v4.26';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3095,7 +3158,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.25';
+  v.textContent='v4.26';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
