@@ -86,7 +86,8 @@ textarea{resize:vertical;min-height:110px;line-height:1.6;}
 select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238b949e' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;padding-right:26px;}
 select option{background:var(--bg3);}
-.gen-row{display:flex;gap:8px;margin-bottom:14px;}
+.gen-row{display:flex;gap:8px;margin-bottom:14px;margin-top:2px;justify-content:flex-start;}
+.gen-row .btn-o{width:auto;min-width:200px;}
 .btn-reset{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:7px;
   padding:5px 10px;font-size:14px;cursor:pointer;}
 .result-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
@@ -164,6 +165,48 @@ function exportHtmlAsPdf(html,filename){
   }).catch(e=>{
     alert('PDF-Erzeugung fehlgeschlagen: '+e.message+'\nBitte Internetverbindung prüfen.');
   });
+}
+
+function shareAsPdf(title,text,cust,filename,fallbackText){
+  loadHtml2Pdf().then(()=>{
+    const html=buildSimplePdfHtml(title,text,cust);
+    const el=document.createElement('div');
+    el.innerHTML=html;
+    document.body.appendChild(el);
+    window.html2pdf().from(el).set({
+      margin:10,
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).outputPdf('blob').then(blob=>{
+      document.body.removeChild(el);
+      const file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:title}).catch(()=>{});
+      } else if(navigator.share){
+        navigator.share({title:'KI21 – '+title,text:fallbackText||text});
+      } else {
+        // Fallback: PDF direkt herunterladen
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;a.download=filename;a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+      }
+    });
+  }).catch(()=>{
+    if(navigator.share)navigator.share({title:'KI21 – '+title,text:fallbackText||text});
+  });
+}
+
+function buildSimplePdfHtml(title,text,cust){
+  let html=`<div style="font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;line-height:1.6;">
+  <div style="border-bottom:2px solid #ff6b00;padding-bottom:10px;margin-bottom:16px;">
+    <h1 style="font-size:18px;color:#ff6b00;margin:0 0 4px;">KI21 – ${title}</h1>
+    <div style="font-size:11px;color:#666;">${(cust&&cust.firma)||''} | ${new Date().toLocaleDateString('de-DE')}</div>
+  </div>
+  <div style="white-space:pre-wrap;">${highlightResultHTML(text||'')}</div>
+  </div>`;
+  return html;
 }
 
 // ── STATE ──────────────────────────────────────────────────
@@ -277,11 +320,10 @@ WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann K
 WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
 WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
 
-QUALIFIZIERUNGS-SCORE: [Zahl]/10
+EMPFEHLUNG: sofort / später / nicht verfolgen
 Begründung: [1 Satz, der knapp die 4 Kriterien benennt: Budget/Trigger, Schmerzpunkt mit Zahlen, Entscheider-Zugang, Zeitdruck – z.B. "Budget unklar, aber klarer quantifizierter Schmerz (X), Entscheiderin identifiziert, Trigger durch laufendes Projekt."]
-Empfehlung: sofort / später / nicht verfolgen
 
-WICHTIG: Die Zeile "Begründung:" MUSS direkt nach "QUALIFIZIERUNGS-SCORE:" stehen, als eigene Zeile, BEVOR die Empfehlung kommt. Schreibe die Begründung NICHT in die Empfehlungs-Zeile.
+WICHTIG: Die Zeile "Begründung:" MUSS direkt nach "EMPFEHLUNG:" stehen, als eigene Zeile.
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
 BESTÄTIGT: [bestätigte Fakten]
@@ -303,12 +345,10 @@ Bekannte Herausforderungen: ${f.info||''}
 Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
-WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 
-QUALIFIZIERUNGS-SCORE FINAL: [Zahl]/10
-Bewerte anhand von 4 Kriterien (je 0-2,5 Punkte, dann summieren und runden): (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
+EMPFEHLUNG FINAL: sofort / später / nicht verfolgen
+Bewerte anhand von 4 Kriterien: (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
 Begründung: [1 Satz, der die 4 Kriterien kurz benennt]
-Empfehlung: sofort / später / nicht verfolgen
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert):
 BESTÄTIGT: [jetzt bestätigte Fakten inkl. Antworten]
@@ -341,7 +381,7 @@ Antworten des Kunden: ${f.antworten||''}
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 
-BEDARFSANALYSE-SCORE: [Zahl]/10
+EINSCHÄTZUNG: [1 kurzer Satz, wie konkret/quantifiziert der erkannte Bedarf ist]
 Begründung: [1 Satz]
 
 DIE 5 WICHTIGSTEN ERKENNTNISSE:
@@ -380,9 +420,9 @@ Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
 Kontext aus vorheriger Bedarfsanalyse (zur Einordnung, NICHT der heutige Termin): ${f.kontext||'(kein Kontext vorhanden)'}
 NEUE Stichworte aus dem heutigen Termin: ${f.stichworte||'(noch keine Eingabe)'}
 
-WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen KLÄREN-Punkt INNERHALB des Outputs (z.B. "KLÄREN: Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "DEAL-SCORE:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
+WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen KLÄREN-Punkt INNERHALB des Outputs (z.B. "KLÄREN: Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "EINSCHÄTZUNG:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
 
-DEAL-SCORE: [Zahl]/10
+EINSCHÄTZUNG: [1 kurzer Satz, wie weit der Deal nach diesem Gespräch fortgeschritten ist]
 Begründung: [1 Satz]
 
 BESUCHSBERICHT:
@@ -438,10 +478,9 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 
 FORMAT – GENAU SO, NICHT MEHR:
 
-NUTZEN-SCORE: [Zahl]/10
+EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
 
 IN 30 SEKUNDEN:
-- Nutzen-Score: [Zahl]/10
 - Größter Schmerz: [1 kurzer Satz, das wichtigste Problem des Kunden]
 - Wichtigste offene Frage: [1 Satz, die kritischste noch zu klärende Frage]
 - Empfohlener nächster Schritt: [1 kurzer Satz]
@@ -503,16 +542,14 @@ Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||'
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
-ABSCHLUSS-SCORE: [Zahl]/10
-Begründung: [1 Satz – Abschlusswahrscheinlichkeit?]
-Score-Erläuterung (auf einen Blick):
+EINSCHÄTZUNG: [1 Satz – wie hoch ist die Abschlusswahrscheinlichkeit einzuschätzen?]
+Begründung-Erläuterung (auf einen Blick):
 + [1 positiver Faktor, z.B. "Sponsor vorhanden"]
 + [1 positiver Faktor, z.B. "Schmerz bestätigt"]
 – [1 negativer/offener Faktor, z.B. "IT-Abhängigkeit"]
 – [1 negativer/offener Faktor, z.B. "ROI noch nicht vollständig validiert"]
 
 IN 30 SEKUNDEN:
-- Abschluss-Score: [Zahl]/10
 - Größter Hebel für den Abschluss: [1 kurzer Satz]
 - Wichtigste offene Frage: [1 Satz]
 - Empfohlener nächster Schritt: [1 kurzer Satz]
@@ -930,7 +967,7 @@ function showOpportunityHealthDetail(accId){
     section('Offene Punkte',health.open,'#8b949e');
 
     content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
-      'Neue Info über den Kunden? Einfach ins Feld "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
+      'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
   };
   const content=h('div',{});
   const m=modal('❤️ Opportunity Health',content,null);
@@ -1096,16 +1133,15 @@ function renderHome(){
   ];
 
   groups.forEach(g=>{
-    const phaseScoreInfo=getPhaseScoreInfo(g.primary);
-    const hasScore=phaseScoreInfo.score!==null;
-    const badgeClass=hasScore?'phase-badge phase-badge-done':'phase-badge phase-badge-empty';
-    const badgeLabel=hasScore?phaseScoreInfo.score+'/10':'Offen';
-    const badge=h('span',{className:badgeClass,style:hasScore?{color:scoreColor(phaseScoreInfo.score)}:{}},badgeLabel);
-    if(hasScore&&phaseScoreInfo.reason)attachScoreLongPress(badge,phaseScoreInfo.reason);
+    const status=getPhaseStatus(g.primary);
+    const hasResult=status==='done';
+    const badgeClass=hasResult?'phase-badge phase-badge-done':'phase-badge phase-badge-empty';
+    const badgeLabel=hasResult?'Fertig':(status==='progress'?'In Arbeit':'Offen');
+    const badge=h('span',{className:badgeClass},badgeLabel);
     let pressTimer=null;
     let suppressClick=false;
     const startPress=(e)=>{
-      if(!hasScore)return;
+      if(!hasResult)return;
       pressTimer=setTimeout(()=>{
         suppressClick=true;
         const ok=confirm('Ergebnis dieser Phase zurücksetzen? Eingaben bleiben erhalten.');
@@ -1376,7 +1412,6 @@ function exportAutopilotPDF(cust,dossierResults){
   });
   html+=`</body></html>`;
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function transferAndGo(fromId, toId, result){
@@ -1488,13 +1523,15 @@ function renderStation(sitId){
     phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
   }
   phaseNav.appendChild(h('div',{style:{flex:1}}));
-  const stkBtn=h('button',{className:'btn',
-    style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
-    onclick:()=>showStkModal(sitId,sit.title)},
-    h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
-    h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
-  );
-  phaseNav.appendChild(stkBtn);
+  if(sitId!==3&&sitId!==4){
+    const stkBtn=h('button',{className:'btn',
+      style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
+      onclick:()=>showStkModal(sitId,sit.title)},
+      h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
+      h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
+    );
+    phaseNav.appendChild(stkBtn);
+  }
   if(sitId<SITS.length-1){
     phaseNav.appendChild(h('button',{className:'btn',
       style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.3)'},
@@ -1629,8 +1666,7 @@ function renderStation(sitId){
   const shareBtn=h('button',{className:'btn',
     style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
     onclick:()=>{
-      if(navigator.share)navigator.share({title:'KI21 – '+sit.title,text:data.result});
-      else copyBtn.click();
+      shareAsPdf(sit.title,data.result,getActiveCust(),'KI21_'+sit.title.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf',data.result);
     }
   },'Teilen ↗');
   resultBtns.appendChild(copyBtn);
@@ -1639,14 +1675,6 @@ function renderStation(sitId){
     style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
     onclick:()=>loadMoreDetails(sitId,data)},'Mehr Details');
   resultBtns.appendChild(moreBtn);
-  // PDF button for Phase 0 (Lead-Steckbrief) and Phase 2 (Nachbereitung)
-  if(sitId===0||sitId===2){
-    const pdfBtn=h('button',{className:'btn',
-      style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
-      onclick:()=>showPDF(sit.title,data.result,getActiveCust())
-    },'PDF');
-    resultBtns.appendChild(pdfBtn);
-  }
   resultBtns.appendChild(shareBtn);
   resultBtns.appendChild(delBtn);
   resultHead.appendChild(resultLabel);
@@ -1733,18 +1761,6 @@ function renderStation(sitId){
             LS.set(nextKEY2,nextData2);
           }
           weiter2Row.style.display='block';
-          // Update nav score
-          const ems2=[...r2.matchAll(/(\d+)\s*\/\s*10/g)];
-          const em2=ems2.length?ems2[0]:null;
-          if(em2){
-            const s2=parseInt(em2[1]);
-            const navLabel=document.getElementById('nav-phase-label');
-            if(navLabel){
-              navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(s2)+'">'+s2+'/10</span>';
-              const badgeEl=document.getElementById('phase-score-badge');
-              if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,extractBegruendung(r2));}
-            }
-          }
         }
         gen2Btn.disabled=false;
         gen2Btn.textContent='⚡ Qualifizierung abschließen';
@@ -1766,19 +1782,6 @@ function renderStation(sitId){
 
   // Show weiter button if result already exists (navigating back)
   if(data.result){
-    // Show phase score
-    const ems=[...data.result.matchAll(/(\d+)\s*\/\s*10/g)];
-    const em=ems.length?ems[0]:null;
-    if(em){const es=parseInt(em[1]);if(es>=1&&es<=10){setTimeout(()=>{
-      const pse=document.getElementById('phase-score-'+sitId);
-      if(pse){}
-      const navLabel=document.getElementById('nav-phase-label');
-      if(navLabel){
-        navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(es)+'">'+es+'/10</span>';
-        const badgeEl=document.getElementById('phase-score-badge');
-        if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,extractBegruendung(data.result));}
-      }
-    },50);}}
     const nextMapInit={
       0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
     };
@@ -1837,35 +1840,6 @@ function renderStation(sitId){
         LS.set(KEY,data);
         if(state.activeId)refreshOpportunityHealth(state.activeId);
         resultLabel.textContent=getResultLabel(sitId);
-        // Extract deal score from result
-        const scoreMatches=[...result.matchAll(/(\d+)\s*\/\s*10/g)];
-        const scoreMatch=scoreMatches.length?scoreMatches[0]:null;
-        if(scoreMatch){
-          const score=parseInt(scoreMatch[1]);
-          if(score>=1&&score<=10){
-            const begr=extractBegruendung(result);
-            saveScore(score,begr);
-            // Update main nav score
-            const scoreEl=document.getElementById('deal-score-nav');
-            if(scoreEl){
-              scoreEl.textContent=score+'/10';
-              scoreEl.style.color=score>=7?'#2ea043':score>=4?'#d29922':'#f85149';
-              scoreEl.style.background=score>=7?'rgba(46,160,67,.2)':score>=4?'rgba(210,153,34,.2)':'rgba(248,81,73,.2)';
-              scoreEl.style.userSelect='none';
-              scoreEl.style.WebkitUserSelect='none';
-              scoreEl.style.WebkitTouchCallout='none';
-              attachScoreLongPress(scoreEl,begr);
-            }
-
-            // Update nav label with score (all phases)
-            const navLabel=document.getElementById('nav-phase-label');
-            if(navLabel){
-              navLabel.innerHTML='von '+SITS.length+' · '+sit.title+' · <span id="phase-score-badge" style="color:'+scoreColor(score)+'">'+score+'/10</span>';
-              const badgeEl=document.getElementById('phase-score-badge');
-              if(badgeEl){badgeEl.style.userSelect='none';badgeEl.style.WebkitUserSelect='none';badgeEl.style.WebkitTouchCallout='none';attachScoreLongPress(badgeEl,begr);}
-            }
-          }
-        }
         // Phase 5: Auto-extract Besuchsbericht into CRM field
         if(sitId===4){
           const berichtMatch=result.match(/BESUCHSBERICHT[:\s]*\n([\s\S]+?)(?=FOLLOW-UP MAIL|→ TODO|$)/i);
@@ -2959,7 +2933,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.14';
+  v.textContent='v4.17';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
