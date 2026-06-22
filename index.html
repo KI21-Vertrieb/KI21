@@ -274,7 +274,10 @@ const SITS=[
 Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
 Trigger: ${f.info||''}
+Phasenspezifische Ergänzungen des Nutzers: ${stk||''}
+Globale Ergänzungen / Kundenkontext: ${kk||''}
 
+KRITISCH: Die Ergänzungen des Nutzers sind gleichwertige Fakten. Wenn dort steht, dass der Geschäftsführer eine Mitbewerberlösung präferiert, muss das ausdrücklich als Warnsignal im Lead-Steckbrief erscheinen und die Empfehlung/Qualifizierung deutlich beeinflussen.
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
 WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
@@ -303,7 +306,10 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
 Bekannte Herausforderungen: ${f.info||''}
 Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
+Phasenspezifische Ergänzungen des Nutzers: ${stk||''}
+Globale Ergänzungen / Kundenkontext: ${kk||''}
 
+KRITISCH: Die Ergänzungen des Nutzers sind gleichwertige Fakten. Wenn dort steht, dass der Geschäftsführer eine Mitbewerberlösung präferiert, muss das ausdrücklich als Warnsignal erscheinen und die finale Empfehlung/Qualifizierung deutlich beeinflussen.
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 
@@ -813,6 +819,31 @@ function getAllPhaseAdditions(accId){
   return out.trim();
 }
 
+
+function getAdditionRiskSignals(accId){
+  const combined=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId)).toLowerCase();
+  const warning=[];
+  let penalty=0;
+  const add=(text,points)=>{
+    if(!warning.find(w=>w.text===text))warning.push({text,origin:'ERGAENZUNG',type:'warning',disabled:false});
+    penalty=Math.max(penalty,points);
+  };
+  if(!combined.trim())return {warning,penalty};
+  if(/(geschäftsführer|gf|ceo|entscheider|leitung).{0,80}(präfer|bevorzug|favoris|klar|eindeutig).{0,80}(mitbewerb|wettbewerb|konkurrent|konkurrenz|alternative)/i.test(combined) || /(mitbewerb|wettbewerb|konkurrent|konkurrenz).{0,80}(präfer|bevorzug|favoris|gesetzt|vorne|klar)/i.test(combined)){
+    add('Entscheider bevorzugt Mitbewerber',25);
+  }
+  if(/(wettbewerb|mitbewerb|konkurrent).{0,80}(workshop|demo|pilot|proof|poc)/i.test(combined)){
+    add('Wettbewerber bereits aktiv',20);
+  }
+  if(/(budget).{0,60}(nicht|kein|fehlt|gestrichen|unklar)/i.test(combined)){
+    add('Budget kritisch oder unklar',15);
+  }
+  if(/(entscheidung|projekt|go-live|start).{0,60}(verschoben|verzögert|später|unklar|pausiert)/i.test(combined)){
+    add('Entscheidung verzögert',15);
+  }
+  return {warning,penalty};
+}
+
 function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
   let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
@@ -870,10 +901,18 @@ function getHealthManual(accId){
 
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  if(!auto)return null;
+  const risk=getAdditionRiskSignals(accId);
+  if(!auto){
+    if(risk.warning.length){
+      const score=Math.max(0,50-risk.penalty);
+      return {score,label:score<40?'Kritisch':'Stabil',provisional:true,positive:[],warning:risk.warning,open:[],structuralOpenCount:6};
+    }
+    return null;
+  }
   const manual=getHealthManual(accId);
   const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
   const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
+  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.push(r); });
   const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
   manual.added.forEach(m=>{
     const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
@@ -885,10 +924,11 @@ function getOpportunityHealth(accId){
   const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
   const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
+  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3-risk.penalty;
   score=Math.max(0,Math.min(100,Math.round(score)));
   const provisional=(auto.structuralOpenCount||0)>3;
-  return {score,label:auto.label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+  const label=score<40?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
 }
 
 function renderHealthBadgeIfPresent(){
@@ -2126,6 +2166,7 @@ function showNeuerKunde(initial,accId){
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
       LS.set('ki21_kk_'+accId,kk);
+      renderHealthBadgeIfPresent();
       refreshOpportunityHealth(accId);
     } else {
       const id='acc_'+Date.now();
@@ -2345,6 +2386,7 @@ function showStkModal(sitId,sitTitle){
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{
         LS.set(KEY,ta.value);
+        renderHealthBadgeIfPresent();
         if(state.activeId)refreshOpportunityHealth(state.activeId);
         m.remove();
         renderStation(sitId);
