@@ -69,7 +69,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
   border:1px solid rgba(255,107,0,.3);border-radius:4px;padding:2px 7px;
   max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .phase-nav{display:flex;gap:5px;margin-bottom:10px;}
-.regel{display:none;font-size:12px;color:var(--text2);line-height:1.5;border-left:2px solid #ff6b00;
+.regel{font-size:12px;color:var(--text2);line-height:1.5;border-left:2px solid #ff6b00;
   padding-left:10px;margin-bottom:14px;}
 .field-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
   color:var(--text2);margin-bottom:5px;}
@@ -293,18 +293,12 @@ function buildCtx(cust,mu,kk,stk){
     else if(umNum>=1000)umDisplay=(umNum/1000).toFixed(1)+' Tsd. €';
     s+='Umsatz: '+umDisplay+'\n';
   }
-  if(kk){
-    s+='\nGLOBALE ERGÄNZUNGEN / KUNDENKONTEXT (vom Nutzer eingegeben, als gleichwertige Fakten behandeln):\n'+kk+'\n';
-    s+='WICHTIG: Diese globalen Ergänzungen dürfen nicht nur als Hintergrund betrachtet werden. Wenn sie Risiken, Wettbewerber, Entscheiderpräferenzen, Budget, Timing oder Kaufsignale enthalten, müssen sie im Ergebnis sichtbar berücksichtigt werden und die Einschätzung beeinflussen.\n';
-  }
+  if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
   const intelData=LS.get('ki21_intelligence',{});
   if(intelData&&intelData.inhalt)s+='\nKI21 Intelligence (verdichtete Business Patterns):\n'+intelData.inhalt+'\n';
-  if(stk){
-    s+='\nPHASENSPEZIFISCHE ERGÄNZUNGEN DES NUTZERS (für diese Phase, als gleichwertige Fakten behandeln):\n'+stk+'\n';
-    s+='WICHTIG: Diese Ergänzungen sind nicht optionaler Randkontext. Wenn sie die Opportunity beeinflussen, müssen sie im Output sichtbar erscheinen – besonders unter Erkenntnisse, Risiken, offenen Punkten oder Empfehlung.\n';
-  }
+  if(stk)s+='\nZusätzlicher Kontext:\n'+stk+'\n';
   return s+'--- ENDE KONTEXT ---\n\n';
 }
 
@@ -321,10 +315,7 @@ const SITS=[
 Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
 Trigger: ${f.info||''}
-Globale Ergänzungen / Kundenkontext: ${kk||''}
-Phasenspezifische Ergänzungen des Nutzers: ${stk||''}
 
-KRITISCH: Die Ergänzungen des Nutzers sind gleichwertige Fakten. Wenn dort steht, dass der Geschäftsführer eine Mitbewerberlösung präferiert, muss das ausdrücklich als Warnsignal im Lead-Steckbrief erscheinen und die Empfehlung/Qualifizierung deutlich beeinflussen.
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
 WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
@@ -352,10 +343,7 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
 Bekannte Herausforderungen: ${f.info||''}
 Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
-Globale Ergänzungen / Kundenkontext: ${kk||''}
-Phasenspezifische Ergänzungen des Nutzers: ${stk||''}
 
-KRITISCH: Die Ergänzungen des Nutzers sind gleichwertige Fakten. Wenn dort steht, dass der Geschäftsführer eine Mitbewerberlösung präferiert, muss das ausdrücklich als Warnsignal erscheinen und die finale Empfehlung/Qualifizierung deutlich beeinflussen.
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 
 EMPFEHLUNG FINAL: sofort / später / nicht verfolgen
@@ -381,7 +369,7 @@ WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo-Empfehlung',icon:'📋',
    regel:'Was braucht der Kunde wirklich?',
    felder:[
-     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
+     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -457,6 +445,7 @@ Betreff: [präzise]
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Warum lohnt sich die Investition wirtschaftlich?',
    felder:[
+     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
@@ -846,57 +835,17 @@ async function callClaudeJSON(prompt){
   }catch(e){return null;}
 }
 
-
-function getAllPhaseAdditions(accId){
-  if(!accId)return '';
-  let out='';
-  SITS.forEach((sit,i)=>{
-    const txt=LS.get('ki21_stk_'+accId+'_'+i,'');
-    if(txt&&String(txt).trim()){
-      out+='\n--- Ergänzungen '+sit.title+' ---\n'+String(txt).trim()+'\n';
-    }
-  });
-  return out.trim();
-}
-
-function getAdditionRiskSignals(accId){
-  const combined=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId)).toLowerCase();
-  const warning=[];
-  let penalty=0;
-  const add=(text,points)=>{
-    if(!warning.find(w=>w.text===text))warning.push({text,origin:'ERGAENZUNG',type:'warning',disabled:false});
-    penalty=Math.max(penalty,points);
-  };
-  if(!combined.trim())return {warning,penalty};
-  if(/(geschäftsführer|gf|ceo|entscheider|leitung).{0,80}(präfer|bevorzug|favoris|klar|eindeutig).{0,80}(mitbewerb|wettbewerb|konkurrent|konkurrenz|alternative)/i.test(combined) || /(mitbewerb|wettbewerb|konkurrent|konkurrenz).{0,80}(präfer|bevorzug|favoris|gesetzt|vorne|klar)/i.test(combined)){
-    add('Entscheider bevorzugt Mitbewerber',25);
-  }
-  if(/(wettbewerb|mitbewerb|konkurrent).{0,80}(workshop|demo|pilot|proof|poc)/i.test(combined)){
-    add('Wettbewerber bereits aktiv',20);
-  }
-  if(/(budget).{0,60}(nicht|kein|fehlt|gestrichen|unklar)/i.test(combined)){
-    add('Budget kritisch oder unklar',15);
-  }
-  if(/(entscheidung|projekt|go-live|start).{0,60}(verschoben|verzögert|später|unklar|pausiert)/i.test(combined)){
-    add('Entscheidung verzögert',15);
-  }
-  return {warning,penalty};
-}
-
-function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
+function buildHealthPrompt(cust,allResults,kontext){
   let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
-  if(kontext)s+='--- Globale Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,3000)+'\n\n';
-  if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen des Nutzers ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
+  if(kontext)s+='--- Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,2000)+'\n\n';
   allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
   s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
 
 KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
 
-Beispiele für deutliche SENKUNG: Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Geschäftsführer/Entscheider präferiert klar eine Mitbewerberlösung; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
+Beispiele für deutliche SENKUNG: Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
 Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
-
-KRITISCH: Inhalte aus "Ergänzungen" sind genauso relevant wie generierte Phasenergebnisse. Wenn dort z.B. steht, dass der Geschäftsführer klar eine Mitbewerberlösung bevorzugt, muss das als starkes Warnsignal erscheinen und den Score spürbar senken – auch wenn der Lead-Steckbrief diese Ergänzung noch nicht neu generiert hat.
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
@@ -916,9 +865,8 @@ async function refreshOpportunityHealth(accId){
     if(d&&d.result)allResults.push({title:sit.title,text:d.result});
   });
   const kontext=LS.get('ki21_kk_'+accId,'');
-  const phaseAdditions=getAllPhaseAdditions(accId);
-  if(!allResults.length&&!kontext&&!phaseAdditions)return;
-  const prompt=buildHealthPrompt(cust,allResults,kontext,phaseAdditions);
+  if(!allResults.length&&!kontext)return;
+  const prompt=buildHealthPrompt(cust,allResults,kontext);
   const json=await callClaudeJSON(prompt);
   if(json&&typeof json.score==='number'){
     LS.set('ki21_health_'+accId,{
@@ -940,19 +888,11 @@ function getHealthManual(accId){
 
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  const risk=getAdditionRiskSignals(accId);
-  if(!auto){
-    if(risk.warning.length){
-      const score=Math.max(0,50-risk.penalty);
-      return {score,label:score<40?'Kritisch':'Stabil',provisional:true,positive:[],warning:risk.warning,open:[],structuralOpenCount:6};
-    }
-    return null;
-  }
+  if(!auto)return null;
   const manual=getHealthManual(accId);
   const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
   const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
   const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
-  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.push(r); });
   manual.added.forEach(m=>{
     const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
     if(m.type==='positive')positive.push(entry);
@@ -963,11 +903,10 @@ function getOpportunityHealth(accId){
   const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
   const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3-risk.penalty;
+  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
   score=Math.max(0,Math.min(100,Math.round(score)));
   const provisional=(auto.structuralOpenCount||0)>3;
-  const label=score<40?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
-  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+  return {score,label:auto.label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
 }
 
 function renderHealthBadgeIfPresent(){
@@ -1588,7 +1527,8 @@ function renderStation(sitId){
     const stkBtn=h('button',{className:'btn',
       style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
       onclick:()=>showStkModal(sitId,sit.title)},
-      h('span',{style:{fontSize:'11px'}},'Ergänzungen')
+      h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
+      h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
     );
     phaseNav.appendChild(stkBtn);
   }
@@ -1642,7 +1582,7 @@ function renderStation(sitId){
       data.fv[f.id]=e.target.value;
       LS.set(KEY,data);
     });
-    if(f.t==='ta'&&!f.readonly){
+    if(f.t==='ta'){
       const taWrap=h('div',{style:{position:'relative'}});
       const fsBtn=h('button',{
         style:{position:'absolute',top:'6px',right:'6px',
@@ -1668,7 +1608,6 @@ function renderStation(sitId){
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const genRow=h('div',{className:'gen-row'});
   genRow.appendChild(genBtn);
-  if(sitId===3){genRow.style.display='none';}
   wrap.appendChild(genRow);
 
   if(sitId===0&&LS.get('ki21_schnellstart',false)){
@@ -1835,7 +1774,7 @@ function renderStation(sitId){
       },'Weiter zu Bedarfsanalyse →');
       weiter2Row.appendChild(weiter2Btn);
       postDiv.appendChild(weiter2Row);
-      weiter2Row.style.display='none';
+      if(data.result2)weiter2Row.style.display='block';
     }
 
     wrap.appendChild(postDiv);
@@ -1843,7 +1782,9 @@ function renderStation(sitId){
 
   // Show weiter button if result already exists (navigating back)
   if(data.result){
-    const nextMapInit={};
+    const nextMapInit={
+      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
+    };
     if(nextMapInit[sitId]&&!sit.build2){
       const nextId=nextMapInit[sitId].nextId;
       const wb=h('button',{
@@ -1974,7 +1915,9 @@ Analyse:
 
         // Populate Weiter-button after fresh generation (was previously only shown on page reload)
         weiterRow.innerHTML='';
-        const nextMapAfterGen={};
+        const nextMapAfterGen={
+          0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
+        };
         if(nextMapAfterGen[sitId]&&!sit.build2){
           const nextIdAfterGen=nextMapAfterGen[sitId].nextId;
           const wbAfterGen=h('button',{
@@ -2000,9 +1943,6 @@ Analyse:
   app.appendChild(nav);
   app.appendChild(subNav);
   app.appendChild(wrap);
-  if(sitId===3 && !data.result && cust.firma){
-    setTimeout(()=>generate(),100);
-  }
 }
 
 // ── MODALS ─────────────────────────────────────────────────
@@ -2141,7 +2081,6 @@ function showNeuerKunde(initial,accId){
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
       LS.set('ki21_kk_'+accId,kk);
-      renderHealthBadgeIfPresent();
       refreshOpportunityHealth(accId);
     } else {
       const id='acc_'+Date.now();
@@ -2356,15 +2295,15 @@ function showStkModal(sitId,sitTitle){
   const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
   ta.value=LS.get(KEY,'');
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in den Prompt ein.'),
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für '+sitTitle+'. Fließen in den Prompt ein.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);renderHealthBadgeIfPresent();if(state.activeId)refreshOpportunityHealth(state.activeId);m.remove();renderStation(sitId);}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);m.remove();renderStation(sitId);}},
         'Speichern'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Ergänzungen',content,null);
+  const m=modal('Ergänzungen'+sitTitle,content,null);
 }
 
 function showPDF(title,text,cust){
@@ -2688,54 +2627,77 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-async function pushToGitHub(){
+const KI21_VERSION='v4.21';
+
+function encodeBase64UTF8(text){
+  const bytes=new TextEncoder().encode(text);
+  let binary='';
+  const chunk=8192;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(binary);
+}
+
+function detectVersionFromHtml(html){
+  const m=String(html||'').match(/v\d+\.\d+(?:\s*[A-Za-z0-9_-]+)?/);
+  return m?m[0]:'unbekannte Version';
+}
+
+async function pushToGitHub(sourceText){
   const token=LS.get('ki21_github_token','');
   if(!token){alert('Bitte zuerst GitHub Token in Einstellungen hinterlegen.');return;}
 
+  if(!sourceText||!String(sourceText).trim()){
+    throw new Error('Kein App-Code zum Veröffentlichen vorhanden. Bitte neue index.html in das Update-Feld einfügen.');
+  }
+  if(!String(sourceText).includes('<!DOCTYPE html')||!String(sourceText).includes('<script>')){
+    throw new Error('Der eingefügte Text sieht nicht wie eine vollständige index.html aus.');
+  }
+
+  const version=detectVersionFromHtml(sourceText);
   const headers={
     'Authorization':'token '+token,
     'Accept':'application/vnd.github.v3+json',
     'Content-Type':'application/json'
   };
 
-  // Step 1: Get current SHA
   const shaResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{headers});
   if(!shaResp.ok)throw new Error('GitHub Fehler '+shaResp.status);
   const shaData=await shaResp.json();
   const sha=shaData.sha;
 
-  // Step 2: Fetch fresh source from GitHub (not from DOM)
-  const sourceResp=await fetch(window.location.href+'?nocache='+Date.now());
-  if(!sourceResp.ok)throw new Error('Source Fehler '+sourceResp.status);
-  const sourceText=await sourceResp.text();
-  
-  // Step 3: Encode to base64
-  const bytes=new TextEncoder().encode(sourceText);
-  let b64='';
-  const chunk=8192;
-  for(let i=0;i<bytes.length;i+=chunk){
-    b64+=String.fromCharCode(...bytes.subarray(i,i+chunk));
-  }
-  const encoded=btoa(b64);
+  const encoded=encodeBase64UTF8(sourceText);
 
-  // Step 4: Push to GitHub
   const pushResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{
     method:'PUT',
     headers,
     body:JSON.stringify({
-      message:'KI21 v4.18 veröffentlicht – '+new Date().toLocaleDateString('de-DE'),
+      message:'KI21 '+version+' veröffentlicht – '+new Date().toLocaleDateString('de-DE'),
       content:encoded,
       sha:sha
     })
   });
-  if(!pushResp.ok)throw new Error('Push Fehler '+pushResp.status);
-  return true;
+  if(!pushResp.ok){
+    let msg='Push Fehler '+pushResp.status;
+    try{const err=await pushResp.json(); if(err&&err.message)msg+=': '+err.message;}catch(e){}
+    throw new Error(msg);
+  }
+  LS.set('ki21_last_published_version',version);
+  LS.set('ki21_last_published_at',new Date().toLocaleString('de-DE'));
+  return version;
 }
 
+async function fetchCurrentPublishedHtml(){
+  const resp=await fetch('https://ki21-vertrieb.github.io/KI21/index.html?nocache='+Date.now());
+  if(!resp.ok)throw new Error('Aktuelle Live-Version konnte nicht gelesen werden ('+resp.status+').');
+  return await resp.text();
+}
 
 function showGitHub(){
   const hasGHToken=!!LS.get('ki21_github_token','');
   let newGHToken='';
+  let updateCode='';
 
   const status=h('div',{className:'status-box',
     style:{background:hasGHToken?'rgba(46,160,67,.12)':'#1c2333',
@@ -2745,20 +2707,43 @@ function showGitHub(){
     h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasGHToken?'#2ea043':'#e6edf3'}},
       hasGHToken?'GitHub verbunden':'GitHub nicht verbunden'),
     h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
-      hasGHToken?'Ein Klick veröffentlicht die aktuelle index.html':'Token einmalig hinterlegen')
+      hasGHToken?'Neue index.html einfügen → ein Klick veröffentlicht':'Token einmalig hinterlegen')
   );
 
   const content=h('div',{},status);
 
   if(hasGHToken){
+    const lastVersion=LS.get('ki21_last_published_version','');
+    const lastAt=LS.get('ki21_last_published_at','');
+    if(lastVersion||lastAt){
+      content.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'8px',textAlign:'center'}},
+        'Zuletzt veröffentlicht: '+(lastVersion||'–')+(lastAt?' · '+lastAt:'')));
+    }
+
+    content.appendChild(h('div',{style:{fontSize:'11px',color:'#8b949e',lineHeight:'1.45',marginBottom:'8px'}},
+      'Kopiere künftig den vollständigen Inhalt der von ChatGPT gelieferten index.html hier hinein. Danach genügt ein Tipp auf „Veröffentlichen“. Keine lokale Datei, kein PC.'));
+
+    const ta=h('textarea',{placeholder:'Hier vollständige neue index.html einfügen …',
+      style:{minHeight:'170px',fontSize:'11px',fontFamily:'monospace',lineHeight:'1.35'}});
+    const versionLine=h('div',{style:{fontSize:'11px',color:'#ff6b00',margin:'6px 0 10px'}},'Noch kein Update-Code eingefügt');
+    ta.addEventListener('input',e=>{
+      updateCode=e.target.value;
+      const version=detectVersionFromHtml(updateCode);
+      versionLine.textContent=updateCode.trim()?('Erkannte Version: '+version):'Noch kein Update-Code eingefügt';
+    });
+    content.appendChild(ta);
+    content.appendChild(versionLine);
+
     const pushB=h('button',{className:'btn-o',
       style:{background:'#238636',marginBottom:'8px'},
       onclick:async()=>{
+        const code=(updateCode||ta.value||'').trim();
+        if(!code){alert('Bitte zuerst die neue index.html in das Feld einfügen.');return;}
         pushB.disabled=true;
         pushB.textContent='⏳ Wird veröffentlicht...';
         try{
-          await pushToGitHub();
-          pushB.textContent='✅ Veröffentlicht (v4.18)';
+          const publishedVersion=await pushToGitHub(code);
+          pushB.textContent='✅ Veröffentlicht ('+publishedVersion+')';
           setTimeout(()=>{pushB.textContent='🚀 Veröffentlichen';pushB.disabled=false;},3000);
         }catch(e){
           alert('Fehler: '+e.message);
@@ -2768,8 +2753,26 @@ function showGitHub(){
       }
     },'🚀 Veröffentlichen');
     content.appendChild(pushB);
+
+    content.appendChild(h('button',{className:'btn',style:{width:'100%',marginTop:'4px'},onclick:async()=>{
+      if(!confirm('Aktuelle live veröffentlichte Version erneut veröffentlichen? Normalerweise brauchst du das nicht.'))return;
+      publishCurrentB.disabled=true;
+      publishCurrentB.textContent='⏳ Lade Live-Version...';
+      try{
+        const liveHtml=await fetchCurrentPublishedHtml();
+        const v=await pushToGitHub(liveHtml);
+        publishCurrentB.textContent='✅ Live-Version erneut veröffentlicht ('+v+')';
+        setTimeout(()=>{publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';publishCurrentB.disabled=false;},3000);
+      }catch(e){
+        alert('Fehler: '+e.message);
+        publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';
+        publishCurrentB.disabled=false;
+      }
+    }},'Aktuelle Live-Version erneut veröffentlichen'));
+    const publishCurrentB=content.lastChild;
+
     content.appendChild(h('button',{className:'btn',
-      style:{width:'100%',marginTop:'4px'},
+      style:{width:'100%',marginTop:'8px'},
       onclick:()=>{if(confirm('GitHub Token löschen?')){LS.set('ki21_github_token','');m.remove();showGitHub();}}},
       'Token löschen'));
   } else {
@@ -2778,7 +2781,7 @@ function showGitHub(){
     inp.addEventListener('input',e=>newGHToken=e.target.value);
     content.appendChild(inp);
     content.appendChild(h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 10px',lineHeight:'1.5'}},
-      'Einmalig speichern – dann reicht ein Tap zum Updaten.'));
+      'Einmalig speichern – danach reicht Einfügen + Veröffentlichen.'));
     content.appendChild(h('button',{className:'btn-o',
       style:{background:'#238636'},
       onclick:()=>{
@@ -2903,7 +2906,7 @@ function showSettings(){
   content.appendChild(h('button',{className:'btn',
     style:{width:'100%',background:'var(--bg3)'},
     onclick:()=>{m.remove();showGitHub();}},
-    '🐙 GitHub Veröffentlichung'));
+    '🐙 GitHub Auto-Deploy'));
   content.appendChild(h('button',{className:'btn',
     style:{width:'100%',marginTop:'8px'},
     onclick:()=>{
@@ -2994,7 +2997,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.18';
+  v.textContent='v4.21';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
