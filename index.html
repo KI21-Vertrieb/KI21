@@ -835,17 +835,94 @@ async function callClaudeJSON(prompt){
   }catch(e){return null;}
 }
 
-function buildHealthPrompt(cust,allResults,kontext){
+
+function getAllPhaseAdditions(accId){
+  if(!accId)return '';
+  let out='';
+  SITS.forEach((sit,i)=>{
+    const txt=LS.get('ki21_stk_'+accId+'_'+i,'');
+    if(txt&&String(txt).trim()){
+      out+='\n--- Ergänzungen '+sit.title+' ---\n'+String(txt).trim()+'\n';
+    }
+  });
+  return out.trim();
+}
+
+function getAdditionRiskSignals(accId){
+  const raw=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId));
+  const combined=raw.toLowerCase();
+  const warning=[];
+  const positive=[];
+  let penalty=0;
+  let scoreCap=null;
+  const addWarn=(text,points,cap)=>{
+    if(!warning.find(w=>w.text===text))warning.push({text,origin:'ERGAENZUNG',type:'warning',disabled:false});
+    penalty=Math.max(penalty,points);
+    if(cap!==undefined&&cap!==null)scoreCap=scoreCap===null?cap:Math.min(scoreCap,cap);
+  };
+  const addPos=(text,points)=>{
+    if(!positive.find(w=>w.text===text))positive.push({text,origin:'ERGAENZUNG',type:'positive',disabled:false});
+    // Positive Ergänzungen werden bewusst nur moderat behandelt; harte Negativsignale dominieren.
+  };
+  if(!combined.trim())return {warning,positive,penalty,scoreCap};
+
+  const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor)';
+  const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz|alternative|andere lösung|andere lösungen)';
+  const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier|entschieden)';
+  const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|unsere lösung nicht|gegen unsere lösung)';
+
+  const leaderPrefersCompetitor=new RegExp(leaderWords+'.{0,120}'+preferenceWords+'.{0,120}'+competitorWords,'i').test(raw)
+    || new RegExp(competitorWords+'.{0,120}'+preferenceWords+'.{0,120}'+leaderWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,120}'+rejectionWords+'.{0,160}'+competitorWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,160}'+competitorWords,'i').test(raw)&&new RegExp(rejectionWords+'|'+preferenceWords,'i').test(raw);
+
+  if(leaderPrefersCompetitor){
+    addWarn('Geschäftsführer favorisiert Wettbewerber',45,25);
+  }
+  if(new RegExp(leaderWords+'.{0,120}'+rejectionWords,'i').test(raw)){
+    addWarn('Entscheider lehnt unsere Lösung ab',35,30);
+  }
+  if(new RegExp(competitorWords+'.{0,100}(workshop|demo|pilot|proof|poc|test|präsentation|angebot)','i').test(raw)){
+    addWarn('Wettbewerber bereits aktiv',25,35);
+  }
+  if(new RegExp('(budget).{0,80}(nicht|kein|fehlt|gestrichen|unklar|abgelehnt)','i').test(raw)){
+    addWarn('Budget kritisch oder unklar',20,45);
+  }
+  if(new RegExp('(entscheidung|projekt|go-live|start|kauf).{0,80}(verschoben|verzögert|später|unklar|pausiert|gestoppt|eingefroren)','i').test(raw)){
+    addWarn('Entscheidung verzögert oder gestoppt',20,45);
+  }
+  if(new RegExp('(budget).{0,80}(genehmigt|freigegeben|bestätigt)','i').test(raw)){
+    addPos('Budget bestätigt',5);
+  }
+  if(new RegExp(leaderWords+'.{0,120}(sponsor|unterstützt|treibt|will|priorität|dringend)','i').test(raw)){
+    addPos('Entscheider unterstützt aktiv',5);
+  }
+  return {warning,positive,penalty,scoreCap};
+}
+
+function applyHealthRiskRules(baseScore,risk){
+  let score=Number(baseScore)||0;
+  score=score-risk.penalty;
+  if(risk.scoreCap!==null&&risk.scoreCap!==undefined){
+    score=Math.min(score,risk.scoreCap);
+  }
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
   let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
-  if(kontext)s+='--- Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,2000)+'\n\n';
+  if(kontext)s+='--- Globale Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,3000)+'\n\n';
+  if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen des Nutzers ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
   allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
   s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
 
 KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
 
-Beispiele für deutliche SENKUNG: Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
+Beispiele für deutliche SENKUNG: Geschäftsführer/CEO/Entscheider mag unsere Lösung nicht; Geschäftsführer/CEO/Entscheider präferiert zwei andere Mitbewerber; Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
 Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
+
+P1-REGEL: Harte Negativsignale dominieren weiche Positivsignale. Wenn ein Geschäftsführer/CEO/Entscheider unsere Lösung ablehnt oder Wettbewerber klar bevorzugt, ist die Opportunity stark gefährdet und darf nicht durch andere positive Signale künstlich gesund wirken. In diesem Fall muss der Score deutlich sinken und das Warnsignal in der warning-Liste erscheinen.
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
@@ -865,16 +942,22 @@ async function refreshOpportunityHealth(accId){
     if(d&&d.result)allResults.push({title:sit.title,text:d.result});
   });
   const kontext=LS.get('ki21_kk_'+accId,'');
-  if(!allResults.length&&!kontext)return;
-  const prompt=buildHealthPrompt(cust,allResults,kontext);
+  const phaseAdditions=getAllPhaseAdditions(accId);
+  const risk=getAdditionRiskSignals(accId);
+  if(!allResults.length&&!kontext&&!phaseAdditions)return;
+  const prompt=buildHealthPrompt(cust,allResults,kontext,phaseAdditions);
   const json=await callClaudeJSON(prompt);
   if(json&&typeof json.score==='number'){
+    const baseWarnings=Array.isArray(json.warning)?json.warning:[];
+    risk.warning.forEach(w=>{if(!baseWarnings.find(x=>x.text===w.text))baseWarnings.unshift({text:w.text});});
+    const basePositive=Array.isArray(json.positive)?json.positive:[];
+    risk.positive.forEach(w=>{if(!basePositive.find(x=>x.text===w.text))basePositive.unshift({text:w.text});});
     LS.set('ki21_health_'+accId,{
-      score:Math.max(0,Math.min(100,Math.round(json.score))),
+      score:applyHealthRiskRules(Math.max(0,Math.min(100,Math.round(json.score))),risk),
       label:json.label||'',
       structuralOpenCount:json.structuralOpenCount||0,
-      positive:json.positive||[],
-      warning:json.warning||[],
+      positive:basePositive,
+      warning:baseWarnings,
       open:json.open||[],
       ts:Date.now()
     });
@@ -888,11 +971,20 @@ function getHealthManual(accId){
 
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  if(!auto)return null;
+  const risk=getAdditionRiskSignals(accId);
+  if(!auto){
+    if(risk.warning.length||risk.positive.length){
+      const score=applyHealthRiskRules(55,risk);
+      return {score,label:score<35?'Kritisch':'Stabil',provisional:true,positive:risk.positive,warning:risk.warning,open:[],structuralOpenCount:6};
+    }
+    return null;
+  }
   const manual=getHealthManual(accId);
   const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
   const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
   const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
+  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.unshift(r); });
+  risk.positive.forEach(r=>{ if(!positive.find(w=>w.text===r.text)) positive.unshift(r); });
   manual.added.forEach(m=>{
     const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
     if(m.type==='positive')positive.push(entry);
@@ -903,10 +995,11 @@ function getOpportunityHealth(accId){
   const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
   const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
-  score=Math.max(0,Math.min(100,Math.round(score)));
+  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
+  let score=applyHealthRiskRules(base,risk);
   const provisional=(auto.structuralOpenCount||0)>3;
-  return {score,label:auto.label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+  const label=score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
 }
 
 function renderHealthBadgeIfPresent(){
@@ -1528,7 +1621,6 @@ function renderStation(sitId){
       style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
       onclick:()=>showStkModal(sitId,sit.title)},
       h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
-      h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
     );
     phaseNav.appendChild(stkBtn);
   }
@@ -1942,6 +2034,13 @@ Analyse:
 
   app.appendChild(nav);
   app.appendChild(subNav);
+  if(cust.firma){
+    const stationHealthRow=h('div',{style:{padding:'8px 14px 0',display:'flex',justifyContent:'flex-end'}},
+      h('div',{id:'health-badge-nav',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);},style:{fontSize:'11px',fontWeight:'700',borderRadius:'4px',padding:'3px 8px',whiteSpace:'nowrap',cursor:'pointer',display:getOpportunityHealth(state.activeId)?'':'none'}},'')
+    );
+    app.appendChild(stationHealthRow);
+    setTimeout(()=>renderHealthBadgeIfPresent(),0);
+  }
   app.appendChild(wrap);
 }
 
@@ -2295,15 +2394,15 @@ function showStkModal(sitId,sitTitle){
   const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
   ta.value=LS.get(KEY,'');
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Optionale Ergänzungen für '+sitTitle+'. Fließen in den Prompt ein.'),
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in Prompt und Opportunity Health ein.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);m.remove();renderStation(sitId);}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);renderHealthBadgeIfPresent();if(state.activeId)refreshOpportunityHealth(state.activeId);m.remove();renderStation(sitId);}},
         'Speichern'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Ergänzungen'+sitTitle,content,null);
+  const m=modal('Ergänzungen',content,null);
 }
 
 function showPDF(title,text,cust){
@@ -2627,7 +2726,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.21';
+const KI21_VERSION='v4.22';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -2997,7 +3096,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.21';
+  v.textContent='v4.22';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
