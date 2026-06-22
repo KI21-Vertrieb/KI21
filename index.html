@@ -302,6 +302,48 @@ function buildCtx(cust,mu,kk,stk){
   return s+'--- ENDE KONTEXT ---\n\n';
 }
 
+
+function getPreviousResultsBlock(currentSitId){
+  const aid=LS.get('ki21_aid',null);
+  if(!aid)return '';
+  const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo-Empfehlung','Nachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+  let out='';
+  for(let i=0;i<5;i++){
+    if(typeof currentSitId==='number'&&i>=currentSitId)continue;
+    const d=LS.get('ki21_st_'+aid+'_'+i,{});
+    const txt=(d.detail||d.result||'').trim();
+    if(txt)out+='\n--- '+phaseNames[i]+' ---\n'+txt.substring(0,2500)+'\n';
+  }
+  return out.trim();
+}
+
+function buildCompactSummaryPrompt(sitId, fullText){
+  const names=['Lead-Steckbrief','Bedarfsanalyse & Demo','Besuchsbericht','Wirtschaftlicher Nutzen','Abschlussstrategie'];
+  return `Erstelle aus folgender KI21-Analyse eine sehr kompakte Standardansicht für den Verkäufer.
+
+Ziel: Der Nutzer sieht standardmäßig nur die wichtigsten Punkte. Die vollständige Analyse liegt hinter "Mehr Details".
+
+REGELN:
+- Nur Deutsch.
+- Kein Markdown mit ** oder ###.
+- Keine neuen Fakten, Zahlen oder Schlussfolgerungen erfinden.
+- Übernimm wichtige Kennzeichnungen wie BESTÄTIGT, ANNAHME, KLÄREN, ARBEITSWERT, ZU VALIDIEREN, wenn sie im Original relevant sind.
+- Maximal 5 Punkte.
+- Jeder Punkt maximal 1-2 Sätze.
+- Wenn ein kritischer Vorbehalt im Original steht, muss er in den 5 Punkten sichtbar bleiben.
+
+Format:
+${names[sitId]||'KI21'} – Top 5 Punkte
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+
+Analyse:
+${fullText}`;
+}
+
 // ── STATIONS ───────────────────────────────────────────────
 const SITS=[
   {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
@@ -444,14 +486,12 @@ Betreff: [präzise]
   },
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Warum lohnt sich die Investition wirtschaftlich?',
-   felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'}
-   ],
+   felder:[],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
 Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
 Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
-KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahlen vorhanden'}
+Bisherige Ergebnisse und KPIs aus den vorherigen Phasen: ${getPreviousResultsBlock(3)||'keine konkreten Zahlen vorhanden'}
 Verfügbare Angebotsbausteine/Preise (aus "Mein Unternehmen"): ${mu.bausteine||'keine hinterlegt – Investition allgemein/ungefähr einschätzen oder als KLÄREN markieren'}
 
 WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTES VERKAUFSARGUMENT" UND in "IN 30 SEKUNDEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
@@ -515,7 +555,6 @@ Bitte gemeinsam mit dem Kunden validieren.`
   {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Wie gewinnen wir den Auftrag?',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
      {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
      {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
      {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
@@ -537,7 +576,7 @@ Bitte gemeinsam mit dem Kunden validieren.`
      return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
-Erkenntnisse: ${f.erkenntnisse||''}
+Bisherige Ergebnisse aus vorherigen Phasen: ${getPreviousResultsBlock(4)||''}
 Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}`+caBlock+`
 
 WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
@@ -862,7 +901,7 @@ async function refreshOpportunityHealth(accId){
   const allResults=[];
   SITS.forEach((sit,i)=>{
     const d=LS.get('ki21_st_'+accId+'_'+i,null);
-    if(d&&d.result)allResults.push({title:sit.title,text:d.result});
+    if(d&&(d.detail||d.result))allResults.push({title:sit.title,text:(d.detail||d.result)});
   });
   const kontext=LS.get('ki21_kk_'+accId,'');
   if(!allResults.length&&!kontext)return;
@@ -1427,7 +1466,7 @@ function transferAndGo(fromId, toId, result){
 
   // Phase 1→2: transfer SPIN-Fragen + Antworten
   if(fromId===0){
-    const curKEY='ki21_sit_'+state.activeId+'_0';
+    const curKEY='ki21_st_'+state.activeId+'_0';
     const curData=LS.get(curKEY,{fv:{},result:''});
     // Extract SPIN questions from result
     const lines=result.split('\n');
@@ -1527,8 +1566,7 @@ function renderStation(sitId){
     const stkBtn=h('button',{className:'btn',
       style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
       onclick:()=>showStkModal(sitId,sit.title)},
-      h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
-      h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
+      h('span',{style:{fontSize:'11px'}},'Ergänzungen')
     );
     phaseNav.appendChild(stkBtn);
   }
@@ -1540,8 +1578,7 @@ function renderStation(sitId){
   }
   wrap.appendChild(phaseNav);
 
-  // Regel
-  wrap.appendChild(h('div',{className:'regel'},sit.regel));
+  // Regel entfernt: dauerhafte Hilfetexte werden nicht mehr angezeigt
 
   // Fields
   const fieldsDiv=h('div',{});
@@ -1622,7 +1659,7 @@ function renderStation(sitId){
 
   // Summary box (Demo-Vorbereitung only)
   const demoSummaryBox=h('div',{className:'result-box',
-    style:{display:(sitId===3&&data.summary)?'block':'none',
+    style:{display:'none',
       borderColor:'rgba(255,107,0,.4)',marginBottom:'10px'}});
   const demoSummaryHead=h('div',{className:'result-head',style:{background:'rgba(255,107,0,.12)'}});
   const demoSummaryLabel=h('span',{className:'result-label'},'⚡ Kurzfassung – Die 5 Punkte die zählen');
@@ -1755,7 +1792,7 @@ function renderStation(sitId){
           const lines2=r2.split('\n');
           const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
           if(spinIdx>=0){
-            const nextKEY2='ki21_sit_'+state.activeId+'_1';
+            const nextKEY2='ki21_st_'+state.activeId+'_1';
             const nextData2=LS.get(nextKEY2,{fv:{},result:''});
             nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
             LS.set(nextKEY2,nextData2);
@@ -1817,9 +1854,22 @@ function renderStation(sitId){
         fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
       });
       if(result){
-        data.result=result;
+        const fullResult=result;
+        data.detail=fullResult;
         data.prompt=prompt;
-        resultBody.innerHTML='';resultBody.appendChild(renderResultText(result));
+        let displayResult=fullResult;
+        try{
+          const summary=await callClaude(buildCompactSummaryPrompt(sitId,fullResult),null);
+          if(summary&&summary.trim()){
+            displayResult=summary.trim();
+            data.summary=displayResult;
+          }
+        }catch(e){
+          // Falls die Kurzfassung scheitert, bleibt die vollständige Analyse sichtbar.
+        }
+        data.result=displayResult;
+        resultBody.innerHTML='';resultBody.appendChild(renderResultText(displayResult));
+        fullBtn.onclick=()=>showFullscreen(sit.title,displayResult);
         // Phase 1: auto-fill fragen field
         if(sitId===0){
           const lines=result.split('\n');
@@ -2276,7 +2326,7 @@ function generateKundePDF(aid, cust){
   for(let i=0;i<5;i++){
     const key='ki21_st_'+aid+'_'+i;
     const data=LS.get(key,{});
-    const result=data.result||'';
+    const result=data.detail||data.result||'';
     html+=`<div class="phase">
       <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
       ${result?`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(result)}</div>`:'<div class="empty">Noch nicht bearbeitet</div>'}
@@ -2295,7 +2345,7 @@ function showStkModal(sitId,sitTitle){
   const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
   ta.value=LS.get(KEY,'');
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Optionale Ergänzungen für '+sitTitle+'. Fließen in den Prompt ein.'),
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in den Prompt ein.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);m.remove();renderStation(sitId);}},
@@ -2303,7 +2353,7 @@ function showStkModal(sitId,sitTitle){
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Ergänzungen'+sitTitle,content,null);
+  const m=modal('Ergänzungen',content,null);
 }
 
 function showPDF(title,text,cust){
@@ -2933,7 +2983,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.17';
+  v.textContent='v4.18';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
