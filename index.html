@@ -1,0 +1,3176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="dark">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>KI21</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2333;
+  --border:#30363d;--text:#e6edf3;--text2:#8b949e;--text3:#484f58;
+  --fs-input:12px;
+}
+body.light{
+  --bg:#f6f8fa;--bg2:#ffffff;--bg3:#f0f2f5;
+  --border:#d0d7de;--text:#1f2328;--text2:#656d76;--text3:#9198a1;
+}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'DM Sans',sans-serif;}
+#app{min-height:100vh;background:var(--bg);}
+.nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 14px;height:44px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-brand{font-size:16px;font-weight:800;color:var(--text);cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
+.nav-right{display:flex;gap:5px;align-items:center;}
+.subnav{background:var(--bg);border-bottom:1px solid var(--border);padding:6px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.subnav-badge{background:rgba(255,107,0,.15);color:#ff6b00;border-radius:50%;
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;}
+.subnav-text{font-size:11px;color:var(--text2);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.settings-group-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:2px;}
+.phase-badge{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;cursor:pointer;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.phase-badge-done{background:rgba(46,160,67,.15);color:#2ea043;}
+.phase-badge-progress{background:rgba(255,107,0,.15);color:#ff6b00;}
+.phase-badge-empty{background:rgba(139,148,158,.1);color:var(--text3);}
+.btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;
+  padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:6px;padding:4px 10px;
+  font-size:10.5px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
+.btn-o:disabled{background:#484f58;cursor:not-allowed;}
+.cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
+  padding:3px 8px;cursor:pointer;}
+.cust-label{font-size:8px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;line-height:1.3;}
+.cust-val{font-size:11px;font-weight:700;color:#ff6b00;line-height:1.3;max-width:180px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wrap{padding:12px 14px;max-width:500px;margin:0 auto;}
+.hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin:10px 0 16px;}
+.hero-a{font-weight:800;font-size:20px;color:var(--text);}
+.hero-b{font-family:'DM Serif Display',serif;font-size:20px;color:#ff6b00;}
+.sit-row{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;padding:11px 12px;margin-bottom:5px;cursor:pointer;transition:border-color .15s;}
+.sit-row:hover{border-color:#ff6b00;}
+.sit-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+.sit-phase{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:1px;}
+.sit-title{font-size:13px;font-weight:700;color:var(--text);}
+.sit-arrow{color:var(--text3);font-size:16px;}
+.tagline{margin-top:14px;text-align:center;font-size:11px;color:var(--text3);}
+
+/* Station */
+.station-wrap{padding:14px;max-width:500px;margin:0 auto;}
+.st-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.st-back{background:transparent;border:none;color:#8b949e;font-size:20px;cursor:pointer;padding:0;line-height:1;}
+.st-phase{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.st-title{font-size:17px;font-weight:800;color:var(--text);}
+.st-cust{font-size:10px;color:#ff6b00;font-weight:600;background:rgba(255,107,0,.12);
+  border:1px solid rgba(255,107,0,.3);border-radius:4px;padding:2px 7px;
+  max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.phase-nav{display:flex;gap:5px;margin-bottom:10px;}
+.regel{font-size:12px;color:var(--text2);line-height:1.5;border-left:2px solid #ff6b00;
+  padding-left:10px;margin-bottom:14px;}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--text2);margin-bottom:5px;}
+.field-wrap{margin-bottom:12px;}
+.field-readonly-display{background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:9px 11px;font-size:var(--fs-input,12px);color:var(--text);opacity:0.75;min-height:80px;
+  max-height:200px;overflow-y:auto;line-height:1.7;}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:9px 11px;font-size:var(--fs-input,12px);font-family:'DM Sans',sans-serif;color:var(--text);
+  outline:none;-webkit-text-fill-color:var(--text);-webkit-user-select:text;user-select:text;
+  caret-color:#ff6b00;border-left:3px solid rgba(255,107,0,.55);}
+input:focus,select:focus,textarea:focus{border-color:#ff6b00;border-left:3px solid #ff6b00;}
+textarea{resize:vertical;min-height:110px;line-height:1.6;}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238b949e' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:26px;}
+select option{background:var(--bg3);}
+.gen-row{display:flex;gap:8px;margin-bottom:14px;margin-top:2px;justify-content:flex-start;}
+.gen-row .btn-o{width:auto;min-width:200px;}
+.btn-reset{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:7px;
+  padding:5px 10px;font-size:14px;cursor:pointer;}
+.result-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.result-head{background:var(--bg3);padding:8px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+  justify-content:space-between;border-bottom:1px solid var(--border);}
+.result-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;}
+.result-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.result-body{padding:12px;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);
+  white-space:pre-wrap;max-height:350px;overflow-y:auto;}
+.result-foot{text-align:center;font-size:10px;color:var(--text3);padding:6px;border-top:1px solid var(--border);}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;}
+.modal-box{background:var(--bg2);border-top:1px solid var(--border);border-radius:14px 14px 0 0;
+  padding:16px 14px 40px;width:100%;max-width:500px;max-height:92vh;overflow-y:scroll;-webkit-overflow-scrolling:touch;}
+.modal-handle{width:32px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:14px;}
+.tab-row{display:flex;border-radius:7px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+.tab-btn{flex:1;padding:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.modal-desc{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5;}
+.modal-row{display:flex;gap:8px;margin-top:8px;}
+.acc-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;}
+.acc-row.active{background:rgba(255,107,0,.12);border-color:rgba(255,107,0,.3);}
+.acc-name{font-size:13px;font-weight:600;color:var(--text);}
+.acc-sub{font-size:10px;color:var(--text2);}
+.acc-btns{display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:auto;}
+.acc-active{font-size:9px;color:#ff6b00;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.acc-avatar{width:34px;height:34px;border-radius:8px;background:rgba(255,107,0,.12);color:#ff6b00;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.acc-meta{display:flex;gap:8px;align-items:center;margin-top:2px;}
+.acc-phase-chip{font-size:9px;color:var(--text2);background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;padding:1px 6px;}
+.acc-score-chip{font-size:10px;font-weight:800;color:#2ea043;}
+.status-box{border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;}
+
+/* v4.30 UI-Konsolidierung: Ein-/Ausgabefelder vereinheitlicht, Health-Dialog ohne AUTO-Labels, Header minimal */
+.nav-station-info{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.nav-station-customer{
+  max-width:150px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:800;
+  color:#ff6b00;
+  background:transparent;
+  border:0;
+  padding:0;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.nav-station-health{
+  font-size:10.5px !important;
+  font-weight:800 !important;
+  border-radius:6px !important;
+  padding:4px 7px !important;
+  white-space:nowrap !important;
+}
+.station-compact-head{
+  border-bottom:1px solid var(--border);
+  padding:8px 0 10px;
+  margin-bottom:10px;
+}
+.station-compact-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:7px;
+}
+.station-compact-title{
+  font-size:12px;
+  color:var(--text2);
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.station-compact-rule{
+  font-size:12px;
+  color:var(--text2);
+  line-height:1.45;
+  border-left:2px solid #ff6b00;
+  padding-left:10px;
+}
+@media(max-width:380px){
+  .nav-station-customer{max-width:105px;font-size:10px;}
+  .nav-station-health{font-size:10px !important;padding:4px 6px !important;}
+  .nav-right{gap:4px;}
+}
+
+</style>
+</head>
+<body>
+<div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
+
+<script>
+// ── STORAGE ────────────────────────────────────────────────
+const LS={
+  get:(k,d)=>{try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+};
+
+// ── PDF EXPORT HELPER (echte PDF-Erzeugung, kein HTML-Download) ──
+let _html2pdfPromise=null;
+function loadHtml2Pdf(){
+  if(window.html2pdf)return Promise.resolve();
+  if(_html2pdfPromise)return _html2pdfPromise;
+  _html2pdfPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('html2pdf konnte nicht geladen werden'));
+    document.head.appendChild(s);
+  });
+  return _html2pdfPromise;
+}
+function exportHtmlAsPdf(html,filename){
+  loadHtml2Pdf().then(()=>{
+    const el=document.createElement('div');
+    el.innerHTML=html;
+    document.body.appendChild(el);
+    window.html2pdf().from(el).set({
+      margin:10,
+      filename:filename,
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).save().then(()=>{document.body.removeChild(el);});
+  }).catch(e=>{
+    alert('PDF-Erzeugung fehlgeschlagen: '+e.message+'\nBitte Internetverbindung prüfen.');
+  });
+}
+
+function shareAsPdf(title,text,cust,filename,fallbackText){
+  loadHtml2Pdf().then(()=>{
+    const html=buildSimplePdfHtml(title,text,cust);
+    const el=document.createElement('div');
+    el.innerHTML=html;
+    document.body.appendChild(el);
+    window.html2pdf().from(el).set({
+      margin:10,
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).outputPdf('blob').then(blob=>{
+      document.body.removeChild(el);
+      const file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:title}).catch(()=>{});
+      } else if(navigator.share){
+        navigator.share({title:'KI21 – '+title,text:fallbackText||text});
+      } else {
+        // Fallback: PDF direkt herunterladen
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;a.download=filename;a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+      }
+    });
+  }).catch(()=>{
+    if(navigator.share)navigator.share({title:'KI21 – '+title,text:fallbackText||text});
+  });
+}
+
+function buildSimplePdfHtml(title,text,cust){
+  let html=`<div style="font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;line-height:1.6;">
+  <div style="border-bottom:2px solid #ff6b00;padding-bottom:10px;margin-bottom:16px;">
+    <h1 style="font-size:18px;color:#ff6b00;margin:0 0 4px;">KI21 – ${title}</h1>
+    <div style="font-size:11px;color:#666;">${(cust&&cust.firma)||''} | ${new Date().toLocaleDateString('de-DE')}</div>
+  </div>
+  <div style="white-space:pre-wrap;">${highlightResultHTML(text||'')}</div>
+  </div>`;
+  return html;
+}
+
+// ── STATE ──────────────────────────────────────────────────
+const state={
+  view: LS.get('ki21_view','home'),
+  accounts: LS.get('ki21_acc',[]).filter(a=>a.cust&&a.cust.firma),
+  activeId: null,
+  modal: null,
+  pendingSit: null,
+};
+
+// Validate activeId
+const savedAid = LS.get('ki21_aid',null);
+if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
+
+// ── BUILD CONTEXT ───────────────────────────────────────────
+function buildCtx(cust,mu,kk,stk){
+  let s='--- KONTEXT ---\n';
+  if(LS.get('ki21_schnellstart',false)){
+    s+='SCHNELLSTART-MODUS AKTIV\n';
+    s+='Du verfügst nur über begrenzte Informationen. Nutze vorhandene Fakten maximal aus.\n';
+    s+='Ergänze fehlende Informationen AUSSCHLIESSLICH als: ANNAHME, ARBEITSWERT, BRANCHENHYPOTHESE oder ZU KLÄREN. Erfinde NIEMALS bestätigte Aussagen oder bestätigte Zahlen.\n';
+    s+='KRITISCH: Trenne noch strenger als sonst zwischen BESTÄTIGT (vom Kunden tatsächlich genannt), ANNAHME (direkt aus dem Gesagten abgeleitet) und BRANCHENHYPOTHESE (allgemeines Branchenwissen, NICHT aus diesem Kunden abgeleitet). Wenn eine Zahl wie "120-160 Stunden Konsolidierungsaufwand" oder "9-18 Monate Projektlaufzeit" NICHT vom Kunden bestätigt wurde, kennzeichne sie unmissverständlich als BRANCHENHYPOTHESE, nicht als ANNAHME – das macht den Unterschied zwischen "aus diesem Gespräch abgeleitet" und "generisches Branchenwissen" sichtbar.\n';
+    s+='KRITISCH: Wenn der vorläufige Business Case/ROI auf Basis der vorhandenen Informationen NEGATIV oder NICHT SELBSTTRAGEND ausfällt, akzeptiere das offen und sage es klar (z.B. "Auf Basis der bisherigen Informationen ist der Case noch nicht selbsttragend"). Versuche NICHT, das Ergebnis durch zusätzliche, unbestätigte Potenziale oder Argumente zu kompensieren oder zu relativieren. Ein ehrlich negativer Befund in der Opportunity-Vorschau ist wertvoller als ein künstlich positiv gerechneter.\n';
+    s+='KRITISCH: Bleibe bei ROI-Rechnungen besonders konservativ. Nutze Bereiche/Arbeitswerte statt scheinbar exakter Einzelzahlen, und mache deutlich, dass die Berechnung auf BRANCHENHYPOTHESEN beruht, solange keine Kundenzahlen vorliegen.\n';
+    s+='KRITISCH: Lege den Fokus stärker auf Discovery als auf Fakten-Suggestion. Formuliere mehr offene, gezielte Rückfragen statt viele konkrete Zahlen zu präsentieren, die noch nicht belastbar sind – das Ziel ist Gesprächsvorbereitung, nicht eine scheinbar fertige Analyse.\n';
+    s+='Wenn Informationen fehlen: leite aus Branche und Situation plausible Hypothesen ab, kennzeichne sie eindeutig als BRANCHENHYPOTHESE, und leite daraus gezielte Rückfragen ab. Das Ziel ist ein hochwertiges Arbeitsdokument für den Vertrieb, nicht absolute Gewissheit.\n';
+    s+='Beginne den Output mit: "🔍 OPPORTUNITY-VORSCHAU – Dies ist ein erster Überblick, keine vollständige Analyse. Die Vorschau kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen, um typische Herausforderungen zu antizipieren und erste Gesprächs-Hypothesen zu entwickeln. Sie ersetzt nicht die Qualifizierung, das Kundengespräch oder die Validierung von Annahmen im vollständigen KI21-Prozess."\n';
+    s+='Direkt danach, vor dem eigentlichen Inhalt, schätze grob ein (keine exakte Berechnung nötig, nur Orientierung): "Bestätigte Informationen: XX % | Arbeitshypothesen/Branchenwissen: XX % | Noch zu validierende Punkte: XX %" (die drei Werte sollten sich ungefähr zu 100% aufsummieren).\n';
+  }
+  s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
+  s+='KRITISCH: Wenn dieselben Kernfakten (z.B. eine konkrete Zahl wie "6 Arbeitstage pro Szenario") bereits in einem vorherigen Kontext-Abschnitt erwähnt wurden, wiederhole sie in dieser Phase nur EINMAL ausführlich (meist in den ERKENNTNISSE/BESTÄTIGT-Abschnitten) und referenziere sie danach kurz, statt sie in jedem Abschnitt erneut vollständig auszuschreiben. Ziel: Wiederholungen über die Phasen hinweg reduzieren, ohne wichtige Fakten wegzulassen.\n';
+  s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
+  s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
+  s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um, indem du die Stundenzahl DURCH 8 TEILST (z.B. 600-1.200 Stunden ÷ 8 = 75-150 Arbeitstage, NICHT 600-1.200 Arbeitstage – die Maßeinheit ändert sich, der Zahlenwert wird kleiner). Rechne diese Division bei JEDER Umrechnung explizit nach, bevor du das Ergebnis hinschreibst. Das gilt AUCH wenn die Kundenangabe selbst in Stunden kam (z.B. "40-60 Stunden/Monat" → "5-7,5 Arbeitstage/Monat"), UND für jede aufsummierte oder hochgerechnete Jahres-/Monatszahl, nicht nur für Einzelfall-Nennungen. Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase, konsequent über den gesamten Output.\n';
+  s+='KRITISCH: Wenn du irgendwo im Output die Verlässlichkeit einer Aussage/Zahl kennzeichnest, nutze AUSSCHLIESSLICH die Worte BESTÄTIGT (vom Kunden genannt oder dokumentiert), ARBEITSWERT (Benchmark + plausibel abgeleiteter Mittelwert aus KI21 Intelligence, zum Rechnen verwendet, nicht kundenspezifisch verifiziert) oder ZU VALIDIEREN (offene Größe, die im nächsten Gespräch geklärt werden sollte) – NIEMALS Emoji-Punkte wie 🟢/🟡/🔴 oder Ampelfarben ohne Wort. Schreibe immer zuerst den Bewertungstext, dann das Label in Großbuchstaben direkt danach oder davor (z.B. "Typische Range: 300-600 Stunden/Jahr, verwendeter ARBEITSWERT: 450 Stunden/Jahr"). Das gilt konsequent für jede Confidence-Angabe im gesamten Output, nicht nur an einer Stelle. Bei BESTÄTIGT/ANNAHME/KLÄREN-Blöcken (für Gesprächserkenntnisse) bleiben diese drei Wörter wie bisher bestehen – ARBEITSWERT/ZU VALIDIEREN gelten zusätzlich speziell für quantitative Kennzahlen und Berechnungsgrundlagen.\n';
+  s+='KRITISCH: MAXIMAL EIN MULTIPLIKATIONSSCHRITT BEI SPEKULATIVEM POTENZIAL: Wenn du ein Krisen-/Schadenspotenzial in einer Eskalations-/Schadensrechnung darstellst, verkette NICHT mehr als einen einzigen Unsicherheitsfaktor (z.B. NUR "Schadenshöhe × geschätzte Vermeidbarkeitsquote"). Verkette NIEMALS zusätzlich noch eine geschätzte Häufigkeit pro Jahr in dieselbe Rechnung – das sind dann mehrere multiplizierte Unsicherheiten und die resultierende Zahl wirkt präziser als sie ist. Behandle Häufigkeit pro Jahr als separaten, eigenständig zu klärenden Punkt, ohne sie in die gleiche Multiplikation einzubeziehen. Gilt in JEDER Phase, nicht nur in der Nutzen-Kosten-Analyse.\n';
+  s+='KRITISCH: GLEICHES PRINZIP GILT FÜR OPTIMISTISCHE ROI-MULTIPLIKATOREN: Verkette bei einer ROI-/Payback-Aussage NICHT mehr als einen Unsicherheitsfaktor (z.B. NUR die vom Kunden genannte Quote-Verbesserung). Wenn du zusätzlich noch eine geschätzte Margin-Annahme UND eine angenommene Erfolgswahrscheinlichkeit in dieselbe Rechnung einbaust, entsteht eine künstlich beeindruckende Zahl wie "ROI 20-30x", die bei kritischem Nachfragen (besonders von CFO/CEO) nicht standhält und Vertrauen kostet. NIEMALS einen ROI-Multiplikator wie "20x", "30x" oder eine ähnlich hohe, beeindruckend wirkende Zahl als Ergebnis ausgeben, wenn sie aus mehr als einer verketteten Unsicherheit stammt – formuliere statt einer einzelnen Multiplikator-Zahl lieber eine Bandbreite mit explizit benannten Annahmen, oder verzichte ganz auf eine zusammenfassende "Xx ROI"-Zahl und beschreibe Nutzen vs. Investition stattdessen als zwei separate, klar gekennzeichnete Größen. Gilt in JEDER Phase.\n';
+  s+='KRITISCH: KORREKTE BESTÄTIGT/ANNAHME-ZUORDNUNG BEI ABGELEITETEN ZAHLEN: Wenn der Kunde eine Prozentzahl nennt (z.B. "20-25% mehr Umsatz"), ist NUR diese Prozentzahl selbst BESTÄTIGT (der Kunde hat sie genannt). Jede daraus berechnete absolute €-Zahl (z.B. "5-8 Mio. € zusätzlicher Umsatz" durch Anwendung der Prozentzahl auf den Gesamtumsatz) ist eine EIGENE Ableitung und MUSS als ANNAHME oder ARBEITSWERT gekennzeichnet werden, NIEMALS als BESTÄTIGT – auch wenn die zugrunde liegende Prozentzahl bestätigt ist. Eine Berechnung aus einer bestätigten Zahl ist selbst nicht automatisch bestätigt.\n';
+  s+='KRITISCH: UNTERSCHEIDE STRIKT ZWISCHEN KI21-EIGENEM NUTZEN UND KUNDEN-HYPOTHESE: Forecast-/Entscheidungsqualität ist ein direkter, kausal nachvollziehbarer Nutzen von KI21 (bessere Qualifizierung → bessere Datenbasis → genauere Prognose) – das darfst du als eigenen Nutzen von KI21 formulieren. Eine daraus resultierende Umsatz- oder Abschlussquoten-Steigerung (z.B. "+20-25% Umsatz") ist dagegen KEIN direkter Mechanismus von KI21, sondern eine vom Kunden selbst erwartete/genannte Zielgröße, die von vielen weiteren Faktoren abhängt (Markt, Wettbewerb, individuelle Verkäuferleistung). Formuliere das konsequent als "Der Kunde erwartet/nennt X% als Zielgröße" statt als "KI21 liefert X% mehr Umsatz" oder "KI21 erhöht den Umsatz um X%". KI21 verspricht NIEMALS eine Umsatz- oder Abschlussquoten-Zahl als eigene Leistung – nur die Geschäftsführung/der Kunde selbst formuliert diese Erwartung. Gilt in JEDER Phase, besonders in Eröffnungssätzen, Verkaufsargumenten und Follow-up-Mails.\n';
+  s+='KRITISCH: UNSICHERE PROZENTANGABEN GENERELL VORSICHTIG FORMULIEREN (gilt für ALLE Prozentzahlen in JEDER Phase, auch Forecast-Genauigkeit-Benchmarks): Solange eine Prozentzahl nicht durch eigene Messung des Kunden bestätigt ist, formuliere sie nicht als feststehende Tatsache. Ergänze bei der ersten Nennung einen kurzen Validierungs-Hinweis (z.B. "...sollte im Pilotbetrieb mit echten Zahlen validiert werden"), statt die Zahl danach unkommentiert mehrfach als Fakt zu wiederholen.\n';
+  s+='KRITISCH: KEIN AUSWEICHEN AUF ERFUNDENE "BENCHMARKS": Wenn du für ein Krisen-/Schadenspotenzial keine belastbare, herleitbare Zahl hast, darfst du NICHT stattdessen eine pauschale Branchenzahl als angeblichen "Benchmark" oder "KI21-Benchmark" zitieren, um trotzdem einen €-Betrag zu nennen. Das ist nur eine Umgehung des Verbots, keine echte Quelle. Wenn keine Zahl aus der tatsächlichen KI21 Intelligence stammt, bleibt das Potenzial unbeziffert – auch wenn das bedeutet, gar keine €-Zahl zu nennen. Gilt in JEDER Phase.\n';
+  s+='KRITISCH: KATEGORISCHES VERBOT FÜR UNBESTÄTIGTES KRISENPOTENZIAL: Wenn ein Schadens-/Krisenpotenzial nicht durch konkrete, vom Kunden bestätigte Zahlen (Häufigkeit UND Vermeidbarkeit UND Schadenshöhe alle bestätigt) belegt ist, darf NIRGENDS im Output – in KEINER Phase, auch nicht im Abschlusssatz, in der Kurzfassung, in Einwandantworten oder als "Sensitivitätsrechnung" – ein €-Betrag dafür genannt werden, auch nicht mit Wörtern wie "könnte", "potenziell", "zusätzlich". Beschreibe stattdessen NUR die Mechanik in Worten, ohne Zahl. Ein unbestätigter Betrag im Kundengespräch beschädigt mehr Vertrauen als er Nutzen bringt.\n';
+  s+='KRITISCH: Bei Umrechnung von Stunden/Monat in Vollzeitäquivalente (FTE) rechne korrekt: 1 FTE entspricht ca. 160-170 Stunden/Monat (Vollzeitstelle). Also z.B. 50-100 Stunden/Monat entspricht ca. 0,3-0,6 FTE, NICHT mehreren ganzen FTE. Prüfe jede FTE-Angabe rechnerisch nach, bevor du sie nennst – ein häufiger Fehler ist, Stunden/Monat mit der Anzahl beteiligter Personen zu verwechseln, statt durch die Stunden einer vollen Stelle zu teilen.\n';
+  s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
+  s+='KRITISCH: Jede Phase muss mindestens EINEN Gedanken enthalten, der über Standardwissen hinausgeht – einen Aha-Insight, der im Gedächtnis bleibt (z.B. "Die größte Zeitersparnis entsteht oft nicht durch schnellere Reports, sondern dadurch, dass dieselben Zahlen nicht mehr in mehreren Excel-Dateien manuell abgeglichen werden müssen."). Vermeide reine Standardaussagen ohne überraschenden Mehrwert. Dieser Insight darf nicht erfunden wirken – er muss zur konkreten Situation des Kunden passen und nachvollziehbar sein.\n';
+  s+='KRITISCH: Tonfall durchgehend partnerschaftlich, nicht verkäuferisch-drängend. Vermeide Formulierungen wie "damit ich Sie/Ihre Geschäftsführung überzeuge" oder "garantiert". Bevorzuge Formulierungen wie "damit Sie eine belastbare Entscheidungsgrundlage haben – unabhängig davon, wie die Entscheidung ausfällt" oder "damit wir gemeinsam zu einer fundierten Einschätzung kommen". Das Ziel ist: gemeinsam zu einer Entscheidung führen, nicht überreden.\n';
+  s+='AUSGABE-REGELN (strikt einhalten):\n';
+  s+='- KRITISCHSTE REGEL: Liefere IMMER sofort den vollständigen Output im vorgegebenen Format – auch wenn Informationen fehlen, unsicher oder unvollständig wirken. STELLE NIEMALS eine Rückfrage VOR dem Output und warte NICHT auf eine Antwort, bevor du lieferst. Fehlende oder unsichere Daten gehören in die Kennzeichnung ANNAHME/KLÄREN oder eine etwaige Rückfragen-Sektion AM ENDE des Outputs, NIEMALS als eigene Frage oder Meta-Kommentar davor. Du bekommst in diesem Schritt keine Antwort auf eine Vorab-Frage – also stelle keine, sondern arbeite mit dem was im Feld steht. VERBOTENE Satzanfänge: "Ich verstehe die Aufgabe", "Allerdings stelle ich fest", "Mir fehlen", "Bevor ich", "Ich muss zunächst" – beginne IMMER direkt mit dem ersten Element des vorgegebenen Output-Formats.\n';
+  s+='- Nutze vorhandene Informationen – keine Nachfragen\n';
+  s+='- Maximal 5 Punkte pro Abschnitt\n';
+  s+='- Jeder Punkt: 1-2 Sätze, direkt und konkret\n';
+  s+='- Kein Fließtext, keine langen Erklärungen\n';
+  s+='- Kein Markdown: keine **, keine ###, keine ---\n';
+  s+='- Nur Deutsch\n';
+  s+='- Keine Einleitung, kein Fazit\n';
+  s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
+  s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
+  s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
+  // Include results from all previous phases
+  if(stk){
+    const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+    const aid=LS.get('ki21_aid',null);
+    if(aid){
+      let prevResults='';
+      for(let i=0;i<5;i++){
+        const d=LS.get('ki21_st_'+aid+'_'+i,{});
+        if(d.result&&d.result.trim()){
+          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,500)+'\n';
+        }
+      }
+      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (Zusammenfassung):'+prevResults+'\n';
+    }
+  }
+  if(cust.firma)s+='Kunde: '+cust.firma+'\n';
+  if(cust.ap)s+='Ansprechpartner: '+cust.ap+'\n';
+  if(cust.branche)s+='Branche: '+cust.branche+'\n';
+  if(cust.ma)s+='Mitarbeiter: '+cust.ma+'\n';
+  if(cust.um){
+    // Format large numbers to Mio. €
+    let umDisplay=cust.um;
+    const umNum=parseFloat(String(cust.um).replace(/[^0-9.]/g,''));
+    if(umNum>=1000000)umDisplay=(umNum/1000000).toFixed(1)+' Mio. €';
+    else if(umNum>=1000)umDisplay=(umNum/1000).toFixed(1)+' Tsd. €';
+    s+='Umsatz: '+umDisplay+'\n';
+  }
+  if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
+  if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
+  if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
+  const intelData=LS.get('ki21_intelligence',{});
+  if(intelData&&intelData.inhalt)s+='\nKI21 Intelligence (verdichtete Business Patterns):\n'+intelData.inhalt+'\n';
+  if(stk)s+='\nZusätzlicher Kontext:\n'+stk+'\n';
+  return s+'--- ENDE KONTEXT ---\n\n';
+}
+
+// ── STATIONS ───────────────────────────────────────────────
+const SITS=[
+  {id:0,num:1,phase:'Phase 1',title:'Qualifizierung',icon:'🔎',
+   regel:'Lohnt es sich, diese Opportunity weiterzuverfolgen?',
+   felder:[
+     {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
+     {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...',post:true}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
+Branche: ${c.branche||''} | AP: ${c.ap||''}
+Trigger: ${f.info||''}
+
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
+WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
+
+EMPFEHLUNG: sofort / später / nicht verfolgen
+Begründung: [1 Satz, der knapp die 4 Kriterien benennt: Budget/Trigger, Schmerzpunkt mit Zahlen, Entscheider-Zugang, Zeitdruck – z.B. "Budget unklar, aber klarer quantifizierter Schmerz (X), Entscheiderin identifiziert, Trigger durch laufendes Projekt."]
+
+WICHTIG: Die Zeile "Begründung:" MUSS direkt nach "EMPFEHLUNG:" stehen, als eigene Zeile.
+
+DIE 5 WICHTIGSTEN ERKENNTNISSE:
+BESTÄTIGT: [bestätigte Fakten]
+ANNAHME: [plausible Annahmen]
+KLÄREN: [offene Punkte]
+
+DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
+1. KRITISCH: ___ | Antwort: ___
+2. KRITISCH: ___ | Antwort: ___
+3. WICHTIG: ___ | Antwort: ___
+4. WICHTIG: ___ | Antwort: ___
+5. NICE-TO-HAVE: ___ | Antwort: ___
+
+→ TODO: [eine konkrete Aktion + wann]`,
+   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
+Bekannte Herausforderungen: ${f.info||''}
+Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
+
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+
+EMPFEHLUNG FINAL: sofort / später / nicht verfolgen
+Bewerte anhand von 4 Kriterien: (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
+Begründung: [1 Satz, der die 4 Kriterien kurz benennt]
+
+DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert):
+BESTÄTIGT: [jetzt bestätigte Fakten inkl. Antworten]
+ANNAHME: [verbleibende Annahmen]
+KLÄREN: [noch offene Punkte]
+
+DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
+1. S: [Situation] | Antwort: ___
+2. P: [Problem] | Antwort: ___
+3. P: [Ursache] | Antwort: ___
+4. I: [Kosten des Problems] | Antwort: ___
+5. N: [Wert der Lösung] | Antwort: ___
+
+WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort hinter "Antwort:". Das Wort "___" MUSS exakt so stehen bleiben – es ist ein Platzhalter, den der Verkäufer erst nach dem nächsten Gespräch ausfüllt.
+
+→ TODO: [nächster Schritt + wann]`
+  },
+  {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo',icon:'📋',
+   regel:'Was braucht der Kunde wirklich?',
+   felder:[
+     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
+     {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Bedarfsanalyse abschließen: ${c.firma||''}, AP: ${c.ap||''}
+SPIN-Fragen: ${f.spin||''}
+Antworten des Kunden: ${f.antworten||''}
+
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
+
+EINSCHÄTZUNG: [1 kurzer Satz, wie konkret/quantifiziert der erkannte Bedarf ist]
+Begründung: [1 Satz]
+
+DIE 5 WICHTIGSTEN ERKENNTNISSE:
+BESTÄTIGT: [bestätigte Fakten aus dem Gespräch]
+ANNAHME: [plausible Schlüsse]
+KLÄREN: [noch offene Punkte]
+
+DIE 3 WICHTIGSTEN DEMO-PUNKTE:
+1. [Muss gezeigt werden – warum]
+2. [Muss gezeigt werden – warum]
+3. [Muss gezeigt werden – warum]
+NICHT zeigen: [1 Punkt]
+
+DEMO-EINSTIEG: [1 Satz in Kundensprache]
+
+DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
+1. [Botschaft – welches Kundenproblem wird gelöst]
+2. [Botschaft – welches Kundenproblem wird gelöst]
+3. [Botschaft – welches Kundenproblem wird gelöst]
+4. [Botschaft – welches Kundenproblem wird gelöst]
+5. [Botschaft – welches Kundenproblem wird gelöst]
+
+KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
+
+→ TODO: [nächster Schritt + wann]`
+  },
+  {id:2,num:3,phase:'Phase 3',title:'Termin nachbereiten',icon:'📝',
+   regel:'Was ist im letzten Termin passiert?',
+   felder:[
+     {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true,hidden:true},
+     {id:'stichworte',l:'Was wurde in diesem Termin NEU besprochen?',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
+Kontext aus vorheriger Bedarfsanalyse (zur Einordnung, NICHT der heutige Termin): ${f.kontext||'(kein Kontext vorhanden)'}
+NEUE Stichworte aus dem heutigen Termin: ${f.stichworte||'(noch keine Eingabe)'}
+
+WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen KLÄREN-Punkt INNERHALB des Outputs (z.B. "KLÄREN: Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "EINSCHÄTZUNG:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
+
+EINSCHÄTZUNG: [1 kurzer Satz, wie weit der Deal nach diesem Gespräch fortgeschritten ist]
+Begründung: [1 Satz]
+
+BESUCHSBERICHT:
+Datum: [heute]
+Teilnehmer: [AP + eigene Person]
+Besprochene Themen: [3-5 Punkte]
+Ergebnis: [1 Satz]
+
+DIE 3 NÄCHSTEN SCHRITTE:
+1. [Aktion] | Verantwortlich: ___ | Bis: ___
+2. [Aktion] | Verantwortlich: ___ | Bis: ___
+3. [Aktion] | Verantwortlich: ___ | Bis: ___
+
+FOLLOW-UP MAIL:
+Betreff: [präzise]
+[Mail-Text – kurz, konkret, nächster Schritt klar]
+
+→ TODO: [nächster Schritt + wann]`
+  },
+  {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
+   regel:'Warum lohnt sich die Investition wirtschaftlich?',
+   felder:[
+     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...',readonly:true}
+   ],
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
+
+Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
+Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
+KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahlen vorhanden'}
+Verfügbare Angebotsbausteine/Preise (aus "Mein Unternehmen"): ${mu.bausteine||'keine hinterlegt – Investition allgemein/ungefähr einschätzen oder als KLÄREN markieren'}
+
+WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTES VERKAUFSARGUMENT" UND in "IN 30 SEKUNDEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
+
+DAS IST KEIN WIDERSPRUCH zur Regel "keine Zahlen erfinden": Alle Daten im Feld "Erkenntnisse & KPIs" sind bereits vom Kunden im vorherigen Gespräch genannte, echte Angaben – behandle sie als BESTÄTIGT. Wenn eine Zahl im Feld unklar oder unvollständig wirkt, kennzeichne sie im Output als ANNAHME oder KLÄREN statt vorher zu fragen ob du sie nutzen darfst – genau dafür existiert die Kennzeichnung. Die Lösung für Unsicherheit ist die Kennzeichnung im Output, NIEMALS eine Frage davor.
+
+WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
+- Du nutzt dein bekanntes Erfahrungswissen über typische Größenordnungen vergleichbarer Projekte – KEINE Live-Recherche.
+- Erfinde KEINE konkreten Firmennamen oder Quellen die du nicht kennst.
+- Wenn das Feld "KPIs und Erkenntnisse aus dem Gespräch" leer oder dünn ist: Durchsuche ZUERST den Abschnitt "BISHERIGE ERGEBNISSE" oben (Qualifizierung, Bedarfsanalyse) nach bereits genannten KPIs (z.B. Abschlussquote, Teamgröße, Umsatzpotenzial, Zykluszeiten) und nutze diese als BESTÄTIGT für eine vorläufige Analyse. NIEMALS die gesamte Nutzen-Kosten-Analyse verweigern oder erst nach Gesprächsnotizen fragen, nur weil DIESES Feld leer ist – ein fehlender Besuchsbericht ist eine Zusatzquelle, keine Voraussetzung. Nur wirklich fehlende Einzelwerte (die auch in den bisherigen Ergebnissen nicht vorkommen) als ANNAHME kennzeichnen oder in die Rückfragen-Sektion am Ende aufnehmen.
+- Nutzen in "schafft Kapazität für ___" formulieren, nicht "spart".
+- ROI ehrlich darstellen – auch negativen oder unsicheren ROI zeigen wenn zutreffend.
+- Berücksichtige die Unternehmensgröße: ein Benchmark für Konzerne darf nicht ungefiltert auf den Mittelstand übertragen werden – skaliere plausibel und kennzeichne Schätzungen als Schätzung.
+
+KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
+- GESAMTNUTZEN und ROI dürfen NUR aus regelmäßigem, wiederkehrendem Nutzen bestehen (Zeitersparnis, Fehlerreduktion, schnellere Standardprozesse) – Posten, die JEDES Jahr in ähnlicher Höhe anfallen.
+- Schadens- oder Krisen-Szenarien (z.B. "X € Schaden pro Vorfall, falls Y% vermeidbar") NIEMALS in GESAMTNUTZEN oder ROI einrechnen. Das sind Verkettungen mehrerer unbestätigter Annahmen (Häufigkeit × Vermeidbarkeit × Schadenshöhe) und gehören separat als "ZUSÄTZLICHES POTENZIAL" mit eigener Warnung.
+- ERFINDE KEINE FACHBEGRIFFE ODER HÄUFIGKEITEN: Wenn du ein vom Kunden genanntes Ereignis beschreibst (z.B. einen Lieferkettenschock), erfinde dafür KEINEN klingenden Fachbegriff (z.B. "Schockzyklus") und KEINE Häufigkeitsangabe (z.B. "3-4 pro Jahr"), wenn der Kunde das nicht selbst so genannt hat. Beschreibe es stattdessen in eigenen, neutralen Worten und kennzeichne Häufigkeit/Definition als KLÄREN, statt sie wie eine feststehende Größe zu präsentieren.
+- BENCHMARKS NICHT UNGEPRÜFT ÜBERTRAGEN: Wenn du eine Vergleichszahl aus der KI21 Intelligence nutzt (z.B. "Vorher X, Nachher Y" für einen bestimmten Use Case), prüfe ob sie zur GENAUEN Situation des Kunden passt – insbesondere ob die Ausgangsgrößenordnung übereinstimmt (z.B. ein Benchmark "von Tagen auf Minuten" passt NICHT automatisch auf eine Kundensituation, die von "Wochen" spricht, auch wenn beide um "schnellere Reaktion" gehen). Wenn du einen Intelligence-Benchmark auf eine andere Größenordnung übertragen willst, sage das explizit ("übertragen von einem Benchmark für X auf die hier größere Ausgangslage Y") statt die übertragene Zahl wie eine direkt passende Kundenzahl zu präsentieren.
+- Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
+- EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
+- PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
+- ARBEITSWERT STATT VOLLER RANGE: Wenn du eine Benchmark-Bandbreite nennst (z.B. "300-600 Stunden/Jahr"), rechne für die eigentliche ROI-Berechnung NICHT mit der ganzen Range, sondern mit einem konkreten Arbeitswert – standardmäßig dem arithmetischen Mittelwert (z.B. "450 Stunden/Jahr"). Weiche davon nur ab, wenn das Unternehmensprofil eine plausible Anpassung rechtfertigt (z.B. mehrere Werke/Sparten → Wert nach oben anpassen; sehr kleines Unternehmen → nach unten), und nenne dann explizit den Grund. Zeige IMMER beides: die Range UND den verwendeten Arbeitswert (z.B. "Typische Range: 300-600 Stunden/Jahr → für diese Berechnung verwendet: 450 Stunden/Jahr (Mittelwert)"). Ergänze am Ende des Outputs den Hinweis: "Die Berechnung basiert auf anonymisierten Erfahrungswerten vergleichbarer Unternehmen. Sobald belastbare unternehmensspezifische Kennzahlen vorliegen, sollten diese die Annahmen ersetzen."
+
+FORMAT – GENAU SO, NICHT MEHR:
+
+EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
+
+IN 30 SEKUNDEN:
+- Größter Schmerz: [1 kurzer Satz, das wichtigste Problem des Kunden]
+- Wichtigste offene Frage: [1 Satz, die kritischste noch zu klärende Frage]
+- Empfohlener nächster Schritt: [1 kurzer Satz]
+
+FORECAST-/ENTSCHEIDUNGSQUALITÄT: [Nur ausfüllen, wenn dies beim Kunden ein relevanter Hebel ist (z.B. Forecast-Genauigkeit, Pipeline-Zuverlässigkeit, frühere Risikoerkennung wurde vom Kunden oder dessen Geschäftsführung angesprochen). Format: "Heute: [kurze Einschätzung, z.B. 'bauchgesteuert/unklar'] → Mit KI21: [kurze Einschätzung, z.B. 'strukturiert nachvollziehbar für GF/CFO']". Falls beim Kunden kein erkennbarer Forecast-/Entscheidungsqualitäts-Hebel vorliegt, schreibe stattdessen "Nicht der zentrale Hebel in diesem Fall – Hauptnutzen liegt woanders (siehe oben)." Erfinde NIEMALS einen Forecast-Bezug, wenn der Kunde keinen genannt hat.]
+
+BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
+[1 Satz mit typischer Größenordnung/Range – ab 8 Stunden/Periode IMMER in Arbeitstage umrechnen, z.B. "20-30 Arbeitstage/Monat" statt "160-240 Stunden/Monat" – wenn plausibel einschätzbar, sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BESTÄTIGT/ARBEITSWERT/ZU VALIDIEREN: [wähle EIN passendes Wort]
+ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben – WENN das Ergebnis 8 Stunden oder mehr pro Periode ergibt, IMMER in Arbeitstage à 8h umrechnen und ausgeben, z.B. nicht "200 Stunden/Monat" sondern "25 Arbeitstage/Monat (Mittelwert aus 20-30 Arbeitstagen, entspricht 160-240 Stunden)" – nur weglassen wenn BENCHMARK keine Zahlen-Range enthielt]
+
+IHR BUSINESS CASE (basierend auf den Kundenangaben):
+[1 Satz mit geschätztem Nutzen basierend auf den genannten KPIs – falls keine KPIs vorhanden: "Noch keine konkreten Zahlen vom Kunden – siehe Rückfragen unten"]
+
+WICHTIGSTES VERKAUFSARGUMENT:
+[1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
+
+LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
+INVESTITION: [aus den Angebotsbausteinen oben ableiten, z.B. "KI21 Compact, 2.900 €"] – geglättet auf ___ €/Monat (über 3 Jahre)
+ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat als vorläufiger Business Case auf Basis der verwendeten Arbeitswerte, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition – vorläufiger Business Case, finale Validierung im nächsten Gespräch erforderlich" – oder "noch nicht berechenbar – Zahlen fehlen". Vermeide eine einzelne, zu sicher wirkende Prozentzahl (z.B. "ROI 250%") ohne den Hinweis, dass sie auf Arbeitswerten/Annahmen basiert.]
+
+ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
+[Nur falls relevant: 1 Satz, beginnend mit KLÄREN:, der NUR die MECHANIK beschreibt (was würde passieren, welche Faktoren spielen eine Rolle) – OHNE jede €-Zahl, OHNE Bandbreite, OHNE Sensitivitätsrechnung. Beispiel: "KLÄREN: Schnellere Szenario-Rechnung könnte einen Teil der Schäden aus Lieferkettenschocks vermeiden – Häufigkeit und Vermeidbarkeit müssen mit dem Kunden konkret durchgesprochen werden, bevor sich das beziffern lässt." NIEMALS eine Zahl in diesem Abschnitt, auch nicht in Klammern oder als "wenn X dann Y"-Beispiel.]
+
+OFFENE RÜCKFRAGEN AN DEN KUNDEN (nur falls KPIs fehlen, max. 3):
+1. [konkrete Frage]
+2. [konkrete Frage]
+
+→ TODO: [nächster Schritt + wann]
+
+Bitte gemeinsam mit dem Kunden validieren.`
+  },
+  {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
+   regel:'Wie gewinnen wir den Auftrag?',
+   felder:[
+     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?',readonly:true},
+     {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
+     {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
+     {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
+   ],
+   build:(f,c,mu,kk,stk)=>{
+     const ca=LS.get('ki21_case_assumptions_'+state.activeId,null);
+     let caBlock='';
+     if(ca&&(ca.working_value||ca.monthly_benefit)){
+       caBlock='\n\nBEREITS ERMITTELTE BUSINESS-CASE-ANNAHMEN (aus Phase 4, NICHT neu herleiten, sondern wiederverwenden):\n'
+         +(ca.manual_effort_range?'Benchmark-Range: '+ca.manual_effort_range+'\n':'')
+         +(ca.working_value?'Verwendeter Arbeitswert: '+ca.working_value+(ca.adjustment?' ('+ca.adjustment+')':'')+'\n':'')
+         +(ca.monthly_benefit?'Laufender Nutzen: '+ca.monthly_benefit+'\n':'')
+         +(ca.monthly_investment?'Investition (geglättet): '+ca.monthly_investment+'\n':'')
+         +(ca.roi_statement?'ROI-Aussage: '+ca.roi_statement+'\n':'')
+         +(ca.confidence?'Confidence: '+ca.confidence+'\n':'')
+         +'Nutze diese Werte als Grundlage für die Nutzenargumentation, statt sie neu zu schätzen.\n'
+         +'KRITISCH: Falls Phase 4 ein Krisen-/Schadenspotenzial UNBEZIFFERT gelassen hat (z.B. "lässt sich ohne konkrete Fallbeispiele nicht beziffern"), darfst du in Phase 5 KEINE €-Zahl dafür nennen – AUCH NICHT als angeblichen "Benchmark", "KI21-Benchmark" oder Branchenvergleich. KEIN €-Betrag in Klammern, KEIN "spart X-Y €/Jahr", KEINE Aussage wie "ROI springt von A auf B wenn..." mit einer Zahl dahinter. Übernimm den unbezifferten Status unverändert – beschreibe das Potenzial NUR qualitativ in Worten (z.B. "Größenordnung kann erst nach Validierung mit dem Kunden benannt werden"), und kennzeichne es weiterhin als ZU VALIDIEREN. Dieses Verbot gilt für JEDE Erwähnung des Krisenpotenzials im gesamten Phase-5-Output, nicht nur an der ersten Stelle.\n';
+     }
+     return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
+Erkenntnisse: ${f.erkenntnisse||''}
+Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}`+caBlock+`
+
+WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+
+EINSCHÄTZUNG: [1 Satz – wie hoch ist die Abschlusswahrscheinlichkeit einzuschätzen?]
+Begründung-Erläuterung (auf einen Blick):
++ [1 positiver Faktor, z.B. "Sponsor vorhanden"]
++ [1 positiver Faktor, z.B. "Schmerz bestätigt"]
+– [1 negativer/offener Faktor, z.B. "IT-Abhängigkeit"]
+– [1 negativer/offener Faktor, z.B. "ROI noch nicht vollständig validiert"]
+
+IN 30 SEKUNDEN:
+- Größter Hebel für den Abschluss: [1 kurzer Satz]
+- Wichtigste offene Frage: [1 Satz]
+- Empfohlener nächster Schritt: [1 kurzer Satz]
+
+ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
+
+DIE 5 WICHTIGSTEN KAUFARGUMENTE:
+BESTÄTIGT: [aus bestätigten Kundenbedürfnissen]
+ANNAHME: [plausible Argumente]
+KLÄREN: [noch zu validieren]
+
+DIE 3 WICHTIGSTEN EINWÄNDE:
+1. Einwand: ___ | Antwort: ___
+2. Einwand: ___ | Antwort: ___
+3. Einwand: ___ | Antwort: ___
+
+DER EINE ABSCHLUSSSATZ: [entscheidender Satz]
+
+→ TODO: [nächster Schritt + wann]`;
+   }
+  }
+];
+
+// ── CLAUDE API ─────────────────────────────────────────────
+async function callClaude(prompt, onStream){
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey){alert('Bitte API Key unter ⚙ hinterlegen.');return null;}
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:20000,
+      stream:true,
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:6}],
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!resp.ok){const err=await resp.json();throw new Error(err.error?.message||'API Fehler '+resp.status);}
+  const reader=resp.body.getReader();
+  const decoder=new TextDecoder();
+  let fullText='';
+  let blockText='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done)break;
+    const chunk=decoder.decode(value,{stream:true});
+    const lines=chunk.split('\n');
+    for(const line of lines){
+      if(line.startsWith('data: ')){
+        const data=line.slice(6);
+        if(data==='[DONE]')continue;
+        try{
+          const parsed=JSON.parse(data);
+          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='tool_use'){
+            if(onStream)onStream(stripMd(fullText)+'\n🔍 Suche aktuelle Informationen...\n');
+          }
+          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='text'){
+            blockText='';
+          }
+          if(parsed.type==='content_block_delta'&&parsed.delta?.text){
+            blockText+=parsed.delta.text;
+            if(onStream)onStream(stripMd(fullText+blockText));
+          }
+          if(parsed.type==='content_block_stop'){
+            if(blockText){fullText+=(fullText?'\n':'')+blockText;blockText='';}
+          }
+        }catch(e){}
+      }
+    }
+  }
+  if(blockText){fullText+=(fullText?'\n':'')+blockText;}
+  return fullText;
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function h(tag,attrs,...children){
+  const el=document.createElement(tag);
+  if(attrs)Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='className')el.className=v;
+    else el.setAttribute(k,v);
+  });
+  children.flat().forEach(c=>{
+    if(c==null)return;
+    el.appendChild(typeof c==='string'?document.createTextNode(c):c);
+  });
+  return el;
+}
+
+function modal(title,content,onClose){
+  const bg=h('div',{className:'modal-bg'});
+  bg.addEventListener('click',e=>{if(e.target===bg){bg.remove();if(onClose)onClose();}});
+  const box=h('div',{className:'modal-box'},
+    h('div',{className:'modal-handle'}),
+    h('div',{className:'modal-title'},title),
+    content
+  );
+  bg.appendChild(box);
+  document.body.appendChild(bg);
+  return bg;
+}
+
+function btn(label,className,onClick){
+  const b=h('button',{className,onclick:onClick},label);
+  return b;
+}
+
+function getActive(){return state.accounts.find(a=>a.id===state.activeId)||null;}
+function getActiveCust(){return(getActive()||{cust:{}}).cust;}
+
+// ── RENDER HOME ────────────────────────────────────────────
+
+
+
+function stripMd(text){
+  return text
+    .replace(/#{1,6}\s+/g,'')
+    .replace(/\*\*\*([^*]+)\*\*\*/g,'$1')
+    .replace(/\*\*([^*]+)\*\*/g,'$1')
+    .replace(/\*([^*]+)\*/g,'$1')
+    .replace(/^---+$/gm,'')
+    .replace(/^===+$/gm,'')
+    .replace(/^>\s/gm,'')
+    .replace(/`([^`]+)`/g,'$1')
+    .trim();
+}
+
+function getResultLabel(sitId){
+  const labels={
+    0:'🔎 Lead-Steckbrief',
+    1:'📋 Bedarfsanalyse & Demo',
+    2:'📝 Besuchsbericht',
+    3:'💰 Wirtschaftlicher Nutzen',
+    4:'🤝 Abschlussstrategie'
+  };
+  return labels[sitId]||'✓ Ergebnis';
+}
+
+
+function getPhaseScore(sitId){
+  const aid=LS.get('ki21_aid',null);
+  if(!aid)return null;
+  const data=LS.get('ki21_st_'+aid+'_'+sitId,{});
+  if(!data.result)return null;
+  const match=data.result.match(/(\d+)\s*\/\s*10/);
+  if(match){
+    const s=parseInt(match[1]);
+    return s>=1&&s<=10?s:null;
+  }
+  return null;
+}
+
+function getActiveScore(){
+  const aid=LS.get('ki21_aid',null);
+  if(!aid)return null;
+  return LS.get('ki21_score_'+aid,null);
+}
+
+function getScoreColor(){
+  const s=getActiveScore();
+  if(!s)return '#8b949e';
+  if(s>=7)return '#2ea043';
+  if(s>=4)return '#d29922';
+  return '#f85149';
+}
+
+function getScoreBg(){
+  const s=getActiveScore();
+  if(!s)return 'transparent';
+  if(s>=7)return 'rgba(46,160,67,.2)';
+  if(s>=4)return 'rgba(210,153,34,.2)';
+  return 'rgba(248,81,73,.2)';
+}
+
+function getScoreLabel(){
+  const s=getActiveScore();
+  if(!s)return '';
+  return s+'/10';
+}
+
+function attachScoreLongPress(el,begruendung){
+  if(!begruendung)return;
+  let pressTimer=null;
+  let fired=false;
+  const showTooltip=()=>{
+    const existing=document.getElementById('score-tooltip');
+    if(existing)existing.remove();
+    const tip=document.createElement('div');
+    tip.id='score-tooltip';
+    tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
+      'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
+      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;'+
+      '-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;';
+    const textEl=document.createElement('div');
+    textEl.textContent=begruendung;
+    const hintEl=document.createElement('div');
+    hintEl.textContent='Tippen zum Schließen';
+    hintEl.style.cssText='font-size:9px;color:#8b949e;margin-top:6px;text-align:right;';
+    tip.appendChild(textEl);
+    tip.appendChild(hintEl);
+    tip.addEventListener('click',e=>{e.stopPropagation();tip.remove();});
+    document.body.appendChild(tip);
+    setTimeout(()=>{
+      const dismissOnAnyClick=(e)=>{
+        const t=document.getElementById('score-tooltip');
+        if(t){
+          e.preventDefault();
+          e.stopPropagation();
+          if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+          t.remove();
+        }
+        document.removeEventListener('click',dismissOnAnyClick,true);
+        document.removeEventListener('touchstart',dismissOnAnyClick,true);
+      };
+      document.addEventListener('click',dismissOnAnyClick,true);
+      document.addEventListener('touchstart',dismissOnAnyClick,true);
+    },100);
+  };
+  const start=(e)=>{
+    fired=false;
+    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
+  };
+  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
+  el.style.cursor='pointer';
+  el.addEventListener('touchstart',start,{passive:true});
+  el.addEventListener('touchend',cancel);
+  el.addEventListener('touchmove',cancel);
+  el.addEventListener('mousedown',start);
+  el.addEventListener('mouseup',cancel);
+  el.addEventListener('mouseleave',cancel);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+
+function extractBegruendung(text){
+  const m=text.match(/Begründung:\s*(.+)/);
+  if(m)return m[1].trim().split('\n')[0];
+  const pipeMatch=text.match(/\d+\s*\/\s*10\s*\|\s*(.+)/);
+  if(pipeMatch)return pipeMatch[1].trim().split('\n')[0];
+  const fallback=text.match(/Empfehlung:\s*(.+)/);
+  if(fallback)return fallback[1].trim().split('\n')[0];
+  return '';
+}
+
+function saveScore(score,begruendung){
+  const aid=LS.get('ki21_aid',null);
+  if(aid){
+    LS.set('ki21_score_'+aid,score);
+    if(begruendung)LS.set('ki21_score_reason_'+aid,begruendung);
+  }
+}
+
+// ── OPPORTUNITY HEALTH ──────────────────────────────────────
+async function callClaudeJSON(prompt){
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey)return null;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!resp.ok)return null;
+    const json=await resp.json();
+    let text=(json.content||[]).map(b=>b.text||'').join('');
+    text=text.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+    return JSON.parse(text);
+  }catch(e){return null;}
+}
+
+
+function getAllPhaseAdditions(accId){
+  if(!accId)return '';
+  let out='';
+  SITS.forEach((sit,i)=>{
+    const txt=LS.get('ki21_stk_'+accId+'_'+i,'');
+    if(txt&&String(txt).trim()){
+      out+='\n--- Ergänzungen '+sit.title+' ---\n'+String(txt).trim()+'\n';
+    }
+  });
+  return out.trim();
+}
+
+function getAdditionRiskSignals(accId){
+  const raw=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId));
+  const combined=raw.toLowerCase();
+  const warning=[];
+  const positive=[];
+  let penalty=0;
+  let scoreCap=null;
+  const addWarn=(text,points,cap)=>{
+    if(!warning.find(w=>w.text===text))warning.push({text,origin:'ERGAENZUNG',type:'warning',disabled:false});
+    penalty=Math.max(penalty,points);
+    if(cap!==undefined&&cap!==null)scoreCap=scoreCap===null?cap:Math.min(scoreCap,cap);
+  };
+  const addPos=(text,points)=>{
+    if(!positive.find(w=>w.text===text))positive.push({text,origin:'ERGAENZUNG',type:'positive',disabled:false});
+    // Positive Ergänzungen werden bewusst nur moderat behandelt; harte Negativsignale dominieren.
+  };
+  if(!combined.trim())return {warning,positive,penalty,scoreCap};
+
+  const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor)';
+  const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz|alternative|andere lösung|andere lösungen)';
+  const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier|entschieden)';
+  const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|unsere lösung nicht|gegen unsere lösung)';
+
+  const leaderPrefersCompetitor=new RegExp(leaderWords+'.{0,120}'+preferenceWords+'.{0,120}'+competitorWords,'i').test(raw)
+    || new RegExp(competitorWords+'.{0,120}'+preferenceWords+'.{0,120}'+leaderWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,120}'+rejectionWords+'.{0,160}'+competitorWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,160}'+competitorWords,'i').test(raw)&&new RegExp(rejectionWords+'|'+preferenceWords,'i').test(raw);
+
+  if(leaderPrefersCompetitor){
+    addWarn('Geschäftsführer favorisiert Wettbewerber',45,25);
+  }
+  if(new RegExp(leaderWords+'.{0,120}'+rejectionWords,'i').test(raw)){
+    addWarn('Entscheider lehnt unsere Lösung ab',35,30);
+  }
+  if(new RegExp(competitorWords+'.{0,100}(workshop|demo|pilot|proof|poc|test|präsentation|angebot)','i').test(raw)){
+    addWarn('Wettbewerber bereits aktiv',25,35);
+  }
+  if(new RegExp('(budget).{0,80}(nicht|kein|fehlt|gestrichen|unklar|abgelehnt)','i').test(raw)){
+    addWarn('Budget kritisch oder unklar',20,45);
+  }
+  if(new RegExp('(entscheidung|projekt|go-live|start|kauf).{0,80}(verschoben|verzögert|später|unklar|pausiert|gestoppt|eingefroren)','i').test(raw)){
+    addWarn('Entscheidung verzögert oder gestoppt',20,45);
+  }
+  if(new RegExp('(budget).{0,80}(genehmigt|freigegeben|bestätigt)','i').test(raw)){
+    addPos('Budget bestätigt',5);
+  }
+  if(new RegExp(leaderWords+'.{0,120}(sponsor|unterstützt|treibt|will|priorität|dringend)','i').test(raw)){
+    addPos('Entscheider unterstützt aktiv',5);
+  }
+  return {warning,positive,penalty,scoreCap};
+}
+
+function applyHealthRiskRules(baseScore,risk){
+  let score=Number(baseScore)||0;
+  score=score-risk.penalty;
+  if(risk.scoreCap!==null&&risk.scoreCap!==undefined){
+    score=Math.min(score,risk.scoreCap);
+  }
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
+  let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
+  s+='KUNDE: '+(cust.firma||'')+'\n\n';
+  if(kontext)s+='--- Globale Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,3000)+'\n\n';
+  if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen des Nutzers ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
+  allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
+  s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
+
+KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
+
+Beispiele für deutliche SENKUNG: Geschäftsführer/CEO/Entscheider mag unsere Lösung nicht; Geschäftsführer/CEO/Entscheider präferiert zwei andere Mitbewerber; Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
+Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
+
+P1-REGEL: Harte Negativsignale dominieren weiche Positivsignale. Wenn ein Geschäftsführer/CEO/Entscheider unsere Lösung ablehnt oder Wettbewerber klar bevorzugt, ist die Opportunity stark gefährdet und darf nicht durch andere positive Signale künstlich gesund wirken. In diesem Fall muss der Score deutlich sinken und das Warnsignal in der warning-Liste erscheinen.
+
+Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
+
+Antworte AUSSCHLIESSLICH mit folgendem JSON, keine Erklärung davor/danach:
+{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
+Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, leeres Array.`;
+  return s;
+}
+
+async function refreshOpportunityHealth(accId){
+  if(!accId)return;
+  const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust;
+  if(!cust||!cust.firma)return;
+  const allResults=[];
+  SITS.forEach((sit,i)=>{
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&d.result)allResults.push({title:sit.title,text:d.result});
+  });
+  const kontext=LS.get('ki21_kk_'+accId,'');
+  const phaseAdditions=getAllPhaseAdditions(accId);
+  const risk=getAdditionRiskSignals(accId);
+  if(!allResults.length&&!kontext&&!phaseAdditions)return;
+  const prompt=buildHealthPrompt(cust,allResults,kontext,phaseAdditions);
+  const json=await callClaudeJSON(prompt);
+  if(json&&typeof json.score==='number'){
+    const baseWarnings=Array.isArray(json.warning)?json.warning:[];
+    risk.warning.forEach(w=>{if(!baseWarnings.find(x=>x.text===w.text))baseWarnings.unshift({text:w.text});});
+    const basePositive=Array.isArray(json.positive)?json.positive:[];
+    risk.positive.forEach(w=>{if(!basePositive.find(x=>x.text===w.text))basePositive.unshift({text:w.text});});
+    LS.set('ki21_health_'+accId,{
+      score:applyHealthRiskRules(Math.max(0,Math.min(100,Math.round(json.score))),risk),
+      label:json.label||'',
+      structuralOpenCount:json.structuralOpenCount||0,
+      positive:basePositive,
+      warning:baseWarnings,
+      open:json.open||[],
+      ts:Date.now()
+    });
+    renderHealthBadgeIfPresent();
+  }
+}
+
+function getHealthManual(accId){
+  return LS.get('ki21_health_manual_'+accId,{added:[],removedAutoTexts:[]});
+}
+
+function getOpportunityHealth(accId){
+  const auto=LS.get('ki21_health_'+accId,null);
+  const risk=getAdditionRiskSignals(accId);
+  if(!auto){
+    if(risk.warning.length||risk.positive.length){
+      const score=applyHealthRiskRules(55,risk);
+      return {score,label:score<35?'Kritisch':'Stabil',provisional:true,positive:risk.positive,warning:risk.warning,open:[],structuralOpenCount:6};
+    }
+    return null;
+  }
+  const manual=getHealthManual(accId);
+  const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
+  const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
+  const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
+  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.unshift(r); });
+  risk.positive.forEach(r=>{ if(!positive.find(w=>w.text===r.text)) positive.unshift(r); });
+  manual.added.forEach(m=>{
+    const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
+    if(m.type==='positive')positive.push(entry);
+    else if(m.type==='warning')warning.push(entry);
+    else open.push(entry);
+  });
+  const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
+  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
+  const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
+  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
+  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
+  let score=applyHealthRiskRules(base,risk);
+  const provisional=(auto.structuralOpenCount||0)>3;
+  const label=score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+}
+
+function getHealthColor(score){
+  if(score>=70)return '#2ea043';
+  if(score>=40)return '#d29922';
+  return '#f85149';
+}
+function getHealthBg(score){
+  if(score>=70)return 'rgba(46,160,67,.18)';
+  if(score>=40)return 'rgba(210,153,34,.18)';
+  return 'rgba(248,81,73,.18)';
+}
+function makeTopHealthBadge(){
+  return h('button',{id:'health-badge-nav',className:'btn',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);},style:{
+    display:'none',fontSize:'11px',fontWeight:'800',padding:'4px 8px',borderRadius:'6px',whiteSpace:'nowrap',
+    WebkitUserSelect:'none',userSelect:'none',WebkitTouchCallout:'none'
+  }},'');
+}
+
+function renderHealthBadgeIfPresent(){
+  const els=[document.getElementById('health-badge-nav'),document.getElementById('health-badge-station')].filter(Boolean);
+  if(!els.length)return;
+  const aid=LS.get('ki21_aid',null);
+  const health=aid?getOpportunityHealth(aid):null;
+  els.forEach(el=>{
+    if(!health){el.style.display='none';return;}
+    el.style.display='';
+    el.textContent='Opportunity '+health.score+'/100';
+    const color=getHealthColor(health.score);
+    el.style.color=color;
+    el.style.borderColor=color;
+    el.style.background=getHealthBg(health.score);
+    el.title='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
+  });
+}
+
+function toggleHealthSignal(accId,text,origin,type,refreshFn){
+  const manual=getHealthManual(accId);
+  if(origin==='AUTO'){
+    const idx=manual.removedAutoTexts.indexOf(text);
+    if(idx>=0)manual.removedAutoTexts.splice(idx,1);
+    else manual.removedAutoTexts.push(text);
+  }else{
+    const item=manual.added.find(m=>m.text===text&&m.type===type);
+    if(item)item.active=item.active===false?true:false;
+  }
+  LS.set('ki21_health_manual_'+accId,manual);
+  renderHealthBadgeIfPresent();
+  if(refreshFn)refreshFn();
+}
+
+function showOpportunityHealthDetail(accId){
+  const render=()=>{
+    const health=getOpportunityHealth(accId);
+    if(!health){m.remove();return;}
+    content.innerHTML='';
+    const scoreLine=h('div',{style:{fontSize:'22px',fontWeight:'800',marginBottom:'4px'}},
+      health.score+'/100 – '+(health.label||''));
+    content.appendChild(scoreLine);
+    if(health.provisional){
+      content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
+        '⚠ Vorläufige Bewertung, da viele kritische Informationen noch offen sind.'));
+    }else{
+      content.appendChild(h('div',{style:{marginBottom:'14px'}}));
+    }
+    function section(title,items,symbol){
+      content.appendChild(h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e',marginTop:'14px',marginBottom:'6px'}},title));
+      if(!items.length){content.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
+      items.forEach(it=>{
+        const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
+          onclick:()=>toggleHealthSignal(accId,it.text,it.origin,it.type,render)},
+          h('span',{style:{fontSize:'13px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
+          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
+          it.origin==='MANUELL'?h('span',{style:{fontSize:'8px',fontWeight:'700',color:'#ff6b00',border:'1px solid rgba(255,107,0,.4)',borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},'MANUELL'):null
+        );
+        content.appendChild(row);
+      });
+    }
+    section('Positive Signale',health.positive,'🟢');
+    section('Warnsignale',health.warning,'🔴');
+    section('Offene Punkte',health.open,'⚪');
+
+    content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
+      'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
+  };
+  const content=h('div',{});
+  const m=modal('❤️ Opportunity Health',content,null);
+  m.firstChild.style.position='relative';
+  const closeX=h('button',{style:{position:'absolute',top:'14px',right:'14px',background:'transparent',
+    border:'none',color:'var(--text3)',fontSize:'20px',lineHeight:'1',cursor:'pointer',padding:'4px'},
+    onclick:()=>m.remove()},'✕');
+  m.firstChild.appendChild(closeX);
+  render();
+}
+
+function renderResultText(text){
+  if(!text)return document.createTextNode('');
+  const div=document.createElement('div');
+  div.style.cssText='white-space:pre-wrap;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);';
+  const lines=text.split('\n');
+  lines.forEach((line,i)=>{
+    const span=document.createElement('span');
+    const numMatch=line.match(/^(\d+\.\s*)/);
+    const prefix=numMatch?numMatch[1]:'';
+    const rest=numMatch?line.slice(prefix.length):line;
+    if(line.startsWith('BESTÄTIGT:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">BESTÄTIGT</span>'+escHtml(line.slice('BESTÄTIGT:'.length));
+    } else if(line.startsWith('ANNAHME:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
+    } else if(line.startsWith('KLÄREN:')){
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+    } else if(rest.startsWith('KRITISCH:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KRITISCH</span>'+escHtml(rest.slice('KRITISCH:'.length));
+    } else if(rest.startsWith('WICHTIG:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
+    } else if(rest.startsWith('NICE-TO-HAVE:')){
+      span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
+    } else if(/\b(BESTÄTIGT|ARBEITSWERT|ZU VALIDIEREN|BRANCHENHYPOTHESE|ZU KLÄREN)\b/.test(line)&&!line.startsWith('BESTÄTIGT:')){
+      span.innerHTML=highlightConfidenceWords(line);
+    } else {
+      span.textContent=line;
+    }
+    div.appendChild(span);
+    if(i<lines.length-1)div.appendChild(document.createElement('br'));
+  });
+  return div;
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightResultHTML(text){
+  if(!text)return '';
+  const lines=text.split('\n');
+  return lines.map(line=>{
+    const numMatch=line.match(/^(\d+\.\s*)/);
+    const prefix=numMatch?numMatch[1]:'';
+    const rest=numMatch?line.slice(prefix.length):line;
+    if(line.startsWith('BESTÄTIGT:')){
+      return '<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;margin-right:6px;">BESTÄTIGT</span>'+escHtml(line.slice('BESTÄTIGT:'.length));
+    } else if(line.startsWith('ANNAHME:')){
+      return '<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
+    } else if(line.startsWith('KLÄREN:')){
+      return '<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+    } else if(rest.startsWith('KRITISCH:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;margin-right:6px;">KRITISCH</span>'+escHtml(rest.slice('KRITISCH:'.length));
+    } else if(rest.startsWith('WICHTIG:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;margin-right:6px;">WICHTIG</span>'+escHtml(rest.slice('WICHTIG:'.length));
+    } else if(rest.startsWith('NICE-TO-HAVE:')){
+      return escHtml(prefix)+'<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;margin-right:6px;">NICE-TO-HAVE</span>'+escHtml(rest.slice('NICE-TO-HAVE:'.length));
+    } else if(/\b(BESTÄTIGT|ARBEITSWERT|ZU VALIDIEREN|BRANCHENHYPOTHESE|ZU KLÄREN)\b/.test(line)&&!line.startsWith('BESTÄTIGT:')){
+      let escaped=escHtml(line);
+      escaped=escaped.replace(/\bBESTÄTIGT\b/g,'<span style="font-size:10px;font-weight:700;background:#e6f4ea;color:#1a7f37;border-radius:4px;padding:1px 6px;">BESTÄTIGT</span>');
+      escaped=escaped.replace(/\bARBEITSWERT\b/g,'<span style="font-size:10px;font-weight:700;background:#fff1e6;color:#cc5500;border-radius:4px;padding:1px 6px;">ARBEITSWERT</span>');
+      escaped=escaped.replace(/\bZU VALIDIEREN\b/g,'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;">ZU VALIDIEREN</span>');
+      escaped=escaped.replace(/\bBRANCHENHYPOTHESE\b/g,'<span style="font-size:10px;font-weight:700;background:#f1ebfb;color:#6f42c1;border-radius:4px;padding:1px 6px;">BRANCHENHYPOTHESE</span>');
+      escaped=escaped.replace(/\bZU KLÄREN\b/g,'<span style="font-size:10px;font-weight:700;background:#fde8e8;color:#c0292b;border-radius:4px;padding:1px 6px;">ZU KLÄREN</span>');
+      return escaped;
+    } else {
+      return escHtml(line);
+    }
+  }).join('<br>');
+}
+function highlightConfidenceWords(line){
+  let escaped=escHtml(line);
+  escaped=escaped.replace(/\bBESTÄTIGT\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(46,160,67,.15);color:#2ea043;border-radius:4px;padding:1px 6px;">BESTÄTIGT</span>');
+  escaped=escaped.replace(/\bARBEITSWERT\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;">ARBEITSWERT</span>');
+  escaped=escaped.replace(/\bZU VALIDIEREN\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;">ZU VALIDIEREN</span>');
+  escaped=escaped.replace(/\bBRANCHENHYPOTHESE\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;border-radius:4px;padding:1px 6px;">BRANCHENHYPOTHESE</span>');
+  escaped=escaped.replace(/\bZU KLÄREN\b/g,'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;">ZU KLÄREN</span>');
+  return escaped;
+}
+
+function getPhaseScoreInfo(sitId){
+  if(!state.activeId)return {score:null,reason:''};
+  const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
+  if(!data||!data.result)return {score:null,reason:''};
+  const matches=[...data.result.matchAll(/(\d+)\s*\/\s*10/g)];
+  const m=matches.length?matches[0]:null;
+  if(!m)return {score:null,reason:''};
+  const score=parseInt(m[1]);
+  if(score<1||score>10)return {score:null,reason:''};
+  return {score,reason:extractBegruendung(data.result)};
+}
+
+function getPhaseStatus(sitId){
+  if(!state.activeId)return 'empty';
+  const data=LS.get('ki21_st_'+state.activeId+'_'+sitId,null);
+  if(data&&data.result)return 'done';
+  if(data&&data.fv&&Object.values(data.fv).some(v=>v&&v.trim&&v.trim()))return 'progress';
+  return 'empty';
+}
+
+function renderHome(){
+  const cust=getActiveCust();
+  const app=document.getElementById('app');
+  app.innerHTML='';
+
+  const nav=h('div',{className:'nav'},
+    h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
+    h('div',{className:'nav-right'},
+      h('button',{className:'btn',onclick:showSettings},'⚙')
+    )
+  );
+  const infoRow=h('div',{className:'subnav',id:'home-info-row'},
+    h('div',{className:'cust-btn',onclick:showKunde},
+      h('div',{className:'cust-label'},'Kunde'),
+      h('div',{className:'cust-val'},cust.firma||'wählen →')
+    ),
+    makeTopHealthBadge()
+  );
+  const healthRow=null;
+  setTimeout(()=>{
+    renderHealthBadgeIfPresent();
+    const aidInit=LS.get('ki21_aid',null);
+    if(aidInit&&cust.firma&&!LS.get('ki21_health_'+aidInit,null)){
+      refreshOpportunityHealth(aidInit);
+    }
+  },0);
+
+  const wrap=h('div',{className:'wrap'},
+    h('div',{className:'hero'},
+      h('span',{className:'hero-a'},'Ihr Vertrieb.'),
+      h('span',{className:'hero-b'},'Plus KI.')
+    )
+  );
+  wrap.appendChild(h('p',{style:{fontSize:'13px',color:'var(--text)',fontWeight:'600',margin:'-4px 0 4px 0'}},
+    'Vom Lead zur Gesprächsstrategie.'));
+  wrap.appendChild(h('p',{style:{fontSize:'12px',color:'var(--text2)',margin:'0 0 4px 0'}},
+    'Mehr Klarheit für den nächsten Vertriebstermin.'));
+  wrap.appendChild(h('p',{style:{fontSize:'11px',color:'var(--text3)',margin:'0 0 12px 0'}},
+    'In 30 Minuten.'));
+
+  const schnellstartActive=LS.get('ki21_schnellstart',false);
+
+  const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
+    textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Was bereiten Sie vor?');
+  wrap.appendChild(sitLabel);
+
+  const groups=[
+    {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1'},
+    {label:'Bedarfsanalyse & Demo', icon:'📋', primary:1, sub:'Phase 2'},
+    {label:'Termin nachbereiten', icon:'📝', primary:2, sub:'Phase 3'},
+    {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:3, sub:'Phase 4'},
+    {label:'Angebot & Abschluss', icon:'🤝', primary:4, sub:'Phase 5'},
+  ];
+
+  groups.forEach(g=>{
+    const status=getPhaseStatus(g.primary);
+    const hasResult=status==='done';
+    const badge=h('span',{style:{width:'1px',height:'1px',display:'inline-block'}});
+    let pressTimer=null;
+    let suppressClick=false;
+    const startPress=(e)=>{
+      if(!hasResult)return;
+      pressTimer=setTimeout(()=>{
+        suppressClick=true;
+        const ok=confirm('Ergebnis dieser Phase zurücksetzen? Eingaben bleiben erhalten.');
+        if(ok){
+          const KEY='ki21_st_'+state.activeId+'_'+g.primary;
+          const data=LS.get(KEY,{});
+          data.result='';data.result2='';data.summary='';data.detail='';
+          LS.set(KEY,data);
+          renderHome();
+        } else {
+          setTimeout(()=>{suppressClick=false;},100);
+        }
+      },550);
+    };
+    const cancelPress=()=>{if(pressTimer)clearTimeout(pressTimer);};
+    badge.addEventListener('touchstart',startPress);
+    badge.addEventListener('touchend',cancelPress);
+    badge.addEventListener('touchmove',cancelPress);
+    badge.addEventListener('mousedown',startPress);
+    badge.addEventListener('mouseup',cancelPress);
+    badge.addEventListener('mouseleave',cancelPress);
+    badge.addEventListener('click',e=>{
+      if(suppressClick){e.preventDefault();e.stopPropagation();suppressClick=false;}
+    });
+    const row=h('div',{className:'sit-row',onclick:(e)=>{
+      if(suppressClick){suppressClick=false;return;}
+      if(!state.activeId){state.pendingSit=g.primary;showKunde();}
+      else renderStation(g.primary);
+    }},
+      h('span',{className:'sit-icon'},g.icon),
+      h('div',{style:{flex:1}},
+        h('div',{className:'sit-title'},g.label),
+        h('div',{className:'sit-phase'},g.sub)
+      ),
+      badge
+    );
+    wrap.appendChild(row);
+  });
+
+  wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
+  app.appendChild(nav);
+  app.appendChild(infoRow);
+  app.appendChild(wrap);
+  LS.set('ki21_view','home');
+}
+
+// ── RENDER STATION ─────────────────────────────────────────
+
+
+function showFullscreenEdit(title, text, onSave){
+  const ta=h('textarea',{
+    style:{width:'100%',height:'calc(100vh - 180px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'14px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      outline:'none',resize:'none',lineHeight:'1.8',
+      WebkitTextFillColor:'#e6edf3',caretColor:'#ff6b00',
+      WebkitUserSelect:'text',userSelect:'text'}
+  });
+  ta.value=text;
+  const saveB=h('button',{className:'btn-o',style:{marginTop:'10px'},
+    onclick:()=>{onSave(ta.value);m.remove();}
+  },'Speichern & Schließen');
+  const content=h('div',{},ta,saveB);
+  const m=modal(title,content,null);
+}
+
+function showFullscreen(title, text){
+  let editing=false;
+  const readDiv=h('div',{
+    style:{width:'100%',minHeight:'calc(100vh - 160px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'13px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      lineHeight:'1.85',whiteSpace:'pre-wrap',overflowY:'auto'}
+  },text);
+  const ta=h('textarea',{
+    style:{width:'100%',height:'calc(100vh - 160px)',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',
+      fontSize:'13px',fontFamily:'DM Sans,sans-serif',color:'#e6edf3',
+      outline:'none',resize:'none',lineHeight:'1.8',WebkitTextFillColor:'#e6edf3',display:'none'}
+  });
+  ta.value=text;
+  const editToggle=h('button',{className:'btn',style:{fontSize:'10px'},onclick:()=>{
+    editing=!editing;
+    readDiv.style.display=editing?'none':'block';
+    ta.style.display=editing?'block':'none';
+    editToggle.textContent=editing?'👁 Lesen':'✎ Bearbeiten';
+  }},'✎ Bearbeiten');
+  const btnRow=h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}});
+  const copyB=h('button',{className:'btn-o',style:{flex:'1'},
+    onclick:()=>{
+      const txt=editing?ta.value:text;
+      if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
+        copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren',2000);
+      });
+    }
+  },'Kopieren');
+  const closeB=h('button',{className:'btn',style:{flex:'1'},
+    onclick:()=>m.remove()
+  },'Schließen');
+  btnRow.appendChild(copyB);
+  btnRow.appendChild(closeB);
+  const topRow=h('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'8px'}},editToggle);
+  const content=h('div',{},topRow,readDiv,ta,btnRow);
+  const m=modal(title,content,null);
+}
+
+
+async function loadMoreDetails(sitId, stData){
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
+  const KEY='ki21_st_'+state.activeId+'_'+sitId;
+
+  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Falls es sich um eine Nutzen-Kosten-/ROI-Analyse handelt: vollständige Herleitung der Benchmark-Einschätzung (welche Größenordnung/Branche wurde angenommen, Skalierungslogik, alternative Szenarien konservativ/realistisch/optimistisch), klare Kennzeichnung was "belegtes Erfahrungswissen" vs. "plausible Schätzung" ist\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
+
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
+  const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
+  const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
+  const copyBtn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(body.textContent)},'Kopieren');
+  topRow.appendChild(closeBtn);
+  topRow.appendChild(copyBtn);
+  const title=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},'Ausführliche Details');
+  const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},
+    stData.detail?stData.detail:'⏳ Wird geladen...');
+  overlay.appendChild(topRow);
+  overlay.appendChild(title);
+  overlay.appendChild(body);
+  document.body.appendChild(overlay);
+
+  if(stData.detail){return;}
+
+  try{
+    const txt=await callClaude(detailPrompt,(t)=>{body.textContent=t;});
+    if(txt){
+      body.textContent=txt;
+      stData.detail=txt;
+      LS.set(KEY,stData);
+    }
+  }catch(e){
+    body.textContent='Fehler: '+e.message;
+  }
+}
+
+
+async function runAutopilot(){
+  const cust=getActiveCust();
+  const mu=LS.get('ki21_mu',{});
+  const kk=LS.get('ki21_kk_'+state.activeId,'');
+  const phaseNamesShort=['Qualifizierung','Bedarfsanalyse','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const progBox=h('div',{style:{padding:'20px 16px',maxWidth:'500px',margin:'0 auto'}});
+  progBox.appendChild(h('div',{style:{fontSize:'15px',fontWeight:'800',marginBottom:'14px'}},
+    '🔍 KI21 erstellt Ihre Opportunity-Vorschau'));
+  const stepEls=[];
+  for(let i=0;i<5;i++){
+    const stepEl=h('div',{style:{fontSize:'13px',padding:'8px 0',color:'var(--text2)'}},
+      '⏳ '+phaseNamesShort[i]);
+    stepEls.push(stepEl);
+    progBox.appendChild(stepEl);
+  }
+  app.appendChild(progBox);
+
+  // Non-invasive: only READ Phase 1 (Qualifizierung) input fields, never write to real phase data
+  const phase1Data=LS.get('ki21_st_'+state.activeId+'_0',{fv:{},result:''});
+  const dossierResults=[];
+  let prevResult='';
+
+  for(let i=0;i<5;i++){
+    const sit=SITS[i];
+    // Build a synthetic field-value object for this phase, fed only by the chain of previous in-memory results
+    let fv={};
+    if(i===0){
+      fv=phase1Data.fv||{};
+    } else {
+      const textFieldId=sit.felder.find(f=>f.t==='ta'&&!f.readonly);
+      const ctxFieldId=sit.felder.find(f=>f.readonly);
+      if(ctxFieldId)fv[ctxFieldId.id]=prevResult;
+      if(textFieldId)fv[textFieldId.id]=prevResult;
+      // For phases with additional fields (e.g. paket/budget in Phase 4/5), leave them empty -
+      // the Opportunity-Vorschau prompt rules instruct the model to use BRANCHENHYPOTHESE for missing data.
+    }
+
+    const stk='';
+    try{
+      const prompt=sit.build(fv,cust,mu,kk,stk);
+      const result=await callClaude(prompt,null);
+      if(result){
+        dossierResults.push({title:sit.title,result});
+        prevResult=result;
+        stepEls[i].textContent='✓ '+phaseNamesShort[i];
+        stepEls[i].style.color='#2ea043';
+      } else {
+        dossierResults.push({title:sit.title,result:'(Keine Antwort erhalten)'});
+        stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (fehlgeschlagen)';
+        stepEls[i].style.color='#f85149';
+      }
+    }catch(e){
+      dossierResults.push({title:sit.title,result:'(Fehler: '+e.message+')'});
+      stepEls[i].textContent='⚠️ '+phaseNamesShort[i]+' (Fehler: '+e.message+')';
+      stepEls[i].style.color='#f85149';
+    }
+  }
+
+  progBox.appendChild(h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#2ea043',marginTop:'16px'}},
+    '✅ Opportunity-Vorschau erfolgreich erstellt.'));
+  // Automatically download as PDF/HTML so the result is never lost
+  exportAutopilotPDF(cust,dossierResults);
+  progBox.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text2)',marginTop:'6px'}},
+    '📄 Vorschau wurde automatisch heruntergeladen.'));
+  const showBtn=h('button',{className:'btn-o',style:{marginTop:'14px',width:'100%'},
+    onclick:()=>showAutopilotDossier(cust,dossierResults)
+  },'Vorschau ansehen →');
+  progBox.appendChild(showBtn);
+  // Keep results available for immediate PDF export without re-running
+  state.lastAutopilotDossier={cust,dossierResults};
+}
+
+function showAutopilotDossier(cust,dossierResults){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const wrap=h('div',{style:{padding:'16px',maxWidth:'600px',margin:'0 auto'}});
+  const headerRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}});
+  headerRow.appendChild(h('div',{style:{fontSize:'16px',fontWeight:'800'}},'🔍 Opportunity-Vorschau'));
+  headerRow.appendChild(h('button',{className:'btn',onclick:renderHome},'✕'));
+  wrap.appendChild(headerRow);
+  wrap.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text2)',marginBottom:'14px'}},
+    cust.firma||''));
+
+  const exportBtn=h('button',{className:'btn-o',style:{width:'100%',marginBottom:'16px'},
+    onclick:()=>exportAutopilotPDF(cust,dossierResults)
+  },'📄 Als PDF exportieren');
+  wrap.appendChild(exportBtn);
+
+  dossierResults.forEach(d=>{
+    const box=h('div',{className:'result-box',style:{marginBottom:'14px'}});
+    const head=h('div',{className:'result-head'});
+    head.appendChild(h('span',{className:'result-label'},d.title));
+    box.appendChild(head);
+    const body=h('div',{className:'result-body'});
+    body.appendChild(renderResultText(d.result));
+    box.appendChild(body);
+    wrap.appendChild(box);
+  });
+
+  app.appendChild(wrap);
+}
+
+function exportAutopilotPDF(cust,dossierResults){
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Opportunity-Vorschau – ${cust.firma||'Kunde'}</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#1a1a1a;padding:30px;max-width:800px;margin:0 auto;}
+    h1{color:#7c3aed;font-size:20px;margin-bottom:4px;}
+    .meta{font-size:12px;color:#666;margin-bottom:20px;}
+    .phase{margin-bottom:24px;page-break-inside:avoid;}
+    .phase-title{font-size:14px;font-weight:bold;color:#7c3aed;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;}
+    pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;}
+    .banner{background:#f3eeff;border:1px solid #7c3aed;border-radius:6px;padding:10px;font-size:11px;margin-bottom:20px;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>🔍 Opportunity-Vorschau</h1>
+  <div class="meta">${cust.firma||'–'} | Erstellt: ${new Date().toLocaleDateString('de-DE')}</div>
+  <div class="banner">Diese Vorschau wurde automatisch erstellt und kombiniert bestätigte Fakten, Branchenwissen und plausible Arbeitshypothesen. Sie ersetzt nicht die vollständige KI21-Qualifizierung – alle Annahmen sollten im Kundengespräch validiert und über den vollständigen Prozess vertieft werden.</div>`;
+  dossierResults.forEach(d=>{
+    html+=`<div class="phase"><div class="phase-title">${d.title}</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(d.result||'')}</div></div>`;
+  });
+  html+=`</body></html>`;
+  exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
+}
+
+function transferAndGo(fromId, toId, result){
+  // Direct transfer - output is already compact
+  const nextKEY='ki21_st_'+state.activeId+'_'+toId;
+  const nextData=LS.get(nextKEY,{fv:{},result:''});
+
+  const fieldMap={
+    1:{f1:'kontext'},
+    2:{f1:'erkenntnisse'},
+    3:{f1:'erkenntnisse'}
+  };
+
+  // Phase 1→2: transfer SPIN-Fragen + Antworten
+  if(fromId===0){
+    const curKEY='ki21_sit_'+state.activeId+'_0';
+    const curData=LS.get(curKEY,{fv:{},result:''});
+    // Extract SPIN questions from result
+    const lines=result.split('\n');
+    const spinKeywords=['DIE 5 WICHTIGSTEN FRAGEN','SPIN-FRAGEN','BEDARFSANALYSE-FRAGEN'];
+    let splitIdx=-1;
+    for(const kw of spinKeywords){
+      splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
+      if(splitIdx>=0)break;
+    }
+    // If no SPIN found, use full result as spin
+    nextData.fv['spin']=splitIdx>=0?lines.slice(splitIdx).join('\n').trim():result;
+    LS.set(nextKEY,nextData);
+    state.pendingSit=null;
+    renderStation(toId);
+    return;
+  }
+
+  // Phase 2→3 (Nachbereitung → Nutzen-Kosten-Analyse): KPI-Extraktion statt Volltext
+  if(fromId===2&&toId===3){
+    nextData.fv['erkenntnisse']='⏳ KPIs werden extrahiert...';
+    LS.set(nextKEY,nextData);
+    renderStation(toId);
+
+    (async()=>{
+      const kpiPrompt=`Hier ist ein Besuchsbericht aus einem Kundentermin:\n\n${result}\n\nExtrahiere AUSSCHLIESSLICH die konkreten Zahlen, KPIs und wirtschaftlich relevanten Fakten, die der Kunde genannt hat (z.B. Zeitaufwand, Mitarbeiterzahlen, Kosten, Stückzahlen, Fehlerquoten, Durchlaufzeiten).\n\nFormat: kurze Stichpunkte, eine Zahl/Aussage pro Zeile. Keine Einleitung, kein Fließtext. Wenn keine konkreten Zahlen genannt wurden, schreibe: "Keine konkreten KPIs im Gespräch genannt – bitte beim Kunden nachfragen."`;
+
+      try{
+        const kpiResult=await callClaude(kpiPrompt,null);
+        if(kpiResult){
+          const freshData=LS.get(nextKEY,{fv:{},result:''});
+          freshData.fv['erkenntnisse']=kpiResult;
+          LS.set(nextKEY,freshData);
+          renderStation(toId);
+        }
+      }catch(e){
+        const freshData=LS.get(nextKEY,{fv:{},result:''});
+        freshData.fv['erkenntnisse']=result;
+        LS.set(nextKEY,freshData);
+        renderStation(toId);
+      }
+    })();
+    return;
+  }
+
+  const map=fieldMap[fromId];
+  if(map){
+    nextData.fv[map.f1]=result;
+  }
+
+  LS.set(nextKEY,nextData);
+  renderStation(toId);
+}
+
+
+
+function scoreColor(s){
+  if(s>=7)return '#2ea043';
+  if(s>=4)return '#d29922';
+  return '#f85149';
+}
+function renderStation(sitId){
+  const sit=SITS[sitId];
+  const KEY='ki21_st_'+state.activeId+'_'+sitId;
+  let data=LS.get(KEY,{fv:{},result:''});
+  let loading=false;
+
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  LS.set('ki21_view',sitId);
+
+  const cust=getActiveCust();
+  const mu=LS.get('ki21_mu',{});
+  const kk=LS.get('ki21_kk_'+state.activeId,'');
+  const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+
+  const nav=h('div',{className:'nav'},
+    h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
+    h('div',{className:'nav-right'},
+      h('button',{className:'btn',onclick:showSettings},'⚙')
+    )
+  );
+  const infoRow=h('div',{className:'subnav'},
+    cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):h('div',{}),
+    h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},'')
+  );
+
+  const wrap=h('div',{className:'station-wrap'});
+
+  const headBlock=h('div',{className:'station-compact-head'},
+    h('div',{className:'station-compact-line'},
+      h('span',{className:'subnav-badge'},String(sitId+1)),
+      h('span',{className:'station-compact-title'},'von '+SITS.length+' · '+sit.title)
+    ),
+    h('div',{className:'station-compact-rule'},sit.regel)
+  );
+  wrap.appendChild(headBlock);
+
+  // Phase nav
+  const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch'}});
+  if(sitId>0){
+    phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
+  }
+  phaseNav.appendChild(h('div',{style:{flex:1}}));
+  if(sitId!==3&&sitId!==4){
+    const stkBtn=h('button',{className:'btn',
+      style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
+      onclick:()=>showStkModal(sitId,sit.title)},
+      h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
+    );
+    phaseNav.appendChild(stkBtn);
+  }
+  if(sitId<SITS.length-1){
+    phaseNav.appendChild(h('button',{className:'btn',
+      style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.3)'},
+      onclick:()=>renderStation(sitId+1)
+    },SITS[sitId+1].title+' →'));
+  }
+  wrap.appendChild(phaseNav);
+
+  // Fields
+  const fieldsDiv=h('div',{});
+  sit.felder.filter(f=>!f.post&&!f.hidden).forEach(f=>{
+    const fw=h('div',{className:'field-wrap'});
+    fw.appendChild(h('div',{className:'field-label'},f.l));
+    let inp;
+    if(f.t==='select'){
+      inp=h('select',{});
+      const def=h('option',{value:''},'– wählen –');
+      inp.appendChild(def);
+      (f.opts||[]).forEach(o=>{
+        const opt=h('option',{value:o},o);
+        if(data.fv[f.id]===o)opt.selected=true;
+        inp.appendChild(opt);
+      });
+      inp.value=data.fv[f.id]||'';
+    } else if(f.t==='ta'){
+      if(f.readonly){
+        inp=h('div',{className:'field-readonly-display','data-fid':f.id});
+        const val=data.fv[f.id]||'';
+        if(val){
+          inp.appendChild(renderResultText(val));
+        } else {
+          const ph=h('div',{style:{color:'var(--text3)',fontStyle:'italic'}},f.p||'');
+          inp.appendChild(ph);
+        }
+      } else {
+        inp=h('textarea',{placeholder:f.p||'','data-fid':f.id});
+        if(f.big)inp.style.minHeight='200px';
+        inp.value=data.fv[f.id]||'';
+      }
+    } else {
+      inp=h('input',{type:'text',placeholder:f.p||''});
+      inp.value=data.fv[f.id]||'';
+    }
+    inp.addEventListener('input',e=>{
+      data.fv[f.id]=e.target.value;
+      LS.set(KEY,data);
+    });
+    if(f.t==='ta'){
+      const taWrap=h('div',{style:{position:'relative'}});
+      const fsBtn=h('button',{
+        style:{position:'absolute',top:'6px',right:'6px',
+          background:'rgba(255,107,0,.2)',border:'1px solid rgba(255,107,0,.4)',
+          color:'#ff6b00',borderRadius:'4px',padding:'2px 7px',fontSize:'12px',
+          cursor:'pointer',zIndex:10,lineHeight:'1.5'},
+        onclick:()=>showFullscreenEdit(f.l,inp.value,(v)=>{
+          inp.value=v; data.fv[f.id]=v; LS.set(KEY,data);
+        })
+      },'⛶');
+      taWrap.appendChild(inp);
+      taWrap.appendChild(fsBtn);
+      fw.appendChild(taWrap);
+    } else {
+      fw.appendChild(inp);
+    }
+    fieldsDiv.appendChild(fw);
+  });
+  wrap.appendChild(fieldsDiv);
+
+  // Generate button
+  const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
+  const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
+  const genRow=h('div',{className:'gen-row'});
+  genRow.appendChild(genBtn);
+  wrap.appendChild(genRow);
+
+  if(sitId===0&&LS.get('ki21_schnellstart',false)){
+    wrap.appendChild(h('button',{className:'btn-o',
+      style:{width:'100%',marginTop:'8px',background:'linear-gradient(135deg,#7c3aed,#a78bfa)',border:'none'},
+      onclick:()=>{
+        if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
+        runAutopilot();
+      }
+    },'🔍 Opportunity-Vorschau erstellen'));
+  }
+
+  // Summary box (Demo-Vorbereitung only)
+  const demoSummaryBox=h('div',{className:'result-box',
+    style:{display:(sitId===3&&data.summary)?'block':'none',marginBottom:'10px'}});
+  const demoSummaryHead=h('div',{className:'result-head'});
+  const demoSummaryLabel=h('span',{className:'result-label'},'⚡ Kurzfassung – Die 5 Punkte die zählen');
+  const demoSummaryBtns=h('div',{className:'result-btns'});
+  const demoSummaryCopyBtn=h('button',{className:'btn',onclick:()=>{
+    if(navigator.clipboard)navigator.clipboard.writeText(data.summary||'').then(()=>{
+      demoSummaryCopyBtn.textContent='✓';setTimeout(()=>demoSummaryCopyBtn.textContent='Kopieren',2000);
+    });
+  }},'Kopieren');
+  demoSummaryBtns.appendChild(demoSummaryCopyBtn);
+  demoSummaryHead.appendChild(demoSummaryLabel);
+  demoSummaryHead.appendChild(demoSummaryBtns);
+  const demoSummaryBody=h('div',{className:'result-body'});
+  demoSummaryBody.appendChild(renderResultText(data.summary||''));
+  demoSummaryBox.appendChild(demoSummaryHead);
+  demoSummaryBox.appendChild(demoSummaryBody);
+  wrap.appendChild(demoSummaryBox);
+
+  // Result box
+  const resultBox=h('div',{className:'result-box',style:{display:data.result?'block':'none'}});
+  const resultHead=h('div',{className:'result-head'});
+  const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
+  const resultBtns=h('div',{className:'result-btns'});
+  const copyBtn=h('button',{className:'btn',onclick:()=>{
+    const txt=data.result;
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
+      copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);
+    });
+  }},'Kopieren');
+  const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
+  const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
+    if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
+    data.result='';
+    data.result2='';
+    data.summary='';
+    data.detail='';
+    LS.set(KEY,data);
+    renderStation(sitId);
+  }},'🗑');
+  const shareBtn=h('button',{className:'btn',
+    style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
+    onclick:()=>{
+      shareAsPdf(sit.title,data.result,getActiveCust(),'KI21_'+sit.title.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf',data.result);
+    }
+  },'Teilen ↗');
+  resultBtns.appendChild(copyBtn);
+  resultBtns.appendChild(fullBtn);
+  const moreBtn=h('button',{className:'btn',
+    style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
+    onclick:()=>loadMoreDetails(sitId,data)},'Mehr Details');
+  resultBtns.appendChild(moreBtn);
+  resultBtns.appendChild(shareBtn);
+  resultBtns.appendChild(delBtn);
+  resultHead.appendChild(resultLabel);
+  resultHead.appendChild(resultBtns);
+  const resultBody=h('div',{className:'result-body'});
+  resultBody.appendChild(renderResultText(data.result||''));
+  // Weiter button
+  const weiterRow=h('div',{style:{padding:'8px 12px',borderTop:'1px solid #30363d',display:'none'}});
+  resultBox.appendChild(resultHead);
+  resultBox.appendChild(resultBody);
+  resultBox.appendChild(weiterRow);
+  wrap.appendChild(resultBox);
+
+  // Post-generate fields (shown after result box)
+  const postFields=sit.felder.filter(f=>f.post);
+  if(postFields.length){
+    const postDiv=h('div',{style:{marginTop:'10px'}});
+    postFields.forEach(f=>{
+      const fw=h('div',{className:'field-wrap'});
+      fw.appendChild(h('div',{className:'field-label'},f.l));
+      const inp=h('textarea',{placeholder:f.p||'','data-fid':f.id});
+      inp.value=data.fv[f.id]||'';
+      inp.addEventListener('input',e=>{data.fv[f.id]=e.target.value;LS.set(KEY,data);});
+      const taWrap=h('div',{style:{position:'relative'}});
+      const fsBtn=h('button',{
+        style:{position:'absolute',top:'6px',right:'6px',
+          background:'rgba(255,107,0,.2)',border:'1px solid rgba(255,107,0,.4)',
+          color:'#ff6b00',borderRadius:'4px',padding:'2px 7px',fontSize:'12px',
+          cursor:'pointer',zIndex:10,lineHeight:'1.5'},
+        onclick:()=>showFullscreenEdit(f.l,inp.value,(v)=>{
+          inp.value=v;data.fv[f.id]=v;LS.set(KEY,data);
+        })
+      },'⛶');
+      taWrap.appendChild(inp);
+      taWrap.appendChild(fsBtn);
+      fw.appendChild(taWrap);
+      postDiv.appendChild(fw);
+    });
+
+    // Second generate button (build2) if available
+    if(sit.build2){
+      const result2Box=h('div',{className:'result-box',style:{display:data.result2?'block':'none',marginTop:'10px'}});
+      const result2Head=h('div',{className:'result-head'});
+      const result2Label=h('span',{className:'result-label'},'🏁 Qualifizierung · Abschluss');
+      const result2Btns=h('div',{className:'result-btns'});
+      const copy2Btn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(data.result2||'')},'Kopieren');
+      const zoom2Btn=h('button',{className:'btn',onclick:()=>showFullscreenEdit('Qualifizierung Abschluss',data.result2||'',()=>{})},'⛶');
+      result2Btns.appendChild(copy2Btn);
+      result2Btns.appendChild(zoom2Btn);
+      result2Head.appendChild(result2Label);
+      result2Head.appendChild(result2Btns);
+      const result2Body=h('div',{className:'result-body'});
+      result2Body.innerHTML='';result2Body.appendChild(renderResultText(data.result2||''));
+      result2Box.appendChild(result2Head);
+      result2Box.appendChild(result2Body);
+
+      const weiter2Row=h('div',{style:{display:'none',marginTop:'8px'}});
+      const gen2Btn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
+        const fv=data.fv||{};
+        if(!fv.antworten||!fv.antworten.trim()){
+          alert('Bitte zuerst deine Antworten eintragen.');return;
+        }
+        const cust=getActiveCust();
+        const mu=LS.get('ki21_mu',{});
+        const kk=LS.get('ki21_kk_'+state.activeId,'');
+        const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+        const prompt2=sit.build2(fv,cust,mu,kk,stk);
+        gen2Btn.disabled=true;
+        gen2Btn.textContent='⏳ KI21 antwortet...';
+        result2Box.style.display='block';
+        result2Body.textContent='';
+        const r2=await callClaude(prompt2,(t)=>{result2Body.textContent=t;});
+        if(r2){
+          data.result2=r2;
+          LS.set(KEY,data);
+          result2Body.innerHTML='';result2Body.appendChild(renderResultText(r2));
+          // Extract SPIN questions and transfer to Phase 2
+          const lines2=r2.split('\n');
+          const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
+          if(spinIdx>=0){
+            const nextKEY2='ki21_sit_'+state.activeId+'_1';
+            const nextData2=LS.get(nextKEY2,{fv:{},result:''});
+            nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
+            LS.set(nextKEY2,nextData2);
+          }
+          weiter2Row.style.display='none';
+        }
+        gen2Btn.disabled=false;
+        gen2Btn.textContent='⚡ Qualifizierung abschließen';
+      }},'⚡ Qualifizierung abschließen');
+      postDiv.appendChild(gen2Btn);
+      postDiv.appendChild(result2Box);
+
+      // Weiter button after build2
+      const weiter2Btn=h('button',{className:'btn-o',style:{marginTop:'8px'},
+        onclick:()=>transferAndGo(sitId,1,data.result2||data.result)
+      },'Weiter zu Bedarfsanalyse →');
+      weiter2Row.appendChild(weiter2Btn);
+      postDiv.appendChild(weiter2Row);
+      weiter2Row.style.display='none';
+    }
+
+    wrap.appendChild(postDiv);
+  }
+
+  // Show weiter button if result already exists (navigating back)
+  if(data.result){
+    const nextMapInit={};
+    if(nextMapInit[sitId]&&!sit.build2){
+      const nextId=nextMapInit[sitId].nextId;
+      const wb=h('button',{
+        style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
+          padding:'5px 12px',fontSize:'11px',fontWeight:'700',cursor:'pointer',
+          fontFamily:'DM Sans,sans-serif',width:'100%'},
+        onclick:()=>transferAndGo(sitId,nextId,data.result)
+      },'Weiter zu '+SITS[nextId].title+' →');
+      weiterRow.appendChild(wb);
+      weiterRow.style.display='block';
+    }
+  }
+
+  async function generate(){
+    if(!cust.firma){alert('Bitte zuerst einen Kunden wählen.');return;}
+    if(loading)return;
+    loading=true;
+    genBtn.disabled=true;
+    genBtn.textContent='⏳ KI21 antwortet...';
+    resultLabel.textContent='⏳ KI21 antwortet...';
+    resultBox.style.display='block';
+    resultBody.textContent='';
+    resultBox.scrollIntoView({behavior:'smooth',block:'start'});
+
+    const prompt=sit.build(data.fv,cust,mu,kk,stk);
+    try{
+      const result=await callClaude(prompt,(streamText)=>{
+        resultBody.textContent=streamText;
+        data.result=streamText;
+        fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
+      });
+      if(result){
+        data.result=result;
+        data.prompt=prompt;
+        resultBody.innerHTML='';resultBody.appendChild(renderResultText(result));
+        // Phase 1: auto-fill fragen field
+        if(sitId===0){
+          const lines=result.split('\n');
+          const keywords=['DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN','QUALIFIZIERUNGSFRAGEN','TOP 5 QUALIFIZIERUNGSFRAGEN'];
+          let splitIdx=-1;
+          for(const kw of keywords){
+            splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
+            if(splitIdx>=0)break;
+          }
+          if(splitIdx>=0){
+            data.fv=data.fv||{};
+            data.fv.fragen=lines.slice(splitIdx).join('\n').trim();
+            // Update DOM textarea if visible
+            const ta=document.querySelector('[data-fid="fragen"]');
+            if(ta)ta.value=data.fv.fragen;
+          }
+        }
+        LS.set(KEY,data);
+        if(state.activeId)refreshOpportunityHealth(state.activeId);
+        resultLabel.textContent=getResultLabel(sitId);
+        // Phase 5: Auto-extract Besuchsbericht into CRM field
+        if(sitId===4){
+          const berichtMatch=result.match(/BESUCHSBERICHT[:\s]*\n([\s\S]+?)(?=FOLLOW-UP MAIL|→ TODO|$)/i);
+          if(berichtMatch){
+            const berichtText=berichtMatch[1].trim();
+            data.fv=data.fv||{};
+            data.fv['ergebnis']=berichtText;
+            LS.set(KEY,data);
+            // Update the bericht field in UI
+            const berichtField=document.querySelector('textarea[data-fid="ergebnis"]');
+            if(berichtField)berichtField.value=berichtText;
+          }
+        }
+
+        // For Nutzen-Kosten-Analyse (sitId===3): generate compact summary for next customer conversation
+        if(sitId===3){
+          demoSummaryBox.style.display='block';
+          demoSummaryBody.textContent='⏳ Kurzfassung wird erstellt...';
+          try{
+            const summaryPrompt=`Erstelle aus dieser Nutzen-Kosten-Analyse eine kompakte Kurzfassung für das nächste Kundengespräch (z.B. Demo oder Abschlussgespräch).
+
+KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. KEINE eigene Mittelwertbildung oder Neuberechnung aus einer Bandbreite (z.B. wenn die Analyse "9-13,5 Arbeitstage" sagt, schreibe NICHT "11 Arbeitstage" – übernimm die Bandbreite unverändert als "9-13,5 Arbeitstage"). Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als ZU VALIDIEREN gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
+KRITISCH: Übernimm die Konfidenz-Kennzeichnung aus der Analyse (BESTÄTIGT/ARBEITSWERT/ANNAHME/ZU VALIDIEREN). Wenn ein Punkt in der Kurzfassung auf eine BESTÄTIGT-Aussage zurückgeht, kennzeichne ihn auch hier als BESTÄTIGT (gleiche Schreibweise, am Anfang der jeweiligen Zeile/des Punkts). Erfinde keine neue Sicherheit, die im Original nicht vorhanden war.
+
+Format:
+🎯 GESPRÄCHSZIEL: [1 Satz was wir erreichen wollen]
+
+TOP 5 PUNKTE DIE ZÄHLEN:
+1. [wichtigster Punkt]
+2. [wichtiger Punkt]
+3. [wichtiger Punkt]
+4. [wichtiger Punkt]
+5. [wichtiger Punkt]
+
+⚠️ UNBEDINGT VERMEIDEN:
+- [1-2 Punkte]
+
+💡 ABSCHLUSS-FRAGE: [Die eine Frage am Ende des Gesprächs]
+
+Nutzen-Kosten-Analyse:
+`+result;
+            const summary=await callClaude(summaryPrompt,null);
+            if(summary){
+              demoSummaryBody.innerHTML='';demoSummaryBody.appendChild(renderResultText(summary));
+              data.summary=summary;
+              LS.set(KEY,data);
+            }
+          }catch(e){
+            demoSummaryBody.textContent='Kurzfassung konnte nicht erstellt werden.';
+          }
+
+          // Extract structured case assumptions for reuse in Phase 5 (per-opportunity, not global)
+          try{
+            const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
+
+Format exakt so:
+{"manual_effort_range":"<Bandbreite z.B. '300-600 Stunden/Jahr', oder leer falls nicht vorhanden>","working_value":"<verwendeter Arbeitswert/Mittelwert, z.B. '450 Stunden/Jahr'>","adjustment":"<kurze Begründung falls vom Mittelwert abgewichen wurde, sonst 'Mittelwert ohne Anpassung'>","confidence":"<hoch|mittel|niedrig>","monthly_benefit":"<geglätteter Nutzen pro Monat, z.B. '3.200 €/Monat'>","monthly_investment":"<geglättete Investition pro Monat, z.B. '1.389 €/Monat'>","roi_statement":"<1 Satz Nutzen vs Investition>"}
+
+Nur Werte verwenden die im Text unten tatsächlich vorkommen. Wenn ein Feld nicht ermittelbar ist, leeren String verwenden.
+
+Analyse:
+`+result;
+            const caseJson=await callClaude(caseExtractPrompt,null);
+            if(caseJson){
+              const cleaned=caseJson.replace(/```json|```/g,'').trim();
+              const parsed=JSON.parse(cleaned);
+              LS.set('ki21_case_assumptions_'+state.activeId,parsed);
+            }
+          }catch(e){
+            // Non-critical: case assumptions extraction failure shouldn't block the main result
+          }
+        }
+
+        // Populate Weiter-button after fresh generation (was previously only shown on page reload)
+        weiterRow.innerHTML='';
+        const nextMapAfterGen={};
+        if(nextMapAfterGen[sitId]&&!sit.build2){
+          const nextIdAfterGen=nextMapAfterGen[sitId].nextId;
+          const wbAfterGen=h('button',{
+            style:{background:'#ff6b00',border:'none',color:'#fff',borderRadius:'7px',
+              padding:'5px 12px',fontSize:'11px',fontWeight:'700',cursor:'pointer',
+              fontFamily:'DM Sans,sans-serif',width:'100%'},
+            onclick:()=>transferAndGo(sitId,nextIdAfterGen,result)
+          },'Weiter zu '+SITS[nextIdAfterGen].title+' →');
+          weiterRow.appendChild(wbAfterGen);
+          weiterRow.style.display='block';
+        }
+      }
+    }catch(e){
+      alert('Fehler: '+e.message);
+      resultBox.style.display='none';
+    }finally{
+      loading=false;
+      genBtn.disabled=false;
+      genBtn.textContent=genLabels[sitId]||'⚡ Mit Claude generieren';
+    }
+  }
+
+  app.appendChild(nav);
+  app.appendChild(infoRow);
+  setTimeout(()=>renderHealthBadgeIfPresent(),0);
+  app.appendChild(wrap);
+}
+
+// ── MODALS ─────────────────────────────────────────────────
+function getAccPhaseInfo(accId){
+  let furthest=-1;
+  for(let i=0;i<5;i++){
+    const data=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(data&&data.result)furthest=i;
+  }
+  const health=getOpportunityHealth(accId);
+  return {phaseIdx:furthest,health};
+}
+
+function showKunde(){
+  const m=modal('Kunde wählen', buildKundeContent(), null);
+
+  function buildKundeContent(){
+    const div=h('div',{});
+
+    if(state.accounts.length>0){
+      div.appendChild(h('div',{style:{fontSize:'10px',fontWeight:'700',letterSpacing:'.8px',
+        textTransform:'uppercase',color:'#8b949e',marginBottom:'8px'}},'Zuletzt verwendet'));
+
+      state.accounts.forEach(a=>{
+        const info=getAccPhaseInfo(a.id);
+        const initials=(a.cust.firma||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+        const phaseLabel=info.phaseIdx>=0?'Phase '+(info.phaseIdx+1):'Neu';
+        const row=h('div',{className:'acc-row'+(a.id===state.activeId?' active':''),
+          onclick:()=>{state.activeId=a.id;LS.set('ki21_aid',a.id);m.remove();
+            if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
+            else renderHome();}
+        },
+          h('div',{className:'acc-avatar'},initials),
+          h('div',{style:{flex:1,minWidth:0}},
+            h('div',{className:'acc-name'},a.cust.firma),
+            h('div',{className:'acc-meta'},
+              h('span',{className:'acc-phase-chip'},phaseLabel),
+              info.health?h('span',{className:'acc-score-chip',style:{color:getHealthColor(info.health.score)}},'Opp '+info.health.score):null
+            )
+          ),
+          h('div',{className:'acc-btns'},
+            a.id===state.activeId?h('span',{className:'acc-active'},'aktiv'):h('span',{},''),
+            h('button',{className:'btn',onclick:e=>{e.stopPropagation();m.remove();showEditKunde(a);}},'\u270E'),
+            h('button',{style:{background:'transparent',border:'none',color:'#484f58',
+              fontSize:'16px',cursor:'pointer',padding:'0 2px'},
+              onclick:e=>{e.stopPropagation();
+                if(confirm('Kunde löschen?')){
+                  state.accounts=state.accounts.filter(x=>x.id!==a.id);
+                  LS.set('ki21_acc',state.accounts);
+                  if(state.activeId===a.id){state.activeId=state.accounts.length>0?state.accounts[0].id:null;LS.set('ki21_aid',state.activeId);}
+                  m.remove();showKunde();
+                }
+              }},'×')
+          )
+        );
+        div.appendChild(row);
+      });
+      div.appendChild(h('div',{style:{height:'8px'}}));
+    }
+
+    div.appendChild(h('button',{className:'btn-o',onclick:()=>{m.remove();showNeuerKunde();}},
+      '+ Neuer Kunde'));
+    return div;
+  }
+}
+
+function showNeuerKunde(initial,accId){
+  const isEdit=!!accId;
+  const f={firma:'',ap:'',branche:'',ma:'',um:'',...(initial||{})};
+  let kk=accId?LS.get('ki21_kk_'+accId,''):'';
+  let tab='stamm';
+
+  const content=h('div',{});
+  const tabRow=h('div',{className:'tab-row'});
+  const tabStamm=h('button',{className:'tab-btn',
+    style:{background:'#ff6b00',color:'#fff'},onclick:()=>switchTab('stamm')},'Stammdaten');
+  const tabKontext=h('button',{className:'tab-btn',
+    style:{background:'#1c2333',color:'#8b949e'},onclick:()=>switchTab('kontext')},'Ergänzungen');
+  tabRow.appendChild(tabStamm);
+  tabRow.appendChild(tabKontext);
+  content.appendChild(tabRow);
+
+  const stammDiv=h('div',{});
+  const kontextDiv=h('div',{style:{display:'none'}});
+
+  const fields=[
+    {k:'firma',l:'Firmenname *',p:'z.B. Lueg AG, Essen'},
+    {k:'ap',l:'Ansprechpartner',p:'z.B. Herr Bernd, ext. Berater'},
+    {k:'branche',l:'Branche',p:'z.B. Automobilhandel'},
+  ];
+  const inputs={};
+  fields.forEach(x=>{
+    const fw=h('div',{style:{marginBottom:'10px'}});
+    fw.appendChild(h('div',{className:'field-label'},x.l));
+    const inp=h('input',{type:'text',placeholder:x.p});
+    inp.value=f[x.k]||'';
+    inp.addEventListener('input',e=>f[x.k]=e.target.value);
+    inputs[x.k]=inp;
+    fw.appendChild(inp);
+    stammDiv.appendChild(fw);
+  });
+  const twoCol=h('div',{style:{display:'flex',gap:'8px'}});
+  [{k:'ma',l:'Mitarbeiter',p:'z.B. 900'},{k:'um',l:'Umsatz',p:'z.B. 800 Mio.'}].forEach(x=>{
+    const fw=h('div',{style:{flex:1,marginBottom:'10px'}});
+    fw.appendChild(h('div',{className:'field-label'},x.l));
+    const inp=h('input',{type:'text',placeholder:x.p});
+    inp.value=f[x.k]||'';
+    inp.addEventListener('input',e=>f[x.k]=e.target.value);
+    fw.appendChild(inp);
+    twoCol.appendChild(fw);
+  });
+  stammDiv.appendChild(twoCol);
+
+  const kkTa=h('textarea',{placeholder:'Bekannte Herausforderungen, Strategie, Wettbewerber, politische Situation...'});
+  kkTa.value=kk;
+  kkTa.addEventListener('input',e=>kk=e.target.value);
+  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Fließt in alle Stationen ein.'));
+  kontextDiv.appendChild(kkTa);
+
+  content.appendChild(stammDiv);
+  content.appendChild(kontextDiv);
+
+  function switchTab(t){
+    tab=t;
+    stammDiv.style.display=t==='stamm'?'block':'none';
+    kontextDiv.style.display=t==='kontext'?'block':'none';
+    tabStamm.style.background=t==='stamm'?'#ff6b00':'#1c2333';
+    tabStamm.style.color=t==='stamm'?'#fff':'#8b949e';
+    tabKontext.style.background=t==='kontext'?'#ff6b00':'#1c2333';
+    tabKontext.style.color=t==='kontext'?'#fff':'#8b949e';
+  }
+
+  const btns=h('div',{className:'modal-row'});
+  const saveB=h('button',{className:'btn-o',onclick:()=>{
+    if(!f.firma.trim()){alert('Bitte Firmenname eingeben.');return;}
+    if(isEdit){
+      state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
+      LS.set('ki21_kk_'+accId,kk);
+      refreshOpportunityHealth(accId);
+    } else {
+      const id='acc_'+Date.now();
+      state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
+      state.activeId=id;
+      LS.set('ki21_aid',id);
+      LS.set('ki21_kk_'+id,kk);
+    }
+    LS.set('ki21_acc',state.accounts);
+    m.remove();
+    if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
+    else renderHome();
+  }},isEdit?'Speichern':'Anlegen');
+  const cancelB=h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen');
+  saveB.style.flex='1';
+  btns.appendChild(saveB);
+  btns.appendChild(cancelB);
+  content.appendChild(btns);
+
+  if(isEdit){
+    const crmBtn=h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px'},
+      onclick:()=>{m.remove();showCRMImport(accId);}},
+      '📥 CRM-Text importieren');
+    content.appendChild(crmBtn);
+    const pdfBtn=h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px',background:'rgba(255,107,0,.15)',color:'#ff6b00'},
+      onclick:()=>generateKundePDF(accId,f)},
+      '📄 Kundendossier als PDF');
+    content.appendChild(pdfBtn);
+  }
+
+  const m=modal(isEdit?'Kunde bearbeiten':'Neuer Kunde',content,null);
+}
+
+
+
+async function showCRMImport(accId){
+  const ta=h('textarea',{
+    placeholder:'CRM-Text, LinkedIn-Profil oder beliebige Kundeninformationen hier einfügen...',
+    style:{minHeight:'120px',width:'100%'}
+  });
+  const statusDiv=h('div',{style:{fontSize:'12px',color:'#8b949e',marginTop:'8px'}});
+  
+  const analyzeBtn=h('button',{className:'btn-o',style:{width:'100%',marginTop:'8px'},
+    onclick:async()=>{
+      const apiKey=LS.get('ki21_apikey','');
+      if(!apiKey){alert('Bitte API Key hinterlegen.');return;}
+      if(!ta.value.trim()){alert('Bitte Text einfügen.');return;}
+      
+      analyzeBtn.textContent='⏳ Analysiere...';
+      analyzeBtn.disabled=true;
+      
+      try{
+        const prompt=`Du extrahierst Informationen aus einem Text für ein B2B-Vertriebssystem.
+
+Text:
+${ta.value}
+
+WICHTIG: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Markdown. Keine Erklärung. Kein Text davor oder danach. Nur das JSON-Objekt.
+
+{"firma":"","ap":"","branche":"","ma":"","um":"","kontext":"","persoenlich":"","herausforderungen":""}
+
+Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.
+
+WICHTIG zur Unterscheidung von "kontext" und "herausforderungen":
+- "kontext": dauerhafte, strukturelle Informationen über das Unternehmen (Branche, Aufbau, Standorte, Teamgröße, allgemeine Beschreibung der Lage) – Dinge, die über viele Monate gültig bleiben.
+- "herausforderungen": konkrete, aktuelle Herausforderungen, Probleme oder Kauftrigger, die JETZT die Vertriebssituation antreiben (z.B. "Forecast-Qualität schlecht", "neues CRM eingeführt aber kaum genutzt", "Geschäftsführer fordert Verbesserung"). Das sind die Dinge, die direkt eine Qualifizierungsfrage auslösen würden.
+Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nicht alles in beide Felder.`;
+
+        const resp=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-api-key':apiKey,
+            'anthropic-version':'2023-06-01',
+            'anthropic-dangerous-direct-browser-access':'true'
+          },
+          body:JSON.stringify({
+            model:'claude-haiku-4-5-20251001',
+            max_tokens:1024,
+            messages:[{role:'user',content:prompt}]
+          })
+        });
+        
+        const data=await resp.json();
+        let txt=data.content[0].text.trim();
+        // Strip markdown code blocks if present
+        txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+        // Extract JSON object if wrapped in other text
+        const jsonMatch=txt.match(/\{[\s\S]*\}/);
+        if(!jsonMatch)throw new Error('Kein JSON gefunden');
+        const parsed=JSON.parse(jsonMatch[0]);
+        
+        // Update customer data
+        const acc=state.accounts.find(a=>a.id===accId);
+        if(acc){
+          if(parsed.firma)acc.cust.firma=parsed.firma;
+          if(parsed.ap)acc.cust.ap=parsed.ap;
+          if(parsed.branche)acc.cust.branche=parsed.branche;
+          if(parsed.ma)acc.cust.ma=parsed.ma;
+          if(parsed.um){
+            // Normalize umsatz to readable format
+            const rawUm=String(parsed.um).replace(/[^0-9.]/g,'');
+            const numUm=parseFloat(rawUm);
+            if(numUm>=1000000)acc.cust.um=(numUm/1000000).toFixed(0)+' Mio. €';
+            else if(numUm>=1000)acc.cust.um=(numUm/1000).toFixed(0)+' Tsd. €';
+            else acc.cust.um=parsed.um;
+          }
+          LS.set('ki21_acc',state.accounts);
+          
+          // Update kontext
+          if(parsed.kontext||parsed.persoenlich){
+            let kk=LS.get('ki21_kk_'+accId,'')||'';
+            if(parsed.kontext)kk+=(kk?'\n\n':'')+parsed.kontext;
+            if(parsed.persoenlich)kk+=(kk?'\n\nPERSÖNLICH:\n':'')+parsed.persoenlich;
+            LS.set('ki21_kk_'+accId,kk);
+            refreshOpportunityHealth(accId);
+          }
+
+          // Update Phase 1 "Bekannte Herausforderungen / Vermutungen" (mergen, nicht überschreiben)
+          if(parsed.herausforderungen){
+            const st0=LS.get('ki21_st_'+accId+'_0',{fv:{},result:''});
+            if(!st0.fv)st0.fv={};
+            st0.fv.info=(st0.fv.info?st0.fv.info+'\n\n':'')+parsed.herausforderungen;
+            LS.set('ki21_st_'+accId+'_0',st0);
+          }
+        }
+        
+        // Build confirmation
+        const lines=[];
+        if(parsed.firma)lines.push('✅ Firma: '+parsed.firma);
+        if(parsed.ap)lines.push('✅ Ansprechpartner: '+parsed.ap);
+        if(parsed.branche)lines.push('✅ Branche: '+parsed.branche);
+        if(parsed.ma)lines.push('✅ Mitarbeiter: '+parsed.ma);
+        if(parsed.um)lines.push('✅ Umsatz: '+parsed.um);
+        if(parsed.kontext)lines.push('✅ Kontext: importiert');
+        if(parsed.herausforderungen)lines.push('✅ Herausforderungen (Phase 1): importiert');
+        if(parsed.persoenlich)lines.push('✅ Persönliche Infos: importiert');
+
+        statusDiv.innerHTML='<div style="margin-top:10px;padding:10px;background:rgba(46,160,67,.1);border-radius:6px;border:1px solid rgba(46,160,67,.3);">'+
+          '<div style="font-size:11px;font-weight:700;color:#2ea043;margin-bottom:6px;letter-spacing:.5px;">IMPORTIERT:</div>'+
+          lines.map(l=>'<div style="font-size:12px;color:#e6edf3;padding:2px 0;">'+l+'</div>').join('')+
+          '</div>';
+        analyzeBtn.textContent='✓ Schließen';
+        analyzeBtn.onclick=()=>m.remove();
+        
+      }catch(e){
+        statusDiv.textContent='Fehler: '+e.message;
+        analyzeBtn.textContent='CRM-Text analysieren';
+        analyzeBtn.disabled=false;
+      }
+    }
+  },'CRM-Text analysieren');
+  
+  const content=h('div',{},
+    h('p',{style:{fontSize:'12px',color:'#8b949e',marginBottom:'8px'}},
+      'Fügen Sie beliebigen Text ein – CRM-Export, LinkedIn-Profil, E-Mail oder Notizen. Claude erkennt und verteilt die Informationen automatisch.'),
+    ta,
+    analyzeBtn,
+    statusDiv
+  );
+  const m=modal('📥 CRM-Text importieren',content,null);
+}
+
+function generateKundePDF(aid, cust){
+  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten',
+    'Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Kundendossier – ${cust.firma||'Kunde'}</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#1a1a1a;font-size:13px;line-height:1.6;}
+    h1{color:#ff6b00;font-size:20px;border-bottom:2px solid #ff6b00;padding-bottom:8px;}
+    h2{color:#ff6b00;font-size:14px;margin-top:20px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+    .meta{color:#666;font-size:12px;margin-bottom:20px;}
+    .phase{background:#f8f8f8;border-left:3px solid #ff6b00;padding:12px;margin-bottom:12px;border-radius:4px;}
+    .phase-title{font-weight:700;font-size:13px;margin-bottom:6px;color:#ff6b00;}
+    .empty{color:#999;font-style:italic;}
+    pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;margin:0;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>Kundendossier</h1>
+  <div class="meta">
+    <strong>${cust.firma||'–'}</strong> | 
+    Branche: ${cust.branche||'–'} | 
+    MA: ${cust.ma||'–'} | 
+    Umsatz: ${cust.um||'–'}<br>
+    Ansprechpartner: ${cust.ap||'–'}<br>
+    Erstellt: ${new Date().toLocaleDateString('de-DE')}
+  </div>`;
+
+  for(let i=0;i<5;i++){
+    const key='ki21_st_'+aid+'_'+i;
+    const data=LS.get(key,{});
+    const result=data.result||'';
+    html+=`<div class="phase">
+      <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
+      ${result?`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(result)}</div>`:'<div class="empty">Noch nicht bearbeitet</div>'}
+    </div>`;
+  }
+
+  html+=`</body></html>`;
+
+  exportHtmlAsPdf(html,'KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
+}
+
+function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
+
+function showStkModal(sitId,sitTitle){
+  const KEY='ki21_stk_'+state.activeId+'_'+sitId;
+  const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
+  ta.value=LS.get(KEY,'');
+  const content=h('div',{},
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in Prompt und Opportunity Health ein.'),
+    ta,
+    h('div',{className:'modal-row',style:{marginTop:'12px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);renderHealthBadgeIfPresent();if(state.activeId)refreshOpportunityHealth(state.activeId);m.remove();renderStation(sitId);}},
+        'Speichern'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Ergänzungen',content,null);
+}
+
+function showPDF(title,text,cust){
+  const lines=text.split('\n');
+  let html='';
+  lines.forEach(line=>{
+    const t=line.trim();
+    if(!t){html+='<br>';return;}
+    // Headings
+    if(t.startsWith('# ')){html+=`<h1>${t.slice(2)}</h1>`;return;}
+    if(t.startsWith('## ')){html+=`<h2>${t.slice(3)}</h2>`;return;}
+    // Score line
+    if(t.match(/SCORE:\s*\d+\/10/i)){html+=`<p class="score">${t}</p>`;return;}
+    // Section headers (ALL CAPS ending with :)
+    if(t===t.toUpperCase()&&t.endsWith(':')&&t.length>3){html+=`<h3>${t}</h3>`;return;}
+    // BESTÄTIGT / ANNAHME / KLÄREN
+    if(t.startsWith('BESTÄTIGT:')||t.startsWith('ANNAHME:')||t.startsWith('KLÄREN:')){
+      const parts=t.split(':');
+      html+=`<p><strong>${parts[0]}:</strong>${parts.slice(1).join(':')}</p>`;return;
+    }
+    // TODO line
+    if(t.startsWith('→ TODO')||t.startsWith('→')){html+=`<p class="todo">${t}</p>`;return;}
+    // Numbered items
+    if(t.match(/^\d+\./)){html+=`<p class="item">${t}</p>`;return;}
+    // Normal
+    html+=`<p>${t}</p>`;
+  });
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>KI21 – ${title}</title>
+<style>
+  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a1a;
+    max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;}
+  .header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px;}
+  .header h1{font-size:20px;color:#ff6b00;margin:0 0 4px;}
+  .header .meta{font-size:11px;color:#666;}
+  h1{font-size:16px;color:#ff6b00;margin:16px 0 4px;}
+  h2{font-size:14px;color:#333;margin:14px 0 4px;}
+  h3{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+    color:#666;margin:16px 0 4px;border-bottom:1px solid #eee;padding-bottom:4px;}
+  p{margin:4px 0;}
+  p.score{font-weight:700;font-size:13px;color:#ff6b00;margin:8px 0;}
+  p.item{padding-left:12px;}
+  p.todo{background:#fff8f0;border-left:3px solid #ff6b00;padding:6px 10px;margin:12px 0;font-weight:600;}
+  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #eee;
+    font-size:10px;color:#999;text-align:center;}
+  @media print{body{margin:20px;}.no-print{display:none;}}
+</style>
+</head><body>
+<div class="header">
+  <h1>KI21 – ${title}</h1>
+  <div class="meta">${cust&&cust.firma?cust.firma+' · ':''}${cust&&cust.ap?cust.ap+' · ':''}${new Date().toLocaleDateString('de-DE')}</div>
+</div>
+${html}
+<div class="footer">Erstellt mit KI21 · ki21-vertrieb.github.io</div>
+<div class="no-print" style="text-align:center;margin-top:20px;">
+  <button onclick="window.print()" style="background:#ff6b00;color:#fff;border:none;
+    padding:10px 24px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
+    Als PDF speichern
+  </button>
+</div>
+</body></html>`);
+  win.document.close();
+}
+
+function renderBranchenwissen(text){
+  if(!text)return '';
+  const lines=text.split('\n');
+  let html='';
+  let counter=0;
+  let inEntry=false;
+  lines.forEach(line=>{
+    const t=line.trim();
+    if(!t)return;
+    // Category headers (ALL CAPS followed by colon, optionally with count in parens)
+    if(/^[A-ZÄÖÜ\- ]+(\s*\(\d+.*\))?:$/.test(t)){
+      if(inEntry)html+='</div>';
+      html+=`<div style="margin:14px 0 8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;border-bottom:1px solid #30363d;padding-bottom:4px;">${t.replace(/:$/,'')}</div>`;
+      counter=0;
+      inEntry=false;
+      return;
+    }
+    // Field lines like "Pattern: ...", "Kennzahl: ...", "Confidence: ..."
+    const fieldMatch=t.match(/^([A-ZÄÖÜa-zäöü]+):\s*(.*)$/);
+    if(fieldMatch){
+      const field=fieldMatch[1];
+      const value=fieldMatch[2];
+      if(field==='Pattern'||field==='Kennzahl'||field==='Rolle'||field==='Einwand'||field==='Insight'||field==='Frage'||field==='Titel'||field==='Typ'){
+        if(inEntry)html+='</div>';
+        counter++;
+        html+=`<div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;">${counter}. ${value}</div>`;
+        inEntry=true;
+      } else if(field==='Confidence'||field==='Status'){
+        const badge=value.toLowerCase().includes('hoch')||value.includes('recherchiert')?'🟢':value.toLowerCase().includes('mittel')||value.includes('Erfahrungswissen')?'🟡':'🔴';
+        html+=`<div style="font-size:9px;color:#8b949e;margin-top:4px;">${badge} ${value}</div></div>`;
+        inEntry=false;
+      } else {
+        html+=`<div style="font-size:10px;color:#c9d1d9;line-height:1.4;"><span style="color:#8b949e;">${field}:</span> ${value}</div>`;
+      }
+      return;
+    }
+    // Fallback: plain line
+    html+=`<div style="font-size:10px;color:#c9d1d9;">${t}</div>`;
+  });
+  if(inEntry)html+='</div>';
+  return html;
+}
+
+function showMeinUnternehmen(initialTab){
+  let profil=LS.get('ki21_mu',{}).profil||'';
+  let bausteine=LS.get('ki21_mu',{}).bausteine||'';
+  let bw=LS.get('ki21_branchenwissen',{});
+  let tab=initialTab||'profil';
+
+  const tabRow=h('div',{className:'tab-row'});
+  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmen');
+  const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Bausteine');
+  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'🧠 KI21 Intelligence');
+  tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);
+
+  const d1=h('div',{});
+  const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...\nMitbewerber/Alternativen: ... (z.B. auch Inhouse-Lösungen oder Module großer ERP-Anbieter, nicht nur direkte Wettbewerber)'});
+  ta1.value=profil;
+  ta1.addEventListener('input',e=>profil=e.target.value);
+  d1.appendChild(h('p',{className:'modal-desc'},'Unternehmensbeschreibung, Produkte, Lösungen, USP, Mitbewerber.'));
+  d1.appendChild(ta1);
+
+  const d2=h('div',{style:{display:'none'}});
+  const ta2=h('textarea',{placeholder:'Projektvorgehen:\nPhase 1: ...\n\nSupport:\n- ...'});
+  ta2.value=bausteine;
+  ta2.addEventListener('input',e=>bausteine=e.target.value);
+  d2.appendChild(h('p',{className:'modal-desc'},'Projektvorgehen, Support, Schulung, technische Voraussetzungen.'));
+  d2.appendChild(ta2);
+
+  // KI21 Intelligence Tab
+  const d3=h('div',{style:{display:'none'}});
+
+  let intel=LS.get('ki21_intelligence',{});
+
+  const intelStatus=h('div',{style:{marginBottom:'12px'}});
+  const updateIntelStatus=(msg)=>{
+    intelStatus.innerHTML='';
+    if(msg){
+      intelStatus.appendChild(h('div',{style:{background:'rgba(46,160,67,.1)',border:'1px solid rgba(46,160,67,.3)',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
+        h('div',{style:{fontSize:'12px',fontWeight:'700',color:'#2ea043'}},msg)
+      ));
+    } else if(intel.erstellt){
+      intelStatus.appendChild(h('div',{style:{background:'rgba(46,160,67,.1)',border:'1px solid rgba(46,160,67,.3)',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
+        h('div',{style:{fontSize:'12px',fontWeight:'700',color:'#2ea043',marginBottom:'2px'}},'✅ KI21 Intelligence aktiv'),
+        h('div',{style:{fontSize:'11px',color:'#8b949e'}},'Erstellt: '+(intel.datum||''))
+      ));
+    } else {
+      intelStatus.appendChild(h('div',{style:{background:'rgba(139,148,158,.1)',border:'1px solid #30363d',borderRadius:'6px',padding:'10px 12px',marginBottom:'10px'}},
+        h('div',{style:{fontSize:'12px',color:'#8b949e'}},'Noch nicht erstellt')
+      ));
+    }
+  };
+  updateIntelStatus();
+
+  const intelBranche=h('input',{type:'text',placeholder:'z.B. Business Intelligence / CPM',className:'field-input'});
+  const intelProdukte=h('input',{type:'text',placeholder:'z.B. Planungssoftware, BI, Forecasting',className:'field-input'});
+  const intelZiel=h('input',{type:'text',placeholder:'z.B. Mittelstand 100–5.000 MA mit SAP',className:'field-input'});
+  const intelRegion=h('input',{type:'text',placeholder:'z.B. Deutschland / DACH',className:'field-input'});
+
+  if(intel.branche)intelBranche.value=intel.branche;
+  if(intel.produkte)intelProdukte.value=intel.produkte;
+  if(intel.ziel)intelZiel.value=intel.ziel;
+  if(intel.region)intelRegion.value=intel.region;
+
+  const intelResult=h('div',{style:{display:intel.inhalt?'block':'none',marginTop:'10px'}});
+  const intelBody=h('div',{style:{lineHeight:'1.5',maxHeight:'280px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
+  intelBody.innerHTML=renderBranchenwissen(intel.inhalt||'');
+  const intelToggleRow=h('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
+  const intelShowToggle=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>{intelBody.style.display=intelBody.style.display==='none'?'block':'none';}
+  },'Erkenntnisse anzeigen / verbergen');
+  const intelZoomBtn=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>showFullscreen('KI21 Intelligence',intel.inhalt||'')
+  },'⛶ Zoom');
+  const intelCopyBtn=h('button',{className:'btn',style:{fontSize:'10px'},
+    onclick:()=>{
+      if(navigator.clipboard)navigator.clipboard.writeText(intel.inhalt||'').then(()=>{
+        intelCopyBtn.textContent='✓ Kopiert';setTimeout(()=>intelCopyBtn.textContent='Kopieren',2000);
+      });
+    }
+  },'Kopieren');
+  intelToggleRow.appendChild(intelShowToggle);
+  intelToggleRow.appendChild(intelZoomBtn);
+  intelToggleRow.appendChild(intelCopyBtn);
+  intelResult.appendChild(intelToggleRow);
+  intelResult.appendChild(intelBody);
+
+  const intelBtn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
+    const branche=intelBranche.value.trim();
+    const produkte=intelProdukte.value.trim();
+    const ziel=intelZiel.value.trim();
+    const region=intelRegion.value.trim();
+    if(!branche||!produkte){alert('Bitte mindestens Branche und Produkte eingeben.');return;}
+    intelBtn.disabled=true;
+    intelBtn.textContent='⏳ KI21 Intelligence wird erstellt...';
+    intelResult.style.display='block';
+    updateIntelStatus('⏳ Recherche läuft – das kann einen Moment dauern...');
+
+    const prompt=`Du bist der KI21 Intelligence Builder.
+
+Deine Aufgabe: Baue eine hochwertige, anonymisierte, strukturierte Intelligence-Datenbank für Vertriebsentscheidungen auf - keine Sammlung von Success Stories, sondern daraus abgeleitete, robuste Business Patterns.
+
+Branche: ${branche}
+Produkte/Lösungen: ${produkte}
+Zielkunden: ${ziel||'Mittelstand'}
+Region: ${region||'DACH'}
+
+RECHERCHE: Nutze die Websuche aktiv (mehrere Suchanfragen, auch gezielt mit site:linkedin.com) nach Fachartikeln, Erfahrungsberichten, Studien und öffentlichen Beiträgen zu typischen Problemen, Kennzahlen und Erfolgsmustern in diesem Bereich.
+
+OBERSTES PRINZIP: Qualität vor Quantität. Verdichte ähnliche Erkenntnisse zu robusten, in mehreren Quellen erkennbaren Mustern. Bevorzuge wenige belastbare Patterns gegenüber vielen schwachen. Wenn du nur 8-12 wirklich robuste Patterns findest, ist das besser als 30 erzwungene.
+
+NIEMALS SPEICHERN: Keine Hersteller-, Kunden-, Produkt- oder Projektnamen im Output. Beispiel - NICHT "Anbieter X reduzierte Forecast um 70%", SONDERN "Mittelständische Unternehmen reduzieren den manuellen Forecast-Aufwand häufig erheblich, in recherchierten Fällen von mehreren Tagen auf wenige Stunden."
+
+WICHTIGSTER KPI-GRUNDSATZ: Wo immer möglich, Vorher/Nachher-Kontrast mit absoluten Einheiten (Tage, Stunden, Wochen, Euro, FTE) statt nur Prozent.
+
+FORMAT:
+
+SCHMERZPUNKTE (so viele wie robust belegbar, max. 8):
+Pattern: [verdichtete, anonymisierte Erkenntnis]
+Kontext: [Unternehmensgröße/Situation]
+Confidence: [hoch/mittel/niedrig]
+
+KAUFTRIGGER (max. 6):
+[gleiches Format]
+
+DISCOVERY-FRAGEN (max. 8):
+Frage: [konkrete Frage]
+Warum wichtig: [1 Satz - welchen Business Case beeinflusst sie]
+Confidence: [hoch/mittel/niedrig]
+
+EINWÄNDE (max. 6):
+Einwand: [typische Formulierung]
+Pattern-Antwort: [Kernargument]
+Confidence: [hoch/mittel/niedrig]
+
+ERFAHRUNGS-KPIS (so viele wie robust belegbar, max. 15 - hier maximale Sorgfalt):
+Kennzahl: [Titel]
+Vorher: [Zustand mit Einheit]
+Nachher: [Zustand mit Einheit]
+Kontext: [Unternehmensgröße/Situation]
+Confidence: [hoch/mittel/niedrig]
+
+QUALITATIVE PATTERNS (max. 6):
+Pattern: [nicht in Zahlen ausdrückbare Verbesserung]
+Confidence: [hoch/mittel/niedrig]
+
+STAKEHOLDER (max. 6):
+Rolle: [Entscheider-Typ]
+Treiber: [was ihn antreibt]
+Einstiegsfrage: [1 Frage]
+Confidence: [hoch/mittel/niedrig]
+
+ERFOLGSFAKTOREN (max. 6):
+Pattern: [was erfolgreiche Projekte gemeinsam haben]
+Confidence: [hoch/mittel/niedrig]
+
+ÜBERRASCHUNGSFAKTOR (genau 1):
+Insight: [ein Gedanke, den viele Unternehmen in diesem Bereich übersehen - echter Aha-Moment]
+Confidence: [hoch/mittel/niedrig]
+
+Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn eine Kategorie wenig Substanz hat, liefere weniger Einträge statt zu erfinden.`;
+
+    let result;
+    try{
+      result=await callClaude(prompt,(t)=>{intelBody.style.whiteSpace='pre-wrap';intelBody.style.fontSize='11px';intelBody.style.color='#8b949e';intelBody.textContent=t;});
+    }catch(e){
+      result=null;
+    }
+    if(result){
+      intel={inhalt:result,branche,produkte,ziel,region,erstellt:true,datum:new Date().toLocaleDateString('de-DE')};
+      LS.set('ki21_intelligence',intel);
+      updateIntelStatus('✅ KI21 Intelligence erfolgreich erstellt und gespeichert.');
+      intelBody.style.whiteSpace='normal';
+      intelBody.innerHTML=renderBranchenwissen(result);
+    } else {
+      updateIntelStatus();
+      alert('Erstellung fehlgeschlagen. Bitte erneut versuchen.');
+    }
+    intelBtn.disabled=false;
+    intelBtn.textContent=intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen';
+  }},intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen');
+
+  d3.appendChild(h('p',{className:'modal-desc'},'KI21 verdichtet branchenspezifische Erkenntnisse zu robusten Business Patterns, die automatisch in alle Phasen einfließen.'));
+  d3.appendChild(intelStatus);
+  d3.appendChild(h('div',{className:'field-label'},'Branche'));
+  d3.appendChild(intelBranche);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Produkte / Lösungen'));
+  d3.appendChild(intelProdukte);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Zielkunden'));
+  d3.appendChild(intelZiel);
+  d3.appendChild(h('div',{className:'field-label',style:{marginTop:'8px'}},'Region'));
+  d3.appendChild(intelRegion);
+  d3.appendChild(intelBtn);
+  d3.appendChild(intelResult);
+
+  function sw(t){
+    tab=t;
+    d1.style.display=t==='profil'?'block':'none';
+    d2.style.display=t==='bausteine'?'block':'none';
+    d3.style.display=t==='bw'?'block':'none';
+    t1.style.background=t==='profil'?'#ff6b00':'#1c2333';t1.style.color=t==='profil'?'#fff':'#8b949e';
+    t2.style.background=t==='bausteine'?'#ff6b00':'#1c2333';t2.style.color=t==='bausteine'?'#fff':'#8b949e';
+    t3.style.background=t==='bw'?'#ff6b00':'#1c2333';t3.style.color=t==='bw'?'#fff':'#8b949e';
+  }
+
+  const content=h('div',{},tabRow,d1,d2,d3,
+    h('div',{className:'modal-row',style:{marginTop:'12px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set('ki21_mu',{profil,bausteine});m.remove();}},
+        'Speichern'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Mein Unternehmen',content,null);
+  if(initialTab)sw(initialTab);
+}
+
+const KI21_VERSION='v4.30';
+
+function encodeBase64UTF8(text){
+  const bytes=new TextEncoder().encode(text);
+  let binary='';
+  const chunk=8192;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(binary);
+}
+
+function detectVersionFromHtml(html){
+  const m=String(html||'').match(/v\d+\.\d+(?:\s*[A-Za-z0-9_-]+)?/);
+  return m?m[0]:'unbekannte Version';
+}
+
+async function pushToGitHub(sourceText){
+  const token=LS.get('ki21_github_token','');
+  if(!token){alert('Bitte zuerst GitHub Token in Einstellungen hinterlegen.');return;}
+
+  if(!sourceText||!String(sourceText).trim()){
+    throw new Error('Kein App-Code zum Veröffentlichen vorhanden. Bitte neue index.html in das Update-Feld einfügen.');
+  }
+  if(!String(sourceText).includes('<!DOCTYPE html')||!String(sourceText).includes('<script>')){
+    throw new Error('Der eingefügte Text sieht nicht wie eine vollständige index.html aus.');
+  }
+
+  const version=detectVersionFromHtml(sourceText);
+  const headers={
+    'Authorization':'token '+token,
+    'Accept':'application/vnd.github.v3+json',
+    'Content-Type':'application/json'
+  };
+
+  const shaResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{headers});
+  if(!shaResp.ok)throw new Error('GitHub Fehler '+shaResp.status);
+  const shaData=await shaResp.json();
+  const sha=shaData.sha;
+
+  const encoded=encodeBase64UTF8(sourceText);
+
+  const pushResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{
+    method:'PUT',
+    headers,
+    body:JSON.stringify({
+      message:'KI21 '+version+' veröffentlicht – '+new Date().toLocaleDateString('de-DE'),
+      content:encoded,
+      sha:sha
+    })
+  });
+  if(!pushResp.ok){
+    let msg='Push Fehler '+pushResp.status;
+    try{const err=await pushResp.json(); if(err&&err.message)msg+=': '+err.message;}catch(e){}
+    throw new Error(msg);
+  }
+  LS.set('ki21_last_published_version',version);
+  LS.set('ki21_last_published_at',new Date().toLocaleString('de-DE'));
+  return version;
+}
+
+async function fetchCurrentPublishedHtml(){
+  const resp=await fetch('https://ki21-vertrieb.github.io/KI21/index.html?nocache='+Date.now());
+  if(!resp.ok)throw new Error('Aktuelle Live-Version konnte nicht gelesen werden ('+resp.status+').');
+  return await resp.text();
+}
+
+function showGitHub(){
+  const hasGHToken=!!LS.get('ki21_github_token','');
+  let newGHToken='';
+  let updateCode='';
+
+  const status=h('div',{className:'status-box',
+    style:{background:hasGHToken?'rgba(46,160,67,.12)':'#1c2333',
+      border:'1px solid '+(hasGHToken?'rgba(46,160,67,.3)':'#30363d'),
+      marginBottom:'14px'}},
+    h('div',{style:{fontSize:'20px',marginBottom:'4px'}},hasGHToken?'✅':'🐙'),
+    h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasGHToken?'#2ea043':'#e6edf3'}},
+      hasGHToken?'GitHub verbunden':'GitHub nicht verbunden'),
+    h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
+      hasGHToken?'Neue index.html einfügen → ein Klick veröffentlicht':'Token einmalig hinterlegen')
+  );
+
+  const content=h('div',{},status);
+
+  if(hasGHToken){
+    const lastVersion=LS.get('ki21_last_published_version','');
+    const lastAt=LS.get('ki21_last_published_at','');
+    if(lastVersion||lastAt){
+      content.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'8px',textAlign:'center'}},
+        'Zuletzt veröffentlicht: '+(lastVersion||'–')+(lastAt?' · '+lastAt:'')));
+    }
+
+    content.appendChild(h('div',{style:{fontSize:'11px',color:'#8b949e',lineHeight:'1.45',marginBottom:'8px'}},
+      'Kopiere künftig den vollständigen Inhalt der von ChatGPT gelieferten index.html hier hinein. Danach genügt ein Tipp auf „Veröffentlichen“. Keine lokale Datei, kein PC.'));
+
+    const ta=h('textarea',{placeholder:'Hier vollständige neue index.html einfügen …',
+      style:{minHeight:'170px',fontSize:'11px',fontFamily:'monospace',lineHeight:'1.35'}});
+    const versionLine=h('div',{style:{fontSize:'11px',color:'#ff6b00',margin:'6px 0 10px'}},'Noch kein Update-Code eingefügt');
+    ta.addEventListener('input',e=>{
+      updateCode=e.target.value;
+      const version=detectVersionFromHtml(updateCode);
+      versionLine.textContent=updateCode.trim()?('Erkannte Version: '+version):'Noch kein Update-Code eingefügt';
+    });
+    content.appendChild(ta);
+    content.appendChild(versionLine);
+
+    const pushB=h('button',{className:'btn-o',
+      style:{background:'#238636',marginBottom:'8px'},
+      onclick:async()=>{
+        const code=(updateCode||ta.value||'').trim();
+        if(!code){alert('Bitte zuerst die neue index.html in das Feld einfügen.');return;}
+        pushB.disabled=true;
+        pushB.textContent='⏳ Wird veröffentlicht...';
+        try{
+          const publishedVersion=await pushToGitHub(code);
+          pushB.textContent='✅ Veröffentlicht ('+publishedVersion+')';
+          setTimeout(()=>{pushB.textContent='🚀 Veröffentlichen';pushB.disabled=false;},3000);
+        }catch(e){
+          alert('Fehler: '+e.message);
+          pushB.textContent='🚀 Veröffentlichen';
+          pushB.disabled=false;
+        }
+      }
+    },'🚀 Veröffentlichen');
+    content.appendChild(pushB);
+
+    content.appendChild(h('button',{className:'btn',style:{width:'100%',marginTop:'4px'},onclick:async()=>{
+      if(!confirm('Aktuelle live veröffentlichte Version erneut veröffentlichen? Normalerweise brauchst du das nicht.'))return;
+      publishCurrentB.disabled=true;
+      publishCurrentB.textContent='⏳ Lade Live-Version...';
+      try{
+        const liveHtml=await fetchCurrentPublishedHtml();
+        const v=await pushToGitHub(liveHtml);
+        publishCurrentB.textContent='✅ Live-Version erneut veröffentlicht ('+v+')';
+        setTimeout(()=>{publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';publishCurrentB.disabled=false;},3000);
+      }catch(e){
+        alert('Fehler: '+e.message);
+        publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';
+        publishCurrentB.disabled=false;
+      }
+    }},'Aktuelle Live-Version erneut veröffentlichen'));
+    const publishCurrentB=content.lastChild;
+
+    content.appendChild(h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px'},
+      onclick:()=>{if(confirm('GitHub Token löschen?')){LS.set('ki21_github_token','');m.remove();showGitHub();}}},
+      'Token löschen'));
+  } else {
+    content.appendChild(h('div',{className:'field-label',style:{marginBottom:'6px'}},'GitHub Token eingeben'));
+    const inp=h('input',{type:'password',placeholder:'ghp_...'});
+    inp.addEventListener('input',e=>newGHToken=e.target.value);
+    content.appendChild(inp);
+    content.appendChild(h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 10px',lineHeight:'1.5'}},
+      'Einmalig speichern – danach reicht Einfügen + Veröffentlichen.'));
+    content.appendChild(h('button',{className:'btn-o',
+      style:{background:'#238636'},
+      onclick:()=>{
+        if(!newGHToken.trim())return;
+        LS.set('ki21_github_token',newGHToken.trim());
+        m.remove();
+        showGitHub();
+      }},'GitHub Token speichern'));
+  }
+
+  const m=modal('GitHub Veröffentlichung',content,null);
+}
+
+function showSettings(){
+  const hasKey=!!LS.get('ki21_apikey','');
+  // Font size toggle
+  const fs=LS.get('ki21_fontsize','small');
+  const applyFs=(size)=>{
+    document.documentElement.style.setProperty('--fs-input',size==='large'?'15px':'12px');
+    LS.set('ki21_fontsize',size);
+  };
+  applyFs(fs);
+  const fsLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'Schriftgröße Textfenster');
+  const fsSmall=h('button',{className:'btn',
+    style:{flex:1,fontWeight:fs==='small'?'700':'400',borderColor:fs==='small'?'#ff6b00':'#30363d',color:fs==='small'?'#ff6b00':'#8b949e'},
+    onclick:()=>{applyFs('small');m.remove();showSettings();}
+  },'Klein');
+  const fsLarge=h('button',{className:'btn',
+    style:{flex:1,fontWeight:fs==='large'?'700':'400',borderColor:fs==='large'?'#ff6b00':'#30363d',color:fs==='large'?'#ff6b00':'#8b949e'},
+    onclick:()=>{applyFs('large');m.remove();showSettings();}
+  },'Groß');
+  const fsRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},fsSmall,fsLarge);
+
+  // Dark/Light mode toggle
+  const isDark=!document.body.classList.contains('light');
+  const applyMode=(dark)=>{
+    if(dark){document.body.classList.remove('light');}
+    else{document.body.classList.add('light');}
+    LS.set('ki21_theme',dark?'dark':'light');
+  };
+  const modeLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'Darstellung');
+  const modeDark=h('button',{className:'btn',
+    style:{flex:1,fontWeight:isDark?'700':'400',borderColor:isDark?'#ff6b00':'#30363d',color:isDark?'#ff6b00':'#8b949e'},
+    onclick:()=>{applyMode(true);m.remove();showSettings();}
+  },'🌙 Dark');
+  const modeLight=h('button',{className:'btn',
+    style:{flex:1,fontWeight:!isDark?'700':'400',borderColor:!isDark?'#ff6b00':'#30363d',color:!isDark?'#ff6b00':'#8b949e'},
+    onclick:()=>{applyMode(false);m.remove();showSettings();}
+  },'☀️ Light');
+  const modeRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},modeDark,modeLight);
+
+  // Opportunity-Vorschau toggle
+  const ssActive=LS.get('ki21_schnellstart',false);
+  const ssLabel=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'6px'}},'🔍 Opportunity-Vorschau');
+  const ssOff=h('button',{className:'btn',
+    style:{flex:1,fontWeight:!ssActive?'700':'400',borderColor:!ssActive?'#ff6b00':'#30363d',color:!ssActive?'#ff6b00':'#8b949e'},
+    onclick:()=>{LS.set('ki21_schnellstart',false);m.remove();showSettings();}
+  },'AUS');
+  const ssOn=h('button',{className:'btn',
+    style:{flex:1,fontWeight:ssActive?'700':'400',borderColor:ssActive?'#ff6b00':'#30363d',color:ssActive?'#ff6b00':'#8b949e'},
+    onclick:()=>{LS.set('ki21_schnellstart',true);m.remove();showSettings();}
+  },'EIN');
+  const ssRow=h('div',{style:{display:'flex',gap:'8px',marginBottom:'6px'}},ssOff,ssOn);
+  const ssDesc=h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'14px',lineHeight:'1.4'}},
+    'Wenn aktiv, erscheint in Phase 1 ein Button für eine erste Opportunity-Vorschau auf Basis von Branchenwissen und Arbeitshypothesen. Ersetzt nicht die vollständige Qualifizierung – empfohlen für kleinere oder frühe Leads, nicht für strategisch wichtige Opportunities.');
+  let newKey='';
+  const inp=h('input',{type:'password',placeholder:'sk-ant-api03-...'});
+  inp.style.marginTop='8px';
+  inp.addEventListener('input',e=>newKey=e.target.value);
+  const saveB=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:()=>{
+    if(!newKey.trim())return;
+    LS.set('ki21_apikey',newKey.trim());
+    m.remove();
+    alert('✅ API Key gespeichert');
+  }},'API Key speichern');
+  const status=h('div',{className:'status-box',
+    style:{background:hasKey?'rgba(46,160,67,.12)':'rgba(255,107,0,.12)',
+      border:'1px solid '+(hasKey?'rgba(46,160,67,.3)':'rgba(255,107,0,.3)'),
+      marginBottom:'12px'}},
+    h('div',{style:{fontSize:'20px',marginBottom:'4px'}},hasKey?'✅':'⚠️'),
+    h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasKey?'#2ea043':'#ff6b00'}},
+      hasKey?'API Key hinterlegt':'Kein API Key'),
+    h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
+      'Claude Haiku · ~0,02 € / Anfrage')
+  );
+  const menuItems=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'14px'}},
+    h('div',{className:'settings-group-title'},'Unternehmen & Daten'),
+    h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
+      onclick:()=>{m.remove();showMeinUnternehmen();}},
+      '🏢  Mein Unternehmen'),
+    h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
+      onclick:()=>{m.remove();showMeinUnternehmen('bausteine');}},
+      '📦  Angebotsbausteine'),
+    h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
+      onclick:()=>{m.remove();showExport();}},
+      '↑  Backup erstellen'),
+    h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
+      onclick:()=>{m.remove();showImport();}},
+      '↓  Backup wiederherstellen')
+  );
+  const content=h('div',{},menuItems,
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'Darstellung'),
+    fsLabel,fsRow,
+    modeLabel,modeRow,
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'Funktionen'),
+    ssLabel,ssRow,ssDesc,
+    h('div',{className:'settings-group-title',style:{marginTop:'6px'}},'API-Zugang'),
+    status,
+    h('div',{className:'field-label'},hasKey?'Neuen Key eingeben':'Key eingeben'),
+    inp,
+    h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 0',lineHeight:'1.5'}},
+      'Sicher gespeichert. Nie übertragen.'),
+    saveB
+  );
+  if(hasKey){
+    content.appendChild(h('button',{className:'btn',
+      style:{width:'100%',marginTop:'8px'},
+      onclick:()=>{if(confirm('API Key löschen?')){LS.set('ki21_apikey','');m.remove();}}},
+      'API Key löschen'));
+  }
+  content.appendChild(h('div',{style:{borderTop:'1px solid #30363d',marginTop:'14px',paddingTop:'14px'}}));
+  content.appendChild(h('button',{className:'btn',
+    style:{width:'100%',background:'var(--bg3)'},
+    onclick:()=>{m.remove();showGitHub();}},
+    '🐙 GitHub Auto-Deploy'));
+  content.appendChild(h('button',{className:'btn',
+    style:{width:'100%',marginTop:'8px'},
+    onclick:()=>{
+      m.remove();
+      const currentView=LS.get('ki21_view','home');
+      if(currentView==='home')renderHome();
+      else renderStation(currentView);
+    }},
+    'Schließen'));
+  const m=modal('Einstellungen',content,()=>{
+    const currentView=LS.get('ki21_view','home');
+    if(currentView==='home')renderHome();
+    else renderStation(currentView);
+  });
+}
+
+
+function showExport(){
+  const data={accounts:state.accounts,activeId:state.activeId,mu:LS.get('ki21_mu',{}),stationData:{},kontextData:{}};
+  state.accounts.forEach(acc=>{
+    for(let i=0;i<5;i++){
+      const sval=LS.get('ki21_st_'+acc.id+'_'+i,null);
+      if(sval)data.stationData['ki21_st_'+acc.id+'_'+i]=sval;
+      const kval=LS.get('ki21_stk_'+acc.id+'_'+i,null);
+      if(kval)data.kontextData['ki21_stk_'+acc.id+'_'+i]=kval;
+    }
+    const kkval=LS.get('ki21_kk_'+acc.id,null);
+    if(kkval)data.kontextData['ki21_kk_'+acc.id]=kkval;
+  });
+  const txt=JSON.stringify(data);
+  let copied=false;
+  const copyB=h('button',{className:'btn-o',onclick:()=>{
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
+      copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Backup kopieren',2000);
+    });
+  }},'Backup kopieren');
+  const content=h('div',{},
+    h('div',{className:'status-box',style:{background:'#1c2333',border:'1px solid #30363d'}},
+      h('div',{style:{fontSize:'28px',marginBottom:'6px'}},'💾'),
+      h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#e6edf3',marginBottom:'4px'}},
+        state.accounts.length+' Kunde'+(state.accounts.length!==1?'n':'')+' gespeichert'),
+      h('div',{style:{fontSize:'11px',color:'#8b949e'}},
+        new Date().toLocaleDateString('de-DE')+' · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr')
+    ),
+    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'12px'}},
+      'Backup kopieren → in Notizen → über Import wiederherstellen.'),
+    copyB
+  );
+  modal('Daten exportieren',content,null);
+}
+
+function showImport(){
+  const ta=h('textarea',{placeholder:'Export-Text hier einfügen...',style:{minHeight:'80px'}});
+  const content=h('div',{},
+    h('p',{className:'modal-desc'},'Export-Text einfügen und importieren.'),
+    ta,
+    h('div',{className:'modal-row',style:{marginTop:'8px'}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{
+        try{
+          const d=JSON.parse(ta.value);
+          if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
+          if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
+          if(d.mu){LS.set('ki21_mu',d.mu);}
+          if(d.stationData){Object.keys(d.stationData).forEach(k=>LS.set(k,d.stationData[k]));}
+          if(d.kontextData){Object.keys(d.kontextData).forEach(k=>LS.set(k,d.kontextData[k]));}
+          m.remove();renderHome();
+        }catch(e){alert('Ungültiger Text.');}
+      }},'Importieren'),
+      h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
+    )
+  );
+  const m=modal('Daten importieren',content,null);
+}
+
+// ── START ──────────────────────────────────────────────────
+// Apply saved font size
+const savedFs=LS.get('ki21_fontsize','small');
+document.documentElement.style.setProperty('--fs-input',savedFs==='large'?'15px':'12px');
+
+const savedTheme=LS.get('ki21_theme','dark');
+if(savedTheme==='light')document.body.classList.add('light');
+
+const savedView=LS.get('ki21_view','home');
+if(typeof savedView==='number'&&state.activeId){
+  renderStation(savedView);
+} else {
+  renderHome();
+}
+(function(){
+  const v=document.createElement('div');
+  v.textContent='v4.30';
+  v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
+  document.body.appendChild(v);
+})();
+</script>
+</body>
+</html>
