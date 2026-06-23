@@ -1197,11 +1197,15 @@ function showOpportunityHealthDetail(accId){
         clBody.appendChild(h('div',{style:{fontSize:'12px',color:'#8b949e',lineHeight:'1.5'}},
           'Noch keine Auswertung vorhanden. Score einmal neu berechnen lassen (z.B. neue Stationsausgabe erzeugen), dann erscheint hier die Checkliste.'));
       }
-      const clHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'},
-        onclick:()=>{clExpanded=!clExpanded;clBody.style.display=clExpanded?'block':'none';clArrow.textContent=clExpanded?'▾':'▸';}},
+      const clHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}},
         h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},
           hasChecklist?('📋 Qualifizierungs-Checkliste ('+(CHECKLIST_LABELS.length-clOpenCount)+'/'+CHECKLIST_LABELS.length+')'):'📋 Qualifizierungs-Checkliste')
       );
+      clHead.addEventListener('click',function(){
+        clExpanded=!clExpanded;
+        clBody.style.display=clExpanded?'block':'none';
+        clArrow.textContent=clExpanded?'▾':'▸';
+      });
       const clArrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▸');
       clHead.appendChild(clArrow);
       clWrap.appendChild(clHead);
@@ -2863,7 +2867,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.33';
+const KI21_VERSION='v4.34';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3233,7 +3237,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.33';
+  v.textContent='v4.34';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
