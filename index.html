@@ -1205,6 +1205,7 @@ function showOpportunityHealthDetail(accId){
         clExpanded=!clExpanded;
         clBody.style.display=clExpanded?'block':'none';
         clArrow.textContent=clExpanded?'▾':'▸';
+        alert('Klick registriert! expanded='+clExpanded+' display='+clBody.style.display);
       });
       const clArrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▸');
       clHead.appendChild(clArrow);
@@ -1217,12 +1218,19 @@ function showOpportunityHealthDetail(accId){
       'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
   };
   const content=h('div',{});
+  content.addEventListener('click',function(e){
+    alert('Klick getroffen auf: <'+e.target.tagName+'> Text: "'+(e.target.textContent||'').substring(0,40)+'"');
+  },true);
   const m=modal('❤️ Opportunity Health',content,null);
-  m.firstChild.style.position='relative';
-  const closeX=h('button',{style:{position:'absolute',top:'14px',right:'14px',background:'transparent',
+  // Close-X als Teil des Titel-Flex statt absolut positioniert (vermeidet Overlay-Probleme beim Scrollen)
+  const titleRow=m.firstChild.querySelector('.modal-title');
+  titleRow.style.display='flex';
+  titleRow.style.justifyContent='space-between';
+  titleRow.style.alignItems='center';
+  const closeX=h('button',{style:{background:'transparent',
     border:'none',color:'var(--text3)',fontSize:'20px',lineHeight:'1',cursor:'pointer',padding:'4px'},
     onclick:()=>m.remove()},'✕');
-  m.firstChild.appendChild(closeX);
+  titleRow.appendChild(closeX);
   render();
 }
 
@@ -2867,7 +2875,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.34';
+const KI21_VERSION='v4.35-debug';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3237,7 +3245,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.34';
+  v.textContent='v4.35-debug';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
