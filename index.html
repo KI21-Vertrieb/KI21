@@ -987,8 +987,21 @@ P1-REGEL: Harte Negativsignale dominieren weiche Positivsignale. Wenn ein Gesch�
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
+Bewerte außerdem unabhängig davon die folgenden 11 Qualifizierungskriterien (MEDDPICC-basiert) jeweils einzeln als "geklärt" (true) oder "offen" (false), ausschließlich auf Basis der tatsächlich vorliegenden Informationen – KEIN Einfluss auf den Score, dient ausschließlich der separaten Checkliste:
+1. need (Bedarf / Schmerz)
+2. budget (Budget)
+3. economicBuyer (Entscheider / wirtschaftlicher Entscheider)
+4. timeline (Zeitrahmen)
+5. metrics (Business Case / messbarer Nutzen)
+6. competition (Wettbewerbssituation)
+7. champion (Champion / interner Fürsprecher)
+8. decisionProcess (Entscheidungsprozess)
+9. decisionCriteria (Entscheidungskriterien des Kunden)
+10. paperProcess (Vertragsprozess)
+11. negativeConsequences (Kosten des Nicht-Handelns)
+
 Antworte AUSSCHLIESSLICH mit folgendem JSON, keine Erklärung davor/danach:
-{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
+{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}],"checklist":{"need":<true/false>,"budget":<true/false>,"economicBuyer":<true/false>,"timeline":<true/false>,"metrics":<true/false>,"competition":<true/false>,"champion":<true/false>,"decisionProcess":<true/false>,"decisionCriteria":<true/false>,"paperProcess":<true/false>,"negativeConsequences":<true/false>}}
 Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, leeres Array.`;
   return s;
 }
@@ -1020,6 +1033,7 @@ async function refreshOpportunityHealth(accId){
       positive:basePositive,
       warning:baseWarnings,
       open:json.open||[],
+      checklist:json.checklist||null,
       ts:Date.now()
     });
     renderHealthBadgeIfPresent();
@@ -1060,7 +1074,7 @@ function getOpportunityHealth(accId){
   let score=applyHealthRiskRules(base,risk);
   const provisional=(auto.structuralOpenCount||0)>3;
   const label=score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
-  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null};
 }
 
 function getHealthColor(score){
@@ -1127,21 +1141,67 @@ function showOpportunityHealthDetail(accId){
       content.appendChild(h('div',{style:{marginBottom:'14px'}}));
     }
     function section(title,items,symbol){
-      content.appendChild(h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e',marginTop:'14px',marginBottom:'6px'}},title));
-      if(!items.length){content.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
+      let expanded=true;
+      const head=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',marginTop:'14px',marginBottom:'6px'},
+        onclick:()=>{expanded=!expanded;body.style.display=expanded?'block':'none';arrow.textContent=expanded?'▾':'▸';}},
+        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},title+' ('+items.length+')')
+      );
+      const arrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▾');
+      head.appendChild(arrow);
+      content.appendChild(head);
+      const body=h('div',{style:{display:'block'}});
+      content.appendChild(body);
+      if(!items.length){body.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
       items.forEach(it=>{
         const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
-          onclick:()=>toggleHealthSignal(accId,it.text,it.origin,it.type,render)},
+          onclick:(e)=>{e.stopPropagation();toggleHealthSignal(accId,it.text,it.origin,it.type,render);}},
           h('span',{style:{fontSize:'13px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
           h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
           it.origin==='MANUELL'?h('span',{style:{fontSize:'8px',fontWeight:'700',color:'#ff6b00',border:'1px solid rgba(255,107,0,.4)',borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},'MANUELL'):null
         );
-        content.appendChild(row);
+        body.appendChild(row);
       });
     }
     section('Positive Signale',health.positive,'🟢');
     section('Warnsignale',health.warning,'🔴');
     section('Offene Punkte',health.open,'⚪');
+
+    if(health.checklist){
+      const CHECKLIST_LABELS=[
+        ['need','Bedarf / Schmerz'],
+        ['budget','Budget'],
+        ['economicBuyer','Entscheider / wirtschaftlicher Entscheider'],
+        ['timeline','Zeitrahmen'],
+        ['metrics','Business Case / messbarer Nutzen'],
+        ['competition','Wettbewerbssituation'],
+        ['champion','Champion / interner Fürsprecher'],
+        ['decisionProcess','Entscheidungsprozess'],
+        ['decisionCriteria','Entscheidungskriterien des Kunden'],
+        ['paperProcess','Vertragsprozess'],
+        ['negativeConsequences','Kosten des Nicht-Handelns']
+      ];
+      const clOpenCount=CHECKLIST_LABELS.filter(([k])=>!health.checklist[k]).length;
+      const clWrap=h('div',{style:{marginTop:'16px',borderTop:'1px solid var(--border)',paddingTop:'12px'}});
+      let clExpanded=false;
+      const clBody=h('div',{style:{display:'none',marginTop:'8px'}});
+      CHECKLIST_LABELS.forEach(([key,label])=>{
+        const ok=!!health.checklist[key];
+        clBody.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px'}},
+          h('span',{style:{fontSize:'13px',flexShrink:'0'}},ok?'✅':'☐'),
+          h('span',{style:{color:ok?'#e6edf3':'#8b949e'}},label)
+        ));
+      });
+      const clHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'},
+        onclick:()=>{clExpanded=!clExpanded;clBody.style.display=clExpanded?'block':'none';clArrow.textContent=clExpanded?'▾':'▸';}},
+        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},
+          '📋 Qualifizierungs-Checkliste ('+(CHECKLIST_LABELS.length-clOpenCount)+'/'+CHECKLIST_LABELS.length+')')
+      );
+      const clArrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▸');
+      clHead.appendChild(clArrow);
+      clWrap.appendChild(clHead);
+      clWrap.appendChild(clBody);
+      content.appendChild(clWrap);
+    }
 
     content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
       'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
@@ -2797,7 +2857,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.30';
+const KI21_VERSION='v4.32';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3167,7 +3227,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.30';
+  v.textContent='v4.32';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
