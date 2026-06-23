@@ -24,7 +24,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .nav-brand{font-size:16px;font-weight:800;color:var(--text);cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
 .nav-right{display:flex;gap:5px;align-items:center;}
 .subnav{background:var(--bg);border-bottom:1px solid var(--border);padding:6px 14px;
-  display:flex;align-items:center;gap:8px;}
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .subnav-badge{background:rgba(255,107,0,.15);color:#ff6b00;border-radius:50%;
   width:18px;height:18px;display:flex;align-items:center;justify-content:center;
   font-size:10px;font-weight:700;flex-shrink:0;}
@@ -430,7 +430,7 @@ WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo',icon:'📋',
    regel:'Was braucht der Kunde wirklich?',
    felder:[
-     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
+     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -506,7 +506,7 @@ Betreff: [präzise]
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Warum lohnt sich die Investition wirtschaftlich?',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'}
+     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...',readonly:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
@@ -576,7 +576,7 @@ Bitte gemeinsam mit dem Kunden validieren.`
   {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Wie gewinnen wir den Auftrag?',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
+     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?',readonly:true},
      {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
      {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
      {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
@@ -1126,21 +1126,22 @@ function showOpportunityHealthDetail(accId){
     }else{
       content.appendChild(h('div',{style:{marginBottom:'14px'}}));
     }
-    function section(title,items,color){
+    function section(title,items,symbol){
       content.appendChild(h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e',marginTop:'14px',marginBottom:'6px'}},title));
       if(!items.length){content.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
       items.forEach(it=>{
         const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
           onclick:()=>toggleHealthSignal(accId,it.text,it.origin,it.type,render)},
-          h('span',{style:{fontSize:'9px',fontWeight:'700',color:color,border:'1px solid '+color,borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},it.origin),
-          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none'}},it.text)
+          h('span',{style:{fontSize:'13px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
+          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
+          it.origin==='MANUELL'?h('span',{style:{fontSize:'8px',fontWeight:'700',color:'#ff6b00',border:'1px solid rgba(255,107,0,.4)',borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},'MANUELL'):null
         );
         content.appendChild(row);
       });
     }
-    section('Positive Signale',health.positive,'#2ea043');
-    section('Warnsignale',health.warning,'#f85149');
-    section('Offene Punkte',health.open,'#8b949e');
+    section('Positive Signale',health.positive,'🟢');
+    section('Warnsignale',health.warning,'🔴');
+    section('Offene Punkte',health.open,'⚪');
 
     content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
       'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
@@ -1254,13 +1255,15 @@ function renderHome(){
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
     h('div',{className:'nav-right'},
-      makeTopHealthBadge(),
-      h('div',{className:'cust-btn',onclick:showKunde},
-        h('div',{className:'cust-label'},'Kunde'),
-        h('div',{className:'cust-val'},cust.firma||'wählen →')
-      ),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
+  );
+  const infoRow=h('div',{className:'subnav',id:'home-info-row'},
+    h('div',{className:'cust-btn',onclick:showKunde},
+      h('div',{className:'cust-label'},'Kunde'),
+      h('div',{className:'cust-val'},cust.firma||'wählen →')
+    ),
+    makeTopHealthBadge()
   );
   const healthRow=null;
   setTimeout(()=>{
@@ -1347,6 +1350,7 @@ function renderHome(){
 
   wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(nav);
+  app.appendChild(infoRow);
   app.appendChild(wrap);
   LS.set('ki21_view','home');
 }
@@ -1668,11 +1672,13 @@ function renderStation(sitId){
 
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('div',{className:'nav-right nav-station-info'},
-      h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},''),
-      cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):null,
+    h('div',{className:'nav-right'},
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
+  );
+  const infoRow=h('div',{className:'subnav'},
+    cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):h('div',{}),
+    h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},'')
   );
 
   const wrap=h('div',{className:'station-wrap'});
@@ -1787,9 +1793,8 @@ function renderStation(sitId){
 
   // Summary box (Demo-Vorbereitung only)
   const demoSummaryBox=h('div',{className:'result-box',
-    style:{display:(sitId===3&&data.summary)?'block':'none',
-      borderColor:'rgba(255,107,0,.4)',marginBottom:'10px'}});
-  const demoSummaryHead=h('div',{className:'result-head',style:{background:'rgba(255,107,0,.12)'}});
+    style:{display:(sitId===3&&data.summary)?'block':'none',marginBottom:'10px'}});
+  const demoSummaryHead=h('div',{className:'result-head'});
   const demoSummaryLabel=h('span',{className:'result-label'},'⚡ Kurzfassung – Die 5 Punkte die zählen');
   const demoSummaryBtns=h('div',{className:'result-btns'});
   const demoSummaryCopyBtn=h('button',{className:'btn',onclick:()=>{
@@ -1800,8 +1805,7 @@ function renderStation(sitId){
   demoSummaryBtns.appendChild(demoSummaryCopyBtn);
   demoSummaryHead.appendChild(demoSummaryLabel);
   demoSummaryHead.appendChild(demoSummaryBtns);
-  const demoSummaryBody=h('div',{className:'result-body',
-    style:{fontSize:'13px',lineHeight:'1.7'}});
+  const demoSummaryBody=h('div',{className:'result-body'});
   demoSummaryBody.appendChild(renderResultText(data.summary||''));
   demoSummaryBox.appendChild(demoSummaryHead);
   demoSummaryBox.appendChild(demoSummaryBody);
@@ -2102,6 +2106,7 @@ Analyse:
   }
 
   app.appendChild(nav);
+  app.appendChild(infoRow);
   setTimeout(()=>renderHealthBadgeIfPresent(),0);
   app.appendChild(wrap);
 }
