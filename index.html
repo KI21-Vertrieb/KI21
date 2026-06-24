@@ -24,7 +24,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .nav-brand{font-size:16px;font-weight:800;color:var(--text);cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
 .nav-right{display:flex;gap:5px;align-items:center;}
 .subnav{background:var(--bg);border-bottom:1px solid var(--border);padding:6px 14px;
-  display:flex;align-items:center;gap:8px;}
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .subnav-badge{background:rgba(255,107,0,.15);color:#ff6b00;border-radius:50%;
   width:18px;height:18px;display:flex;align-items:center;justify-content:center;
   font-size:10px;font-weight:700;flex-shrink:0;}
@@ -124,6 +124,67 @@ select option{background:var(--bg3);}
   border-radius:4px;padding:1px 6px;}
 .acc-score-chip{font-size:10px;font-weight:800;color:#2ea043;}
 .status-box{border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;}
+
+/* v4.30 UI-Konsolidierung: Ein-/Ausgabefelder vereinheitlicht, Health-Dialog ohne AUTO-Labels, Header minimal */
+.nav-station-info{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.nav-station-customer{
+  max-width:150px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:800;
+  color:#ff6b00;
+  background:transparent;
+  border:0;
+  padding:0;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.nav-station-health{
+  font-size:10.5px !important;
+  font-weight:800 !important;
+  border-radius:6px !important;
+  padding:4px 7px !important;
+  white-space:nowrap !important;
+}
+.station-compact-head{
+  border-bottom:1px solid var(--border);
+  padding:8px 0 10px;
+  margin-bottom:10px;
+}
+.station-compact-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:7px;
+}
+.station-compact-title{
+  font-size:12px;
+  color:var(--text2);
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.station-compact-rule{
+  font-size:12px;
+  color:var(--text2);
+  line-height:1.45;
+  border-left:2px solid #ff6b00;
+  padding-left:10px;
+}
+@media(max-width:380px){
+  .nav-station-customer{max-width:105px;font-size:10px;}
+  .nav-station-health{font-size:10px !important;padding:4px 6px !important;}
+  .nav-right{gap:4px;}
+}
+
 </style>
 </head>
 <body>
@@ -239,7 +300,7 @@ function buildCtx(cust,mu,kk,stk){
   }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
   s+='KRITISCH: Wenn dieselben Kernfakten (z.B. eine konkrete Zahl wie "6 Arbeitstage pro Szenario") bereits in einem vorherigen Kontext-Abschnitt erwähnt wurden, wiederhole sie in dieser Phase nur EINMAL ausführlich (meist in den ERKENNTNISSE/BESTÄTIGT-Abschnitten) und referenziere sie danach kurz, statt sie in jedem Abschnitt erneut vollständig auszuschreiben. Ziel: Wiederholungen über die Phasen hinweg reduzieren, ohne wichtige Fakten wegzulassen.\n';
-  s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
+  s+='PFLICHT: Die Genauigkeits-Kennzeichnung BESTÄTIGT/ANNAHME/KLÄREN gilt für deine interne Sorgfalt und für den Detailbereich (nach ###DETAILS###, falls das Phasenformat das vorsieht) – NICHT als Präfix in der kompakten Standardausgabe. Halte trotzdem in jedem Bullet selbst implizit fest, was Fakt vs. Annahme ist, ohne das Wort explizit hinzuschreiben (z.B. durch Formulierung wie "Kunde nennt..." vs. "vermutlich...").\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
   s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um, indem du die Stundenzahl DURCH 8 TEILST (z.B. 600-1.200 Stunden ÷ 8 = 75-150 Arbeitstage, NICHT 600-1.200 Arbeitstage – die Maßeinheit ändert sich, der Zahlenwert wird kleiner). Rechne diese Division bei JEDER Umrechnung explizit nach, bevor du das Ergebnis hinschreibst. Das gilt AUCH wenn die Kundenangabe selbst in Stunden kam (z.B. "40-60 Stunden/Monat" → "5-7,5 Arbeitstage/Monat"), UND für jede aufsummierte oder hochgerechnete Jahres-/Monatszahl, nicht nur für Einzelfall-Nennungen. Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase, konsequent über den gesamten Output.\n';
   s+='KRITISCH: Wenn du irgendwo im Output die Verlässlichkeit einer Aussage/Zahl kennzeichnest, nutze AUSSCHLIESSLICH die Worte BESTÄTIGT (vom Kunden genannt oder dokumentiert), ARBEITSWERT (Benchmark + plausibel abgeleiteter Mittelwert aus KI21 Intelligence, zum Rechnen verwendet, nicht kundenspezifisch verifiziert) oder ZU VALIDIEREN (offene Größe, die im nächsten Gespräch geklärt werden sollte) – NIEMALS Emoji-Punkte wie 🟢/🟡/🔴 oder Ampelfarben ohne Wort. Schreibe immer zuerst den Bewertungstext, dann das Label in Großbuchstaben direkt danach oder davor (z.B. "Typische Range: 300-600 Stunden/Jahr, verwendeter ARBEITSWERT: 450 Stunden/Jahr"). Das gilt konsequent für jede Confidence-Angabe im gesamten Output, nicht nur an einer Stelle. Bei BESTÄTIGT/ANNAHME/KLÄREN-Blöcken (für Gesprächserkenntnisse) bleiben diese drei Wörter wie bisher bestehen – ARBEITSWERT/ZU VALIDIEREN gelten zusätzlich speziell für quantitative Kennzahlen und Berechnungsgrundlagen.\n';
@@ -254,6 +315,8 @@ function buildCtx(cust,mu,kk,stk){
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='KRITISCH: Jede Phase muss mindestens EINEN Gedanken enthalten, der über Standardwissen hinausgeht – einen Aha-Insight, der im Gedächtnis bleibt (z.B. "Die größte Zeitersparnis entsteht oft nicht durch schnellere Reports, sondern dadurch, dass dieselben Zahlen nicht mehr in mehreren Excel-Dateien manuell abgeglichen werden müssen."). Vermeide reine Standardaussagen ohne überraschenden Mehrwert. Dieser Insight darf nicht erfunden wirken – er muss zur konkreten Situation des Kunden passen und nachvollziehbar sein.\n';
   s+='KRITISCH: Tonfall durchgehend partnerschaftlich, nicht verkäuferisch-drängend. Vermeide Formulierungen wie "damit ich Sie/Ihre Geschäftsführung überzeuge" oder "garantiert". Bevorzuge Formulierungen wie "damit Sie eine belastbare Entscheidungsgrundlage haben – unabhängig davon, wie die Entscheidung ausfällt" oder "damit wir gemeinsam zu einer fundierten Einschätzung kommen". Das Ziel ist: gemeinsam zu einer Entscheidung führen, nicht überreden.\n';
+  s+='KRITISCH – HARTE GRENZE FÜR DIE STANDARDAUSGABE: Die Standardausgabe (alles VOR der Zeile "###DETAILS###", falls vorhanden) MUSS exakt mit der letzten vorgegebenen Zeile des Formats enden (meist "NÄCHSTER SCHRITT DIESE WOCHE:" / vergleichbar, je nach Phase). Schreibe NACH dieser letzten Zeile ABSOLUT NICHTS mehr, außer dem optionalen Marker "###DETAILS###" und dem dahinter folgenden Detailblock. KEINE zusätzliche Zusammenfassung, KEIN Wiederholen von Punkten, KEIN weiterer Absatz "Zusammenfassend...". Die Standardausgabe muss auf einem Smartphone als EINE Bildschirmseite ohne Scrollen lesbar sein – das ist die wichtigste Einzelregel in diesem Prompt.\n';
+  s+='KRITISCH: Die "NÄCHSTE AKTION"/"→ TODO" dieser Phase muss sich klar von der letzten Aktion aus "BISHERIGE ERGEBNISSE" (falls vorhanden) unterscheiden – wiederhole NIEMALS sinngemäß denselben nächsten Schritt wie eine vorherige Phase. Wenn die vorherige Phase z.B. "Termin vereinbaren" als Aktion hatte und dieser Termin laut Kontext bereits stattgefunden hat, muss die neue Aktion einen Schritt WEITER sein, nicht denselben wiederholen.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
   s+='- KRITISCHSTE REGEL: Liefere IMMER sofort den vollständigen Output im vorgegebenen Format – auch wenn Informationen fehlen, unsicher oder unvollständig wirken. STELLE NIEMALS eine Rückfrage VOR dem Output und warte NICHT auf eine Antwort, bevor du lieferst. Fehlende oder unsichere Daten gehören in die Kennzeichnung ANNAHME/KLÄREN oder eine etwaige Rückfragen-Sektion AM ENDE des Outputs, NIEMALS als eigene Frage oder Meta-Kommentar davor. Du bekommst in diesem Schritt keine Antwort auf eine Vorab-Frage – also stelle keine, sondern arbeite mit dem was im Feld steht. VERBOTENE Satzanfänge: "Ich verstehe die Aufgabe", "Allerdings stelle ich fest", "Mir fehlen", "Bevor ich", "Ich muss zunächst" – beginne IMMER direkt mit dem ersten Element des vorgegebenen Output-Formats.\n';
   s+='- Nutze vorhandene Informationen – keine Nachfragen\n';
@@ -263,22 +326,25 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Kein Markdown: keine **, keine ###, keine ---\n';
   s+='- Nur Deutsch\n';
   s+='- Keine Einleitung, kein Fazit\n';
-  s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
-  s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
+  s+='- Erkenntnisse als einfache Bullets, OHNE BESTÄTIGT:/ANNAHME:/KLÄREN:-Präfix in der Standardausgabe (diese Kennzeichnung nur noch im Detailbereich nach ###DETAILS### verwenden, falls das jeweilige Phasenformat das vorsieht)\n';
+  s+='- KRITISCH: Die abschließende Aktionszeile darf NUR EINE einzige, priorisierte Handlung enthalten – KEINE Aufzählung mehrerer Aktionen mit "und" oder Kommas (z.B. NICHT "Workshop vereinbaren und Unterlagen vorbereiten und Entscheider kontaktieren"). Wenn mehrere Dinge zu tun wären, wähle die EINE wichtigste aus, die diese Woche passieren muss – alles andere ergibt sich danach von selbst oder gehört in den Detailbereich.\n';
+  s+='- Am Ende GENAU EINE Aktionszeile gemäß dem unten vorgegebenen Phasenformat (z.B. "NÄCHSTER SCHRITT DIESE WOCHE:")\n';
   s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
-  // Include results from all previous phases
-  if(stk){
-    const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo-Empfehlung','Nachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+  s+='- KRITISCH: Der Abschnitt "BISHERIGE ERGEBNISSE" (falls unten vorhanden) ist NUR Hintergrundwissen für dich, um Wiederholungen zu vermeiden und Bezüge herzustellen. Wiederhole NIEMALS frühere Phasenergebnisse, Phasennamen oder Phasentitel im Output. Erzeuge AUSSCHLIESSLICH den Output für die JETZT angeforderte, EINZELNE Phase – kein Sammel-Output über mehrere Phasen, keine "Zusammenfassung bisheriger Phasen" als eigener Abschnitt.\n';
+  // Include results from all previous phases - unabhängig von stk (Ergänzungen), da diese Info für KPI-Weiterverwendung essenziell ist
+  {
+    const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
     const aid=LS.get('ki21_aid',null);
     if(aid){
       let prevResults='';
       for(let i=0;i<5;i++){
         const d=LS.get('ki21_st_'+aid+'_'+i,{});
         if(d.result&&d.result.trim()){
-          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,500)+'\n';
+          const {main:prevMain}=splitDetailsFromResult(d.result);
+          prevResults+='\n--- '+phaseNames[i]+' (nur zur Orientierung, NICHT wiederholen) ---\n'+prevMain.substring(0,300)+'\n';
         }
       }
-      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (Zusammenfassung):'+prevResults+'\n';
+      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (NUR zur Orientierung – diese NIEMALS im Output wiederholen oder zusammenfassen):'+prevResults+'\n';
     }
   }
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
@@ -316,45 +382,74 @@ Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
 Trigger: ${f.info||''}
 
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
-WICHTIG: Stelle KEINE Rückfragen – liefere sofort den Output.
-WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Wenn relevant, als eigene KLÄREN:-Erkenntnis oder Qualifizierungsfrage aufnehmen.
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe. Stelle KEINE Rückfragen – liefere sofort den Output.
+WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Falls relevant, als Bullet bei "Risiken" oder "Offene Punkte" aufnehmen.
 
 EMPFEHLUNG: sofort / später / nicht verfolgen
-Begründung: [1 Satz, der knapp die 4 Kriterien benennt: Budget/Trigger, Schmerzpunkt mit Zahlen, Entscheider-Zugang, Zeitdruck – z.B. "Budget unklar, aber klarer quantifizierter Schmerz (X), Entscheiderin identifiziert, Trigger durch laufendes Projekt."]
+Begründung: [1 Satz, der knapp die 4 Kriterien benennt: Budget/Trigger, Schmerzpunkt mit Zahlen, Entscheider-Zugang, Zeitdruck]
 
 WICHTIG: Die Zeile "Begründung:" MUSS direkt nach "EMPFEHLUNG:" stehen, als eigene Zeile.
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE:
-BESTÄTIGT: [bestätigte Fakten]
-ANNAHME: [plausible Annahmen]
-KLÄREN: [offene Punkte]
+DIE 5 WICHTIGSTEN ERKENNTNISSE (je max. 1 Satz, als Bullets):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+• [Bullet 4]
+• [Bullet 5]
 
+DIE 3 GRÖSSTEN RISIKEN (je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+=== MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
 DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 1. KRITISCH: ___ | Antwort: ___
 2. KRITISCH: ___ | Antwort: ___
 3. WICHTIG: ___ | Antwort: ___
 4. WICHTIG: ___ | Antwort: ___
-5. NICE-TO-HAVE: ___ | Antwort: ___
-
-→ TODO: [eine konkrete Aktion + wann]`,
+5. NICE-TO-HAVE: ___ | Antwort: ___`,
    build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
 Bekannte Herausforderungen: ${f.info||''}
 Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
 
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
 
 EMPFEHLUNG FINAL: sofort / später / nicht verfolgen
 Bewerte anhand von 4 Kriterien: (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
 Begründung: [1 Satz, der die 4 Kriterien kurz benennt]
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert):
-BESTÄTIGT: [jetzt bestätigte Fakten inkl. Antworten]
-ANNAHME: [verbleibende Annahmen]
-KLÄREN: [noch offene Punkte]
+DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert mit den neuen Antworten, je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+• [Bullet 4]
+• [Bullet 5]
 
+DIE 3 GRÖSSTEN RISIKEN (je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+=== MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
 DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
 1. S: [Situation] | Antwort: ___
 2. P: [Problem] | Antwort: ___
@@ -362,14 +457,12 @@ DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
 4. I: [Kosten des Problems] | Antwort: ___
 5. N: [Wert der Lösung] | Antwort: ___
 
-WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort hinter "Antwort:". Das Wort "___" MUSS exakt so stehen bleiben – es ist ein Platzhalter, den der Verkäufer erst nach dem nächsten Gespräch ausfüllt.
-
-→ TODO: [nächster Schritt + wann]`
+WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort hinter "Antwort:". Das Wort "___" MUSS exakt so stehen bleiben.`
   },
-  {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo-Empfehlung',icon:'📋',
+  {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo',icon:'📋',
    regel:'Was braucht der Kunde wirklich?',
    felder:[
-     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...'},
+     {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
@@ -378,16 +471,36 @@ Bedarfsanalyse abschließen: ${c.firma||''}, AP: ${c.ap||''}
 SPIN-Fragen: ${f.spin||''}
 Antworten des Kunden: ${f.antworten||''}
 
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
 
 EINSCHÄTZUNG: [1 kurzer Satz, wie konkret/quantifiziert der erkannte Bedarf ist]
 Begründung: [1 Satz]
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE:
-BESTÄTIGT: [bestätigte Fakten aus dem Gespräch]
-ANNAHME: [plausible Schlüsse]
-KLÄREN: [noch offene Punkte]
+🎯 SCHMERZ (max. 3 Bullets, je max. 1 Satz – das eigentliche Kundenproblem):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+🎬 ZEIGEN (max. 3 Bullets – was sollte in der Demo gezeigt werden):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+❓ KLÄREN (max. 3 Bullets – was muss im nächsten Gespräch geklärt werden):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+=== MEHR DETAILS (folgt NACH den drei Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
+DIE 5 WICHTIGSTEN ERKENNTNISSE (je max. 1-2 Sätze, als Bullets, gruppiert):
+• BESTÄTIGT: [Bullet aus dem Gespräch]
+• ANNAHME: [Bullet, plausibler Schluss]
+• KLÄREN: [Bullet, noch offener Punkt]
+[Maximal 5 Bullets gesamt]
 
 DIE 3 WICHTIGSTEN DEMO-PUNKTE:
 1. [Muss gezeigt werden – warum]
@@ -404,11 +517,9 @@ DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
 4. [Botschaft – welches Kundenproblem wird gelöst]
 5. [Botschaft – welches Kundenproblem wird gelöst]
 
-KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]
-
-→ TODO: [nächster Schritt + wann]`
+KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]`
   },
-  {id:2,num:3,phase:'Phase 3',title:'Nachbereitung',icon:'📝',
+  {id:2,num:3,phase:'Phase 3',title:'Termin nachbereiten',icon:'📝',
    regel:'Was ist im letzten Termin passiert?',
    felder:[
      {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true,hidden:true},
@@ -420,48 +531,65 @@ Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
 Kontext aus vorheriger Bedarfsanalyse (zur Einordnung, NICHT der heutige Termin): ${f.kontext||'(kein Kontext vorhanden)'}
 NEUE Stichworte aus dem heutigen Termin: ${f.stichworte||'(noch keine Eingabe)'}
 
-WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen KLÄREN-Punkt INNERHALB des Outputs (z.B. "KLÄREN: Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "EINSCHÄTZUNG:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
+WICHTIG: Die Nachbereitung bezieht sich auf das, was unter "NEUE Stichworte" steht. Der Kontext-Block ist nur Hintergrundwissen aus einem früheren Gespräch, kein Ersatz für die heutige Nachbereitung. Wenn "NEUE Stichworte" leer, sehr kurz oder identisch mit dem Kontext-Block ist: Schreibe trotzdem SOFORT den vollständigen Output im Format unten. Vermerke das Fehlen neuer Informationen NUR als einen kurzen Bullet bei "Risiken" oder "Nächste Schritte" (z.B. "Keine neuen Gesprächsnotizen vorhanden, Bericht basiert auf Kontext"). KEIN einleitender Satz wie "Ich verstehe die Aufgabe" oder "Allerdings stelle ich fest" – beginne direkt mit "EINSCHÄTZUNG:". Das gilt unabhängig davon wie wenig konkrete neue Information vorhanden ist.
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – jeder Bullet maximal 1 Satz. KEINE Fließtexte in der Standardausgabe.
 
 EINSCHÄTZUNG: [1 kurzer Satz, wie weit der Deal nach diesem Gespräch fortgeschritten ist]
 Begründung: [1 Satz]
 
+WAS PASSIERT IST: [1-2 Sätze, was im Termin konkret besprochen/passiert ist]
+
+DIE WICHTIGSTEN ERKENNTNISSE (max. 3 Bullets, je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+RISIKEN (max. 3 Bullets – wo könnte der Deal scheitern):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTE SCHRITTE (max. 3 Bullets):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+FOLLOW-UP MAIL:
+Betreff: [präzise]
+[Mail-Text – kurz, konkret, nächster Schritt klar]
+
+=== MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
 BESUCHSBERICHT:
 Datum: [heute]
 Teilnehmer: [AP + eigene Person]
 Besprochene Themen: [3-5 Punkte]
 Ergebnis: [1 Satz]
 
-DIE 3 NÄCHSTEN SCHRITTE:
+DIE NÄCHSTEN SCHRITTE (ausführlich):
 1. [Aktion] | Verantwortlich: ___ | Bis: ___
 2. [Aktion] | Verantwortlich: ___ | Bis: ___
-3. [Aktion] | Verantwortlich: ___ | Bis: ___
-
-FOLLOW-UP MAIL:
-Betreff: [präzise]
-[Mail-Text – kurz, konkret, nächster Schritt klar]
-
-→ TODO: [nächster Schritt + wann]`
+3. [Aktion] | Verantwortlich: ___ | Bis: ___`
   },
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Warum lohnt sich die Investition wirtschaftlich?',
-   felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse & KPIs aus der Bedarfsanalyse',t:'ta',p:'KPIs die der Kunde genannt hat...'}
-   ],
+   felder:[],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
 Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
 Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
-KPIs und Erkenntnisse aus dem Gespräch: ${f.erkenntnisse||'keine konkreten Zahlen vorhanden'}
 Verfügbare Angebotsbausteine/Preise (aus "Mein Unternehmen"): ${mu.bausteine||'keine hinterlegt – Investition allgemein/ungefähr einschätzen oder als KLÄREN markieren'}
 
-WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTES VERKAUFSARGUMENT" UND in "IN 30 SEKUNDEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
+WICHTIGE QUELLE: Die KPIs und Erkenntnisse aus der Bedarfsanalyse findest du im Abschnitt "BISHERIGE ERGEBNISSE" oben (im KONTEXT-Block) – durchsuche diesen zuerst nach Zahlen wie Abschlussquote, Teamgröße, Umsatzpotenzial, Zykluszeiten, Fehlerquoten. Nutze diese Angaben als BESTÄTIGT.
 
-DAS IST KEIN WIDERSPRUCH zur Regel "keine Zahlen erfinden": Alle Daten im Feld "Erkenntnisse & KPIs" sind bereits vom Kunden im vorherigen Gespräch genannte, echte Angaben – behandle sie als BESTÄTIGT. Wenn eine Zahl im Feld unklar oder unvollständig wirkt, kennzeichne sie im Output als ANNAHME oder KLÄREN statt vorher zu fragen ob du sie nutzen darfst – genau dafür existiert die Kennzeichnung. Die Lösung für Unsicherheit ist die Kennzeichnung im Output, NIEMALS eine Frage davor.
+WICHTIGSTER WERTTREIBER ZUERST: Prüfe, ob der Kern des Kundennutzens eigentlich in besserer ENTSCHEIDUNGS-/FORECAST-QUALITÄT liegt (verlässlichere Pipeline-Einschätzung, frühere Risikoerkennung, fundiertere Prognosen für Geschäftsführung/CFO/CEO) statt in reiner Zeitersparnis. Wenn das zutrifft: Führe das Argument in "WICHTIGSTER NUTZEN" mit der Entscheidungs-/Forecast-Qualität, nicht mit Stunden/Arbeitstagen. Zeitersparnis bleibt ein valides Zusatzargument (gehört in LAUFENDER NUTZEN), aber NICHT die Hauptbotschaft, wenn der eigentliche Hebel struktureller Natur ist. Zerlege den Zeitersparnis-Teil dabei so wenig kleinteilig wie möglich – eine grobe Größenordnung reicht, vermeide eine lange Kette aus Stunden→Arbeitstagen→€/Monat, wenn diese Zahl nicht die Hauptbegründung für den Kauf ist.
+
+DAS IST KEIN WIDERSPRUCH zur Regel "keine Zahlen erfinden": Die Daten aus "BISHERIGE ERGEBNISSE" (Bedarfsanalyse) sind bereits vom Kunden im vorherigen Gespräch genannte, echte Angaben – behandle sie als BESTÄTIGT. Wenn eine Zahl dort unklar oder unvollständig wirkt, kennzeichne sie im Output als ANNAHME oder KLÄREN statt vorher zu fragen ob du sie nutzen darfst – genau dafür existiert die Kennzeichnung. Die Lösung für Unsicherheit ist die Kennzeichnung im Output, NIEMALS eine Frage davor.
 
 WICHTIG – EHRLICHKEIT ÜBER DIE WISSENSBASIS:
 - Du nutzt dein bekanntes Erfahrungswissen über typische Größenordnungen vergleichbarer Projekte – KEINE Live-Recherche.
 - Erfinde KEINE konkreten Firmennamen oder Quellen die du nicht kennst.
-- Wenn das Feld "KPIs und Erkenntnisse aus dem Gespräch" leer oder dünn ist: Durchsuche ZUERST den Abschnitt "BISHERIGE ERGEBNISSE" oben (Qualifizierung, Bedarfsanalyse) nach bereits genannten KPIs (z.B. Abschlussquote, Teamgröße, Umsatzpotenzial, Zykluszeiten) und nutze diese als BESTÄTIGT für eine vorläufige Analyse. NIEMALS die gesamte Nutzen-Kosten-Analyse verweigern oder erst nach Gesprächsnotizen fragen, nur weil DIESES Feld leer ist – ein fehlender Besuchsbericht ist eine Zusatzquelle, keine Voraussetzung. Nur wirklich fehlende Einzelwerte (die auch in den bisherigen Ergebnissen nicht vorkommen) als ANNAHME kennzeichnen oder in die Rückfragen-Sektion am Ende aufnehmen.
+- Wenn "BISHERIGE ERGEBNISSE" keine konkreten KPIs enthält: Arbeite trotzdem mit plausiblen Branchenwerten (klar als ARBEITSWERT/BRANCHENHYPOTHESE gekennzeichnet) statt die Analyse zu verweigern. Nur wirklich fehlende Einzelwerte als ANNAHME kennzeichnen oder in die Rückfragen-Sektion am Ende aufnehmen.
 - Nutzen in "schafft Kapazität für ___" formulieren, nicht "spart".
 - ROI ehrlich darstellen – auch negativen oder unsicheren ROI zeigen wenn zutreffend.
 - Berücksichtige die Unternehmensgröße: ein Benchmark für Konzerne darf nicht ungefiltert auf den Mittelstand übertragen werden – skaliere plausibel und kennzeichne Schätzungen als Schätzung.
@@ -476,16 +604,29 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Keine separate Jahr-1-vs-Folgejahre-Differenzierung nötig – eine einzige, durchgängige Monatsrate für die gesamte Darstellung.
 - ARBEITSWERT STATT VOLLER RANGE: Wenn du eine Benchmark-Bandbreite nennst (z.B. "300-600 Stunden/Jahr"), rechne für die eigentliche ROI-Berechnung NICHT mit der ganzen Range, sondern mit einem konkreten Arbeitswert – standardmäßig dem arithmetischen Mittelwert (z.B. "450 Stunden/Jahr"). Weiche davon nur ab, wenn das Unternehmensprofil eine plausible Anpassung rechtfertigt (z.B. mehrere Werke/Sparten → Wert nach oben anpassen; sehr kleines Unternehmen → nach unten), und nenne dann explizit den Grund. Zeige IMMER beides: die Range UND den verwendeten Arbeitswert (z.B. "Typische Range: 300-600 Stunden/Jahr → für diese Berechnung verwendet: 450 Stunden/Jahr (Mittelwert)"). Ergänze am Ende des Outputs den Hinweis: "Die Berechnung basiert auf anonymisierten Erfahrungswerten vergleichbarer Unternehmen. Sobald belastbare unternehmensspezifische Kennzahlen vorliegen, sollten diese die Annahmen ersetzen."
 
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz/1 Zahl. KEINE Fließtexte, KEINE Benchmark-Herleitung, KEINE Skalierungslogik in der Standardausgabe – diese kommen ausschließlich in den Detailbereich.
+
 FORMAT – GENAU SO, NICHT MEHR:
 
 EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
 
-IN 30 SEKUNDEN:
-- Größter Schmerz: [1 kurzer Satz, das wichtigste Problem des Kunden]
-- Wichtigste offene Frage: [1 Satz, die kritischste noch zu klärende Frage]
-- Empfohlener nächster Schritt: [1 kurzer Satz]
+WICHTIGSTER NUTZEN: [1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
 
-FORECAST-/ENTSCHEIDUNGSQUALITÄT: [Nur ausfüllen, wenn dies beim Kunden ein relevanter Hebel ist (z.B. Forecast-Genauigkeit, Pipeline-Zuverlässigkeit, frühere Risikoerkennung wurde vom Kunden oder dessen Geschäftsführung angesprochen). Format: "Heute: [kurze Einschätzung, z.B. 'bauchgesteuert/unklar'] → Mit KI21: [kurze Einschätzung, z.B. 'strukturiert nachvollziehbar für GF/CFO']". Falls beim Kunden kein erkennbarer Forecast-/Entscheidungsqualitäts-Hebel vorliegt, schreibe stattdessen "Nicht der zentrale Hebel in diesem Fall – Hauptnutzen liegt woanders (siehe oben)." Erfinde NIEMALS einen Forecast-Bezug, wenn der Kunde keinen genannt hat.]
+WIRTSCHAFTLICHER HEBEL (genau 3 Zeilen, je GENAU EINE Zahl – KEINE Range, KEINE Verkettung mehrerer Zahlen in einer Zeile):
+• Laufender Nutzen: [eine konkrete €/Monat-Zahl ODER "noch zu validieren"]
+• Investition: [eine konkrete €/Monat-Zahl, 3 Jahre geglättet]
+• ROI: [eine einfache Aussage, z.B. "Nutzen übersteigt Investition um Faktor X" ODER "noch nicht berechenbar – Zahlen fehlen"]
+
+OFFENE PUNKTE (max. 3 Bullets):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion - Pilot? Rollout? + wann]
+
+=== MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
+FORECAST-/ENTSCHEIDUNGSQUALITÄT: [Nur ausfüllen, wenn dies beim Kunden ein relevanter Hebel ist (z.B. Forecast-Genauigkeit, Pipeline-Zuverlässigkeit, frühere Risikoerkennung wurde vom Kunden oder dessen Geschäftsführung angesprochen). Format: "Heute: [kurze Einschätzung] → Mit KI21: [kurze Einschätzung]". Falls kein erkennbarer Hebel vorliegt: "Nicht der zentrale Hebel in diesem Fall – Hauptnutzen liegt woanders." Erfinde NIEMALS einen Forecast-Bezug, wenn der Kunde keinen genannt hat.]
 
 BENCHMARK (Erfahrungswerte vergleichbarer Unternehmen):
 [1 Satz mit typischer Größenordnung/Range – ab 8 Stunden/Periode IMMER in Arbeitstage umrechnen, z.B. "20-30 Arbeitstage/Monat" statt "160-240 Stunden/Monat" – wenn plausibel einschätzbar, sonst: "Keine belastbare Vergleichsgröße ohne weitere Angaben"] BESTÄTIGT/ARBEITSWERT/ZU VALIDIEREN: [wähle EIN passendes Wort]
@@ -493,9 +634,6 @@ ARBEITSWERT: [konkreter Mittelwert oder angepasster Wert aus der Range oben – 
 
 IHR BUSINESS CASE (basierend auf den Kundenangaben):
 [1 Satz mit geschätztem Nutzen basierend auf den genannten KPIs – falls keine KPIs vorhanden: "Noch keine konkreten Zahlen vom Kunden – siehe Rückfragen unten"]
-
-WICHTIGSTES VERKAUFSARGUMENT:
-[1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
 
 LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
 INVESTITION: [aus den Angebotsbausteinen oben ableiten, z.B. "KI21 Compact, 2.900 €"] – geglättet auf ___ €/Monat (über 3 Jahre)
@@ -508,14 +646,11 @@ OFFENE RÜCKFRAGEN AN DEN KUNDEN (nur falls KPIs fehlen, max. 3):
 1. [konkrete Frage]
 2. [konkrete Frage]
 
-→ TODO: [nächster Schritt + wann]
-
 Bitte gemeinsam mit dem Kunden validieren.`
   },
   {id:4,num:5,phase:'Phase 5',title:'Angebot & Abschluss',icon:'🤝',
    regel:'Wie gewinnen wir den Auftrag?',
    felder:[
-     {id:'erkenntnisse',l:'Erkenntnisse aus der Bedarfsanalyse',t:'ta',p:'Was hat der Kunde bestätigt?'},
      {id:'paket',l:'Angebotspaket',t:'text',p:'z.B. Biplan Professional, 5 Nutzer, 24 Monate'},
      {id:'budget',l:'Angebotspreis',t:'text',p:'z.B. 24.000 €'},
      {id:'minimum',l:'Mindestpreis / Untergrenze',t:'text',p:'z.B. 18.000 €'}
@@ -537,38 +672,53 @@ Bitte gemeinsam mit dem Kunden validieren.`
      return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
-Erkenntnisse: ${f.erkenntnisse||''}
 Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}`+caBlock+`
 
-WICHTIG: Erkenntnisse STRIKT gruppieren: erst BESTÄTIGT:, dann ANNAHME:, dann KLÄREN:
+WICHTIGE QUELLE: Erkenntnisse aus der Bedarfsanalyse/Nachbereitung findest du im Abschnitt "BISHERIGE ERGEBNISSE" oben.
+
+KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
 
 EINSCHÄTZUNG: [1 Satz – wie hoch ist die Abschlusswahrscheinlichkeit einzuschätzen?]
+
+KAUFARGUMENTE (max. 3 Bullets, je max. 1 Satz):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+EINWÄNDE (max. 3, je mit kurzer Antwort):
+• [Einwand 1] → [Antwort in 1 Satz]
+• [Einwand 2] → [Antwort in 1 Satz]
+• [Einwand 3] → [Antwort in 1 Satz]
+
+OFFENE PUNKTE (max. 3 Bullets):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+
+NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
+
+DER EINE ABSCHLUSSSATZ: [entscheidender Satz]
+
+=== MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
+###DETAILS###
 Begründung-Erläuterung (auf einen Blick):
 + [1 positiver Faktor, z.B. "Sponsor vorhanden"]
 + [1 positiver Faktor, z.B. "Schmerz bestätigt"]
 – [1 negativer/offener Faktor, z.B. "IT-Abhängigkeit"]
 – [1 negativer/offener Faktor, z.B. "ROI noch nicht vollständig validiert"]
 
-IN 30 SEKUNDEN:
-- Größter Hebel für den Abschluss: [1 kurzer Satz]
-- Wichtigste offene Frage: [1 Satz]
-- Empfohlener nächster Schritt: [1 kurzer Satz]
+DIE 5 WICHTIGSTEN KAUFARGUMENTE (ausführlich, je max. 1-2 Sätze, als Bullets, gruppiert):
+• BESTÄTIGT: [Bullet aus bestätigten Kundenbedürfnissen]
+• ANNAHME: [Bullet, plausibles Argument]
+• KLÄREN: [Bullet, noch zu validieren]
+[Maximal 5 Bullets gesamt]
 
-ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
-
-DIE 5 WICHTIGSTEN KAUFARGUMENTE:
-BESTÄTIGT: [aus bestätigten Kundenbedürfnissen]
-ANNAHME: [plausible Argumente]
-KLÄREN: [noch zu validieren]
-
-DIE 3 WICHTIGSTEN EINWÄNDE:
+DIE 3 WICHTIGSTEN EINWÄNDE (ausführlich):
 1. Einwand: ___ | Antwort: ___
 2. Einwand: ___ | Antwort: ___
-3. Einwand: ___ | Antwort: ___
-
-DER EINE ABSCHLUSSSATZ: [entscheidender Satz]
-
-→ TODO: [nächster Schritt + wann]`;
+3. Einwand: ___ | Antwort: ___`;
    }
   }
 ];
@@ -835,22 +985,125 @@ async function callClaudeJSON(prompt){
   }catch(e){return null;}
 }
 
-function buildHealthPrompt(cust,allResults,kontext){
+
+function getAllPhaseAdditions(accId){
+  if(!accId)return '';
+  let out='';
+  SITS.forEach((sit,i)=>{
+    const txt=LS.get('ki21_stk_'+accId+'_'+i,'');
+    if(txt&&String(txt).trim()){
+      out+='\n--- Ergänzungen '+sit.title+' ---\n'+String(txt).trim()+'\n';
+    }
+  });
+  return out.trim();
+}
+
+function getAdditionRiskSignals(accId,allResults){
+  const resultsText=(allResults||[]).map(r=>r.text||'').join('\n');
+  const raw=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId)+'\n'+resultsText);
+  const combined=raw.toLowerCase();
+  const warning=[];
+  const positive=[];
+  let penalty=0;
+  let scoreCap=null;
+  const addWarn=(text,points,cap)=>{
+    if(!warning.find(w=>w.text===text))warning.push({text,origin:'ERGAENZUNG',type:'warning',disabled:false});
+    penalty=Math.max(penalty,points);
+    if(cap!==undefined&&cap!==null)scoreCap=scoreCap===null?cap:Math.min(scoreCap,cap);
+  };
+  const addPos=(text,points)=>{
+    if(!positive.find(w=>w.text===text))positive.push({text,origin:'ERGAENZUNG',type:'positive',disabled:false});
+    // Positive Ergänzungen werden bewusst nur moderat behandelt; harte Negativsignale dominieren.
+  };
+  if(!combined.trim())return {warning,positive,penalty,scoreCap};
+
+  const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor)';
+  const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz|alternative|andere lösung|andere lösungen)';
+  const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier|entschieden)';
+  const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|unsere lösung nicht|gegen unsere lösung)';
+
+  const leaderPrefersCompetitor=new RegExp(leaderWords+'.{0,120}'+preferenceWords+'.{0,120}'+competitorWords,'i').test(raw)
+    || new RegExp(competitorWords+'.{0,120}'+preferenceWords+'.{0,120}'+leaderWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,120}'+rejectionWords+'.{0,160}'+competitorWords,'i').test(raw)
+    || new RegExp(leaderWords+'.{0,160}'+competitorWords,'i').test(raw)&&new RegExp(rejectionWords+'|'+preferenceWords,'i').test(raw);
+
+  if(leaderPrefersCompetitor){
+    addWarn('Geschäftsführer favorisiert Wettbewerber',45,25);
+  }
+  if(new RegExp(leaderWords+'.{0,120}'+rejectionWords,'i').test(raw)){
+    addWarn('Entscheider lehnt unsere Lösung ab',35,30);
+  }
+  if(new RegExp(competitorWords+'.{0,100}(workshop|demo|pilot|proof|poc|test|präsentation|angebot)','i').test(raw)){
+    addWarn('Wettbewerber bereits aktiv',25,35);
+  }
+  if(new RegExp('(budget).{0,80}(nicht|kein|fehlt|gestrichen|unklar|abgelehnt)','i').test(raw)){
+    addWarn('Budget kritisch oder unklar',20,45);
+  }
+  if(new RegExp('(entscheidung|projekt|go-live|start|kauf).{0,80}(verschoben|verzögert|später|unklar|pausiert|gestoppt|eingefroren)','i').test(raw)){
+    addWarn('Entscheidung verzögert oder gestoppt',20,45);
+  }
+  if(new RegExp('(budget).{0,80}(genehmigt|freigegeben|bestätigt)','i').test(raw)){
+    addPos('Budget bestätigt',5);
+  }
+  if(new RegExp(leaderWords+'.{0,120}(sponsor|unterstützt|treibt|will|priorität|dringend)','i').test(raw)){
+    addPos('Entscheider unterstützt aktiv',5);
+  }
+  if(new RegExp('(champion|fürsprecher|unterstützer|treiber|sponsor).{0,100}(verlässt|verlassen|kündigt|geht|wechselt|weg|nicht mehr im unternehmen)','i').test(raw)){
+    addWarn('Interner Champion verlässt das Unternehmen',30,30);
+  }
+  return {warning,positive,penalty,scoreCap};
+}
+
+function applyHealthRiskRules(baseScore,risk){
+  let score=Number(baseScore)||0;
+  score=score-risk.penalty;
+  if(risk.scoreCap!==null&&risk.scoreCap!==undefined){
+    score=Math.min(score,risk.scoreCap);
+  }
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
   let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
-  if(kontext)s+='--- Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,2000)+'\n\n';
+  if(kontext)s+='--- Globale Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,3000)+'\n\n';
+  if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen des Nutzers ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
   allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
   s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
 
 KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
 
-Beispiele für deutliche SENKUNG: Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
+Beispiele für deutliche SENKUNG: Geschäftsführer/CEO/Entscheider mag unsere Lösung nicht; Geschäftsführer/CEO/Entscheider präferiert zwei andere Mitbewerber; Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
 Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
+
+K.O.-KRITERIEN (harte Dealbreaker – dominieren IMMER alle anderen Signale, auch wenn viele Positivsignale vorliegen):
+- Entscheider (GF/CEO/CFO/Vorstand/wirtschaftlicher Entscheider) lehnt unsere Lösung klar ab
+- Entscheider bevorzugt klar einen konkreten Mitbewerber
+- Budget ist komplett entfallen, gestrichen oder endgültig abgelehnt
+- Entscheidung/Projekt ist final gestoppt oder auf unbestimmte Zeit eingefroren
+- Interner Champion/Fürsprecher verlässt das Unternehmen oder fällt komplett weg
+
+Wenn EINES dieser K.O.-Kriterien zutrifft: Score MUSS unter 35 liegen (Label "Kritisch"), unabhängig davon wie viele positive Signale sonst vorliegen. Das betroffene Signal MUSS in der warning-Liste stehen, klar erkennbar als das dominante Problem.
+
+Alle übrigen Signale (weder K.O. noch in obiger Liste) sind RISIKO-Signale: sie wirken moderat auf den Score, können sich gegenseitig aufwiegen, und mehrere positive Risiko-Signale können einzelne negative Risiko-Signale kompensieren.
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
+Bewerte außerdem unabhängig davon die folgenden 11 Qualifizierungskriterien (MEDDPICC-basiert) jeweils einzeln als "geklärt" (true) oder "offen" (false). Ein Kriterium gilt als "geklärt", sobald DAZU IRGENDEINE konkrete Information vorliegt (egal ob positiv oder negativ/kritisch) – "offen" gilt nur, wenn dazu noch GAR NICHTS bekannt ist. KEIN Einfluss auf den Score, dient ausschließlich der separaten Checkliste:
+1. need (Bedarf / Schmerz) – geklärt sobald ein konkreter Schmerzpunkt/Bedarf benannt ist
+2. budget (Budget) – geklärt sobald irgendeine Aussage zu Budget/Kosten/Investitionsbereitschaft vorliegt, auch wenn unklar/kritisch
+3. economicBuyer (Entscheider / wirtschaftlicher Entscheider) – geklärt sobald eine Person/Rolle als (Mit-)Entscheider benannt ist
+4. timeline (Zeitrahmen) – geklärt sobald ein Zeitfenster, Datum oder Dringlichkeit genannt wird
+5. metrics (Business Case / messbarer Nutzen) – geklärt sobald eine quantifizierte oder zumindest grob umrissene Nutzenkennzahl vorliegt
+6. competition (Wettbewerbssituation) – geklärt sobald IRGENDEIN Wettbewerber, eine Präferenz, ein Gatekeeping- oder Integrationskriterium genannt wird – auch wenn das Signal negativ/kritisch ist (z.B. "Kunde bevorzugt Wettbewerber X" macht dieses Kriterium GEKLÄRT, nicht offen)
+7. champion (Champion / interner Fürsprecher) – geklärt sobald eine Person als interner Unterstützer/Treiber benannt ist
+8. decisionProcess (Entscheidungsprozess) – geklärt sobald bekannt ist, wer wie entscheidet (Gremium, Stufen, Freigaben)
+9. decisionCriteria (Entscheidungskriterien des Kunden) – geklärt sobald bekannt ist, wonach der Kunde die Lösung bewertet/auswählt
+10. paperProcess (Vertragsprozess) – geklärt sobald etwas zu Einkauf, Rechtsabteilung, Vertragsformalitäten bekannt ist
+11. negativeConsequences (Kosten des Nicht-Handelns) – geklärt sobald benannt ist, was passiert/kostet, wenn nichts verändert wird
+
 Antworte AUSSCHLIESSLICH mit folgendem JSON, keine Erklärung davor/danach:
-{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}]}
+{"score":<Zahl 0-100, Auftragswahrscheinlichkeit>,"label":"<ein Wort: Kritisch/Stabil/Gesund/Stark>","structuralOpenCount":<Zahl 0-6, wie viele der 6 strukturellen Kriterien noch offen/unklar sind>,"positive":[{"text":"<kurzes positives Signal, max 8 Wörter>"}],"warning":[{"text":"<kurzes Warnsignal, max 8 Wörter>"}],"open":[{"text":"<offener kritischer Punkt, max 8 Wörter>"}],"checklist":{"need":<true/false>,"budget":<true/false>,"economicBuyer":<true/false>,"timeline":<true/false>,"metrics":<true/false>,"competition":<true/false>,"champion":<true/false>,"decisionProcess":<true/false>,"decisionCriteria":<true/false>,"paperProcess":<true/false>,"negativeConsequences":<true/false>}}
 Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, leeres Array.`;
   return s;
 }
@@ -865,17 +1118,24 @@ async function refreshOpportunityHealth(accId){
     if(d&&d.result)allResults.push({title:sit.title,text:d.result});
   });
   const kontext=LS.get('ki21_kk_'+accId,'');
-  if(!allResults.length&&!kontext)return;
-  const prompt=buildHealthPrompt(cust,allResults,kontext);
+  const phaseAdditions=getAllPhaseAdditions(accId);
+  const risk=getAdditionRiskSignals(accId,allResults);
+  if(!allResults.length&&!kontext&&!phaseAdditions)return;
+  const prompt=buildHealthPrompt(cust,allResults,kontext,phaseAdditions);
   const json=await callClaudeJSON(prompt);
   if(json&&typeof json.score==='number'){
+    const baseWarnings=Array.isArray(json.warning)?json.warning:[];
+    risk.warning.forEach(w=>{if(!baseWarnings.find(x=>x.text===w.text))baseWarnings.unshift({text:w.text});});
+    const basePositive=Array.isArray(json.positive)?json.positive:[];
+    risk.positive.forEach(w=>{if(!basePositive.find(x=>x.text===w.text))basePositive.unshift({text:w.text});});
     LS.set('ki21_health_'+accId,{
       score:Math.max(0,Math.min(100,Math.round(json.score))),
       label:json.label||'',
       structuralOpenCount:json.structuralOpenCount||0,
-      positive:json.positive||[],
-      warning:json.warning||[],
+      positive:basePositive,
+      warning:baseWarnings,
       open:json.open||[],
+      checklist:json.checklist||null,
       ts:Date.now()
     });
     renderHealthBadgeIfPresent();
@@ -886,39 +1146,106 @@ function getHealthManual(accId){
   return LS.get('ki21_health_manual_'+accId,{added:[],removedAutoTexts:[]});
 }
 
+function getKoSeverity(text){
+  const t=(text||'').toLowerCase();
+  const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor|cio)';
+  const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz)';
+  const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier)';
+  const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|ablehn)';
+  // Reihenfolge = Schweregrad, niedrigster Deckel zuerst geprüft
+  if(new RegExp(leaderWords+'.{0,80}'+preferenceWords+'.{0,80}'+competitorWords,'i').test(t))return {penalty:45,cap:25};
+  if(new RegExp(competitorWords+'.{0,80}'+preferenceWords,'i').test(t))return {penalty:45,cap:25};
+  if(new RegExp(leaderWords+'.{0,80}'+rejectionWords,'i').test(t))return {penalty:35,cap:30};
+  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|weg)/i.test(t))return {penalty:30,cap:30};
+  if(/budget.{0,40}(komplett gestrichen|vollständig entfallen|endgültig abgelehnt)/i.test(t))return {penalty:20,cap:45};
+  if(/(entscheidung|projekt).{0,40}(final gestoppt|endgültig gestoppt|auf unbestimmte zeit eingefroren)/i.test(t))return {penalty:20,cap:45};
+  return null;
+}
+function isKoSignalText(text){ return getKoSeverity(text)!==null; }
+
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  if(!auto)return null;
+  const allResults=[];
+  SITS.forEach((sit,i)=>{
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&d.result)allResults.push({title:sit.title,text:d.result});
+  });
+  const risk=getAdditionRiskSignals(accId,allResults);
+  if(!auto){
+    if(risk.warning.length||risk.positive.length){
+      let cap=null;
+      risk.warning.forEach(w=>{const sev=getKoSeverity(w.text);if(sev)cap=cap===null?sev.cap:Math.min(cap,sev.cap);});
+      const score=cap!==null?Math.min(55,cap):55;
+      return {score,label:score<35?'Kritisch':'Stabil',provisional:true,positive:risk.positive,warning:risk.warning,open:[],structuralOpenCount:6,isKo:cap!==null};
+    }
+    return null;
+  }
   const manual=getHealthManual(accId);
   const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
   const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
   const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
+  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.unshift(r); });
+  risk.positive.forEach(r=>{ if(!positive.find(w=>w.text===r.text)) positive.unshift(r); });
   manual.added.forEach(m=>{
     const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
     if(m.type==='positive')positive.push(entry);
     else if(m.type==='warning')warning.push(entry);
     else open.push(entry);
   });
+  // EINE einzige Quelle der Wahrheit für K.O.-Erkennung: getKoSeverity prüft jeden aktiven (nicht ausgeblendeten) Warnsignal-Text.
+  // K.O. wirkt NUR als Score-Deckel (schlimmster Fall gewinnt) - NIE als zusätzliche, aufsummierbare Strafe.
+  const activeWarnings=warning.filter(w=>!w.disabled);
+  let koCapMin=null;
+  activeWarnings.forEach(w=>{
+    const sev=getKoSeverity(w.text);
+    if(sev)koCapMin=koCapMin===null?sev.cap:Math.min(koCapMin,sev.cap);
+  });
+  const hasActiveKo=koCapMin!==null;
+  // Moderate +-3 Wirkung nur für NICHT-K.O.-Signale (normale Risiko-Signale)
   const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
-  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
+  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&!isKoSignalText(m.text)).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  let score=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
-  score=Math.max(0,Math.min(100,Math.round(score)));
+  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&!isKoSignalText(s.text)).length;
+  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
+  let score=Math.max(0,Math.min(100,Math.round(base)));
+  if(hasActiveKo)score=Math.min(score,koCapMin);
   const provisional=(auto.structuralOpenCount||0)>3;
-  return {score,label:auto.label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0};
+  const label=hasActiveKo?'Kritisch':(score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund')));
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo};
+}
+
+function getHealthColor(score){
+  if(score>=70)return '#2ea043';
+  if(score>=40)return '#d29922';
+  return '#f85149';
+}
+function getHealthBg(score){
+  if(score>=70)return 'rgba(46,160,67,.18)';
+  if(score>=40)return 'rgba(210,153,34,.18)';
+  return 'rgba(248,81,73,.18)';
+}
+function makeTopHealthBadge(){
+  return h('button',{id:'health-badge-nav',className:'btn',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);},style:{
+    display:'none',fontSize:'11px',fontWeight:'800',padding:'4px 8px',borderRadius:'6px',whiteSpace:'nowrap',
+    WebkitUserSelect:'none',userSelect:'none',WebkitTouchCallout:'none'
+  }},'');
 }
 
 function renderHealthBadgeIfPresent(){
-  const el=document.getElementById('health-badge-nav');
-  if(!el)return;
+  const els=[document.getElementById('health-badge-nav'),document.getElementById('health-badge-station')].filter(Boolean);
+  if(!els.length)return;
   const aid=LS.get('ki21_aid',null);
   const health=aid?getOpportunityHealth(aid):null;
-  if(!health){el.style.display='none';return;}
-  el.style.display='';
-  el.textContent='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
-  el.style.color=health.score>=70?'#2ea043':health.score>=40?'#d29922':'#f85149';
-  el.style.background=health.score>=70?'rgba(46,160,67,.2)':health.score>=40?'rgba(210,153,34,.2)':'rgba(248,81,73,.2)';
+  els.forEach(el=>{
+    if(!health){el.style.display='none';return;}
+    el.style.display='';
+    el.textContent='Opportunity '+health.score+'/100'+(health.isKo?' ⚠️':'');
+    const color=getHealthColor(health.score);
+    el.style.color=color;
+    el.style.borderColor=color;
+    el.style.background=getHealthBg(health.score);
+    el.title='Opportunity Health: '+health.score+'/100'+(health.provisional?' · vorläufig':'');
+  });
 }
 
 function toggleHealthSignal(accId,text,origin,type,refreshFn){
@@ -942,7 +1269,7 @@ function showOpportunityHealthDetail(accId){
     if(!health){m.remove();return;}
     content.innerHTML='';
     const scoreLine=h('div',{style:{fontSize:'22px',fontWeight:'800',marginBottom:'4px'}},
-      health.score+'/100 – '+(health.label||''));
+      health.score+'/100 – '+(health.label||'')+(health.isKo?' (K.O.)':''));
     content.appendChild(scoreLine);
     if(health.provisional){
       content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
@@ -950,32 +1277,100 @@ function showOpportunityHealthDetail(accId){
     }else{
       content.appendChild(h('div',{style:{marginBottom:'14px'}}));
     }
-    function section(title,items,color){
-      content.appendChild(h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e',marginTop:'14px',marginBottom:'6px'}},title));
-      if(!items.length){content.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
+    function section(title,items,symbol){
+      let expanded=true;
+      const head=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',marginTop:'14px',marginBottom:'6px'},
+        onclick:()=>{expanded=!expanded;body.style.display=expanded?'block':'none';arrow.textContent=expanded?'▾':'▸';}},
+        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},title+' ('+items.length+')')
+      );
+      const arrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▾');
+      head.appendChild(arrow);
+      content.appendChild(head);
+      const body=h('div',{style:{display:'block'}});
+      content.appendChild(body);
+      if(!items.length){body.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
       items.forEach(it=>{
         const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
-          onclick:()=>toggleHealthSignal(accId,it.text,it.origin,it.type,render)},
-          h('span',{style:{fontSize:'9px',fontWeight:'700',color:color,border:'1px solid '+color,borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},it.origin),
-          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none'}},it.text)
+          onclick:(e)=>{e.stopPropagation();toggleHealthSignal(accId,it.text,it.origin,it.type,render);}},
+          h('span',{style:{fontSize:'13px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
+          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
+          it.origin==='MANUELL'?h('span',{style:{fontSize:'8px',fontWeight:'700',color:'#ff6b00',border:'1px solid rgba(255,107,0,.4)',borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},'MANUELL'):null
         );
-        content.appendChild(row);
+        body.appendChild(row);
       });
     }
-    section('Positive Signale',health.positive,'#2ea043');
-    section('Warnsignale',health.warning,'#f85149');
-    section('Offene Punkte',health.open,'#8b949e');
+    section('Positive Signale',health.positive,'🟢');
+    section('Warnsignale',health.warning,'🔴');
+    section('Offene Punkte',health.open,'⚪');
+
+    {
+      const CHECKLIST_LABELS=[
+        ['need','Bedarf / Schmerz'],
+        ['budget','Budget'],
+        ['economicBuyer','Entscheider / wirtschaftlicher Entscheider'],
+        ['timeline','Zeitrahmen'],
+        ['metrics','Business Case / messbarer Nutzen'],
+        ['competition','Wettbewerbssituation'],
+        ['champion','Champion / interner Fürsprecher'],
+        ['decisionProcess','Entscheidungsprozess'],
+        ['decisionCriteria','Entscheidungskriterien des Kunden'],
+        ['paperProcess','Vertragsprozess'],
+        ['negativeConsequences','Kosten des Nicht-Handelns']
+      ];
+      const hasChecklist=!!health.checklist;
+      const clOpenCount=hasChecklist?CHECKLIST_LABELS.filter(([k])=>!health.checklist[k]).length:CHECKLIST_LABELS.length;
+      let clExpanded=false;
+      const clTitle=hasChecklist?('📋 Qualifizierungs-Checkliste ('+(CHECKLIST_LABELS.length-clOpenCount)+'/'+CHECKLIST_LABELS.length+')'):'📋 Qualifizierungs-Checkliste';
+      const clHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',marginTop:'18px',marginBottom:'6px',borderTop:'1px solid var(--border)',paddingTop:'14px'},
+        onclick:()=>{clExpanded=!clExpanded;clBody.style.display=clExpanded?'block':'none';clArrow.textContent=clExpanded?'▾':'▸';}},
+        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},clTitle)
+      );
+      const clArrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▸');
+      clHead.appendChild(clArrow);
+      content.appendChild(clHead);
+      const clBody=h('div',{style:{display:'none'}});
+      content.appendChild(clBody);
+      if(hasChecklist){
+        CHECKLIST_LABELS.forEach(([key,label])=>{
+          const ok=!!health.checklist[key];
+          clBody.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px'}},
+            h('span',{style:{fontSize:'13px',flexShrink:'0'}},ok?'✅':'☐'),
+            h('span',{style:{color:ok?'#e6edf3':'#8b949e'}},label)
+          ));
+        });
+      }else{
+        clBody.appendChild(h('div',{style:{fontSize:'12px',color:'#8b949e',lineHeight:'1.5',padding:'4px 0'}},
+          'Noch keine Auswertung vorhanden. Score einmal neu berechnen lassen (z.B. neue Stationsausgabe erzeugen), dann erscheint hier die Checkliste.'));
+      }
+    }
 
     content.appendChild(h('div',{style:{fontSize:'11px',color:'#484f58',marginTop:'16px',lineHeight:'1.5'}},
       'Neue Info über den Kunden? Im Kunde-Profil unter "Ergänzungen" eintragen – wirkt automatisch auch hier. Tippen auf ein Signal blendet es aus/ein.'));
   };
   const content=h('div',{});
   const m=modal('❤️ Opportunity Health',content,null);
+  // Close-X als Teil des Titel-Flex statt absolut positioniert (vermeidet Overlay-Probleme beim Scrollen)
+  const titleRow=m.firstChild.querySelector('.modal-title');
+  titleRow.style.display='flex';
+  titleRow.style.justifyContent='space-between';
+  titleRow.style.alignItems='center';
+  const closeX=h('button',{style:{background:'transparent',
+    border:'none',color:'var(--text3)',fontSize:'20px',lineHeight:'1',cursor:'pointer',padding:'4px'},
+    onclick:()=>m.remove()},'✕');
+  titleRow.appendChild(closeX);
   render();
 }
 
+function splitDetailsFromResult(text){
+  if(!text)return {main:'',details:''};
+  const idx=text.indexOf('###DETAILS###');
+  if(idx<0)return {main:text,details:''};
+  return {main:text.slice(0,idx).trim(),details:text.slice(idx+'###DETAILS###'.length).trim()};
+}
 function renderResultText(text){
   if(!text)return document.createTextNode('');
+  const {main}=splitDetailsFromResult(text);
+  text=main;
   const div=document.createElement('div');
   div.style.cssText='white-space:pre-wrap;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);';
   const lines=text.split('\n');
@@ -1077,26 +1472,17 @@ function renderHome(){
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
     h('div',{className:'nav-right'},
-      h('button',{className:'btn',onclick:showSettings},'⚙'),
-      h('div',{className:'cust-btn',onclick:showKunde},
-        h('div',{className:'cust-label'},'Kunde'),
-        h('div',{className:'cust-val'},cust.firma||'wählen →')
-      )
+      h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
-  const healthRow=cust.firma?h('div',{style:{padding:'8px 14px 0',display:'flex',justifyContent:'flex-end'}},
-    h('div',{id:'health-badge-nav',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);},style:{
-      fontSize:'11px',fontWeight:'700',
-      borderRadius:'4px',
-      padding:'3px 8px',
-      whiteSpace:'nowrap',
-      cursor:'pointer',
-      display:getOpportunityHealth(state.activeId)?'':'none',
-      WebkitUserSelect:'none',
-      userSelect:'none',
-      WebkitTouchCallout:'none'
-    }},'')
-  ):null;
+  const infoRow=h('div',{className:'subnav',id:'home-info-row'},
+    h('div',{className:'cust-btn',onclick:showKunde},
+      h('div',{className:'cust-label'},'Kunde'),
+      h('div',{className:'cust-val'},cust.firma||'wählen →')
+    ),
+    makeTopHealthBadge()
+  );
+  const healthRow=null;
   setTimeout(()=>{
     renderHealthBadgeIfPresent();
     const aidInit=LS.get('ki21_aid',null);
@@ -1126,7 +1512,7 @@ function renderHome(){
 
   const groups=[
     {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1'},
-    {label:'Bedarfsanalyse & Demo-Empfehlung', icon:'📋', primary:1, sub:'Phase 2'},
+    {label:'Bedarfsanalyse & Demo', icon:'📋', primary:1, sub:'Phase 2'},
     {label:'Termin nachbereiten', icon:'📝', primary:2, sub:'Phase 3'},
     {label:'Wirtschaftlichen Nutzen ermitteln', icon:'💰', primary:3, sub:'Phase 4'},
     {label:'Angebot & Abschluss', icon:'🤝', primary:4, sub:'Phase 5'},
@@ -1135,9 +1521,7 @@ function renderHome(){
   groups.forEach(g=>{
     const status=getPhaseStatus(g.primary);
     const hasResult=status==='done';
-    const badgeClass=hasResult?'phase-badge phase-badge-done':'phase-badge phase-badge-empty';
-    const badgeLabel=hasResult?'Fertig':(status==='progress'?'In Arbeit':'Offen');
-    const badge=h('span',{className:badgeClass},badgeLabel);
+    const badge=h('span',{style:{width:'1px',height:'1px',display:'inline-block'}});
     let pressTimer=null;
     let suppressClick=false;
     const startPress=(e)=>{
@@ -1183,7 +1567,7 @@ function renderHome(){
 
   wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(nav);
-  if(healthRow)app.appendChild(healthRow);
+  app.appendChild(infoRow);
   app.appendChild(wrap);
   LS.set('ki21_view','home');
 }
@@ -1250,11 +1634,8 @@ function showFullscreen(title, text){
 
 
 async function loadMoreDetails(sitId, stData){
-  const apiKey=LS.get('ki21_apikey','');
-  if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
-
-  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Falls es sich um eine Nutzen-Kosten-/ROI-Analyse handelt: vollständige Herleitung der Benchmark-Einschätzung (welche Größenordnung/Branche wurde angenommen, Skalierungslogik, alternative Szenarien konservativ/realistisch/optimistisch), klare Kennzeichnung was "belegtes Erfahrungswissen" vs. "plausible Schätzung" ist\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
+  const {details:embeddedDetails}=splitDetailsFromResult(stData.result||'');
 
   const overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
@@ -1264,6 +1645,21 @@ async function loadMoreDetails(sitId, stData){
   topRow.appendChild(closeBtn);
   topRow.appendChild(copyBtn);
   const title=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},'Ausführliche Details');
+
+  // Bevorzugt: Details sind bereits im selben API-Aufruf mitgekommen (###DETAILS### Marker) - kein zweiter Aufruf nötig
+  if(embeddedDetails){
+    const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},embeddedDetails);
+    overlay.appendChild(topRow);
+    overlay.appendChild(title);
+    overlay.appendChild(body);
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  // Fallback für ältere, bereits gespeicherte Ergebnisse ohne eingebetteten Detail-Block: alter Mechanismus mit zweitem API-Aufruf
+  const apiKey=LS.get('ki21_apikey','');
+  if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
+  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Falls es sich um eine Nutzen-Kosten-/ROI-Analyse handelt: vollständige Herleitung der Benchmark-Einschätzung (welche Größenordnung/Branche wurde angenommen, Skalierungslogik, alternative Szenarien konservativ/realistisch/optimistisch), klare Kennzeichnung was "belegtes Erfahrungswissen" vs. "plausible Schätzung" ist\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
   const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},
     stData.detail?stData.detail:'⏳ Wird geladen...');
   overlay.appendChild(topRow);
@@ -1290,7 +1686,7 @@ async function runAutopilot(){
   const cust=getActiveCust();
   const mu=LS.get('ki21_mu',{});
   const kk=LS.get('ki21_kk_'+state.activeId,'');
-  const phaseNamesShort=['Qualifizierung','Bedarfsanalyse','Nachbereitung','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
+  const phaseNamesShort=['Qualifizierung','Bedarfsanalyse','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
 
   const app=document.getElementById('app');
   app.innerHTML='';
@@ -1420,9 +1816,7 @@ function transferAndGo(fromId, toId, result){
   const nextData=LS.get(nextKEY,{fv:{},result:''});
 
   const fieldMap={
-    1:{f1:'kontext'},
-    2:{f1:'erkenntnisse'},
-    3:{f1:'erkenntnisse'}
+    1:{f1:'kontext'}
   };
 
   // Phase 1→2: transfer SPIN-Fragen + Antworten
@@ -1438,7 +1832,9 @@ function transferAndGo(fromId, toId, result){
       if(splitIdx>=0)break;
     }
     // If no SPIN found, use full result as spin
-    nextData.fv['spin']=splitIdx>=0?lines.slice(splitIdx).join('\n').trim():result;
+    let spinText=splitIdx>=0?lines.slice(splitIdx).join('\n').trim():result;
+    spinText=spinText.replace(/^###DETAILS###\s*\n?/,'').trim();
+    nextData.fv['spin']=spinText;
     LS.set(nextKEY,nextData);
     state.pendingSit=null;
     renderStation(toId);
@@ -1452,7 +1848,9 @@ function transferAndGo(fromId, toId, result){
     renderStation(toId);
 
     (async()=>{
-      const kpiPrompt=`Hier ist ein Besuchsbericht aus einem Kundentermin:\n\n${result}\n\nExtrahiere AUSSCHLIESSLICH die konkreten Zahlen, KPIs und wirtschaftlich relevanten Fakten, die der Kunde genannt hat (z.B. Zeitaufwand, Mitarbeiterzahlen, Kosten, Stückzahlen, Fehlerquoten, Durchlaufzeiten).\n\nFormat: kurze Stichpunkte, eine Zahl/Aussage pro Zeile. Keine Einleitung, kein Fließtext. Wenn keine konkreten Zahlen genannt wurden, schreibe: "Keine konkreten KPIs im Gespräch genannt – bitte beim Kunden nachfragen."`;
+      const {main:resultMain,details:resultDetails}=splitDetailsFromResult(result);
+      const fullSource=resultMain+(resultDetails?'\n'+resultDetails:'');
+      const kpiPrompt=`Hier ist ein Besuchsbericht aus einem Kundentermin:\n\n${fullSource}\n\nExtrahiere AUSSCHLIESSLICH die konkreten Zahlen, KPIs und wirtschaftlich relevanten Fakten, die der Kunde genannt hat (z.B. Zeitaufwand, Mitarbeiterzahlen, Kosten, Stückzahlen, Fehlerquoten, Durchlaufzeiten).\n\nFormat: kurze Stichpunkte, eine Zahl/Aussage pro Zeile. Keine Einleitung, kein Fließtext. Wenn keine konkreten Zahlen genannt wurden, schreibe: "Keine konkreten KPIs im Gespräch genannt – bitte beim Kunden nachfragen."`;
 
       try{
         const kpiResult=await callClaude(kpiPrompt,null);
@@ -1474,7 +1872,8 @@ function transferAndGo(fromId, toId, result){
 
   const map=fieldMap[fromId];
   if(map){
-    nextData.fv[map.f1]=result;
+    const {main:transferMain}=splitDetailsFromResult(result);
+    nextData.fv[map.f1]=transferMain;
   }
 
   LS.set(nextKEY,nextData);
@@ -1506,16 +1905,24 @@ function renderStation(sitId){
   const nav=h('div',{className:'nav'},
     h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
     h('div',{className:'nav-right'},
-      cust.firma?h('button',{className:'btn',style:{color:'#ff6b00',borderColor:'rgba(255,107,0,.4)',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},onclick:()=>showKunde()},cust.firma):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
-  const subNav=h('div',{className:'subnav'},
-    h('span',{className:'subnav-badge'},String(sitId+1)),
-    h('span',{id:'nav-phase-label',className:'subnav-text'},'von '+SITS.length+' · '+sit.title)
+  const infoRow=h('div',{className:'subnav'},
+    cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):h('div',{}),
+    h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},'')
   );
 
   const wrap=h('div',{className:'station-wrap'});
+
+  const headBlock=h('div',{className:'station-compact-head'},
+    h('div',{className:'station-compact-line'},
+      h('span',{className:'subnav-badge'},String(sitId+1)),
+      h('span',{className:'station-compact-title'},'von '+SITS.length+' · '+sit.title)
+    ),
+    h('div',{className:'station-compact-rule'},sit.regel)
+  );
+  wrap.appendChild(headBlock);
 
   // Phase nav
   const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch'}});
@@ -1528,7 +1935,6 @@ function renderStation(sitId){
       style:{color:stk?'#ff6b00':'#8b949e',borderColor:stk?'rgba(255,107,0,.3)':'#30363d',lineHeight:'1.2',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 10px'},
       onclick:()=>showStkModal(sitId,sit.title)},
       h('span',{style:{fontSize:'11px'}},'Ergänzungen'),
-      h('span',{style:{fontSize:'10px',opacity:'.8'}},sit.title)
     );
     phaseNav.appendChild(stkBtn);
   }
@@ -1539,9 +1945,6 @@ function renderStation(sitId){
     },SITS[sitId+1].title+' →'));
   }
   wrap.appendChild(phaseNav);
-
-  // Regel
-  wrap.appendChild(h('div',{className:'regel'},sit.regel));
 
   // Fields
   const fieldsDiv=h('div',{});
@@ -1620,27 +2023,7 @@ function renderStation(sitId){
     },'🔍 Opportunity-Vorschau erstellen'));
   }
 
-  // Summary box (Demo-Vorbereitung only)
-  const demoSummaryBox=h('div',{className:'result-box',
-    style:{display:(sitId===3&&data.summary)?'block':'none',
-      borderColor:'rgba(255,107,0,.4)',marginBottom:'10px'}});
-  const demoSummaryHead=h('div',{className:'result-head',style:{background:'rgba(255,107,0,.12)'}});
-  const demoSummaryLabel=h('span',{className:'result-label'},'⚡ Kurzfassung – Die 5 Punkte die zählen');
-  const demoSummaryBtns=h('div',{className:'result-btns'});
-  const demoSummaryCopyBtn=h('button',{className:'btn',onclick:()=>{
-    if(navigator.clipboard)navigator.clipboard.writeText(data.summary||'').then(()=>{
-      demoSummaryCopyBtn.textContent='✓';setTimeout(()=>demoSummaryCopyBtn.textContent='Kopieren',2000);
-    });
-  }},'Kopieren');
-  demoSummaryBtns.appendChild(demoSummaryCopyBtn);
-  demoSummaryHead.appendChild(demoSummaryLabel);
-  demoSummaryHead.appendChild(demoSummaryBtns);
-  const demoSummaryBody=h('div',{className:'result-body',
-    style:{fontSize:'13px',lineHeight:'1.7'}});
-  demoSummaryBody.appendChild(renderResultText(data.summary||''));
-  demoSummaryBox.appendChild(demoSummaryHead);
-  demoSummaryBox.appendChild(demoSummaryBody);
-  wrap.appendChild(demoSummaryBox);
+  // Kurzfassung-Box entfernt (Review Juni 2026, Punkt 8) - war redundant zur Hauptausgabe
 
   // Result box
   const resultBox=h('div',{className:'result-box',style:{display:data.result?'block':'none'}});
@@ -1760,7 +2143,7 @@ function renderStation(sitId){
             nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
             LS.set(nextKEY2,nextData2);
           }
-          weiter2Row.style.display='block';
+          weiter2Row.style.display='none';
         }
         gen2Btn.disabled=false;
         gen2Btn.textContent='⚡ Qualifizierung abschließen';
@@ -1774,7 +2157,7 @@ function renderStation(sitId){
       },'Weiter zu Bedarfsanalyse →');
       weiter2Row.appendChild(weiter2Btn);
       postDiv.appendChild(weiter2Row);
-      if(data.result2)weiter2Row.style.display='block';
+      weiter2Row.style.display='none';
     }
 
     wrap.appendChild(postDiv);
@@ -1782,9 +2165,7 @@ function renderStation(sitId){
 
   // Show weiter button if result already exists (navigating back)
   if(data.result){
-    const nextMapInit={
-      0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
-    };
+    const nextMapInit={};
     if(nextMapInit[sitId]&&!sit.build2){
       const nextId=nextMapInit[sitId].nextId;
       const wb=h('button',{
@@ -1854,44 +2235,8 @@ function renderStation(sitId){
           }
         }
 
-        // For Nutzen-Kosten-Analyse (sitId===3): generate compact summary for next customer conversation
+        // For Nutzen-Kosten-Analyse (sitId===3): nur noch Case-Annahmen für Phase 5 extrahieren (Kurzfassung-Box entfernt, Review Juni 2026)
         if(sitId===3){
-          demoSummaryBox.style.display='block';
-          demoSummaryBody.textContent='⏳ Kurzfassung wird erstellt...';
-          try{
-            const summaryPrompt=`Erstelle aus dieser Nutzen-Kosten-Analyse eine kompakte Kurzfassung für das nächste Kundengespräch (z.B. Demo oder Abschlussgespräch).
-
-KRITISCH: Verwende AUSSCHLIESSLICH Zahlen, Fakten und Größenordnungen, die WÖRTLICH in der Analyse unten stehen. Erfinde KEINE neuen Zahlen, KEINE Schadenssummen, KEINE Prozentangaben, die dort nicht bereits vorkommen. KEINE eigene Mittelwertbildung oder Neuberechnung aus einer Bandbreite (z.B. wenn die Analyse "9-13,5 Arbeitstage" sagt, schreibe NICHT "11 Arbeitstage" – übernimm die Bandbreite unverändert als "9-13,5 Arbeitstage"). Wenn die Analyse keine konkrete Zahl zu einem Punkt enthält, formuliere den Punkt ohne Zahl. Übernimm KEINE als ZU VALIDIEREN gekennzeichneten Posten als feste Zahl - lasse sie weg oder formuliere sie erkennbar vorsichtig.
-KRITISCH: Übernimm die Konfidenz-Kennzeichnung aus der Analyse (BESTÄTIGT/ARBEITSWERT/ANNAHME/ZU VALIDIEREN). Wenn ein Punkt in der Kurzfassung auf eine BESTÄTIGT-Aussage zurückgeht, kennzeichne ihn auch hier als BESTÄTIGT (gleiche Schreibweise, am Anfang der jeweiligen Zeile/des Punkts). Erfinde keine neue Sicherheit, die im Original nicht vorhanden war.
-
-Format:
-🎯 GESPRÄCHSZIEL: [1 Satz was wir erreichen wollen]
-
-TOP 5 PUNKTE DIE ZÄHLEN:
-1. [wichtigster Punkt]
-2. [wichtiger Punkt]
-3. [wichtiger Punkt]
-4. [wichtiger Punkt]
-5. [wichtiger Punkt]
-
-⚠️ UNBEDINGT VERMEIDEN:
-- [1-2 Punkte]
-
-💡 ABSCHLUSS-FRAGE: [Die eine Frage am Ende des Gesprächs]
-
-Nutzen-Kosten-Analyse:
-`+result;
-            const summary=await callClaude(summaryPrompt,null);
-            if(summary){
-              demoSummaryBody.innerHTML='';demoSummaryBody.appendChild(renderResultText(summary));
-              data.summary=summary;
-              LS.set(KEY,data);
-            }
-          }catch(e){
-            demoSummaryBody.textContent='Kurzfassung konnte nicht erstellt werden.';
-          }
-
-          // Extract structured case assumptions for reuse in Phase 5 (per-opportunity, not global)
           try{
             const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
 
@@ -1915,9 +2260,7 @@ Analyse:
 
         // Populate Weiter-button after fresh generation (was previously only shown on page reload)
         weiterRow.innerHTML='';
-        const nextMapAfterGen={
-          0:{nextId:1},1:{nextId:2},2:{nextId:3},3:{nextId:4}
-        };
+        const nextMapAfterGen={};
         if(nextMapAfterGen[sitId]&&!sit.build2){
           const nextIdAfterGen=nextMapAfterGen[sitId].nextId;
           const wbAfterGen=h('button',{
@@ -1941,7 +2284,8 @@ Analyse:
   }
 
   app.appendChild(nav);
-  app.appendChild(subNav);
+  app.appendChild(infoRow);
+  setTimeout(()=>renderHealthBadgeIfPresent(),0);
   app.appendChild(wrap);
 }
 
@@ -1952,8 +2296,8 @@ function getAccPhaseInfo(accId){
     const data=LS.get('ki21_st_'+accId+'_'+i,null);
     if(data&&data.result)furthest=i;
   }
-  const score=LS.get('ki21_score_'+accId,null);
-  return {phaseIdx:furthest,score};
+  const health=getOpportunityHealth(accId);
+  return {phaseIdx:furthest,health};
 }
 
 function showKunde(){
@@ -1980,7 +2324,7 @@ function showKunde(){
             h('div',{className:'acc-name'},a.cust.firma),
             h('div',{className:'acc-meta'},
               h('span',{className:'acc-phase-chip'},phaseLabel),
-              info.score?h('span',{className:'acc-score-chip'},'★ '+info.score+'/10'):null
+              info.health?h('span',{className:'acc-score-chip',style:{color:getHealthColor(info.health.score)}},'Opp '+info.health.score):null
             )
           ),
           h('div',{className:'acc-btns'},
@@ -2247,7 +2591,7 @@ Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nich
 }
 
 function generateKundePDF(aid, cust){
-  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse & Demo-Empfehlung','Nachbereitung',
+  const SITS_LABELS=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten',
     'Nutzen-Kosten-Analyse','Angebot & Abschluss'];
 
   let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -2295,15 +2639,15 @@ function showStkModal(sitId,sitTitle){
   const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
   ta.value=LS.get(KEY,'');
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Optionale Ergänzungen für '+sitTitle+'. Fließen in den Prompt ein.'),
+    h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in Prompt und Opportunity Health ein.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);m.remove();renderStation(sitId);}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);renderHealthBadgeIfPresent();if(state.activeId)refreshOpportunityHealth(state.activeId);m.remove();renderStation(sitId);}},
         'Speichern'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Ergänzungen'+sitTitle,content,null);
+  const m=modal('Ergänzungen',content,null);
 }
 
 function showPDF(title,text,cust){
@@ -2324,8 +2668,8 @@ function showPDF(title,text,cust){
       const parts=t.split(':');
       html+=`<p><strong>${parts[0]}:</strong>${parts.slice(1).join(':')}</p>`;return;
     }
-    // TODO line
-    if(t.startsWith('→ TODO')||t.startsWith('→')){html+=`<p class="todo">${t}</p>`;return;}
+    // TODO / Nächster Schritt line
+    if(t.startsWith('→ TODO')||t.startsWith('→')||t.startsWith('NÄCHSTER SCHRITT DIESE WOCHE')||t.startsWith('NÄCHSTE AKTION')){html+=`<p class="todo">${t}</p>`;return;}
     // Numbered items
     if(t.match(/^\d+\./)){html+=`<p class="item">${t}</p>`;return;}
     // Normal
@@ -2627,54 +2971,77 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-async function pushToGitHub(){
+const KI21_VERSION='v4.46';
+
+function encodeBase64UTF8(text){
+  const bytes=new TextEncoder().encode(text);
+  let binary='';
+  const chunk=8192;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(binary);
+}
+
+function detectVersionFromHtml(html){
+  const m=String(html||'').match(/v\d+\.\d+(?:\s*[A-Za-z0-9_-]+)?/);
+  return m?m[0]:'unbekannte Version';
+}
+
+async function pushToGitHub(sourceText){
   const token=LS.get('ki21_github_token','');
   if(!token){alert('Bitte zuerst GitHub Token in Einstellungen hinterlegen.');return;}
 
+  if(!sourceText||!String(sourceText).trim()){
+    throw new Error('Kein App-Code zum Veröffentlichen vorhanden. Bitte neue index.html in das Update-Feld einfügen.');
+  }
+  if(!String(sourceText).includes('<!DOCTYPE html')||!String(sourceText).includes('<script>')){
+    throw new Error('Der eingefügte Text sieht nicht wie eine vollständige index.html aus.');
+  }
+
+  const version=detectVersionFromHtml(sourceText);
   const headers={
     'Authorization':'token '+token,
     'Accept':'application/vnd.github.v3+json',
     'Content-Type':'application/json'
   };
 
-  // Step 1: Get current SHA
   const shaResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{headers});
   if(!shaResp.ok)throw new Error('GitHub Fehler '+shaResp.status);
   const shaData=await shaResp.json();
   const sha=shaData.sha;
 
-  // Step 2: Fetch fresh source from GitHub (not from DOM)
-  const sourceResp=await fetch(window.location.href+'?nocache='+Date.now());
-  if(!sourceResp.ok)throw new Error('Source Fehler '+sourceResp.status);
-  const sourceText=await sourceResp.text();
-  
-  // Step 3: Encode to base64
-  const bytes=new TextEncoder().encode(sourceText);
-  let b64='';
-  const chunk=8192;
-  for(let i=0;i<bytes.length;i+=chunk){
-    b64+=String.fromCharCode(...bytes.subarray(i,i+chunk));
-  }
-  const encoded=btoa(b64);
+  const encoded=encodeBase64UTF8(sourceText);
 
-  // Step 4: Push to GitHub
   const pushResp=await fetch('https://api.github.com/repos/KI21-Vertrieb/KI21/contents/index.html',{
     method:'PUT',
     headers,
     body:JSON.stringify({
-      message:'KI21 Update '+new Date().toLocaleDateString('de-DE'),
+      message:'KI21 '+version+' veröffentlicht – '+new Date().toLocaleDateString('de-DE'),
       content:encoded,
       sha:sha
     })
   });
-  if(!pushResp.ok)throw new Error('Push Fehler '+pushResp.status);
-  return true;
+  if(!pushResp.ok){
+    let msg='Push Fehler '+pushResp.status;
+    try{const err=await pushResp.json(); if(err&&err.message)msg+=': '+err.message;}catch(e){}
+    throw new Error(msg);
+  }
+  LS.set('ki21_last_published_version',version);
+  LS.set('ki21_last_published_at',new Date().toLocaleString('de-DE'));
+  return version;
 }
 
+async function fetchCurrentPublishedHtml(){
+  const resp=await fetch('https://ki21-vertrieb.github.io/KI21/index.html?nocache='+Date.now());
+  if(!resp.ok)throw new Error('Aktuelle Live-Version konnte nicht gelesen werden ('+resp.status+').');
+  return await resp.text();
+}
 
 function showGitHub(){
   const hasGHToken=!!LS.get('ki21_github_token','');
   let newGHToken='';
+  let updateCode='';
 
   const status=h('div',{className:'status-box',
     style:{background:hasGHToken?'rgba(46,160,67,.12)':'#1c2333',
@@ -2684,31 +3051,72 @@ function showGitHub(){
     h('div',{style:{fontSize:'13px',fontWeight:'700',color:hasGHToken?'#2ea043':'#e6edf3'}},
       hasGHToken?'GitHub verbunden':'GitHub nicht verbunden'),
     h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
-      hasGHToken?'🚀 App aktualisieren → deployed automatisch':'Token einmalig hinterlegen')
+      hasGHToken?'Neue index.html einfügen → ein Klick veröffentlicht':'Token einmalig hinterlegen')
   );
 
   const content=h('div',{},status);
 
   if(hasGHToken){
+    const lastVersion=LS.get('ki21_last_published_version','');
+    const lastAt=LS.get('ki21_last_published_at','');
+    if(lastVersion||lastAt){
+      content.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginBottom:'8px',textAlign:'center'}},
+        'Zuletzt veröffentlicht: '+(lastVersion||'–')+(lastAt?' · '+lastAt:'')));
+    }
+
+    content.appendChild(h('div',{style:{fontSize:'11px',color:'#8b949e',lineHeight:'1.45',marginBottom:'8px'}},
+      'Kopiere künftig den vollständigen Inhalt der von ChatGPT gelieferten index.html hier hinein. Danach genügt ein Tipp auf „Veröffentlichen“. Keine lokale Datei, kein PC.'));
+
+    const ta=h('textarea',{placeholder:'Hier vollständige neue index.html einfügen …',
+      style:{minHeight:'170px',fontSize:'11px',fontFamily:'monospace',lineHeight:'1.35'}});
+    const versionLine=h('div',{style:{fontSize:'11px',color:'#ff6b00',margin:'6px 0 10px'}},'Noch kein Update-Code eingefügt');
+    ta.addEventListener('input',e=>{
+      updateCode=e.target.value;
+      const version=detectVersionFromHtml(updateCode);
+      versionLine.textContent=updateCode.trim()?('Erkannte Version: '+version):'Noch kein Update-Code eingefügt';
+    });
+    content.appendChild(ta);
+    content.appendChild(versionLine);
+
     const pushB=h('button',{className:'btn-o',
       style:{background:'#238636',marginBottom:'8px'},
       onclick:async()=>{
+        const code=(updateCode||ta.value||'').trim();
+        if(!code){alert('Bitte zuerst die neue index.html in das Feld einfügen.');return;}
         pushB.disabled=true;
-        pushB.textContent='⏳ Wird hochgeladen...';
+        pushB.textContent='⏳ Wird veröffentlicht...';
         try{
-          await pushToGitHub();
-          pushB.textContent='✅ Deployed!';
-          setTimeout(()=>{pushB.textContent='🚀 App aktualisieren';pushB.disabled=false;},3000);
+          const publishedVersion=await pushToGitHub(code);
+          pushB.textContent='✅ Veröffentlicht ('+publishedVersion+')';
+          setTimeout(()=>{pushB.textContent='🚀 Veröffentlichen';pushB.disabled=false;},3000);
         }catch(e){
           alert('Fehler: '+e.message);
-          pushB.textContent='🚀 App aktualisieren';
+          pushB.textContent='🚀 Veröffentlichen';
           pushB.disabled=false;
         }
       }
-    },'🚀 App aktualisieren');
+    },'🚀 Veröffentlichen');
     content.appendChild(pushB);
+
+    content.appendChild(h('button',{className:'btn',style:{width:'100%',marginTop:'4px'},onclick:async()=>{
+      if(!confirm('Aktuelle live veröffentlichte Version erneut veröffentlichen? Normalerweise brauchst du das nicht.'))return;
+      publishCurrentB.disabled=true;
+      publishCurrentB.textContent='⏳ Lade Live-Version...';
+      try{
+        const liveHtml=await fetchCurrentPublishedHtml();
+        const v=await pushToGitHub(liveHtml);
+        publishCurrentB.textContent='✅ Live-Version erneut veröffentlicht ('+v+')';
+        setTimeout(()=>{publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';publishCurrentB.disabled=false;},3000);
+      }catch(e){
+        alert('Fehler: '+e.message);
+        publishCurrentB.textContent='Aktuelle Live-Version erneut veröffentlichen';
+        publishCurrentB.disabled=false;
+      }
+    }},'Aktuelle Live-Version erneut veröffentlichen'));
+    const publishCurrentB=content.lastChild;
+
     content.appendChild(h('button',{className:'btn',
-      style:{width:'100%',marginTop:'4px'},
+      style:{width:'100%',marginTop:'8px'},
       onclick:()=>{if(confirm('GitHub Token löschen?')){LS.set('ki21_github_token','');m.remove();showGitHub();}}},
       'Token löschen'));
   } else {
@@ -2717,7 +3125,7 @@ function showGitHub(){
     inp.addEventListener('input',e=>newGHToken=e.target.value);
     content.appendChild(inp);
     content.appendChild(h('p',{style:{fontSize:'11px',color:'#484f58',margin:'6px 0 10px',lineHeight:'1.5'}},
-      'Einmalig speichern – dann reicht ein Tap zum Updaten.'));
+      'Einmalig speichern – danach reicht Einfügen + Veröffentlichen.'));
     content.appendChild(h('button',{className:'btn-o',
       style:{background:'#238636'},
       onclick:()=>{
@@ -2728,7 +3136,7 @@ function showGitHub(){
       }},'GitHub Token speichern'));
   }
 
-  const m=modal('GitHub Auto-Deploy',content,null);
+  const m=modal('GitHub Veröffentlichung',content,null);
 }
 
 function showSettings(){
@@ -2933,7 +3341,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.17';
+  v.textContent='v4.46';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
