@@ -1057,20 +1057,22 @@ function getHealthManual(accId){
   return LS.get('ki21_health_manual_'+accId,{added:[],removedAutoTexts:[]});
 }
 
-function isKoSignalText(text){
+function getKoSeverity(text){
   const t=(text||'').toLowerCase();
   const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor|cio)';
   const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz)';
   const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier)';
   const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|ablehn)';
-  if(new RegExp(leaderWords+'.{0,80}'+preferenceWords+'.{0,80}'+competitorWords,'i').test(t))return true;
-  if(new RegExp(competitorWords+'.{0,80}'+preferenceWords,'i').test(t))return true;
-  if(new RegExp(leaderWords+'.{0,80}'+rejectionWords,'i').test(t))return true;
-  if(/budget.{0,40}(gestrichen|entfallen|komplett.*abgelehnt)/i.test(t))return true;
-  if(/(entscheidung|projekt).{0,40}(final.*gestoppt|endgültig.*gestoppt|eingefroren)/i.test(t))return true;
-  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|weg)/i.test(t))return true;
-  return false;
+  // Reihenfolge = Schweregrad, niedrigster Deckel zuerst geprüft
+  if(new RegExp(leaderWords+'.{0,80}'+preferenceWords+'.{0,80}'+competitorWords,'i').test(t))return {penalty:45,cap:25};
+  if(new RegExp(competitorWords+'.{0,80}'+preferenceWords,'i').test(t))return {penalty:45,cap:25};
+  if(new RegExp(leaderWords+'.{0,80}'+rejectionWords,'i').test(t))return {penalty:35,cap:30};
+  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|weg)/i.test(t))return {penalty:30,cap:30};
+  if(/budget.{0,40}(gestrichen|entfallen|komplett.*abgelehnt)/i.test(t))return {penalty:20,cap:45};
+  if(/(entscheidung|projekt).{0,40}(final.*gestoppt|endgültig.*gestoppt|eingefroren)/i.test(t))return {penalty:20,cap:45};
+  return null;
 }
+function isKoSignalText(text){ return getKoSeverity(text)!==null; }
 
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
@@ -1101,17 +1103,27 @@ function getOpportunityHealth(accId){
   });
   const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
   const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&!isKoSignalText(m.text)).length;
-  const manualKoWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&isKoSignalText(m.text)).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
   const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&!isKoSignalText(s.text)).length;
-  const disabledAutoKoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&isKoSignalText(s.text)).length;
-  const enabledAutoKoWarning=warning.filter(s=>s.origin==='AUTO'&&!s.disabled&&isKoSignalText(s.text)).length;
-  // Normale Risiko-Signale: moderate +-3 Wirkung. K.O.-Signale: starke +-35 Wirkung (entspricht hartem Dealbreaker).
-  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-manualKoWarningCount*35
-    -disabledAutoPositive*3+disabledAutoWarning*3+disabledAutoKoWarning*35;
-  const hasActiveKo=enabledAutoKoWarning>0||manualKoWarningCount>0;
+  // K.O.-Signale: abgestufte Penalty/Deckel je Schweregrad (gleiche Werte wie die automatische Regex-Erkennung), statt eines pauschalen Werts
+  let koPenaltyTotal=0;
+  let koCapMin=null;
+  manual.added.filter(m=>m.type==='warning'&&m.active!==false).forEach(m=>{
+    const sev=getKoSeverity(m.text);
+    if(sev){koPenaltyTotal+=sev.penalty;koCapMin=koCapMin===null?sev.cap:Math.min(koCapMin,sev.cap);}
+  });
+  warning.filter(s=>s.origin==='AUTO'&&s.disabled).forEach(s=>{
+    const sev=getKoSeverity(s.text);
+    if(sev){koPenaltyTotal-=sev.penalty;} // Ausgeblendetes K.O.-Signal: Penalty entfällt wieder
+  });
+  warning.filter(s=>s.origin==='AUTO'&&!s.disabled).forEach(s=>{
+    const sev=getKoSeverity(s.text);
+    if(sev){koCapMin=koCapMin===null?sev.cap:Math.min(koCapMin,sev.cap);}
+  });
+  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3-koPenaltyTotal;
+  const hasActiveKo=koCapMin!==null;
   let score=applyHealthRiskRules(base,risk);
-  if(hasActiveKo)score=Math.min(score,30);
+  if(hasActiveKo)score=Math.min(score,koCapMin);
   const provisional=(auto.structuralOpenCount||0)>3;
   const label=hasActiveKo?'Kritisch':(score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund')));
   return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo};
@@ -2905,7 +2917,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.39';
+const KI21_VERSION='v4.40';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3275,7 +3287,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.39';
+  v.textContent='v4.40';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
