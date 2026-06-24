@@ -1563,7 +1563,6 @@ function renderHome(){
   groups.forEach(g=>{
     const status=getPhaseStatus(g.primary);
     const hasResult=status==='done';
-    const badge=h('span',{style:{width:'1px',height:'1px',display:'inline-block'}});
     let pressTimer=null;
     let suppressClick=false;
     const startPress=(e)=>{
@@ -1583,16 +1582,9 @@ function renderHome(){
       },550);
     };
     const cancelPress=()=>{if(pressTimer)clearTimeout(pressTimer);};
-    badge.addEventListener('touchstart',startPress);
-    badge.addEventListener('touchend',cancelPress);
-    badge.addEventListener('touchmove',cancelPress);
-    badge.addEventListener('mousedown',startPress);
-    badge.addEventListener('mouseup',cancelPress);
-    badge.addEventListener('mouseleave',cancelPress);
-    badge.addEventListener('click',e=>{
-      if(suppressClick){e.preventDefault();e.stopPropagation();suppressClick=false;}
-    });
-    const row=h('div',{className:'sit-row',onclick:(e)=>{
+    const row=h('div',{className:'sit-row',
+      style:{userSelect:'none',WebkitUserSelect:'none',WebkitTouchCallout:'none'},
+      onclick:(e)=>{
       if(suppressClick){suppressClick=false;return;}
       if(!state.activeId){state.pendingSit=g.primary;showKunde();}
       else renderStation(g.primary);
@@ -1601,9 +1593,15 @@ function renderHome(){
       h('div',{style:{flex:1}},
         h('div',{className:'sit-title'},g.label),
         h('div',{className:'sit-phase'},g.sub)
-      ),
-      badge
+      )
     );
+    row.addEventListener('touchstart',startPress);
+    row.addEventListener('touchend',cancelPress);
+    row.addEventListener('touchmove',cancelPress);
+    row.addEventListener('mousedown',startPress);
+    row.addEventListener('mouseup',cancelPress);
+    row.addEventListener('mouseleave',cancelPress);
+    row.addEventListener('contextmenu',e=>e.preventDefault());
     wrap.appendChild(row);
   });
 
@@ -3013,7 +3011,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.48';
+const KI21_VERSION='v4.49';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3383,7 +3381,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.48';
+  v.textContent='v4.49';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
