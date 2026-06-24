@@ -326,6 +326,8 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Kein Markdown: keine **, keine ###, keine ---\n';
   s+='- Nur Deutsch\n';
   s+='- Keine Einleitung, kein Fazit\n';
+  s+='- KRITISCH – EIN BULLET = EINE AUSSAGE: Ein Bullet darf NIEMALS mehrere Aussagen mit Komma oder "und" verketten (z.B. NICHT "SAP-Projekt läuft bereits, CIO favorisiert SAP-Lösung, externe Spezialisten könnten eingebunden werden" als EIN Bullet). Stattdessen IMMER aufteilen in mehrere einzelne, kurze Bullets (z.B. "SAP-Projekt läuft" / "CIO bevorzugt SAP" / "SAP-Partner könnten Einstieg ermöglichen"). Jeder Bullet maximal 6-8 Wörter, eine einzige klare Aussage. Der Nutzer muss jede Phase in 10-15 Sekunden scannen können.\n';
+  s+='- KRITISCH – REIHENFOLGE INNERHALB JEDER BULLET-LISTE: Sortiere IMMER nach Relevanz für die Kaufentscheidung: zuerst Schmerz/Bedarf (quantifiziert, wenn möglich), dann Risiko, zuletzt allgemeiner Kontext. Die wichtigste, konkreteste Erkenntnis steht IMMER an Position 1 – niemals ein genereller Kontext-Punkt vor einem konkreten Schmerzpunkt.\n';
   s+='- Erkenntnisse als einfache Bullets, OHNE BESTÄTIGT:/ANNAHME:/KLÄREN:-Präfix in der Standardausgabe (diese Kennzeichnung nur noch im Detailbereich nach ###DETAILS### verwenden, falls das jeweilige Phasenformat das vorsieht)\n';
   s+='- KRITISCH: Die abschließende Aktionszeile darf NUR EINE einzige, priorisierte Handlung enthalten – KEINE Aufzählung mehrerer Aktionen mit "und" oder Kommas (z.B. NICHT "Workshop vereinbaren und Unterlagen vorbereiten und Entscheider kontaktieren"). Wenn mehrere Dinge zu tun wären, wähle die EINE wichtigste aus, die diese Woche passieren muss – alles andere ergibt sich danach von selbst oder gehört in den Detailbereich.\n';
   s+='- Am Ende GENAU EINE Aktionszeile gemäß dem unten vorgegebenen Phasenformat (z.B. "NÄCHSTER SCHRITT DIESE WOCHE:")\n';
@@ -407,6 +409,8 @@ DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
 • [Bullet 2]
 • [Bullet 3]
 
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
+
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
@@ -445,6 +449,8 @@ DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
+
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -491,6 +497,8 @@ Begründung: [1 Satz]
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
+
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -610,17 +618,19 @@ FORMAT – GENAU SO, NICHT MEHR:
 
 EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
 
-WICHTIGSTER NUTZEN: [1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
+⚡ DIE 5 PUNKTE DIE ZÄHLEN (je max. 1 Satz, als Bullets – schneller Einstieg vor der eigentlichen Analyse):
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]
+• [Bullet 4]
+• [Bullet 5]
 
-WIRTSCHAFTLICHER HEBEL (genau 3 Zeilen, je GENAU EINE Zahl – KEINE Range, KEINE Verkettung mehrerer Zahlen in einer Zeile):
+💰 WIRTSCHAFTLICHER NUTZEN (genau 3 Zeilen, je GENAU EINE Zahl – KEINE Range, KEINE Verkettung mehrerer Zahlen in einer Zeile, KEINE Erklärsätze):
 • Laufender Nutzen: [eine konkrete €/Monat-Zahl ODER "noch zu validieren"]
 • Investition: [eine konkrete €/Monat-Zahl, 3 Jahre geglättet]
 • ROI: [eine einfache Aussage, z.B. "Nutzen übersteigt Investition um Faktor X" ODER "noch nicht berechenbar – Zahlen fehlen"]
 
-OFFENE PUNKTE (max. 3 Bullets):
-• [Bullet 1]
-• [Bullet 2]
-• [Bullet 3]
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion - Pilot? Rollout? + wann]
 
@@ -694,6 +704,8 @@ OFFENE PUNKTE (max. 3 Bullets):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
+
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -973,16 +985,26 @@ async function callClaudeJSON(prompt){
       },
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
-        max_tokens:2000,
+        max_tokens:4000,
         messages:[{role:'user',content:prompt}]
       })
     });
-    if(!resp.ok)return null;
+    if(!resp.ok){console.warn('callClaudeJSON: API-Fehler',resp.status);return null;}
     const json=await resp.json();
     let text=(json.content||[]).map(b=>b.text||'').join('');
     text=text.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
-    return JSON.parse(text);
-  }catch(e){return null;}
+    try{
+      return JSON.parse(text);
+    }catch(parseErr){
+      console.warn('callClaudeJSON: JSON-Parse fehlgeschlagen, evtl. abgeschnitten durch max_tokens. Rohtext-Länge:',text.length,'stop_reason:',json.stop_reason);
+      // Versuche das letzte vollständige } zu finden und davor abzuschneiden (Rettung bei Abschneidung am Ende)
+      const lastBrace=text.lastIndexOf('}');
+      if(lastBrace>0){
+        try{return JSON.parse(text.substring(0,lastBrace+1));}catch(e2){}
+      }
+      return null;
+    }
+  }catch(e){console.warn('callClaudeJSON: Fehler',e.message);return null;}
 }
 
 
@@ -1085,7 +1107,10 @@ K.O.-KRITERIEN (harte Dealbreaker – dominieren IMMER alle anderen Signale, auc
 
 Wenn EINES dieser K.O.-Kriterien zutrifft: Score MUSS unter 35 liegen (Label "Kritisch"), unabhängig davon wie viele positive Signale sonst vorliegen. Das betroffene Signal MUSS in der warning-Liste stehen, klar erkennbar als das dominante Problem.
 
-Alle übrigen Signale (weder K.O. noch in obiger Liste) sind RISIKO-Signale: sie wirken moderat auf den Score, können sich gegenseitig aufwiegen, und mehrere positive Risiko-Signale können einzelne negative Risiko-Signale kompensieren.
+Alle übrigen Signale (weder K.O. noch in obiger Liste) unterscheiden sich nochmal in ihrer Stärke:
+- STARKE Signale (deutlich spürbarer Effekt auf den Score, aber kein K.O.): ein konkret quantifizierter Schmerzpunkt (z.B. "X Arbeitstage Mehraufwand pro Vorgang"), ein bestätigter Sponsor/Champion, eine bestätigte, mehrfach wiederkehrende geschäftliche Auswirkung (z.B. "X gescheiterte Entscheidungen pro Jahr wegen fehlerhafter Daten"), eine klar bestätigte Budgetfreigabe. Diese Signale sollen den Score spürbar stärker bewegen als kleinere Detailpunkte.
+- LEICHTE Signale (geringer Effekt): einzelne Detailinformationen, organisatorische Nebensächlichkeiten, unklare/vage Aussagen ohne Zahl oder konkrete Konsequenz.
+Bewerte explizit, welche Signale STARK und welche LEICHT sind, bevor du den Gesamtscore festlegst – ein einzelnes starkes Signal darf nicht von mehreren leichten Signalen "weggemittelt" werden.
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
@@ -1138,7 +1163,11 @@ async function refreshOpportunityHealth(accId){
       checklist:json.checklist||null,
       ts:Date.now()
     });
+    LS.set('ki21_health_lastError_'+accId,null);
     renderHealthBadgeIfPresent();
+  } else {
+    console.warn('refreshOpportunityHealth: Score-Berechnung fehlgeschlagen für',accId,'- alter Score bleibt erhalten.');
+    LS.set('ki21_health_lastError_'+accId,{ts:Date.now()});
   }
 }
 
@@ -1211,7 +1240,7 @@ function getOpportunityHealth(accId){
   if(hasActiveKo)score=Math.min(score,koCapMin);
   const provisional=(auto.structuralOpenCount||0)>3;
   const label=hasActiveKo?'Kritisch':(score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund')));
-  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo};
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo,ts:auto.ts||0};
 }
 
 function getHealthColor(score){
@@ -1276,6 +1305,11 @@ function showOpportunityHealthDetail(accId){
         '⚠ Vorläufige Bewertung, da viele kritische Informationen noch offen sind.'));
     }else{
       content.appendChild(h('div',{style:{marginBottom:'14px'}}));
+    }
+    const lastError=LS.get('ki21_health_lastError_'+accId,null);
+    if(lastError&&(!health.ts||lastError.ts>health.ts)){
+      content.appendChild(h('div',{style:{fontSize:'11px',color:'#f85149',marginBottom:'14px',background:'rgba(248,81,73,.1)',padding:'8px',borderRadius:'6px'}},
+        '⚠ Die letzte Score-Neuberechnung ist fehlgeschlagen (z.B. Netzwerkfehler oder unvollständige KI-Antwort). Der angezeigte Score ist möglicherweise veraltet. Versuche es erneut, indem du eine neue Stationsausgabe erzeugst oder die Ergänzungen erneut speicherst.'));
     }
     function section(title,items,symbol){
       let expanded=true;
@@ -2971,7 +3005,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.46';
+const KI21_VERSION='v4.47';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3341,7 +3375,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.46';
+  v.textContent='v4.47';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
