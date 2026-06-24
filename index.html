@@ -332,7 +332,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='- KRITISCH: Die abschließende Aktionszeile darf NUR EINE einzige, priorisierte Handlung enthalten – KEINE Aufzählung mehrerer Aktionen mit "und" oder Kommas (z.B. NICHT "Workshop vereinbaren und Unterlagen vorbereiten und Entscheider kontaktieren"). Wenn mehrere Dinge zu tun wären, wähle die EINE wichtigste aus, die diese Woche passieren muss – alles andere ergibt sich danach von selbst oder gehört in den Detailbereich.\n';
   s+='- Am Ende GENAU EINE Aktionszeile gemäß dem unten vorgegebenen Phasenformat (z.B. "NÄCHSTER SCHRITT DIESE WOCHE:")\n';
   s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
-  s+='- KRITISCH: Der Abschnitt "BISHERIGE ERGEBNISSE" (falls unten vorhanden) ist NUR Hintergrundwissen für dich, um Wiederholungen zu vermeiden und Bezüge herzustellen. Wiederhole NIEMALS frühere Phasenergebnisse, Phasennamen oder Phasentitel im Output. Erzeuge AUSSCHLIESSLICH den Output für die JETZT angeforderte, EINZELNE Phase – kein Sammel-Output über mehrere Phasen, keine "Zusammenfassung bisheriger Phasen" als eigener Abschnitt.\n';
+  s+='- KRITISCH – KEINE ÜBERNAHME UNGEPRÜFTER ZAHLEN AUS FRÜHEREN PHASEN: Der Abschnitt "BISHERIGE ERGEBNISSE" (falls unten vorhanden) ist NUR Hintergrundwissen für dich, um Wiederholungen zu vermeiden und Bezüge herzustellen. Wiederhole NIEMALS frühere Phasenergebnisse, Phasennamen oder Phasentitel im Output. Erzeuge AUSSCHLIESSLICH den Output für die JETZT angeforderte, EINZELNE Phase – kein Sammel-Output über mehrere Phasen, keine "Zusammenfassung bisheriger Phasen" als eigener Abschnitt. WICHTIG: "BISHERIGE ERGEBNISSE" wurde von einer früheren KI-Anfrage erzeugt und kann selbst ungeprüfte Schätzungen oder Fehler enthalten – es ist NICHT automatisch gleichwertig mit einer direkten, vom Kunden bestätigten Aussage. Übernimm aus "BISHERIGE ERGEBNISSE" NUR Zahlen/Fakten, die DORT bereits klar als BESTÄTIGT/vom Kunden genannt gekennzeichnet waren. Wenn eine Zahl dort ohne erkennbare Quelle auftaucht (z.B. eine konkrete €-Summe zu einem Bestandssystem, ohne dass im Originaltext der Kunde diese Zahl genannt hat), übernimm sie NICHT unverändert – kennzeichne sie stattdessen erneut als ANNAHME/ZU VALIDIEREN oder lasse sie ganz weg. Erfinde NIEMALS eine neue, noch präzisere Version einer bereits unsicheren Zahl.\n';
   // Include results from all previous phases - unabhängig von stk (Ergänzungen), da diese Info für KPI-Weiterverwendung essenziell ist
   {
     const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
@@ -343,7 +343,13 @@ function buildCtx(cust,mu,kk,stk){
         const d=LS.get('ki21_st_'+aid+'_'+i,{});
         if(d.result&&d.result.trim()){
           const {main:prevMain}=splitDetailsFromResult(d.result);
-          prevResults+='\n--- '+phaseNames[i]+' (nur zur Orientierung, NICHT wiederholen) ---\n'+prevMain.substring(0,300)+'\n';
+          // An Zeilengrenze abschneiden statt mitten im Satz/Label, damit Kennzeichnungen wie ANNAHME/KLÄREN nicht verloren gehen
+          let snippet=prevMain;
+          if(snippet.length>600){
+            const cut=snippet.lastIndexOf('\n',600);
+            snippet=snippet.substring(0,cut>0?cut:600)+'\n[...]';
+          }
+          prevResults+='\n--- '+phaseNames[i]+' (nur zur Orientierung, NICHT wiederholen) ---\n'+snippet+'\n';
         }
       }
       if(prevResults)s+='\nBISHERIGE ERGEBNISSE (NUR zur Orientierung – diese NIEMALS im Output wiederholen oder zusammenfassen):'+prevResults+'\n';
@@ -1541,8 +1547,10 @@ function renderHome(){
   const schnellstartActive=LS.get('ki21_schnellstart',false);
 
   const sitLabel=h('div',{style:{fontSize:'9px',fontWeight:'700',letterSpacing:'1.5px',
-    textTransform:'uppercase',color:'#484f58',marginBottom:'8px'}},'Was bereiten Sie vor?');
+    textTransform:'uppercase',color:'#484f58',marginBottom:'4px'}},'Was bereiten Sie vor?');
   wrap.appendChild(sitLabel);
+  wrap.appendChild(h('div',{style:{fontSize:'10px',color:'var(--text3)',marginBottom:'8px'}},
+    'Tipp: Lange auf eine Phase drücken, um ihr Ergebnis zurückzusetzen und neu zu generieren.'));
 
   const groups=[
     {label:'Lead qualifizieren', icon:'🔎', primary:0, sub:'Phase 1'},
@@ -3005,7 +3013,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.47';
+const KI21_VERSION='v4.48';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3375,7 +3383,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.47';
+  v.textContent='v4.48';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
