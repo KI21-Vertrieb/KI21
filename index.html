@@ -300,7 +300,7 @@ function buildCtx(cust,mu,kk,stk){
   }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
   s+='KRITISCH: Wenn dieselben Kernfakten (z.B. eine konkrete Zahl wie "6 Arbeitstage pro Szenario") bereits in einem vorherigen Kontext-Abschnitt erwähnt wurden, wiederhole sie in dieser Phase nur EINMAL ausführlich (meist in den ERKENNTNISSE/BESTÄTIGT-Abschnitten) und referenziere sie danach kurz, statt sie in jedem Abschnitt erneut vollständig auszuschreiben. Ziel: Wiederholungen über die Phasen hinweg reduzieren, ohne wichtige Fakten wegzulassen.\n';
-  s+='PFLICHT: Kennzeichne jede Information mit: BESTÄTIGT: / ANNAHME: / KLÄREN:\n';
+  s+='PFLICHT: Die Genauigkeits-Kennzeichnung BESTÄTIGT/ANNAHME/KLÄREN gilt für deine interne Sorgfalt und für den Detailbereich (nach ###DETAILS###, falls das Phasenformat das vorsieht) – NICHT als Präfix in der kompakten Standardausgabe. Halte trotzdem in jedem Bullet selbst implizit fest, was Fakt vs. Annahme ist, ohne das Wort explizit hinzuschreiben (z.B. durch Formulierung wie "Kunde nennt..." vs. "vermutlich...").\n';
   s+='KRITISCH: Erfinde NIEMALS konkrete Studiennamen, Institute oder präzise Statistiken (z.B. "laut XY-Studie", "13-26 Wochen laut BARC") die nicht im Abschnitt "KI21 Intelligence" unten stehen. Du hast in dieser Phase KEINEN Websuche-Zugriff. Wenn du eine Marktaussage machen willst, formuliere sie als eigene Einschätzung ohne erfundene Quellenangabe, oder verweise allgemein auf Erfahrungswerte aus der KI21 Intelligence.\n';
   s+='KRITISCH: Wenn ein Arbeitsaufwand (Personenstunden) 8 Stunden oder mehr beträgt, wandle ihn IMMER in Arbeitstage à 8 Stunden um, indem du die Stundenzahl DURCH 8 TEILST (z.B. 600-1.200 Stunden ÷ 8 = 75-150 Arbeitstage, NICHT 600-1.200 Arbeitstage – die Maßeinheit ändert sich, der Zahlenwert wird kleiner). Rechne diese Division bei JEDER Umrechnung explizit nach, bevor du das Ergebnis hinschreibst. Das gilt AUCH wenn die Kundenangabe selbst in Stunden kam (z.B. "40-60 Stunden/Monat" → "5-7,5 Arbeitstage/Monat"), UND für jede aufsummierte oder hochgerechnete Jahres-/Monatszahl, nicht nur für Einzelfall-Nennungen. Nur Werte unter 8 Stunden bleiben in Stunden stehen. Das gilt für alle Aufwandsangaben in jeder Phase, konsequent über den gesamten Output.\n';
   s+='KRITISCH: Wenn du irgendwo im Output die Verlässlichkeit einer Aussage/Zahl kennzeichnest, nutze AUSSCHLIESSLICH die Worte BESTÄTIGT (vom Kunden genannt oder dokumentiert), ARBEITSWERT (Benchmark + plausibel abgeleiteter Mittelwert aus KI21 Intelligence, zum Rechnen verwendet, nicht kundenspezifisch verifiziert) oder ZU VALIDIEREN (offene Größe, die im nächsten Gespräch geklärt werden sollte) – NIEMALS Emoji-Punkte wie 🟢/🟡/🔴 oder Ampelfarben ohne Wort. Schreibe immer zuerst den Bewertungstext, dann das Label in Großbuchstaben direkt danach oder davor (z.B. "Typische Range: 300-600 Stunden/Jahr, verwendeter ARBEITSWERT: 450 Stunden/Jahr"). Das gilt konsequent für jede Confidence-Angabe im gesamten Output, nicht nur an einer Stelle. Bei BESTÄTIGT/ANNAHME/KLÄREN-Blöcken (für Gesprächserkenntnisse) bleiben diese drei Wörter wie bisher bestehen – ARBEITSWERT/ZU VALIDIEREN gelten zusätzlich speziell für quantitative Kennzahlen und Berechnungsgrundlagen.\n';
@@ -315,6 +315,8 @@ function buildCtx(cust,mu,kk,stk){
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='KRITISCH: Jede Phase muss mindestens EINEN Gedanken enthalten, der über Standardwissen hinausgeht – einen Aha-Insight, der im Gedächtnis bleibt (z.B. "Die größte Zeitersparnis entsteht oft nicht durch schnellere Reports, sondern dadurch, dass dieselben Zahlen nicht mehr in mehreren Excel-Dateien manuell abgeglichen werden müssen."). Vermeide reine Standardaussagen ohne überraschenden Mehrwert. Dieser Insight darf nicht erfunden wirken – er muss zur konkreten Situation des Kunden passen und nachvollziehbar sein.\n';
   s+='KRITISCH: Tonfall durchgehend partnerschaftlich, nicht verkäuferisch-drängend. Vermeide Formulierungen wie "damit ich Sie/Ihre Geschäftsführung überzeuge" oder "garantiert". Bevorzuge Formulierungen wie "damit Sie eine belastbare Entscheidungsgrundlage haben – unabhängig davon, wie die Entscheidung ausfällt" oder "damit wir gemeinsam zu einer fundierten Einschätzung kommen". Das Ziel ist: gemeinsam zu einer Entscheidung führen, nicht überreden.\n';
+  s+='KRITISCH – HARTE GRENZE FÜR DIE STANDARDAUSGABE: Die Standardausgabe (alles VOR der Zeile "###DETAILS###", falls vorhanden) MUSS exakt mit der letzten vorgegebenen Zeile des Formats enden (meist "NÄCHSTE AKTION:" / "→ TODO:" / vergleichbar, je nach Phase). Schreibe NACH dieser letzten Zeile ABSOLUT NICHTS mehr, außer dem optionalen Marker "###DETAILS###" und dem dahinter folgenden Detailblock. KEINE zusätzliche Zusammenfassung, KEIN Wiederholen von Punkten, KEIN weiterer Absatz "Zusammenfassend...". Die Standardausgabe muss auf einem Smartphone als EINE Bildschirmseite ohne Scrollen lesbar sein – das ist die wichtigste Einzelregel in diesem Prompt.\n';
+  s+='KRITISCH: Die "NÄCHSTE AKTION"/"→ TODO" dieser Phase muss sich klar von der letzten Aktion aus "BISHERIGE ERGEBNISSE" (falls vorhanden) unterscheiden – wiederhole NIEMALS sinngemäß denselben nächsten Schritt wie eine vorherige Phase. Wenn die vorherige Phase z.B. "Termin vereinbaren" als Aktion hatte und dieser Termin laut Kontext bereits stattgefunden hat, muss die neue Aktion einen Schritt WEITER sein, nicht denselben wiederholen.\n';
   s+='AUSGABE-REGELN (strikt einhalten):\n';
   s+='- KRITISCHSTE REGEL: Liefere IMMER sofort den vollständigen Output im vorgegebenen Format – auch wenn Informationen fehlen, unsicher oder unvollständig wirken. STELLE NIEMALS eine Rückfrage VOR dem Output und warte NICHT auf eine Antwort, bevor du lieferst. Fehlende oder unsichere Daten gehören in die Kennzeichnung ANNAHME/KLÄREN oder eine etwaige Rückfragen-Sektion AM ENDE des Outputs, NIEMALS als eigene Frage oder Meta-Kommentar davor. Du bekommst in diesem Schritt keine Antwort auf eine Vorab-Frage – also stelle keine, sondern arbeite mit dem was im Feld steht. VERBOTENE Satzanfänge: "Ich verstehe die Aufgabe", "Allerdings stelle ich fest", "Mir fehlen", "Bevor ich", "Ich muss zunächst" – beginne IMMER direkt mit dem ersten Element des vorgegebenen Output-Formats.\n';
   s+='- Nutze vorhandene Informationen – keine Nachfragen\n';
@@ -324,9 +326,10 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Kein Markdown: keine **, keine ###, keine ---\n';
   s+='- Nur Deutsch\n';
   s+='- Keine Einleitung, kein Fazit\n';
-  s+='- Erkenntnisse GRUPPIERT: erst alle BESTÄTIGT:, dann alle ANNAHME:, dann alle KLÄREN:\n';
+  s+='- Erkenntnisse als einfache Bullets, OHNE BESTÄTIGT:/ANNAHME:/KLÄREN:-Präfix in der Standardausgabe (diese Kennzeichnung nur noch im Detailbereich nach ###DETAILS### verwenden, falls das jeweilige Phasenformat das vorsieht)\n';
   s+='- Am Ende: → TODO: [eine konkrete Aktion + wann]\n';
   s+='- KRITISCH: Wenn ein Feld "Frage: ___ | Antwort: ___" oder "Antwort: ___" enthält, ist "___" ein PLATZHALTER für eine noch unbeantwortete Frage. Schreibe NIEMALS eine erfundene Antwort dorthin – das "___" muss exakt so im Output stehen bleiben.\n';
+  s+='- KRITISCH: Der Abschnitt "BISHERIGE ERGEBNISSE" (falls unten vorhanden) ist NUR Hintergrundwissen für dich, um Wiederholungen zu vermeiden und Bezüge herzustellen. Wiederhole NIEMALS frühere Phasenergebnisse, Phasennamen oder Phasentitel im Output. Erzeuge AUSSCHLIESSLICH den Output für die JETZT angeforderte, EINZELNE Phase – kein Sammel-Output über mehrere Phasen, keine "Zusammenfassung bisheriger Phasen" als eigener Abschnitt.\n';
   // Include results from all previous phases
   if(stk){
     const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten','Nutzen-Kosten-Analyse','Angebot & Abschluss'];
@@ -336,10 +339,11 @@ function buildCtx(cust,mu,kk,stk){
       for(let i=0;i<5;i++){
         const d=LS.get('ki21_st_'+aid+'_'+i,{});
         if(d.result&&d.result.trim()){
-          prevResults+='\n--- '+phaseNames[i]+' ---\n'+d.result.substring(0,500)+'\n';
+          const {main:prevMain}=splitDetailsFromResult(d.result);
+          prevResults+='\n--- '+phaseNames[i]+' (nur zur Orientierung, NICHT wiederholen) ---\n'+prevMain.substring(0,300)+'\n';
         }
       }
-      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (Zusammenfassung):'+prevResults+'\n';
+      if(prevResults)s+='\nBISHERIGE ERGEBNISSE (NUR zur Orientierung – diese NIEMALS im Output wiederholen oder zusammenfassen):'+prevResults+'\n';
     }
   }
   if(cust.firma)s+='Kunde: '+cust.firma+'\n';
@@ -608,10 +612,10 @@ EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
 
 WICHTIGSTER NUTZEN: [1 prägnanter Satz – das stärkste Argument für genau diesen Fall]
 
-WIRTSCHAFTLICHER HEBEL (max. 3 Zeilen, je 1 Zahl/Fakt):
-• [Zeile 1, z.B. "Laufender Nutzen: 5.000 €/Monat"]
-• [Zeile 2, z.B. "Investition: 1.800 €/Monat (3 Jahre geglättet)"]
-• [Zeile 3, z.B. "ROI: Nutzen übersteigt Investition um Faktor X" oder "noch nicht berechenbar – Zahlen fehlen"]
+WIRTSCHAFTLICHER HEBEL (genau 3 Zeilen, je GENAU EINE Zahl – KEINE Range, KEINE Verkettung mehrerer Zahlen in einer Zeile):
+• Laufender Nutzen: [eine konkrete €/Monat-Zahl ODER "noch zu validieren"]
+• Investition: [eine konkrete €/Monat-Zahl, 3 Jahre geglättet]
+• ROI: [eine einfache Aussage, z.B. "Nutzen übersteigt Investition um Faktor X" ODER "noch nicht berechenbar – Zahlen fehlen"]
 
 OFFENE PUNKTE (max. 3 Bullets):
 • [Bullet 1]
@@ -3023,7 +3027,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.44';
+const KI21_VERSION='v4.45';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3393,7 +3397,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.44';
+  v.textContent='v4.45';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
