@@ -909,8 +909,9 @@ function getAllPhaseAdditions(accId){
   return out.trim();
 }
 
-function getAdditionRiskSignals(accId){
-  const raw=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId));
+function getAdditionRiskSignals(accId,allResults){
+  const resultsText=(allResults||[]).map(r=>r.text||'').join('\n');
+  const raw=(LS.get('ki21_kk_'+accId,'')+'\n'+getAllPhaseAdditions(accId)+'\n'+resultsText);
   const combined=raw.toLowerCase();
   const warning=[];
   const positive=[];
@@ -958,6 +959,9 @@ function getAdditionRiskSignals(accId){
   if(new RegExp(leaderWords+'.{0,120}(sponsor|unterstützt|treibt|will|priorität|dringend)','i').test(raw)){
     addPos('Entscheider unterstützt aktiv',5);
   }
+  if(new RegExp('(champion|fürsprecher|unterstützer|treiber|sponsor).{0,100}(verlässt|verlassen|kündigt|geht|wechselt|weg|nicht mehr im unternehmen)','i').test(raw)){
+    addWarn('Interner Champion verlässt das Unternehmen',30,30);
+  }
   return {warning,positive,penalty,scoreCap};
 }
 
@@ -983,7 +987,16 @@ KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, 
 Beispiele für deutliche SENKUNG: Geschäftsführer/CEO/Entscheider mag unsere Lösung nicht; Geschäftsführer/CEO/Entscheider präferiert zwei andere Mitbewerber; Wettbewerber führt bereits Workshops durch oder ist stark etabliert; Wettbewerber bietet kritische Funktion besser; Entscheidung wird verschoben; Budget entfällt; interner Champion verlässt das Unternehmen.
 Beispiele für ERHÖHUNG: Budget bestätigt; Entscheider aktiv eingebunden; wirtschaftlicher Nutzen bestätigt; starker Sponsor vorhanden.
 
-P1-REGEL: Harte Negativsignale dominieren weiche Positivsignale. Wenn ein Geschäftsführer/CEO/Entscheider unsere Lösung ablehnt oder Wettbewerber klar bevorzugt, ist die Opportunity stark gefährdet und darf nicht durch andere positive Signale künstlich gesund wirken. In diesem Fall muss der Score deutlich sinken und das Warnsignal in der warning-Liste erscheinen.
+K.O.-KRITERIEN (harte Dealbreaker – dominieren IMMER alle anderen Signale, auch wenn viele Positivsignale vorliegen):
+- Entscheider (GF/CEO/CFO/Vorstand/wirtschaftlicher Entscheider) lehnt unsere Lösung klar ab
+- Entscheider bevorzugt klar einen konkreten Mitbewerber
+- Budget ist komplett entfallen, gestrichen oder endgültig abgelehnt
+- Entscheidung/Projekt ist final gestoppt oder auf unbestimmte Zeit eingefroren
+- Interner Champion/Fürsprecher verlässt das Unternehmen oder fällt komplett weg
+
+Wenn EINES dieser K.O.-Kriterien zutrifft: Score MUSS unter 35 liegen (Label "Kritisch"), unabhängig davon wie viele positive Signale sonst vorliegen. Das betroffene Signal MUSS in der warning-Liste stehen, klar erkennbar als das dominante Problem.
+
+Alle übrigen Signale (weder K.O. noch in obiger Liste) sind RISIKO-Signale: sie wirken moderat auf den Score, können sich gegenseitig aufwiegen, und mehrere positive Risiko-Signale können einzelne negative Risiko-Signale kompensieren.
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
@@ -1017,7 +1030,7 @@ async function refreshOpportunityHealth(accId){
   });
   const kontext=LS.get('ki21_kk_'+accId,'');
   const phaseAdditions=getAllPhaseAdditions(accId);
-  const risk=getAdditionRiskSignals(accId);
+  const risk=getAdditionRiskSignals(accId,allResults);
   if(!allResults.length&&!kontext&&!phaseAdditions)return;
   const prompt=buildHealthPrompt(cust,allResults,kontext,phaseAdditions);
   const json=await callClaudeJSON(prompt);
@@ -1044,9 +1057,29 @@ function getHealthManual(accId){
   return LS.get('ki21_health_manual_'+accId,{added:[],removedAutoTexts:[]});
 }
 
+function isKoSignalText(text){
+  const t=(text||'').toLowerCase();
+  const leaderWords='(geschäftsführer|gf|ceo|cfo|geschäftsleitung|entscheider|leitung|vorstand|sponsor|cio)';
+  const competitorWords='(mitbewerb|mitbewerber|wettbewerb|wettbewerber|konkurrent|konkurrenz)';
+  const preferenceWords='(präfer|bevorzug|favoris|favorit|gesetzt|vorne|tendier)';
+  const rejectionWords='(mag .*nicht|will .*nicht|lehnt .*ab|skeptisch|dagegen|kein interesse|nicht überzeugt|ablehn)';
+  if(new RegExp(leaderWords+'.{0,80}'+preferenceWords+'.{0,80}'+competitorWords,'i').test(t))return true;
+  if(new RegExp(competitorWords+'.{0,80}'+preferenceWords,'i').test(t))return true;
+  if(new RegExp(leaderWords+'.{0,80}'+rejectionWords,'i').test(t))return true;
+  if(/budget.{0,40}(gestrichen|entfallen|komplett.*abgelehnt)/i.test(t))return true;
+  if(/(entscheidung|projekt).{0,40}(final.*gestoppt|endgültig.*gestoppt|eingefroren)/i.test(t))return true;
+  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|weg)/i.test(t))return true;
+  return false;
+}
+
 function getOpportunityHealth(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  const risk=getAdditionRiskSignals(accId);
+  const allResults=[];
+  SITS.forEach((sit,i)=>{
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&d.result)allResults.push({title:sit.title,text:d.result});
+  });
+  const risk=getAdditionRiskSignals(accId,allResults);
   if(!auto){
     if(risk.warning.length||risk.positive.length){
       const score=applyHealthRiskRules(55,risk);
@@ -1067,14 +1100,21 @@ function getOpportunityHealth(accId){
     else open.push(entry);
   });
   const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
-  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false).length;
+  const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&!isKoSignalText(m.text)).length;
+  const manualKoWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&isKoSignalText(m.text)).length;
   const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
+  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&!isKoSignalText(s.text)).length;
+  const disabledAutoKoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&isKoSignalText(s.text)).length;
+  const enabledAutoKoWarning=warning.filter(s=>s.origin==='AUTO'&&!s.disabled&&isKoSignalText(s.text)).length;
+  // Normale Risiko-Signale: moderate +-3 Wirkung. K.O.-Signale: starke +-35 Wirkung (entspricht hartem Dealbreaker).
+  let base=auto.score+manualPositiveCount*3-manualWarningCount*3-manualKoWarningCount*35
+    -disabledAutoPositive*3+disabledAutoWarning*3+disabledAutoKoWarning*35;
+  const hasActiveKo=enabledAutoKoWarning>0||manualKoWarningCount>0;
   let score=applyHealthRiskRules(base,risk);
+  if(hasActiveKo)score=Math.min(score,30);
   const provisional=(auto.structuralOpenCount||0)>3;
-  const label=score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund'));
-  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null};
+  const label=hasActiveKo?'Kritisch':(score<35?'Kritisch':(score<70?'Stabil':(auto.label||'Gesund')));
+  return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo};
 }
 
 function getHealthColor(score){
@@ -1102,7 +1142,7 @@ function renderHealthBadgeIfPresent(){
   els.forEach(el=>{
     if(!health){el.style.display='none';return;}
     el.style.display='';
-    el.textContent='Opportunity '+health.score+'/100';
+    el.textContent='Opportunity '+health.score+'/100'+(health.isKo?' ⚠️':'');
     const color=getHealthColor(health.score);
     el.style.color=color;
     el.style.borderColor=color;
@@ -1132,7 +1172,7 @@ function showOpportunityHealthDetail(accId){
     if(!health){m.remove();return;}
     content.innerHTML='';
     const scoreLine=h('div',{style:{fontSize:'22px',fontWeight:'800',marginBottom:'4px'}},
-      health.score+'/100 – '+(health.label||''));
+      health.score+'/100 – '+(health.label||'')+(health.isKo?' (K.O.)':''));
     content.appendChild(scoreLine);
     if(health.provisional){
       content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
@@ -2865,7 +2905,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.37';
+const KI21_VERSION='v4.39';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3235,7 +3275,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.37';
+  v.textContent='v4.39';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
