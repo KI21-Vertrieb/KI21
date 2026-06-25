@@ -429,6 +429,11 @@ ZU VALIDIEREN (max. 3 Bullets, je max. 1 Satz, mit Priorität):
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
+🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
+1. [höchste Priorität – z.B. "CIO-Haltung verstehen"]
+2. [zweite Priorität]
+3. [dritte Priorität]
+
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
 DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
@@ -471,6 +476,11 @@ ZU VALIDIEREN (max. 3 Bullets, mit Priorität):
 ⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
+1. [höchste Priorität – z.B. "CIO-Haltung verstehen"]
+2. [zweite Priorität]
+3. [dritte Priorität]
 
 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (genau 5 konkrete, kundenspezifische Fragen – KEINE Platzhalter wie "S: [Situation]", sondern ausgeschriebene, direkt im Gespräch verwendbare Fragen):
 • S: [konkrete, ausgeschriebene Situationsfrage zu diesem Kunden]
@@ -531,6 +541,11 @@ Begründung: [1 Satz]
 ⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
+1. [höchste Priorität – z.B. "CIO-Haltung verstehen"]
+2. [zweite Priorität]
+3. [dritte Priorität]
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
@@ -672,6 +687,11 @@ EINSCHÄTZUNG: [1 kurzer Satz, wie stark der wirtschaftliche Case ist]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion - Pilot? Rollout? + wann]
 
+🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
+1. [höchste Priorität]
+2. [zweite Priorität]
+3. [dritte Priorität]
+
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
 FORECAST-/ENTSCHEIDUNGSQUALITÄT: [Nur ausfüllen, wenn dies beim Kunden ein relevanter Hebel ist (z.B. Forecast-Genauigkeit, Pipeline-Zuverlässigkeit, frühere Risikoerkennung wurde vom Kunden oder dessen Geschäftsführung angesprochen). Format: "Heute: [kurze Einschätzung] → Mit KI21: [kurze Einschätzung]". Falls kein erkennbarer Hebel vorliegt: "Nicht der zentrale Hebel in diesem Fall – Hauptnutzen liegt woanders." Erfinde NIEMALS einen Forecast-Bezug, wenn der Kunde keinen genannt hat.]
@@ -746,6 +766,11 @@ OFFENE PUNKTE (max. 3 Bullets, priorisiert):
 ⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+
+🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
+1. [höchste Priorität – z.B. "CIO-Haltung verstehen"]
+2. [zweite Priorität]
+3. [dritte Priorität]
 
 ERÖFFNUNGSSATZ: [2 Sätze in Kundensprache]
 
@@ -2022,7 +2047,20 @@ function renderStation(sitId){
   const fieldsDiv=h('div',{});
   sit.felder.filter(f=>!f.post&&!f.hidden).forEach(f=>{
     const fw=h('div',{className:'field-wrap'});
-    fw.appendChild(h('div',{className:'field-label'},f.l));
+    const isCollapsibleTa=(f.t==='ta'&&!f.readonly&&f.big);
+    const hasExistingVal=!!(data.fv[f.id]&&data.fv[f.id].trim());
+    const startCollapsed=isCollapsibleTa&&hasExistingVal&&!!data.result;
+    let collapsed=startCollapsed;
+    if(isCollapsibleTa){
+      const labelRow=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'},
+        onclick:()=>{collapsed=!collapsed;taWrapRef.style.display=collapsed?'none':'block';arrowRef.textContent=collapsed?'▸':'▾';}});
+      labelRow.appendChild(h('div',{className:'field-label'},f.l));
+      var arrowRef=h('span',{style:{color:'var(--text3)',fontSize:'12px'}},collapsed?'▸':'▾');
+      labelRow.appendChild(arrowRef);
+      fw.appendChild(labelRow);
+    } else {
+      fw.appendChild(h('div',{className:'field-label'},f.l));
+    }
     let inp;
     if(f.t==='select'){
       inp=h('select',{});
@@ -2058,19 +2096,19 @@ function renderStation(sitId){
       LS.set(KEY,data);
     });
     if(f.t==='ta'){
-      const taWrap=h('div',{style:{position:'relative'}});
+      var taWrapRef=h('div',{style:{position:'relative',display:collapsed?'none':'block'}});
       const fsBtn=h('button',{
         style:{position:'absolute',top:'6px',right:'6px',
           background:'rgba(255,107,0,.2)',border:'1px solid rgba(255,107,0,.4)',
           color:'#ff6b00',borderRadius:'4px',padding:'2px 7px',fontSize:'12px',
           cursor:'pointer',zIndex:10,lineHeight:'1.5'},
-        onclick:()=>showFullscreenEdit(f.l,inp.value,(v)=>{
+        onclick:(e)=>{e.stopPropagation();showFullscreenEdit(f.l,inp.value,(v)=>{
           inp.value=v; data.fv[f.id]=v; LS.set(KEY,data);
-        })
+        });}
       },'⛶');
-      taWrap.appendChild(inp);
-      taWrap.appendChild(fsBtn);
-      fw.appendChild(taWrap);
+      taWrapRef.appendChild(inp);
+      taWrapRef.appendChild(fsBtn);
+      fw.appendChild(taWrapRef);
     } else {
       fw.appendChild(inp);
     }
@@ -3052,7 +3090,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.57';
+const KI21_VERSION='v4.58';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3422,7 +3460,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.57';
+  v.textContent='v4.58';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
