@@ -466,16 +466,16 @@ DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
+SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (genau 5 konkrete, kundenspezifische Fragen – KEINE Platzhalter wie "S: [Situation]", sondern ausgeschriebene, direkt im Gespräch verwendbare Fragen):
+• S: [konkrete, ausgeschriebene Situationsfrage zu diesem Kunden]
+• P: [konkrete, ausgeschriebene Problemfrage zu diesem Kunden]
+• P: [konkrete, ausgeschriebene Ursache-Frage zu diesem Kunden]
+• I: [konkrete, ausgeschriebene Auswirkungs-/Kostenfrage zu diesem Kunden]
+• N: [konkrete, ausgeschriebene Nutzenfrage zu diesem Kunden]
+
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
-DIE 5 SPIN-FRAGEN FÜR DIE BEDARFSANALYSE:
-1. S: [Situation] | Antwort: ___
-2. P: [Problem] | Antwort: ___
-3. P: [Ursache] | Antwort: ___
-4. I: [Kosten des Problems] | Antwort: ___
-5. N: [Wert der Lösung] | Antwort: ___
-
-WICHTIG: Die SPIN-Fragen sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort hinter "Antwort:". Das Wort "___" MUSS exakt so stehen bleiben.`
+WICHTIG: Die SPIN-Fragen oben sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort dazu – sie werden vom Verkäufer erst nach dem nächsten Gespräch beantwortet.`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo',icon:'📋',
    regel:'Was braucht der Kunde wirklich?',
@@ -1867,7 +1867,7 @@ function transferAndGo(fromId, toId, result){
 
   // Phase 1→2: transfer SPIN-Fragen + Antworten
   if(fromId===0){
-    const curKEY='ki21_sit_'+state.activeId+'_0';
+    const curKEY='ki21_st_'+state.activeId+'_0';
     const curData=LS.get(curKEY,{fv:{},result:''});
     // Extract SPIN questions from result
     const lines=result.split('\n');
@@ -2184,7 +2184,7 @@ function renderStation(sitId){
           const lines2=r2.split('\n');
           const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
           if(spinIdx>=0){
-            const nextKEY2='ki21_sit_'+state.activeId+'_1';
+            const nextKEY2='ki21_st_'+state.activeId+'_1';
             const nextData2=LS.get(nextKEY2,{fv:{},result:''});
             nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
             LS.set(nextKEY2,nextData2);
@@ -3017,7 +3017,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.52';
+const KI21_VERSION='v4.53';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3387,7 +3387,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.52';
+  v.textContent='v4.53';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
