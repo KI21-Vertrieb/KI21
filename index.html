@@ -317,7 +317,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='KRITISCH: UNSICHERE PROZENTANGABEN GENERELL VORSICHTIG FORMULIEREN (gilt für ALLE Prozentzahlen in JEDER Phase, auch Forecast-Genauigkeit-Benchmarks): Solange eine Prozentzahl nicht durch eigene Messung des Kunden bestätigt ist, formuliere sie nicht als feststehende Tatsache. Ergänze bei der ersten Nennung einen kurzen Validierungs-Hinweis (z.B. "...sollte im Pilotbetrieb mit echten Zahlen validiert werden"), statt die Zahl danach unkommentiert mehrfach als Fakt zu wiederholen.\n';
   s+='KRITISCH: KEIN AUSWEICHEN AUF ERFUNDENE "BENCHMARKS": Wenn du für ein Krisen-/Schadenspotenzial keine belastbare, herleitbare Zahl hast, darfst du NICHT stattdessen eine pauschale Branchenzahl als angeblichen "Benchmark" zitieren, um trotzdem einen €-Betrag zu nennen. Das ist nur eine Umgehung des Verbots, keine echte Quelle. Wenn keine Zahl aus der tatsächlichen KI21 Intelligence stammt, bleibt das Potenzial unbeziffert – auch wenn das bedeutet, gar keine €-Zahl zu nennen. Gilt in JEDER Phase.\n';
   s+='KRITISCH: KATEGORISCHES VERBOT FÜR UNBESTÄTIGTES KRISENPOTENZIAL: Wenn ein Schadens-/Krisenpotenzial nicht durch konkrete, vom Kunden bestätigte Zahlen (Häufigkeit UND Vermeidbarkeit UND Schadenshöhe alle bestätigt) belegt ist, darf NIRGENDS im Output – in KEINER Phase, auch nicht im Abschlusssatz, in der Kurzfassung, in Einwandantworten oder als "Sensitivitätsrechnung" – ein €-Betrag dafür genannt werden, auch nicht mit Wörtern wie "könnte", "potenziell", "zusätzlich". Beschreibe stattdessen NUR die Mechanik in Worten, ohne Zahl. Ein unbestätigter Betrag im Kundengespräch beschädigt mehr Vertrauen als er Nutzen bringt.\n';
-  s+='KRITISCH: Bei Umrechnung von Stunden/Monat in Vollzeitäquivalente (FTE) rechne korrekt: 1 FTE entspricht ca. 160-170 Stunden/Monat (Vollzeitstelle). Also z.B. 50-100 Stunden/Monat entspricht ca. 0,3-0,6 FTE, NICHT mehreren ganzen FTE. Prüfe jede FTE-Angabe rechnerisch nach, bevor du sie nennst – ein häufiger Fehler ist, Stunden/Monat mit der Anzahl beteiligter Personen zu verwechseln, statt durch die Stunden einer vollen Stelle zu teilen.\n';
+  s+='KRITISCH – KORREKTE PERSONEN-BEZEICHNUNG (gilt in JEDER Phase): Schreibe "X beteiligte Mitarbeitende" oder "X Personen", NIEMALS "X FTE" oder "X Vollzeitstellen" – außer der Kunde hat selbst explizit von Vollzeitstellen/FTE gesprochen. Eine vom Kunden genannte Anzahl beteiligter Personen ist NICHT automatisch eine Anzahl Vollzeitstellen – das sind fachlich unterschiedliche Größen, die nicht gleichgesetzt werden dürfen.\n';
   s+='ROI: Nur bestätigte Kundenzahlen verwenden. Zeitersparnis NUR für Account Manager.\n';
   s+='KRITISCH: Jede Phase muss mindestens EINEN Gedanken enthalten, der über Standardwissen hinausgeht – einen Aha-Insight, der im Gedächtnis bleibt (z.B. "Die größte Zeitersparnis entsteht oft nicht durch schnellere Reports, sondern dadurch, dass dieselben Zahlen nicht mehr in mehreren Excel-Dateien manuell abgeglichen werden müssen."). Vermeide reine Standardaussagen ohne überraschenden Mehrwert. Dieser Insight darf nicht erfunden wirken – er muss zur konkreten Situation des Kunden passen und nachvollziehbar sein.\n';
   s+='KRITISCH: Tonfall durchgehend partnerschaftlich, nicht verkäuferisch-drängend. Vermeide Formulierungen wie "damit ich Sie/Ihre Geschäftsführung überzeuge" oder "garantiert". Bevorzuge Formulierungen wie "damit Sie eine belastbare Entscheidungsgrundlage haben – unabhängig davon, wie die Entscheidung ausfällt" oder "damit wir gemeinsam zu einer fundierten Einschätzung kommen". Das Ziel ist: gemeinsam zu einer Entscheidung führen, nicht überreden.\n';
@@ -483,7 +483,7 @@ WICHTIG: Die SPIN-Fragen oben sind NEUE, noch unbeantwortete Fragen für das nä
      {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...'}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein BI-Berater. Du denkst konsequent in Geschäftsproblemen, Auswirkungen, Kundennutzen und Entscheidungen – nicht in Softwarefunktionen.
 
 Bedarfsanalyse abschließen: ${c.firma||''}, AP: ${c.ap||''}
 SPIN-Fragen: ${f.spin||''}
@@ -491,6 +491,8 @@ Antworten des Kunden: ${f.antworten||''}
 
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
+KRITISCH – DIE SPIN-FRAGEN BLEIBEN DER ROTE FADEN: Erfinde KEINE neuen, allgemeinen Fragen. Die Bedarfsanalyse baut ausschließlich auf den oben übergebenen SPIN-Fragen und den Antworten des Kunden auf.
+KRITISCH – BESTÄTIGT/ARBEITSWERT/ANNAHME SAUBER TRENNEN: BESTÄTIGT = direkt vom Kunden genannte Fakten (Personen, Häufigkeiten, Zeitangaben). ARBEITSWERT = eine rechnerische Hochrechnung AUS bestätigten Fakten, IMMER mit "ca." oder "Hochrechnung:" gekennzeichnet (z.B. wenn der Kunde "3 Änderungen/Monat, je 2-3 Tage" nennt, ist "ca. 6-9 Tage/Monat" ein Arbeitswert, keine vom Kunden genannte Zahl). ANNAHME = eine Vermutung ohne direkte Grundlage. Erfinde NIEMALS eine präzise Zahl (z.B. "24-36 Arbeitstage Rework"), die der Kunde nicht genannt hat, ohne sie klar als Hochrechnung zu kennzeichnen.
 
 EINSCHÄTZUNG: [1 kurzer Satz, wie konkret/quantifiziert der erkannte Bedarf ist]
 Begründung: [1 Satz]
@@ -500,7 +502,7 @@ Begründung: [1 Satz]
 • [Bullet 2]
 • [Bullet 3]
 
-🎬 ZEIGEN (max. 3 Bullets – was sollte in der Demo gezeigt werden):
+🎬 ZEIGEN (max. 3 Bullets – KEINE Softwarefunktionen wie "Dashboard" oder "Ampel", sondern das Geschäftsergebnis: "Liefertermine werden in Minuten statt Tagen bestätigt" statt "Ampel-Anzeige"):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
@@ -517,27 +519,27 @@ NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 === MEHR DETAILS (folgt NACH den drei Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
 DIE 5 WICHTIGSTEN ERKENNTNISSE (je max. 1-2 Sätze, als Bullets, gruppiert):
-• BESTÄTIGT: [Bullet aus dem Gespräch]
-• ANNAHME: [Bullet, plausibler Schluss]
-• KLÄREN: [Bullet, noch offener Punkt]
+• BESTÄTIGT: [Bullet aus dem Gespräch – nur direkt genannte Fakten]
+• ARBEITSWERT: [Bullet, falls eine Hochrechnung aus bestätigten Fakten sinnvoll ist – IMMER mit "ca."/"Hochrechnung:" gekennzeichnet]
+• ANNAHME: [Bullet, plausibler Schluss ohne direkte Grundlage]
 [Maximal 5 Bullets gesamt]
 
-DIE 3 WICHTIGSTEN DEMO-PUNKTE:
-1. [Muss gezeigt werden – warum]
-2. [Muss gezeigt werden – warum]
-3. [Muss gezeigt werden – warum]
-NICHT zeigen: [1 Punkt]
+DIE 3 WICHTIGSTEN DEMO-PUNKTE (KEINE Funktionsnamen – jeder Punkt beschreibt zuerst das Geschäftsproblem, DANN das Geschäftsergebnis, ERST DANACH knapp die Software dahinter):
+1. [Geschäftsproblem → Geschäftsergebnis – z.B. "Auftragsänderung wirkt sich automatisch auf alle betroffenen Bereiche aus, statt manuell nachgepflegt zu werden" – warum das für DIESEN Kunden zählt]
+2. [Geschäftsproblem → Geschäftsergebnis – warum das für DIESEN Kunden zählt]
+3. [Geschäftsproblem → Geschäftsergebnis – warum das für DIESEN Kunden zählt]
+NICHT zeigen: [1 Punkt, der vom eigentlichen Schmerz ablenken würde]
 
-DEMO-EINSTIEG: [1 Satz in Kundensprache]
+DEMO-EINSTIEG: [Beginne IMMER mit einem konkreten, vom Kunden genannten Fall aus den SPIN-Antworten – z.B. "Nehmen wir die letzte kurzfristige Auftragsänderung, die Sie erwähnt haben. Lassen Sie uns genau diesen Fall gemeinsam durchspielen." NICHT abstrakt einleiten, IMMER an einem echten, im Gespräch genannten Vorfall anknüpfen. Falls kein konkreter Fall in den Antworten genannt wurde, formuliere eine direkte Einladung dazu: "Beschreiben Sie mir kurz Ihren letzten [Schmerzpunkt]-Fall, dann zeige ich Ihnen direkt daran..."]
 
-DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN:
-1. [Botschaft – welches Kundenproblem wird gelöst]
-2. [Botschaft – welches Kundenproblem wird gelöst]
-3. [Botschaft – welches Kundenproblem wird gelöst]
-4. [Botschaft – welches Kundenproblem wird gelöst]
-5. [Botschaft – welches Kundenproblem wird gelöst]
+DIE 5 WICHTIGSTEN DEMO-BOTSCHAFTEN (jede Botschaft folgt strikt der Reihenfolge: Geschäftsproblem → Geschäftsergebnis → Software erst am Ende, knapp):
+1. [Geschäftsproblem des Kunden] → [konkretes Geschäftsergebnis] → [Software-Bezug in 3-5 Worten]
+2. [Geschäftsproblem des Kunden] → [konkretes Geschäftsergebnis] → [Software-Bezug in 3-5 Worten]
+3. [Geschäftsproblem des Kunden] → [konkretes Geschäftsergebnis] → [Software-Bezug in 3-5 Worten]
+4. [Geschäftsproblem des Kunden] → [konkretes Geschäftsergebnis] → [Software-Bezug in 3-5 Worten]
+5. [Geschäftsproblem des Kunden] → [konkretes Geschäftsergebnis] → [Software-Bezug in 3-5 Worten]
 
-KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat]`
+KPIs FÜR ROI: [3 konkrete Zahlen die der Kunde genannt hat – als BESTÄTIGT gekennzeichnet, falls eine Zahl eine Hochrechnung ist, explizit als "ca."/Hochrechnung kennzeichnen]`
   },
   {id:2,num:3,phase:'Phase 3',title:'Termin nachbereiten',icon:'📝',
    regel:'Was ist im letzten Termin passiert?',
@@ -3017,7 +3019,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.53';
+const KI21_VERSION='v4.54';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3387,7 +3389,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.53';
+  v.textContent='v4.54';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
