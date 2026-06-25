@@ -392,7 +392,7 @@ const SITS=[
      {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...',post:true,big:true}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst, was du über diesen Lead weißt – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie an dieser Stelle.
 
 Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
@@ -400,30 +400,32 @@ Trigger: ${f.info||''}
 
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe. Stelle KEINE Rückfragen – liefere sofort den Output.
 WICHTIG: Wenn der Trigger ein laufendes IT-/ERP-Projekt ist (z.B. SAP, Oracle): Bedenke, dass dies SOWOHL ein Kauftrigger als auch ein Wettbewerbsrisiko sein kann (Kunde könnte Inhouse-Module des ERP-Anbieters statt einer spezialisierten Lösung wählen). Falls relevant, als Bullet bei "Risiken" oder "Offene Punkte" aufnehmen.
+KRITISCH – DISCOVERY BLEIBT DISCOVERY: Diese Phase dokumentiert ausschließlich (1) was wir wissen, (2) was wir noch nicht wissen, (3) was wir als Nächstes verstehen müssen. KEINE Lösungsarchitektur, KEINE politische Strategie, KEINE Begriffe wie "Data Governance", "Planning Governance", "Modernisierungskomponente", "Sunk Cost" – auch wenn sie thematisch passen würden. Solche Inhalte gehören ausschließlich in den VERTRIEBSNOTIZEN-Block weiter unten, niemals in die Kundenerkenntnisse.
+KRITISCH – DREI EBENEN STRIKT TRENNEN:
+  BESTÄTIGT: NUR was tatsächlich genannt wurde (Trigger, Branche, bekannte Herausforderungen) – keine Interpretation.
+  KI-BEWERTUNG: logische Schlüsse AUS den bestätigten Fakten, IMMER klar als Bewertung erkennbar formuliert (z.B. "könnte...", "deutet auf... hin") – niemals wie ein Fakt.
+  ZU VALIDIEREN: offene Fragen für das nächste Gespräch, priorisiert nach Wichtigkeit.
 
 EMPFEHLUNG: sofort / später / nicht verfolgen
 Begründung: [1 Satz, der knapp die 4 Kriterien benennt: Budget/Trigger, Schmerzpunkt mit Zahlen, Entscheider-Zugang, Zeitdruck]
 
 WICHTIG: Die Zeile "Begründung:" MUSS direkt nach "EMPFEHLUNG:" stehen, als eigene Zeile.
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE (je max. 1 Satz, als Bullets):
-• [Bullet 1]
-• [Bullet 2]
-• [Bullet 3]
-• [Bullet 4]
-• [Bullet 5]
-
-DIE 3 GRÖSSTEN RISIKEN (je max. 1 Satz):
+BESTÄTIGT (max. 3 Bullets, je max. 1 Satz – nur direkt Genanntes):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
 
-DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
+KI-BEWERTUNG (max. 2 Bullets, je max. 1 Satz – klar als Schluss/Vermutung erkennbar):
 • [Bullet 1]
 • [Bullet 2]
-• [Bullet 3]
 
-⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
+ZU VALIDIEREN (max. 3 Bullets, je max. 1 Satz, mit Priorität):
+• 🔴 [Kritisch – ohne diese Info kann der Deal kaum sinnvoll weiterentwickelt werden]
+• 🟡 [Wichtig – erhöht die Qualität der Bewertung deutlich]
+• ⚪ [Optional – interessant, aber aktuell nicht entscheidend]
+
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -435,36 +437,38 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 3. WICHTIG: ___ | Antwort: ___
 4. WICHTIG: ___ | Antwort: ___
 5. NICE-TO-HAVE: ___ | Antwort: ___`,
-   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst das Qualifizierungsgespräch – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie in der Discovery-Dokumentation.
 
 Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
 Bekannte Herausforderungen: ${f.info||''}
 Antworten aus dem Qualifizierungsgespräch: ${f.antworten||''}
 
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
+KRITISCH – DISCOVERY BLEIBT DISCOVERY: Dokumentiere ausschließlich (1) was wir wissen, (2) was wir noch nicht wissen, (3) was als Nächstes zu verstehen ist. KEINE Lösungsarchitektur, KEINE politische Strategie, KEINE Begriffe wie "Data Governance", "Planning Governance", "Modernisierungskomponente", "Sunk Cost". Solche Inhalte gehören ausschließlich in VERTRIEBSNOTIZEN, niemals in BESTÄTIGT/KI-BEWERTUNG.
+KRITISCH – DREI EBENEN STRIKT TRENNEN:
+  BESTÄTIGT: NUR was der Kunde tatsächlich gesagt hat.
+  KI-BEWERTUNG: logische Schlüsse AUS den bestätigten Fakten, klar als Bewertung erkennbar – niemals wie ein Fakt.
+  VERTRIEBSNOTIZEN: eigener Block für Strategie/Empfehlungen (z.B. "Entscheider frühzeitig einbinden", "Pilot statt Gesamteinführung") – ausschließlich hier, niemals in den Kundenerkenntnissen.
 
 EMPFEHLUNG FINAL: sofort / später / nicht verfolgen
 Bewerte anhand von 4 Kriterien: (1) Budget/Trigger erkennbar, (2) klarer Schmerzpunkt mit Zahlen/Fakten belegt, (3) Entscheider identifiziert oder Zugang zu ihm erkennbar, (4) Zeitdruck/konkreter Anlass vorhanden. Berücksichtige dabei auch die neuen Antworten aus diesem Schritt.
 Begründung: [1 Satz, der die 4 Kriterien kurz benennt]
 
-DIE 5 WICHTIGSTEN ERKENNTNISSE (aktualisiert mit den neuen Antworten, je max. 1 Satz):
-• [Bullet 1]
-• [Bullet 2]
-• [Bullet 3]
-• [Bullet 4]
-• [Bullet 5]
-
-DIE 3 GRÖSSTEN RISIKEN (je max. 1 Satz):
+BESTÄTIGT (max. 3 Bullets, je max. 1 Satz – aktualisiert mit den neuen Antworten):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
 
-DIE 3 OFFENEN PUNKTE (je max. 1 Satz):
+KI-BEWERTUNG (max. 2 Bullets, je max. 1 Satz):
 • [Bullet 1]
 • [Bullet 2]
-• [Bullet 3]
 
-⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
+ZU VALIDIEREN (max. 3 Bullets, mit Priorität):
+• 🔴 [Kritisch]
+• 🟡 [Wichtig]
+• ⚪ [Optional]
+
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -477,6 +481,11 @@ SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (genau 5 konkrete, kundenspezifische Fragen 
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
+VERTRIEBSNOTIZEN (max. 3 Bullets – Strategie/Empfehlung für das nächste Gespräch, NUR hier):
+• [Bullet]
+• [Bullet]
+• [Bullet]
+
 WICHTIG: Die SPIN-Fragen oben sind NEUE, noch unbeantwortete Fragen für das nächste Kundengespräch. Schreibe NIEMALS eine erfundene oder aus vorherigen Antworten übernommene Antwort dazu – sie werden vom Verkäufer erst nach dem nächsten Gespräch beantwortet.`
   },
   {id:1,num:2,phase:'Phase 2',title:'Bedarfsanalyse & Demo',icon:'📋',
@@ -514,12 +523,12 @@ Begründung: [1 Satz]
 • [Bullet 2]
 • [Bullet 3]
 
-❓ KLÄREN (max. 3 Bullets – was muss im nächsten Gespräch geklärt werden):
-• [Bullet 1]
-• [Bullet 2]
-• [Bullet 3]
+❓ KLÄREN (max. 3 Bullets, priorisiert – was muss im nächsten Gespräch geklärt werden):
+• 🔴 [Kritisch – ohne diese Info kann der Deal kaum sinnvoll weiterentwickelt werden]
+• 🟡 [Wichtig – erhöht die Qualität der Bewertung deutlich]
+• ⚪ [Optional – interessant, aber aktuell nicht entscheidend]
 
-⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -729,12 +738,12 @@ EINWÄNDE (max. 3, je mit kurzer Antwort):
 • [Einwand 2] → [Antwort in 1 Satz]
 • [Einwand 3] → [Antwort in 1 Satz]
 
-OFFENE PUNKTE (max. 3 Bullets):
-• [Bullet 1]
-• [Bullet 2]
-• [Bullet 3]
+OFFENE PUNKTE (max. 3 Bullets, priorisiert):
+• 🔴 [Kritisch – ohne diese Info kann der Deal kaum sinnvoll weiterentwickelt werden]
+• 🟡 [Wichtig – erhöht die Qualität der Bewertung deutlich]
+• ⚪ [Optional – interessant, aber aktuell nicht entscheidend]
 
-⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz]
+⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
 
 NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 
@@ -3043,7 +3052,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.56';
+const KI21_VERSION='v4.57';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3413,7 +3422,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.56';
+  v.textContent='v4.57';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
