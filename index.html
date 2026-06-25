@@ -1177,6 +1177,18 @@ Bewerte explizit, welche Signale STARK und welche LEICHT sind, bevor du den Gesa
 
 Bewerte zusätzlich die strukturelle Qualifizierung (Bedarf, Budget, Entscheider, Zeitrahmen, Business Case, Wettbewerbssituation – max. 6 Kriterien) nur um einzuschätzen, wie VIELE davon noch offen/unklar sind (für die Vorläufig-Kennzeichnung) – NICHT um daraus selbst den Score zu erhöhen.
 
+KRITISCH – VIER KONSISTENZREGELN FÜR DIE SIGNALE:
+
+1. KEINE WIDERSPRÜCHE: Ein Signal darf NIEMALS einer bereits bestätigten Information widersprechen. Wenn z.B. eine Person namentlich als Ansprechpartner/Entscheider bekannt ist, darf NICHT gleichzeitig ein Warnsignal "Entscheider nicht identifiziert" erscheinen. Wenn unklar ist, ob diese Person Budget-Autorität hat oder wer über ihr entscheidet, ist das ein OFFENER PUNKT ("Budget-Autorität von [Name] unklar"), kein Warnsignal.
+
+2. WARNSIGNALE NUR AUS FAKTEN/KLAR GEKENNZEICHNETER BEWERTUNG, NIEMALS AUS BRANCHENANNAHMEN: Ein Warnsignal darf ausschließlich aus tatsächlich im Text genannten Informationen entstehen – niemals aus einer allgemeinen Branchenvermutung. "Produktionsunternehmen" bedeutet NICHT automatisch SAP. Nenne ein ERP-System (SAP, Microsoft, Oracle, Infor usw.) in einem Warnsignal NUR, wenn es im Text tatsächlich erwähnt wurde. Erfinde KEIN Wettbewerbsrisiko, das nicht im Text belegt ist.
+
+3. WARNSIGNALE VS. OFFENE PUNKTE STRIKT TRENNEN: Ein Warnsignal ist ein ECHTES Deal-Risiko – etwas, das den Deal aktiv gefährdet (z.B. "Entscheidung verschoben", "Wettbewerber bereits aktiv", "CIO blockiert", "internes Projekt konkurriert", "negativer Pilot", "fehlender Champion", "Budget eingefroren"). Eine FEHLENDE Information ist KEIN Warnsignal, sondern gehört unter "open" (z.B. "Budgethöhe unbekannt", "Budgetentscheider offen", "ROI noch nicht quantifiziert", "Zeitplan offen", "Anzahl Nutzer offen"). Stelle dir bei jedem Punkt die Frage: "Ist das ein aktives Risiko, das den Deal gefährdet, oder fehlt hier nur noch eine Information?" – im zweiten Fall gehört der Punkt zwingend unter "open", nicht unter "warning".
+
+4. POSITIVE SIGNALE NUR AUS BESTÄTIGTEN FAKTEN: Ein positives Signal darf nur erscheinen, wenn es wirklich bestätigt ist – nicht bei reinem Interesse oder vagen Andeutungen. Schreibe NICHT "Champion aktiv", wenn nur allgemeines Interesse gezeigt wurde. Erlaubt sind nur konkret belegte positive Signale wie "Entscheider identifiziert", "Schmerz quantifiziert", "Geschäftsauswirkung bestätigt", "Workshop vereinbart", "Budget genannt", "Pilot zugesagt".
+
+Jeder Punkt darf in GENAU EINER der drei Kategorien (positive/warning/open) erscheinen – niemals doppelt, niemals widersprüchlich zu einem anderen Punkt.
+
 Bewerte außerdem unabhängig davon die folgenden 11 Qualifizierungskriterien (MEDDPICC-basiert) jeweils einzeln als "geklärt" (true) oder "offen" (false). Ein Kriterium gilt als "geklärt", sobald DAZU IRGENDEINE konkrete Information vorliegt (egal ob positiv oder negativ/kritisch) – "offen" gilt nur, wenn dazu noch GAR NICHTS bekannt ist. KEIN Einfluss auf den Score, dient ausschließlich der separaten Checkliste:
 1. need (Bedarf / Schmerz) – geklärt sobald ein konkreter Schmerzpunkt/Bedarf benannt ist
 2. budget (Budget) – geklärt sobald irgendeine Aussage zu Budget/Kosten/Investitionsbereitschaft vorliegt, auch wenn unklar/kritisch
@@ -2159,10 +2171,31 @@ function renderStation(sitId){
   const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
   const resultBtns=h('div',{className:'result-btns'});
   const copyBtn=h('button',{className:'btn',onclick:()=>{
-    const txt=data.result;
-    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
-      copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);
-    });
+    const txt=data.result||'';
+    const showOk=()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);};
+    const showFail=(msg)=>{copyBtn.textContent='✗ Fehler';setTimeout(()=>copyBtn.textContent='Kopieren',2000);console.warn('Kopieren fehlgeschlagen:',msg);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(showOk).catch((e)=>{
+        // Fallback: execCommand
+        try{
+          const ta=document.createElement('textarea');
+          ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+          document.body.appendChild(ta);ta.focus();ta.select();
+          const ok=document.execCommand('copy');
+          document.body.removeChild(ta);
+          if(ok)showOk();else showFail(e.message);
+        }catch(e2){showFail(e2.message);}
+      });
+    } else {
+      try{
+        const ta=document.createElement('textarea');
+        ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+        document.body.appendChild(ta);ta.focus();ta.select();
+        const ok=document.execCommand('copy');
+        document.body.removeChild(ta);
+        if(ok)showOk();else showFail('execCommand fehlgeschlagen');
+      }catch(e){showFail(e.message);}
+    }
   }},'Kopieren');
   const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
   const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
@@ -3119,7 +3152,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.59';
+const KI21_VERSION='v4.60';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3489,7 +3522,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.59';
+  v.textContent='v4.60';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
