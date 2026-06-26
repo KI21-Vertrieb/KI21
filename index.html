@@ -197,6 +197,51 @@ const LS={
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
 };
 
+// ── UNIVERSELLE KOPIER-FUNKTION mit garantiertem Fallback ──
+// Manche Browser (z.B. Brave) blockieren navigator.clipboard / execCommand lautlos, ohne Fehler oder Berechtigungsabfrage.
+// Fallback: öffnet ein vorselektiertes Textfeld, damit der Nutzer per Long-Press → Kopieren manuell kopieren kann (funktioniert immer).
+function universalCopy(text, onSuccess){
+  let succeeded=false;
+  const markSuccess=()=>{succeeded=true; if(onSuccess)onSuccess();};
+  const tryExecCommand=()=>{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';ta.style.top='0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      const ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){return false;}
+  };
+  const showManualFallback=()=>{
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:1000;display:flex;flex-direction:column;padding:20px;';
+    overlay.appendChild(h('div',{style:{color:'#ff6b00',fontWeight:'700',marginBottom:'10px',fontSize:'13px'}},
+      '📋 Automatisches Kopieren wird von diesem Browser blockiert. Tippe lange auf den Text unten und wähle "Alles auswählen" → "Kopieren".'));
+    const ta=h('textarea',{readonly:true,style:{flex:'1',width:'100%',background:'#1c2333',
+      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',fontSize:'13px',
+      color:'#e6edf3',outline:'none',resize:'none',lineHeight:'1.7'}});
+    ta.value=text;
+    overlay.appendChild(ta);
+    const closeBtn=h('button',{className:'btn-o',style:{marginTop:'12px'},onclick:()=>overlay.remove()},'Schließen');
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+    setTimeout(()=>{ta.focus();ta.select();},100);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      // Manche Browser (Brave) lösen .then() aus, OHNE wirklich zu kopieren - daher zusätzlich execCommand als Bestätigung versuchen
+      if(tryExecCommand()){markSuccess();}else{markSuccess();} // clipboard.then() galt als Erfolg, vertrauen
+    }).catch(()=>{
+      if(tryExecCommand()){markSuccess();}else{showManualFallback();}
+    });
+  } else if(tryExecCommand()){
+    markSuccess();
+  } else {
+    showManualFallback();
+  }
+}
+
 // ── PDF EXPORT HELPER (echte PDF-Erzeugung, kein HTML-Download) ──
 let _html2pdfPromise=null;
 function loadHtml2Pdf(){
@@ -335,6 +380,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='- Nur Deutsch\n';
   s+='- Keine Einleitung, kein Fazit\n';
   s+='- KRITISCH – EIN BULLET = EINE AUSSAGE: Ein Bullet darf NIEMALS mehrere Aussagen verketten – egal ob mit Komma, "und", einem "="-Zeichen, oder einem Relativsatz ("der/die/das..."). NICHT erlaubt z.B.: "6 Arbeitstage manuelle Konsolidierung pro Preisänderung = messbarer Schmerz, der monatlich anfällt und regelmäßig zu Fehlentscheidungen führt" (das sind DREI Aussagen in einem Bullet: Zeitaufwand, Häufigkeit, Konsequenz). Stattdessen IMMER in einzelne Bullets aufteilen: "6 Arbeitstage pro Preisänderung" / "Konsolidierung erfolgt manuell" / "Fehler führen zu Fehlentscheidungen". Jeder Bullet maximal 6-8 Wörter, ein einziger Gedanke, in wenigen Sekunden erfassbar. Wenn du beim Formulieren eines Bullets ein "=", "und", "der/die/das" oder ein Komma zur Verbindung zweier Sachverhalte einsetzen willst, ist das ein sicheres Zeichen, dass es zwei Bullets werden müssen.\n';
+  s+='- KRITISCH – SOFORTIGER AHA-EFFEKT, KEINE INTERPRETATION NÖTIG: Jeder Bullet der Standardansicht muss beim Lesen innerhalb weniger Sekunden sofort verstanden werden – der Nutzer darf NIEMALS selbst nachdenken oder interpretieren müssen, um die Bedeutung zu erfassen. Qualitätsmaßstab: Würde ein Vertriebsleiter diesen Bullet lesen und SOFORT wissen, was er bedeutet – oder müsste er kurz überlegen, was damit gemeint ist? Im zweiten Fall: Bullet konkreter formulieren oder die Begründung/den Zusammenhang stattdessen in den Detailbereich (nach ###DETAILS###) verschieben. Begründungen, Herleitungen und Erläuterungen gehören NIEMALS in die Standardansicht, NUR in "Mehr Details".\n';
   s+='- KRITISCH – REIHENFOLGE INNERHALB JEDER BULLET-LISTE: Sortiere IMMER nach Relevanz für die Kaufentscheidung: zuerst Schmerz/Bedarf (quantifiziert, wenn möglich), dann Risiko, zuletzt allgemeiner Kontext. Die wichtigste, konkreteste Erkenntnis steht IMMER an Position 1 – niemals ein genereller Kontext-Punkt vor einem konkreten Schmerzpunkt.\n';
   s+='- Erkenntnisse als einfache Bullets, OHNE BESTÄTIGT:/ANNAHME:/KLÄREN:-Präfix in der Standardausgabe (diese Kennzeichnung nur noch im Detailbereich nach ###DETAILS### verwenden, falls das jeweilige Phasenformat das vorsieht)\n';
   s+='- KRITISCH: Die abschließende Aktionszeile darf NUR EINE einzige, priorisierte Handlung enthalten – KEINE Aufzählung mehrerer Aktionen mit "und" oder Kommas (z.B. NICHT "Workshop vereinbaren und Unterlagen vorbereiten und Entscheider kontaktieren"). Wenn mehrere Dinge zu tun wären, wähle die EINE wichtigste aus, die diese Woche passieren muss – alles andere ergibt sich danach von selbst oder gehört in den Detailbereich.\n';
@@ -482,12 +528,12 @@ NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 2. [zweite Priorität]
 3. [dritte Priorität]
 
-SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (genau 5 konkrete, kundenspezifische Fragen – KEINE Platzhalter wie "S: [Situation]", sondern ausgeschriebene, direkt im Gespräch verwendbare Fragen):
-• S: [konkrete, ausgeschriebene Situationsfrage zu diesem Kunden]
-• P: [konkrete, ausgeschriebene Problemfrage zu diesem Kunden]
-• P: [konkrete, ausgeschriebene Ursache-Frage zu diesem Kunden]
-• I: [konkrete, ausgeschriebene Auswirkungs-/Kostenfrage zu diesem Kunden]
-• N: [konkrete, ausgeschriebene Nutzenfrage zu diesem Kunden]
+SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (das S/P/P/I/N-Format dient als Orientierung für die Darstellung, NICHT als starre Vorgabe – wähle methodenoffen die 5 Fragen, die für DIESEN konkreten Fall am besten zur tieferen Discovery führen. Wenn z.B. zwei Problemfragen oder eine andere Reihenfolge sinnvoller sind als exakt eine Frage pro Buchstabe, ist das ausdrücklich erlaubt. Maßstab ist die Qualität der Discovery, nicht die Einhaltung der Methode. KEINE Platzhalter wie "S: [Situation]", sondern ausgeschriebene, direkt im Gespräch verwendbare Fragen):
+• S: [konkrete, ausgeschriebene Frage – Situation oder die für diesen Fall passendste erste Discovery-Frage]
+• P: [konkrete, ausgeschriebene Frage – Problem/Symptom]
+• P: [konkrete, ausgeschriebene Frage – Ursache, oder eine weitere vertiefende Frage, falls das für diesen Fall mehr Discovery-Wert hat]
+• I: [konkrete, ausgeschriebene Frage – Auswirkung/Kosten des Problems]
+• N: [konkrete, ausgeschriebene Frage – Nutzen einer Lösung]
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
@@ -517,6 +563,7 @@ KRITISCH – DREI EBENEN STRIKT TRENNEN, NIE VERMISCHEN:
   EBENE 1 – KUNDENERKENNTNISSE: NUR was der Kunde tatsächlich gesagt hat. Keine Interpretation, keine Bewertung, keine Strategie. Beispiele: "6 Arbeitstage pro Szenario", "SAP-Projekt läuft", "CIO bevorzugt SAP".
   EBENE 2 – KI-BEWERTUNG: Hier darfst du Zusammenhänge herstellen und Schlüsse ziehen (z.B. "SAP-Projekt eröffnet ein Zeitfenster", "CIO könnte ein Blocker sein") – aber IMMER klar als Bewertung/Annahme erkennbar formuliert, NIEMALS wie ein Fakt.
   EBENE 3 – VERTRIEBSSTRATEGIE: Eigener Block "VERTRIEBSNOTIZEN" – hier und NUR hier gehören Empfehlungen wie "CIO frühzeitig einbinden", "Pilot statt Gesamteinführung" hin. Diese Strategie-Inhalte gehören NIEMALS in die Kundenerkenntnisse oder die Gesprächszusammenfassung.
+KRITISCH – INTERNE DENKREIHENFOLGE (Symptom → Ursache → Auswirkung → erst dann Lösung/Business Case): Was der Kunde zuerst sagt (z.B. "Forecast stimmt nicht", "Liefertermine verschieben sich") ist zunächst nur ein SYMPTOM, nicht das eigentliche Problem. Bevor du eine Lösung, Architektur, ERP/CRM-Bezug, Budget oder ROI ins Spiel bringst, prüfe: Ist die URSACHE des Symptoms verstanden? Sind die GESCHÄFTLICHEN AUSWIRKUNGEN verstanden? Wenn nicht: Bleibe bei weiteren Discovery-Fragen statt eine Lösung/Architektur zu konstruieren. Discovery endet erst, wenn Ursache und Auswirkung wirklich verstanden sind – erst danach dürfen Lösungsansätze, Budget oder ROI entstehen (und auch dann erst in den dafür vorgesehenen späteren Phasen).
 KRITISCH – DISCOVERY VOR CONSULTING: Du dokumentierst das Gespräch, du konstruierst KEINE Lösungsarchitektur. Wenn der Kunde z.B. keinen konkreten Datenfluss zwischen Systemen genannt hat, schreibe NIEMALS eine erfundene technische Architektur (z.B. "Datenfluss SAP → Tool → Vertrieb → SAP zurück"), sondern halte fest, dass dieser Punkt noch zu klären ist (z.B. "Der heutige Planungsprozess und die Schnittstellen sind noch zu verstehen").
 KRITISCH – BESTÄTIGT/ARBEITSWERT/ANNAHME SAUBER TRENNEN: BESTÄTIGT = direkt vom Kunden genannte Fakten. ARBEITSWERT = eine rechnerische Hochrechnung AUS bestätigten Fakten, IMMER mit "ca." oder "Hochrechnung:" gekennzeichnet. ANNAHME = eine Vermutung ohne direkte Grundlage. Erfinde NIEMALS eine präzise Zahl, die der Kunde nicht genannt hat, ohne sie klar als Hochrechnung zu kennzeichnen.
 
@@ -746,7 +793,7 @@ WICHTIGE QUELLE: Erkenntnisse aus der Bedarfsanalyse/Nachbereitung findest du im
 
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
 
-EINSCHÄTZUNG: [1 Satz – wie hoch ist die Abschlusswahrscheinlichkeit einzuschätzen?]
+EINSCHÄTZUNG: [1 Satz – qualitative Tendenz seit der letzten Phase, z.B. "Deal entwickelt sich positiv" oder "Deal stagniert". KEINE eigene Prozent-Wahrscheinlichkeit nennen – die einzige gültige Gewinnwahrscheinlichkeit ist der Opportunity Health Score, der separat angezeigt wird.]
 
 KAUFARGUMENTE (max. 3 Bullets, je max. 1 Satz):
 • [Bullet 1]
@@ -1726,9 +1773,7 @@ function showFullscreen(title, text){
   const copyB=h('button',{className:'btn-o',style:{flex:'1'},
     onclick:()=>{
       const txt=editing?ta.value:text;
-      if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
-        copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren',2000);
-      });
+      universalCopy(txt,()=>{copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Kopieren',2000);});
     }
   },'Kopieren');
   const closeB=h('button',{className:'btn',style:{flex:'1'},
@@ -1748,7 +1793,7 @@ function loadMoreDetailsFromText(title, resultText){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
   const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
   const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
-  const copyBtn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(body.textContent)},'Kopieren');
+  const copyBtn=h('button',{className:'btn',onclick:()=>universalCopy(body.textContent,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);})},'Kopieren');
   topRow.appendChild(closeBtn);
   topRow.appendChild(copyBtn);
   const titleEl=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},title);
@@ -1768,7 +1813,7 @@ async function loadMoreDetails(sitId, stData){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
   const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
   const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
-  const copyBtn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(body.textContent)},'Kopieren');
+  const copyBtn=h('button',{className:'btn',onclick:()=>universalCopy(body.textContent,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);})},'Kopieren');
   topRow.appendChild(closeBtn);
   topRow.appendChild(copyBtn);
   const title=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},'Ausführliche Details');
@@ -2171,31 +2216,7 @@ function renderStation(sitId){
   const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
   const resultBtns=h('div',{className:'result-btns'});
   const copyBtn=h('button',{className:'btn',onclick:()=>{
-    const txt=data.result||'';
-    const showOk=()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);};
-    const showFail=(msg)=>{copyBtn.textContent='✗ Fehler';setTimeout(()=>copyBtn.textContent='Kopieren',2000);console.warn('Kopieren fehlgeschlagen:',msg);};
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(showOk).catch((e)=>{
-        // Fallback: execCommand
-        try{
-          const ta=document.createElement('textarea');
-          ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
-          document.body.appendChild(ta);ta.focus();ta.select();
-          const ok=document.execCommand('copy');
-          document.body.removeChild(ta);
-          if(ok)showOk();else showFail(e.message);
-        }catch(e2){showFail(e2.message);}
-      });
-    } else {
-      try{
-        const ta=document.createElement('textarea');
-        ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
-        document.body.appendChild(ta);ta.focus();ta.select();
-        const ok=document.execCommand('copy');
-        document.body.removeChild(ta);
-        if(ok)showOk();else showFail('execCommand fehlgeschlagen');
-      }catch(e){showFail(e.message);}
-    }
+    universalCopy(data.result||'',()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);});
   }},'Kopieren');
   const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
   const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
@@ -2273,7 +2294,7 @@ function renderStation(sitId){
       const result2Head=h('div',{className:'result-head'});
       const result2Label=h('span',{className:'result-label'},'🏁 Qualifizierung · Abschluss');
       const result2Btns=h('div',{className:'result-btns'});
-      const copy2Btn=h('button',{className:'btn',onclick:()=>navigator.clipboard.writeText(data.result2||'')},'Kopieren');
+      const copy2Btn=h('button',{className:'btn',onclick:()=>universalCopy(data.result2||'',()=>{copy2Btn.textContent='✓';setTimeout(()=>copy2Btn.textContent='Kopieren',2000);})},'Kopieren');
       const zoom2Btn=h('button',{className:'btn',onclick:()=>showFullscreenEdit('Qualifizierung Abschluss',data.result2||'',()=>{})},'⛶');
       const more2Btn=h('button',{className:'btn',
         style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
@@ -3011,11 +3032,7 @@ function showMeinUnternehmen(initialTab){
     onclick:()=>showFullscreen('KI21 Intelligence',intel.inhalt||'')
   },'⛶ Zoom');
   const intelCopyBtn=h('button',{className:'btn',style:{fontSize:'10px'},
-    onclick:()=>{
-      if(navigator.clipboard)navigator.clipboard.writeText(intel.inhalt||'').then(()=>{
-        intelCopyBtn.textContent='✓ Kopiert';setTimeout(()=>intelCopyBtn.textContent='Kopieren',2000);
-      });
-    }
+    onclick:()=>universalCopy(intel.inhalt||'',()=>{intelCopyBtn.textContent='✓ Kopiert';setTimeout(()=>intelCopyBtn.textContent='Kopieren',2000);})
   },'Kopieren');
   intelToggleRow.appendChild(intelShowToggle);
   intelToggleRow.appendChild(intelZoomBtn);
@@ -3152,7 +3169,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.60';
+const KI21_VERSION='v4.61';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3464,9 +3481,7 @@ function showExport(){
   const txt=JSON.stringify(data);
   let copied=false;
   const copyB=h('button',{className:'btn-o',onclick:()=>{
-    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{
-      copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Backup kopieren',2000);
-    });
+    universalCopy(txt,()=>{copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Backup kopieren',2000);});
   }},'Backup kopieren');
   const content=h('div',{},
     h('div',{className:'status-box',style:{background:'#1c2333',border:'1px solid #30363d'}},
@@ -3522,7 +3537,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.60';
+  v.textContent='v4.61';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
