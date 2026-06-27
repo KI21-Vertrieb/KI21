@@ -582,19 +582,20 @@ KRITISCH – BESTÄTIGT/ARBEITSWERT/ANNAHME SAUBER TRENNEN: BESTÄTIGT = direkt 
 • [Bullet 2]
 • [Bullet 3]
 
-🎬 ZEIGEN (max. 3 Bullets – KEINE Softwarefunktionen wie "Dashboard" oder "Ampel", sondern das Geschäftsergebnis: "Liefertermine werden in Minuten statt Tagen bestätigt" statt "Ampel-Anzeige"):
+🎬 ZEIGEN (max. 3 Bullets – beantwortet AUSSCHLIESSLICH "Was muss der Kunde in der Demo erleben?". KEINE Softwarefunktionen wie "Dashboard" oder "Ampel", auch keine reine Ergebnisbeschreibung. Beispiel: NICHT "Forecast wird zuverlässiger.", SONDERN "Der Vertriebsleiter kann erstmals belastbar planen, weil alle dieselbe aktuelle Datenbasis nutzen." – formuliere als Erlebnis aus Kundensicht, nicht als Produktaussage):
 • [Bullet 1]
 • [Bullet 2]
 • [Bullet 3]
 
-❓ KLÄREN (max. 3 Bullets, priorisiert – was muss im nächsten Gespräch geklärt werden):
+❓ KLÄREN (max. 3 Bullets, priorisiert – beantwortet AUSSCHLIESSLICH "Welche Informationen fehlen noch?". Nur offene Punkte, KEINE Bewertungen):
 • 🔴 [Kritisch – ohne diese Info kann der Deal kaum sinnvoll weiterentwickelt werden]
 • 🟡 [Wichtig – erhöht die Qualität der Bewertung deutlich]
 • ⚪ [Optional – interessant, aber aktuell nicht entscheidend]
 
-⚠️ DIE EINE SACHE DIE FEHLT: [genau EIN zentraler offener Punkt, den der Verkäufer im nächsten Gespräch unbedingt klären muss - max. 1 Satz, entspricht meist dem 🔴-Punkt oben]
+⚠️ DIE EINE SACHE DIE FEHLT (beantwortet AUSSCHLIESSLICH "Was verhindert aktuell den Abschluss?" – das ist eine DIAGNOSE des größten Hindernisses, NICHT die nächste Aktion. Beispiel: "Ohne wirtschaftlich bestätigten Business Case gibt es keine belastbare Kaufentscheidung." Max. 1 Satz):
+[1 Satz – das größte verbleibende Hindernis]
 
-NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
+NÄCHSTER SCHRITT DIESE WOCHE (beantwortet AUSSCHLIESSLICH "Was tue ich als Nächstes?" – die konkrete Handlung, die das obige Hindernis adressiert. Beispiel: "Termin mit Geschäftsführer vereinbaren und wirtschaftliche Zielgröße validieren."): [genau EINE priorisierte Aktion + wann]
 
 🎯 WENN DU MORGEN NUR 30 MINUTEN HAST (max. 3 Prioritäten, sortiert nach Wirkung auf den Deal):
 1. [höchste Priorität – z.B. "CIO-Haltung verstehen"]
@@ -1539,10 +1540,12 @@ function splitDetailsFromResult(text){
   const idx=m.index;
   return {main:text.slice(0,idx).trim(),details:text.slice(idx+m[0].length).trim()};
 }
-function renderResultText(text){
+function renderResultText(text,skipSplit){
   if(!text)return document.createTextNode('');
-  const {main}=splitDetailsFromResult(text);
-  text=main;
+  if(!skipSplit){
+    const {main}=splitDetailsFromResult(text);
+    text=main;
+  }
   const div=document.createElement('div');
   div.style.cssText='white-space:pre-wrap;font-size:var(--fs-input,12px);line-height:1.8;color:var(--text);';
   const lines=text.split('\n');
@@ -1572,6 +1575,9 @@ function renderResultText(text){
     if(i<lines.length-1)div.appendChild(document.createElement('br'));
   });
   return div;
+}
+function renderDetailsText(text){
+  return renderResultText(text||'Keine zusätzlichen Details vorhanden.',true);
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function highlightResultHTML(text){
@@ -1800,73 +1806,6 @@ function showFullscreen(title, text){
   const topRow=h('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'8px'}},editToggle);
   const content=h('div',{},topRow,readDiv,ta,btnRow);
   const m=modal(title,content,null);
-}
-
-
-function loadMoreDetailsFromText(title, resultText){
-  const {details:embeddedDetails}=splitDetailsFromResult(resultText||'');
-  const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
-  const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
-  const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
-  const copyBtn=h('button',{className:'btn',onclick:()=>universalCopy(body.textContent,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);})},'Kopieren');
-  topRow.appendChild(closeBtn);
-  topRow.appendChild(copyBtn);
-  const titleEl=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},title);
-  const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},
-    embeddedDetails||'Keine zusätzlichen Details vorhanden.');
-  overlay.appendChild(topRow);
-  overlay.appendChild(titleEl);
-  overlay.appendChild(body);
-  document.body.appendChild(overlay);
-}
-
-async function loadMoreDetails(sitId, stData){
-  const KEY='ki21_st_'+state.activeId+'_'+sitId;
-  const {details:embeddedDetails}=splitDetailsFromResult(stData.result||'');
-
-  const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999;display:flex;flex-direction:column;padding:20px;overflow-y:auto;';
-  const topRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}});
-  const closeBtn=h('button',{className:'btn',onclick:()=>overlay.remove()},'✕ Schließen');
-  const copyBtn=h('button',{className:'btn',onclick:()=>universalCopy(body.textContent,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);})},'Kopieren');
-  topRow.appendChild(closeBtn);
-  topRow.appendChild(copyBtn);
-  const title=h('div',{style:{fontSize:'13px',fontWeight:'700',color:'#ff6b00',marginBottom:'12px',textTransform:'uppercase'}},'Ausführliche Details');
-
-  // Bevorzugt: Details sind bereits im selben API-Aufruf mitgekommen (###DETAILS### Marker) - kein zweiter Aufruf nötig
-  if(embeddedDetails){
-    const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},embeddedDetails);
-    overlay.appendChild(topRow);
-    overlay.appendChild(title);
-    overlay.appendChild(body);
-    document.body.appendChild(overlay);
-    return;
-  }
-
-  // Fallback für ältere, bereits gespeicherte Ergebnisse ohne eingebetteten Detail-Block: alter Mechanismus mit zweitem API-Aufruf
-  const apiKey=LS.get('ki21_apikey','');
-  if(!apiKey){alert('Bitte API Key in Einstellungen hinterlegen.');return;}
-  const detailPrompt=`Hier ist eine kompakte Vertriebsanalyse:\n\n${stData.result||''}\n\nLiefere jetzt eine AUSFÜHRLICHE Version mit:\n- Detaillierte Begründung jedes Punktes\n- Falls es sich um eine Nutzen-Kosten-/ROI-Analyse handelt: vollständige Herleitung der Benchmark-Einschätzung (welche Größenordnung/Branche wurde angenommen, Skalierungslogik, alternative Szenarien konservativ/realistisch/optimistisch), klare Kennzeichnung was "belegtes Erfahrungswissen" vs. "plausible Schätzung" ist\n- Zusätzliche Hintergrundinformationen\n- Weitere relevante Erkenntnisse\n- Konkrete Beispiele und Formulierungen\nNur Deutsch, kein Markdown.`;
-  const body=h('div',{style:{fontSize:'14px',color:'#e6edf3',lineHeight:'1.7',whiteSpace:'pre-wrap'}},
-    stData.detail?stData.detail:'⏳ Wird geladen...');
-  overlay.appendChild(topRow);
-  overlay.appendChild(title);
-  overlay.appendChild(body);
-  document.body.appendChild(overlay);
-
-  if(stData.detail){return;}
-
-  try{
-    const txt=await callClaude(detailPrompt,(t)=>{body.textContent=t;});
-    if(txt){
-      body.textContent=txt;
-      stData.detail=txt;
-      LS.set(KEY,stData);
-    }
-  }catch(e){
-    body.textContent='Fehler: '+e.message;
-  }
 }
 
 
@@ -2231,10 +2170,13 @@ function renderStation(sitId){
   const resultHead=h('div',{className:'result-head'});
   const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
   const resultBtns=h('div',{className:'result-btns'});
+  let detailsExpanded=false;
   const copyBtn=h('button',{className:'btn',onclick:()=>{
-    universalCopy(data.result||'',()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);});
+    const {main:mainTxt,details:detailsTxt}=splitDetailsFromResult(data.result||'');
+    const txt=detailsExpanded&&detailsTxt?(mainTxt+'\n\n'+detailsTxt):mainTxt;
+    universalCopy(txt,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);});
   }},'Kopieren');
-  const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶');
+  const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶ Vollbild');
   const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
     if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
     data.result='';
@@ -2252,9 +2194,23 @@ function renderStation(sitId){
   },'Teilen ↗');
   resultBtns.appendChild(copyBtn);
   resultBtns.appendChild(fullBtn);
+  const {details:initialDetailsTxt}=splitDetailsFromResult(data.result||'');
+  const detailsBody=h('div',{className:'result-body',style:{display:'none',borderTop:'1px solid #30363d',marginTop:'2px'}});
   const moreBtn=h('button',{className:'btn',
-    style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
-    onclick:()=>loadMoreDetails(sitId,data)},'Mehr Details');
+    style:{background:'rgba(255,107,0,.15)',color:'#ff6b00',display:initialDetailsTxt?'':'none'},
+    onclick:()=>{
+      detailsExpanded=!detailsExpanded;
+      if(detailsExpanded){
+        const {details:freshDetails}=splitDetailsFromResult(data.result||'');
+        detailsBody.innerHTML='';
+        detailsBody.appendChild(renderDetailsText(freshDetails));
+        detailsBody.style.display='block';
+        moreBtn.textContent='Weniger Details ▲';
+      } else {
+        detailsBody.style.display='none';
+        moreBtn.textContent='Mehr Details ▼';
+      }
+    }},'Mehr Details ▼');
   resultBtns.appendChild(moreBtn);
   resultBtns.appendChild(shareBtn);
   resultBtns.appendChild(delBtn);
@@ -2266,6 +2222,7 @@ function renderStation(sitId){
   const weiterRow=h('div',{style:{padding:'8px 12px',borderTop:'1px solid #30363d',display:'none'}});
   resultBox.appendChild(resultHead);
   resultBox.appendChild(resultBody);
+  resultBox.appendChild(detailsBody);
   resultBox.appendChild(weiterRow);
   wrap.appendChild(resultBox);
 
@@ -2310,11 +2267,30 @@ function renderStation(sitId){
       const result2Head=h('div',{className:'result-head'});
       const result2Label=h('span',{className:'result-label'},'🏁 Qualifizierung · Abschluss');
       const result2Btns=h('div',{className:'result-btns'});
-      const copy2Btn=h('button',{className:'btn',onclick:()=>universalCopy(data.result2||'',()=>{copy2Btn.textContent='✓';setTimeout(()=>copy2Btn.textContent='Kopieren',2000);})},'Kopieren');
-      const zoom2Btn=h('button',{className:'btn',onclick:()=>showFullscreenEdit('Qualifizierung Abschluss',data.result2||'',()=>{})},'⛶');
+      let details2Expanded=false;
+      const copy2Btn=h('button',{className:'btn',onclick:()=>{
+        const {main:main2Txt,details:details2Txt}=splitDetailsFromResult(data.result2||'');
+        const txt=details2Expanded&&details2Txt?(main2Txt+'\n\n'+details2Txt):main2Txt;
+        universalCopy(txt,()=>{copy2Btn.textContent='✓';setTimeout(()=>copy2Btn.textContent='Kopieren',2000);});
+      }},'Kopieren');
+      const zoom2Btn=h('button',{className:'btn',onclick:()=>showFullscreenEdit('Qualifizierung Abschluss',data.result2||'',()=>{})},'⛶ Vollbild');
+      const {details:initialDetails2Txt}=splitDetailsFromResult(data.result2||'');
+      const details2Body=h('div',{className:'result-body',style:{display:'none',borderTop:'1px solid #30363d',marginTop:'2px'}});
       const more2Btn=h('button',{className:'btn',
-        style:{background:'rgba(255,107,0,.15)',color:'#ff6b00'},
-        onclick:()=>loadMoreDetailsFromText('Qualifizierung Abschluss',data.result2||'')},'Mehr Details');
+        style:{background:'rgba(255,107,0,.15)',color:'#ff6b00',display:initialDetails2Txt?'':'none'},
+        onclick:()=>{
+          details2Expanded=!details2Expanded;
+          if(details2Expanded){
+            const {details:fresh2}=splitDetailsFromResult(data.result2||'');
+            details2Body.innerHTML='';
+            details2Body.appendChild(renderDetailsText(fresh2));
+            details2Body.style.display='block';
+            more2Btn.textContent='Weniger Details ▲';
+          } else {
+            details2Body.style.display='none';
+            more2Btn.textContent='Mehr Details ▼';
+          }
+        }},'Mehr Details ▼');
       const share2Btn=h('button',{className:'btn',
         style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
         onclick:()=>{
@@ -2331,6 +2307,7 @@ function renderStation(sitId){
       result2Body.innerHTML='';result2Body.appendChild(renderResultText(data.result2||''));
       result2Box.appendChild(result2Head);
       result2Box.appendChild(result2Body);
+      result2Box.appendChild(details2Body);
 
       const weiter2Row=h('div',{style:{display:'none',marginTop:'8px'}});
       const gen2Btn=h('button',{className:'btn-o',style:{marginTop:'10px'},onclick:async()=>{
@@ -3185,7 +3162,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.65';
+const KI21_VERSION='v4.66';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3553,7 +3530,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.65';
+  v.textContent='v4.66';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
