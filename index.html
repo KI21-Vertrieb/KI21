@@ -345,6 +345,8 @@ function buildCtx(cust,mu,kk,stk){
   }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
   s+='KRITISCH – NEUES VERDICHTUNGSZIEL: 50% weniger Worte, 100% der Aussage. Jede Aussage so kurz wie möglich. Füllwörter konsequent entfernen. Keine Wiederholungen zwischen den Abschnitten. KEIN Einleitungssatz, wenn die Überschrift die Aussage bereits trägt. Aktiv statt Passiv. Konkrete Formulierungen statt abstrakter Beschreibungen. Maximal 2 Zeilen pro Bullet. Beispiel: NICHT "Der wirtschaftliche Fall hängt entscheidend davon ab...", SONDERN "Zeitersparnis allein verkauft das Projekt nicht. Entscheidend ist der wirtschaftliche Schaden der Lieferfähigkeitsfehler." Wenn eine Aussage ohne Informationsverlust gekürzt werden kann, ist IMMER die kürzere Variante zu wählen.\n';
+  s+='KRITISCH – PHASENDISZIPLIN: Fokus bedeutet, sich auf etwas zu konzentrieren. Disziplin bedeutet, konsequent alles wegzulassen, was nicht zur Aufgabe dieser Phase gehört. Die zentralen Analysephasen (Qualifizierung, Bedarfsanalyse, Demo, Nutzen-Kosten-Analyse, Angebot & Abschluss) besitzen jeweils eine definierte KERNFRAGE (siehe oben am Anfang dieses Prompts, falls dort benannt) – jede Aussage muss dieser Kernfrage dienen. Alle übrigen Phasen (z.B. Terminnachbereitung) folgen derselben Phasendisziplin ohne eigene benannte Kernfrage: Jeder Abschnitt erfüllt genau einen Zweck und liefert einen eigenständigen Mehrwert für genau diese Phase. Prüfe in JEDER Phase JEDE Aussage anhand dieser drei Fragen, bevor du sie aufnimmst: (1) Beantwortet diese Information die Aufgabe dieser Phase? (2) Liefert sie einen neuen Mehrwert gegenüber den vorherigen Phasen? (3) Würde der Leser etwas verlieren, wenn dieser Satz entfernt würde? Kann eine Frage mit Nein beantwortet werden, wird die Aussage entfernt oder deutlich gekürzt.\n';
+  s+='Eine Erkenntnis darf in mehreren Phasen erscheinen, wenn sie dort einen ANDEREN Zweck erfüllt. Beispiel: Qualifizierung – "Der Geschäftsführer ist noch nicht eingebunden" (Bewertung der Opportunity). Bedarfsanalyse – "Den Geschäftsführer nach wirtschaftlichem Schaden und Erfolgskriterien fragen" (Gesprächsstrategie). Nutzen-Kosten-Analyse – "Ohne Bestätigung des Geschäftsführers bleibt der Business Case nicht belastbar" (wirtschaftliche Bewertung). Diese Wiederholung ist ausdrücklich gewünscht. NICHT zulässig ist dieselbe Aussage mit derselben Aussageabsicht in mehreren Phasen. Ziel ist nicht die kürzeste Einzelphase, sondern das kürzeste Gesamtdossier bei gleichem Informationsgehalt – jede Phase muss einen klar erkennbaren Mehrwert liefern.\n';
   s+='KRITISCH – DER 60-SEKUNDEN-TEST: Wenn ein Vertriebsleiter zwischen zwei Kundenterminen nur 60 Sekunden Zeit hat, muss er nach dem Lesen genau wissen: Wie gut steht die Opportunity? Warum? Was fehlt? Was ist der nächste Schritt? Jeder Abschnitt muss diesen Test bestehen.\n';
   s+='KRITISCH – KONKRETE BERATERSPRACHE-VERBOTSLISTE: Vermeide diese und ähnliche Begriffe konsequent: "Data Governance Sponsor", "Ownership-Struktur", "Steering Committee", "Reporting-Architektur", "Stakeholder-Alignment", "Synergiepotenzial", "Sunk Cost", "Data Governance", "Planning Governance", "Modernisierungskomponente". Ersetze sie durch die direkte, vertriebliche Frage dahinter: statt "Ownership-Struktur klären" schreibe "Wer entscheidet?"; statt "Stakeholder-Alignment" schreibe "Wer blockiert? Wer profitiert?"; statt abstrakter Prozessbegriffe schreibe "Was kostet das?", "Wie oft passiert das?", "Was muss geklärt werden?". Ein erfahrener Vertriebsleiter denkt in Menschen, Macht und Geld – nicht in Beratungsmodellen.\n';
   s+='KRITISCH – KEINE FACHBEGRIFFE/PRODUKTNAMEN ERFINDEN, DIE DER KUNDE NICHT GENANNT HAT: Wenn ein technischer Fachbegriff oder Produktname (z.B. ein konkretes Software-Modul wie "SAP Analytics Cloud" oder "Integrated Planning") nicht direkt vom Kunden genannt wurde, darf er NICHT als Kundenerkenntnis erscheinen. Verwende stattdessen die einfache, allgemeine Beschreibung dessen, was der Kunde tatsächlich gesagt hat (z.B. "ein SAP-Modernisierungsprojekt läuft" statt "SAP Analytics Cloud und Integrated Planning sind geplant", falls der Kunde keine konkreten Modulnamen genannt hat). Erfundene Fachbegriffe lassen das Ergebnis wie ein Beratungskonzept wirken statt wie eine ehrliche Gesprächsdokumentation – das ist unerwünscht.\n';
@@ -448,6 +450,8 @@ const SITS=[
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst, was du über diesen Lead weißt – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie an dieser Stelle.
 
+KERNFRAGE DIESER PHASE: Lohnt es sich, diese Opportunity weiterzuverfolgen? Jede Aussage muss dieser Frage dienen.
+
 Lead: ${c.firma||''}${c.ma?', '+c.ma+' MA':''}${c.um?', '+c.um:''}
 Branche: ${c.branche||''} | AP: ${c.ap||''}
 Trigger: ${f.info||''}
@@ -495,6 +499,8 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 4. WICHTIG: ___ | Antwort: ___
 5. NICE-TO-HAVE: ___ | Antwort: ___`,
    build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst das Qualifizierungsgespräch – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie in der Discovery-Dokumentation.
+
+KERNFRAGE DIESER PHASE: Lohnt es sich, diese Opportunity weiterzuverfolgen? Jede Aussage muss dieser Frage dienen.
 
 Qualifizierung abschließen: ${c.firma||''}, AP: ${c.ap||''}
 Bekannte Herausforderungen: ${f.info||''}
@@ -557,6 +563,8 @@ WICHTIG: Die SPIN-Fragen oben sind NEUE, noch unbeantwortete Fragen für das nä
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...',big:true}
    ],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein BI-Berater. Du denkst konsequent in Geschäftsproblemen, Auswirkungen, Kundennutzen und Entscheidungen – nicht in Softwarefunktionen.
+
+KERNFRAGEN DIESER PHASE (zwei Funktionen in einer Phase, klar trennen): SCHMERZ und KLÄREN beantworten "Welche Informationen fehlen und welche Fragen bringen den Kunden weiter?" (Bedarfsanalyse-Funktion). ZEIGEN beantwortet "Welche Funktionen demonstrieren den bestätigten Kundennutzen?" (Demo-Funktion). Jeder Block dient ausschließlich SEINER eigenen Kernfrage.
 
 Bedarfsanalyse abschließen: ${c.firma||''}, AP: ${c.ap||''}
 SPIN-Fragen: ${f.spin||''}
@@ -697,6 +705,8 @@ DIE NÄCHSTEN SCHRITTE (ausführlich):
    felder:[],
    build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
+KERNFRAGE DIESER PHASE: Ist der wirtschaftliche Nutzen überzeugend und belastbar? Jede Aussage muss dieser Frage dienen.
+
 Nutzen-Kosten-Analyse: ${c.firma||''}, AP: ${c.ap||''}
 Branche/Größe des Kunden: ${c.branche||mu.branche||'unbekannt – falls relevant, in Frage 1 erfassen'}
 Verfügbare Angebotsbausteine/Preise (aus "Mein Unternehmen"): ${mu.bausteine||'keine hinterlegt – Investition allgemein/ungefähr einschätzen oder als KLÄREN markieren'}
@@ -800,6 +810,8 @@ Bitte gemeinsam mit dem Kunden validieren.`
          +'KRITISCH: Falls Phase 4 ein Krisen-/Schadenspotenzial UNBEZIFFERT gelassen hat (z.B. "lässt sich ohne konkrete Fallbeispiele nicht beziffern"), darfst du in Phase 5 KEINE €-Zahl dafür nennen – AUCH NICHT als angeblichen "Benchmark", "KI21-Benchmark" oder Branchenvergleich. KEIN €-Betrag in Klammern, KEIN "spart X-Y €/Jahr", KEINE Aussage wie "ROI springt von A auf B wenn..." mit einer Zahl dahinter. Übernimm den unbezifferten Status unverändert – beschreibe das Potenzial NUR qualitativ in Worten (z.B. "Größenordnung kann erst nach Validierung mit dem Kunden benannt werden"), und kennzeichne es weiterhin als ZU VALIDIEREN. Dieses Verbot gilt für JEDE Erwähnung des Krisenpotenzials im gesamten Phase-5-Output, nicht nur an der ersten Stelle.\n';
      }
      return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+
+KERNFRAGE DIESER PHASE: Wie erhöhen wir jetzt die Abschlusswahrscheinlichkeit? Jede Aussage muss dieser Frage dienen.
 
 Angebot & Abschluss: ${c.firma||''}, AP: ${c.ap||''}
 Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||''}`+caBlock+`
@@ -3162,7 +3174,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.70';
+const KI21_VERSION='v4.71';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -3530,7 +3542,7 @@ if(typeof savedView==='number'&&state.activeId){
 }
 (function(){
   const v=document.createElement('div');
-  v.textContent='v4.70';
+  v.textContent='v4.71';
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
