@@ -2333,21 +2333,38 @@ function renderStation(sitId){
     }
     wrap.appendChild(heroDash);
 
-    // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale)
+    // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
+    // Jedes Item zeigt zunächst nur eine kurze Kopfzeile; der volle (bereits vorhandene) Text
+    // klappt erst per Tap auf — es wird kein zusätzlicher Inhalt erzeugt, nur die Anzeige gesteuert.
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
-      const mkCockpitCard=(title,items,dotClass)=>{
+      const SHORT_LEN=46;
+      const mkCockpitCard=(title,glyph,items)=>{
         const card=h('div',{className:'home-insights-card',style:{flex:'1 1 150px',marginTop:'0',padding:'10px'}});
         card.appendChild(h('div',{className:'home-section-label',style:{margin:'0 0 6px'}},title));
         const active=(items||[]).filter(s=>!s.disabled).slice(0,3);
         if(!active.length){card.appendChild(h('div',{className:'home-empty-note'},'–'));}
-        else active.forEach(it=>card.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none',padding:'3px 0'}},
-          h('span',{className:'home-insight-dot '+dotClass}),h('span',{},it.text))));
+        else active.forEach(it=>{
+          const isLong=it.text.length>SHORT_LEN;
+          const shortTxt=isLong?it.text.slice(0,SHORT_LEN).trim()+'…':it.text;
+          let open=false;
+          const detailEl=h('div',{className:'home-station-sub2',
+            style:{whiteSpace:'normal',marginTop:'3px',marginLeft:'18px',display:'none'}},it.text);
+          const headTxt=h('span',{style:{flex:1}},shortTxt);
+          const chevron=isLong?h('span',{className:'home-info-dot'},'▾'):null;
+          const row=h('div',{className:'home-insight-row',
+            style:{borderTop:'none',padding:'3px 0',cursor:isLong?'pointer':'default'},
+            onclick:isLong?(()=>{open=!open;detailEl.style.display=open?'block':'none';chevron.textContent=open?'▴':'▾';}):null},
+            h('span',{},glyph),headTxt,chevron
+          );
+          card.appendChild(row);
+          if(isLong)card.appendChild(detailEl);
+        });
         return card;
       };
-      cockpit.appendChild(mkCockpitCard('Chancen',health.positive,'positive'));
-      cockpit.appendChild(mkCockpitCard('Risiken',health.warning,'warning'));
-      cockpit.appendChild(mkCockpitCard('Offene Punkte',health.open,'open'));
+      cockpit.appendChild(mkCockpitCard('Chancen','✔',health.positive));
+      cockpit.appendChild(mkCockpitCard('Risiken','⚠',health.warning));
+      cockpit.appendChild(mkCockpitCard('Offene Punkte','•',health.open));
       wrap.appendChild(cockpit);
     }
 
