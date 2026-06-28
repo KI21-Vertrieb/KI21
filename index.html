@@ -1797,10 +1797,6 @@ function renderHome(){
   // Hero-Card (Premium UI v4.76, pixelnah an neuer Designreferenz) — alle Werte aus bestehenden
   // Funktionen/Daten: cust.branche/ma/ap, getOpportunityHealth(), showKunde(), showOpportunityHealthDetail().
   // Platzhalter "–" für Felder ohne Datenmodell-Entsprechung (Erwarteter Abschluss, Potenzial, Verantwortlich).
-  const hour=new Date().getHours();
-  const greetWord=hour<11?'Guten Morgen.':(hour<17?'Guten Tag.':'Guten Abend.');
-  wrap.appendChild(h('div',{className:'home-greeting'},
-    greetWord+' '+(cust.firma?'Hier ist Ihre aktuelle Opportunity.':'Wählen Sie eine Opportunity, um zu starten.')));
 
   const kundeCol=h('div',{className:'home-hero-colL'},
     h('div',{className:'home-hero-label'},'Aktuelle Opportunity')
@@ -1830,7 +1826,8 @@ function renderHome(){
     ));
   }
 
-  const healthCol=h('div',{className:'home-hero-colR'},
+  const healthCol=h('div',{className:'home-hero-colR',style:{cursor:'pointer'},
+    onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},
     h('div',{className:'home-hero-label'},
       h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')),
     h('div',{id:'home-health-ring',className:'home-health-ring',style:{background:'var(--bg3)'}},
@@ -1855,7 +1852,11 @@ function renderHome(){
       )
     ),
     h('div',{className:'home-next-cta-col'},
-      h('button',{className:'home-next-cta-btn',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},
+      h('button',{className:'home-next-cta-btn',onclick:()=>{
+        const aid=LS.get('ki21_aid',null);if(!aid)return;
+        const acc=state.accounts.find(a=>a.id===aid);
+        if(acc)showNeuerKunde(acc.cust,acc.id,'kontext');
+      }},
         h('span',{},'+'),h('span',{},'Neue Erkenntnisse')),
       h('button',{className:'home-next-link',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},'Letzte Erkenntnisse ansehen ›')
     )
@@ -2278,6 +2279,135 @@ function renderStation(sitId){
   );
 
   const wrap=h('div',{className:'station-wrap'});
+
+  // ── Lead-qualifizieren Dashboard (Decision first, Evidence second) ──
+  // Nur für sitId===0. Verwendet ausschließlich bereits vorhandene Daten:
+  // getOpportunityHealth(), cust.*, health.checklist, stk (Ergänzungen). Keine neue Logik,
+  // keine neuen Felder. Der bestehende Funktionsteil darunter (Felder/Generieren/Ergebnis)
+  // bleibt unverändert erhalten.
+  if(sitId===0){
+    const aid=state.activeId;
+    const health=aid?getOpportunityHealth(aid):null;
+
+    // 1) Opportunity Health Hero
+    const heroDash=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    const healthTop=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
+      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
+    healthTop.appendChild(h('div',{className:'home-hero-label'},
+      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
+    const ring=h('div',{className:'home-health-ring',style:{background:health?'conic-gradient('+getHealthColor(health.score)+' '+health.score+'%, var(--bg3) '+health.score+'%)':'var(--bg3)'}},
+      h('div',{className:'home-health-ring-inner'},
+        h('div',{className:'home-health-score'},health?String(health.score):'–'),
+        h('div',{className:'home-health-score-unit'},'/100')));
+    healthTop.appendChild(ring);
+    healthTop.appendChild(h('div',{className:'home-health-label',style:{color:health?getHealthColor(health.score):'var(--text2)'}},health?health.label:'–'));
+    if(health){
+      const warnCount=(health.warning||[]).filter(s=>!s.disabled).length;
+      healthTop.appendChild(h('div',{className:'home-health-sub'},
+        warnCount>0?(warnCount===1?'1 Risiko erkannt':warnCount+' Risiken erkannt'):'Keine Risiken erkannt'));
+    }
+    heroDash.appendChild(healthTop);
+
+    // KI-Empfehlung — abgeleitet aus echtem Score/Signalen, keine erfundene Bewertung
+    if(health){
+      const topPositive=(health.positive||[]).find(s=>!s.disabled);
+      const topWarning=(health.warning||[]).find(s=>!s.disabled);
+      let recTitle,recIcon;
+      if(health.isKo){recTitle='Risiko klären, bevor fortgefahren wird';recIcon='⚠️';}
+      else if(health.score>=70){recTitle='Fortfahren';recIcon='✓';}
+      else if(health.score>=40){recTitle='Fortfahren und vertiefen';recIcon='→';}
+      else {recTitle='Mit Vorsicht fortfahren';recIcon='⚠️';}
+      const recParts=[];
+      if(topPositive)recParts.push(topPositive.text);
+      if(topWarning)recParts.push(topWarning.text+' sollte als Nächstes geklärt werden.');
+      heroDash.appendChild(h('div',{className:'home-next-step'},
+        h('div',{className:'home-next-step-top'},
+          h('div',{className:'home-next-icon'},recIcon),
+          h('div',{style:{flex:1,minWidth:0}},
+            h('div',{className:'home-next-eyebrow'},'KI-Empfehlung'),
+            h('div',{className:'home-next-title2'},recTitle),
+            recParts.length?h('div',{className:'home-next-desc2'},recParts.join(' ')):null
+          )
+        )
+      ));
+    }
+    wrap.appendChild(heroDash);
+
+    // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale)
+    if(health){
+      const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
+      const mkCockpitCard=(title,items,dotClass)=>{
+        const card=h('div',{className:'home-insights-card',style:{flex:'1 1 150px',marginTop:'0',padding:'10px'}});
+        card.appendChild(h('div',{className:'home-section-label',style:{margin:'0 0 6px'}},title));
+        const active=(items||[]).filter(s=>!s.disabled).slice(0,3);
+        if(!active.length){card.appendChild(h('div',{className:'home-empty-note'},'–'));}
+        else active.forEach(it=>card.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none',padding:'3px 0'}},
+          h('span',{className:'home-insight-dot '+dotClass}),h('span',{},it.text))));
+        return card;
+      };
+      cockpit.appendChild(mkCockpitCard('Chancen',health.positive,'positive'));
+      cockpit.appendChild(mkCockpitCard('Risiken',health.warning,'warning'));
+      cockpit.appendChild(mkCockpitCard('Offene Punkte',health.open,'open'));
+      wrap.appendChild(cockpit);
+    }
+
+    // 3) Lead-Steckbrief — cust.* (echt) + Budget/Zeithorizont/Entscheider aus health.checklist
+    //    abgeleitet (keine erfundenen Werte, sondern bestehende Qualifizierungs-Checkliste).
+    const steckbrief=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    steckbrief.appendChild(h('div',{className:'home-section-label'},'Lead-Steckbrief'));
+    const sbId=h('div',{className:'home-hero-id',onclick:showKunde},
+      h('div',{className:'home-hero-icon'},'🏭'),
+      h('div',{},
+        cust.firma?h('div',{className:'home-hero-firma'},cust.firma):h('div',{className:'home-hero-firma placeholder'},'wählen →')
+      )
+    );
+    steckbrief.appendChild(sbId);
+    const metaParts=[cust.branche,cust.ma?cust.ma+' MA':null].filter(Boolean).join(' • ');
+    if(metaParts)steckbrief.appendChild(h('div',{className:'home-hero-meta',style:{marginLeft:'42px'}},metaParts));
+    const cl=health&&health.checklist;
+    const factRows=[
+      ['👤','Ansprechpartner',cust.ap||'–'],
+      ['€','Budget',cl?(cl.budget?'Bestätigt':'Noch offen'):'–'],
+      ['📅','Zeitrahmen',cl?(cl.timeline?'Definiert':'Noch offen'):'–'],
+      ['👥','Entscheider',cl?(cl.economicBuyer?'Identifiziert':'Noch offen'):'–']
+    ];
+    const factList=h('div',{className:'home-fact-list'});
+    factRows.forEach(([icon,label,val])=>factList.appendChild(h('div',{className:'home-fact-row'},
+      h('span',{className:'home-fact-label'},h('span',{className:'home-fact-icon'},icon),label),
+      h('span',{className:'home-fact-val'},val))));
+    steckbrief.appendChild(factList);
+    wrap.appendChild(steckbrief);
+
+    // 4) Qualifizierungscheck — dieselbe Checkliste wie im Health-Detail (11 Punkte)
+    if(health){
+      const CHECKLIST_LABELS=[
+        ['need','Bedarf / Schmerz'],['budget','Budget'],['economicBuyer','Entscheider'],
+        ['timeline','Zeitrahmen'],['metrics','Business Case / Nutzen'],['competition','Wettbewerb'],
+        ['champion','Interner Fürsprecher'],['decisionProcess','Entscheidungsprozess'],
+        ['decisionCriteria','Entscheidungskriterien'],['paperProcess','Vertragsprozess'],
+        ['negativeConsequences','Kosten des Nicht-Handelns']
+      ];
+      const clObj=health.checklist;
+      const answeredCount=clObj?CHECKLIST_LABELS.filter(([k])=>clObj[k]).length:0;
+      const qBox=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+      qBox.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},
+        h('div',{className:'home-section-label',style:{margin:0}},'Qualifizierungscheck'),
+        h('div',{className:'home-station-sub2'},answeredCount+' / '+CHECKLIST_LABELS.length+' beantwortet')
+      ));
+      CHECKLIST_LABELS.forEach(([k,label])=>{
+        const ok=clObj&&clObj[k];
+        qBox.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',padding:'6px 0'}},
+          h('span',{className:'home-insight-dot '+(ok?'positive':'open')}),
+          h('span',{style:{flex:1}},label),
+          h('span',{className:'home-station-sub2',style:{color:ok?'#2ea043':'#d29922',whiteSpace:'nowrap'}},ok?'Beantwortet':'Noch offen')
+        ));
+      });
+      wrap.appendChild(qBox);
+    }
+  }
+  // ── Ende Lead-qualifizieren Dashboard ──
+
+
 
   const headBlock=h('div',{className:'station-compact-head'},
     h('div',{className:'station-compact-line'},
@@ -2715,6 +2845,27 @@ Analyse:
     }
   }
 
+  // 5) Eigene Erkenntnisse — Vorschau der bestehenden Ergänzungen (stk), bearbeiten via
+  //    bereits vorhandenem showStkModal(). 6) Abschluss-CTA — dieselbe Navigation wie der
+  //    "weiter"-Button in der Phasen-Leiste oben, hier nur zusätzlich prominent platziert.
+  if(sitId===0){
+    const stkBox=h('div',{className:'home-hero',style:{marginTop:'4px',marginBottom:'10px',cursor:'pointer'},
+      onclick:()=>showStkModal(sitId,sit.title)});
+    stkBox.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      h('div',{className:'home-section-label',style:{margin:0}},'Eigene Erkenntnisse'),
+      h('span',{className:'home-next-link'},'Bearbeiten ›')
+    ));
+    stkBox.appendChild(h('div',{className:'home-station-sub2',style:{marginTop:'6px',whiteSpace:'normal'}},
+      stk?stk:'Noch keine eigenen Notizen erfasst.'));
+    wrap.appendChild(stkBox);
+
+    if(sitId<SITS.length-1){
+      wrap.appendChild(h('button',{className:'home-next-cta-btn',style:{marginTop:'4px',marginBottom:'14px'},
+        onclick:()=>renderStation(sitId+1)},
+        h('span',{},'Weiter zu '+SITS[sitId+1].title),h('span',{},'→')));
+    }
+  }
+
   app.appendChild(nav);
   app.appendChild(infoRow);
   setTimeout(()=>renderHealthBadgeIfPresent(),0);
@@ -2785,7 +2936,7 @@ function showKunde(){
   }
 }
 
-function showNeuerKunde(initial,accId){
+function showNeuerKunde(initial,accId,initialTab){
   const isEdit=!!accId;
   const f={firma:'',ap:'',branche:'',ma:'',um:'',...(initial||{})};
   let kk=accId?LS.get('ki21_kk_'+accId,''):'';
@@ -2890,6 +3041,7 @@ function showNeuerKunde(initial,accId){
   }
 
   const m=modal(isEdit?'Kunde bearbeiten':'Neuer Kunde',content,null);
+  if(initialTab==='kontext')switchTab('kontext');
 }
 
 
