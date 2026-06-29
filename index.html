@@ -1516,6 +1516,7 @@ function buildHealthBar(score,ids){
   const color=hasScore?getHealthColor(score):'var(--text2)';
   return h('div',{className:'home-health-bar-wrap'},
     h('div',{className:'home-health-bar-head'},
+      h('span',{className:'home-hero-label',style:{margin:0}},'Opportunity Health'),
       h('span',{},
         h('span',{className:'home-health-score',id:ids.score,style:{color}},hasScore?String(score):'–'),
         h('span',{className:'home-health-score-unit',id:ids.unit},'/100')
@@ -1576,11 +1577,8 @@ function showOpportunityHealthDetail(accId){
     const health=getOpportunityHealth(accId);
     if(!health){m.remove();return;}
     content.innerHTML='';
-    const heroWrap=h('div',{className:'home-hero',style:{marginBottom:'12px'}});
-    heroWrap.appendChild(h('div',{className:'home-hero-label'},'Opportunity Health'));
+    const heroWrap=h('div',{style:{marginBottom:'12px'}});
     heroWrap.appendChild(buildHealthBar(health.score));
-    heroWrap.appendChild(h('div',{className:'home-health-label',style:{color:getHealthColor(health.score)}},
-      (health.label||'')+(health.isKo?' (K.O.)':'')));
     content.appendChild(heroWrap);
     if(health.provisional){
       content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
@@ -1868,11 +1866,7 @@ function renderHome(){
 
   const healthCol=h('div',{className:'home-hero-colR',style:{cursor:'pointer'},
     onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},
-    h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')),
-    buildHealthBar(null,{score:'home-health-score',fill:'home-health-fill'}),
-    h('div',{id:'home-health-label',className:'home-health-label'},'–'),
-    h('div',{id:'home-health-sub',className:'home-health-sub'},'')
+    buildHealthBar(null,{score:'home-health-score',fill:'home-health-fill'})
   );
 
   const heroBody=h('div',{className:'home-hero-body'},kundeCol,healthCol);
@@ -1994,16 +1988,12 @@ function updateHomeHeroHealthVisual(){
   const scoreEl=document.getElementById('home-health-score');
   if(!scoreEl)return;
   const fillEl=document.getElementById('home-health-fill');
-  const labelEl=document.getElementById('home-health-label');
-  const subEl=document.getElementById('home-health-sub');
   const aid=LS.get('ki21_aid',null);
   const health=aid?getOpportunityHealth(aid):null;
 
   if(!health){
     scoreEl.textContent='–';
     if(fillEl){fillEl.style.width='0%';fillEl.style.background='var(--bg3)';}
-    if(labelEl){labelEl.textContent='–';labelEl.style.color='var(--text2)';}
-    if(subEl)subEl.textContent='Noch keine Bewertung';
     return;
   }
   const color=getHealthColor(health.score);
@@ -2013,13 +2003,6 @@ function updateHomeHeroHealthVisual(){
     const pct=Math.max(0,Math.min(100,health.score));
     fillEl.style.width=pct+'%';
     fillEl.style.background=color;
-  }
-  if(labelEl){labelEl.textContent=health.label||'–';labelEl.style.color=color;}
-  if(subEl){
-    const warnCount=(health.warning||[]).filter(s=>!s.disabled).length;
-    subEl.textContent=warnCount>0
-      ?(warnCount===1?'1 Risiko erkannt':warnCount+' Risiken erkannt')
-      :'Keine Risiken erkannt';
   }
 }
 
@@ -2325,20 +2308,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // 1) Opportunity Health Hero
-    const heroDash=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    const healthTop=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
-      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
-    healthTop.appendChild(h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
-    healthTop.appendChild(buildHealthBar(health?health.score:null));
-    healthTop.appendChild(h('div',{className:'home-health-label',style:{color:health?getHealthColor(health.score):'var(--text2)'}},health?health.label:'–'));
-    if(health){
-      const warnCount=(health.warning||[]).filter(s=>!s.disabled).length;
-      healthTop.appendChild(h('div',{className:'home-health-sub'},
-        warnCount>0?(warnCount===1?'1 Risiko erkannt':warnCount+' Risiken erkannt'):'Keine Risiken erkannt'));
-    }
-    heroDash.appendChild(healthTop);
-    wrap.appendChild(heroDash);
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
 
     // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
     // Volltext direkt anzeigen (kein Aufklappen mehr — die Kurz- und Langfassung waren sich zu ähnlich).
@@ -2445,14 +2415,7 @@ function renderStation(sitId){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
 
-    const heroDash2=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    const healthTop2=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
-      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
-    healthTop2.appendChild(h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
-    healthTop2.appendChild(buildHealthBar(health?health.score:null));
-    heroDash2.appendChild(healthTop2);
-    wrap.appendChild(heroDash2);
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
 
     const hasResult=!!data.result;
     const kernaussage=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
@@ -2485,14 +2448,7 @@ function renderStation(sitId){
   if(sitId===2){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    const heroDash3=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    const healthTop3=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
-      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
-    healthTop3.appendChild(h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
-    healthTop3.appendChild(buildHealthBar(health?health.score:null));
-    heroDash3.appendChild(healthTop3);
-    wrap.appendChild(heroDash3);
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
 
     const hasResult3=!!data.result;
     const erkenntnis=hasResult3?extractFirstBulletAfterHeader(data.result,'DIE WICHTIGSTEN ERKENNTNISSE'):'';
@@ -2524,14 +2480,7 @@ function renderStation(sitId){
   if(sitId===3){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    const heroDash4=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    const healthTop4=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
-      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
-    healthTop4.appendChild(h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
-    healthTop4.appendChild(buildHealthBar(health?health.score:null));
-    heroDash4.appendChild(healthTop4);
-    wrap.appendChild(heroDash4);
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
 
     const hasResult4=!!data.result;
     const roiLine=hasResult4?extractLineContaining(data.result,'ROI:'):'';
@@ -2563,14 +2512,7 @@ function renderStation(sitId){
   if(sitId===4){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    const heroDash5=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    const healthTop5=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
-      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
-    healthTop5.appendChild(h('div',{className:'home-hero-label'},
-      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
-    healthTop5.appendChild(buildHealthBar(health?health.score:null));
-    heroDash5.appendChild(healthTop5);
-    wrap.appendChild(heroDash5);
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
 
     const hasResult5=!!data.result;
     const groesstesRisiko=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
@@ -3741,7 +3683,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.74';
+const KI21_VERSION='v4.75';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
