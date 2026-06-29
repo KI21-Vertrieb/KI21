@@ -39,7 +39,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .phase-badge-empty{background:rgba(139,148,158,.1);color:var(--text3);}
 .btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;
   padding:4px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:6px;padding:4px 10px;
+.btn-o{background:#ff6b00;border:none;color:#fff;border-radius:8px;padding:7px 12px;
   font-size:10.5px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;}
 .btn-o:disabled{background:#484f58;cursor:not-allowed;}
 .cust-btn{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.3);border-radius:5px;
@@ -180,10 +180,10 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .field-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
   color:var(--text2);margin-bottom:5px;}
 .field-wrap{margin-bottom:12px;}
-.field-readonly-display{background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+.field-readonly-display{background:var(--bg3);border:1px solid var(--border);border-radius:9px;
   padding:9px 11px;font-size:var(--fs-input,12px);color:var(--text);opacity:0.75;min-height:80px;
   max-height:200px;overflow-y:auto;line-height:1.7;}
-input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;
   padding:9px 11px;font-size:var(--fs-input,12px);font-family:'DM Sans',sans-serif;color:var(--text);
   outline:none;-webkit-text-fill-color:var(--text);-webkit-user-select:text;user-select:text;
   caret-color:#ff6b00;border-left:3px solid rgba(255,107,0,.55);}
@@ -196,7 +196,7 @@ select option{background:var(--bg3);}
 .gen-row .btn-o{width:auto;min-width:200px;}
 .btn-reset{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:7px;
   padding:5px 10px;font-size:14px;cursor:pointer;}
-.result-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.result-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
 .result-head{background:var(--bg3);padding:8px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;
   justify-content:space-between;border-bottom:1px solid var(--border);}
 .result-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ff6b00;}
@@ -1557,9 +1557,16 @@ function showOpportunityHealthDetail(accId){
     const health=getOpportunityHealth(accId);
     if(!health){m.remove();return;}
     content.innerHTML='';
-    const scoreLine=h('div',{style:{fontSize:'22px',fontWeight:'800',marginBottom:'4px'}},
-      health.score+'/100 – '+(health.label||'')+(health.isKo?' (K.O.)':''));
-    content.appendChild(scoreLine);
+    const heroWrap=h('div',{className:'home-hero',style:{marginBottom:'12px',display:'flex',flexDirection:'column',alignItems:'center'}});
+    heroWrap.appendChild(h('div',{className:'home-hero-label'},'Opportunity Health'));
+    const ring=h('div',{className:'home-health-ring',style:{background:'conic-gradient('+getHealthColor(health.score)+' '+health.score+'%, var(--bg3) '+health.score+'%)'}},
+      h('div',{className:'home-health-ring-inner'},
+        h('div',{className:'home-health-score'},String(health.score)),
+        h('div',{className:'home-health-score-unit'},'/100')));
+    heroWrap.appendChild(ring);
+    heroWrap.appendChild(h('div',{className:'home-health-label',style:{color:getHealthColor(health.score)}},
+      (health.label||'')+(health.isKo?' (K.O.)':'')));
+    content.appendChild(heroWrap);
     if(health.provisional){
       content.appendChild(h('div',{style:{fontSize:'12px',color:'#d29922',marginBottom:'14px'}},
         '⚠ Vorläufige Bewertung, da viele kritische Informationen noch offen sind.'));
@@ -1575,27 +1582,27 @@ function showOpportunityHealthDetail(accId){
       let expanded=true;
       const head=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',marginTop:'14px',marginBottom:'6px'},
         onclick:()=>{expanded=!expanded;body.style.display=expanded?'block':'none';arrow.textContent=expanded?'▾':'▸';}},
-        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},title+' ('+items.length+')')
+        h('div',{className:'home-section-label',style:{margin:0}},title+' ('+items.length+')')
       );
-      const arrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▾');
+      const arrow=h('span',{style:{color:'var(--text3)',fontSize:'12px'}},'▾');
       head.appendChild(arrow);
       content.appendChild(head);
-      const body=h('div',{style:{display:'block'}});
+      const body=h('div',{className:'home-insights-card',style:{display:'block'}});
       content.appendChild(body);
-      if(!items.length){body.appendChild(h('div',{style:{fontSize:'12px',color:'#484f58'}},'–'));return;}
+      if(!items.length){body.appendChild(h('div',{className:'home-empty-note'},'–'));return;}
       items.forEach(it=>{
-        const row=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px',cursor:'pointer'},
+        const row=h('div',{className:'home-insight-row',style:{borderTop:'none',cursor:'pointer'},
           onclick:(e)=>{e.stopPropagation();toggleHealthSignal(accId,it.text,it.origin,it.type,render);}},
-          h('span',{style:{fontSize:'13px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
-          h('span',{style:{color:it.disabled?'#484f58':'#e6edf3',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
+          h('span',{style:{flexShrink:'0',opacity:it.disabled?'.4':'1'}},symbol),
+          h('span',{style:{color:it.disabled?'var(--text3)':'var(--text)',textDecoration:it.disabled?'line-through':'none',flex:'1'}},it.text),
           it.origin==='MANUELL'?h('span',{style:{fontSize:'8px',fontWeight:'700',color:'#ff6b00',border:'1px solid rgba(255,107,0,.4)',borderRadius:'4px',padding:'1px 5px',flexShrink:'0',opacity:it.disabled?'.4':'1'}},'MANUELL'):null
         );
         body.appendChild(row);
       });
     }
-    section('Positive Signale',health.positive,'🟢');
-    section('Warnsignale',health.warning,'🔴');
-    section('Offene Punkte',health.open,'⚪');
+    section('Chancen',health.positive,'✔');
+    section('Risiken',health.warning,'⚠');
+    section('Offene Punkte',health.open,'•');
 
     {
       const CHECKLIST_LABELS=[
@@ -1617,23 +1624,23 @@ function showOpportunityHealthDetail(accId){
       const clTitle=hasChecklist?('📋 Qualifizierungs-Checkliste ('+(CHECKLIST_LABELS.length-clOpenCount)+'/'+CHECKLIST_LABELS.length+')'):'📋 Qualifizierungs-Checkliste';
       const clHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',marginTop:'18px',marginBottom:'6px',borderTop:'1px solid var(--border)',paddingTop:'14px'},
         onclick:()=>{clExpanded=!clExpanded;clBody.style.display=clExpanded?'block':'none';clArrow.textContent=clExpanded?'▾':'▸';}},
-        h('div',{style:{fontSize:'11px',textTransform:'uppercase',letterSpacing:'1px',color:'#8b949e'}},clTitle)
+        h('div',{className:'home-section-label',style:{margin:0}},clTitle)
       );
-      const clArrow=h('span',{style:{color:'#484f58',fontSize:'12px'}},'▸');
+      const clArrow=h('span',{style:{color:'var(--text3)',fontSize:'12px'}},'▸');
       clHead.appendChild(clArrow);
       content.appendChild(clHead);
-      const clBody=h('div',{style:{display:'none'}});
+      const clBody=h('div',{className:'home-insights-card',style:{display:'none'}});
       content.appendChild(clBody);
       if(hasChecklist){
         CHECKLIST_LABELS.forEach(([key,label])=>{
           const ok=!!health.checklist[key];
-          clBody.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'13px'}},
-            h('span',{style:{fontSize:'13px',flexShrink:'0'}},ok?'✅':'☐'),
-            h('span',{style:{color:ok?'#e6edf3':'#8b949e'}},label)
+          clBody.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
+            h('span',{},ok?'✔':'○'),
+            h('span',{style:{color:ok?'var(--text)':'var(--text2)',flex:1}},label)
           ));
         });
       }else{
-        clBody.appendChild(h('div',{style:{fontSize:'12px',color:'#8b949e',lineHeight:'1.5',padding:'4px 0'}},
+        clBody.appendChild(h('div',{className:'home-empty-note'},
           'Noch keine Auswertung vorhanden. Score einmal neu berechnen lassen (z.B. neue Stationsausgabe erzeugen), dann erscheint hier die Checkliste.'));
       }
     }
@@ -2343,31 +2350,19 @@ function renderStation(sitId){
     wrap.appendChild(heroDash);
 
     // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
-    // Jedes Item zeigt zunächst nur eine kurze Kopfzeile; der volle (bereits vorhandene) Text
-    // klappt erst per Tap auf — es wird kein zusätzlicher Inhalt erzeugt, nur die Anzeige gesteuert.
+    // Volltext direkt anzeigen (kein Aufklappen mehr — die Kurz- und Langfassung waren sich zu ähnlich).
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
-      const SHORT_LEN=46;
       const mkCockpitCard=(title,glyph,items)=>{
         const card=h('div',{className:'home-insights-card',style:{flex:'1 1 150px',marginTop:'0',padding:'10px'}});
         card.appendChild(h('div',{className:'home-section-label',style:{margin:'0 0 6px'}},title));
         const active=(items||[]).filter(s=>!s.disabled).slice(0,3);
         if(!active.length){card.appendChild(h('div',{className:'home-empty-note'},'–'));}
         else active.forEach(it=>{
-          const isLong=it.text.length>SHORT_LEN;
-          const shortTxt=isLong?it.text.slice(0,SHORT_LEN).trim()+'…':it.text;
-          let open=false;
-          const detailEl=h('div',{className:'home-station-sub2',
-            style:{whiteSpace:'normal',marginTop:'3px',marginLeft:'18px',display:'none'}},it.text);
-          const headTxt=h('span',{style:{flex:1}},shortTxt);
-          const chevron=isLong?h('span',{className:'home-info-dot'},'▾'):null;
-          const row=h('div',{className:'home-insight-row',
-            style:{borderTop:'none',padding:'3px 0',cursor:isLong?'pointer':'default'},
-            onclick:isLong?(()=>{open=!open;detailEl.style.display=open?'block':'none';chevron.textContent=open?'▴':'▾';}):null},
-            h('span',{},glyph),headTxt,chevron
+          const row=h('div',{className:'home-insight-row',style:{borderTop:'none',padding:'3px 0'}},
+            h('span',{},glyph),h('span',{style:{flex:1}},it.text)
           );
           card.appendChild(row);
-          if(isLong)card.appendChild(detailEl);
         });
         return card;
       };
@@ -2442,10 +2437,13 @@ function renderStation(sitId){
     ),
     h('div',{className:'station-compact-rule'},sit.regel)
   );
-  wrap.appendChild(headBlock);
+  if(sitId!==0){
+    wrap.appendChild(headBlock);
+  }
 
   // Phase nav
-  const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch'}});
+  const phaseNav=h('div',{className:'phase-nav',
+    style:sitId===0?{alignItems:'stretch',marginTop:'2px',marginBottom:'14px',opacity:.92}:{alignItems:'stretch'}});
   if(sitId>0){
     phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
   }
@@ -2537,14 +2535,25 @@ function renderStation(sitId){
     }
     fieldsDiv.appendChild(fw);
   });
-  wrap.appendChild(fieldsDiv);
 
   // Generate button
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
   const genRow=h('div',{className:'gen-row'});
   genRow.appendChild(genBtn);
-  wrap.appendChild(genRow);
+
+  if(sitId===0){
+    // Visuelle Harmonisierung mit dem Dashboard oben: gleiche Karten-Hülle (home-hero),
+    // identischer Inhalt/Logik wie zuvor, nur in einen Kartenrahmen statt frei auf der Seite.
+    const inputCard=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    inputCard.appendChild(h('div',{className:'home-section-label'},'Eingaben'));
+    inputCard.appendChild(fieldsDiv);
+    inputCard.appendChild(genRow);
+    wrap.appendChild(inputCard);
+  } else {
+    wrap.appendChild(fieldsDiv);
+    wrap.appendChild(genRow);
+  }
 
   if(sitId===0&&LS.get('ki21_schnellstart',false)){
     wrap.appendChild(h('button',{className:'btn-o',
@@ -2748,7 +2757,14 @@ function renderStation(sitId){
       weiter2Row.style.display='none';
     }
 
-    wrap.appendChild(postDiv);
+    if(sitId===0){
+      const postCard=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+      postCard.appendChild(h('div',{className:'home-section-label'},'Antworten & Abschluss'));
+      postCard.appendChild(postDiv);
+      wrap.appendChild(postCard);
+    } else {
+      wrap.appendChild(postDiv);
+    }
   }
 
   // Show weiter button if result already exists (navigating back)
