@@ -2416,6 +2416,31 @@ function renderStation(sitId){
     }
     return '';
   }
+  // Liefert nur die ERSTE Aufzählungszeile nach einem Block-Header (z.B. "DIE WICHTIGSTEN
+  // ERKENNTNISSE" oder "NÄCHSTE SCHRITTE") — für Phasen, deren Marker als Bullet-Liste statt
+  // als einzeilige "Header: Inhalt"-Zeile formatiert sind.
+  function extractFirstBulletAfterHeader(text,headerKeyword){
+    const lines=(text||'').split('\n');
+    for(let i=0;i<lines.length;i++){
+      if(lines[i].toUpperCase().includes(headerKeyword.toUpperCase())){
+        for(let j=i+1;j<lines.length;j++){
+          const t=lines[j].trim();
+          if(!t)break;
+          return t.replace(/^[•\-]\s*/,'').replace(/^\d+\.\s*/,'').trim();
+        }
+      }
+    }
+    return '';
+  }
+  // Liefert die erste Zeile, die einen bestimmten Begriff enthält (z.B. "ROI:") — für Marker,
+  // die als einzelner Bullet innerhalb eines größeren Blocks stehen, nicht als eigener Header.
+  function extractLineContaining(text,substr){
+    const lines=(text||'').split('\n');
+    for(const line of lines){
+      if(line.toUpperCase().includes(substr.toUpperCase()))return line.replace(/^[•\-]\s*/,'').trim();
+    }
+    return '';
+  }
   if(sitId===1){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
@@ -2452,6 +2477,124 @@ function renderStation(sitId){
     wrap.appendChild(sumBox);
   }
   // ── Ende Bedarfsanalyse & Demo Dashboard ──
+
+  // ── Termin nachbereiten Dashboard (Phase 3) ──
+  // Kernfrage: Welche neuen Erkenntnisse haben wir gewonnen? → zeigt die erste Erkenntnis aus
+  // "DIE WICHTIGSTEN ERKENNTNISSE" statt der allgemeinen Einschätzung, plus ersten Schritt aus
+  // "NÄCHSTE SCHRITTE". Kein neuer Score, keine neue KI-Logik.
+  if(sitId===2){
+    const aid=state.activeId;
+    const health=aid?getOpportunityHealth(aid):null;
+    const heroDash3=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    const healthTop3=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
+      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
+    healthTop3.appendChild(h('div',{className:'home-hero-label'},
+      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
+    healthTop3.appendChild(buildHealthBar(health?health.score:null));
+    heroDash3.appendChild(healthTop3);
+    wrap.appendChild(heroDash3);
+
+    const hasResult3=!!data.result;
+    const erkenntnis=hasResult3?extractFirstBulletAfterHeader(data.result,'DIE WICHTIGSTEN ERKENNTNISSE'):'';
+    const naechsterSchritt3=hasResult3?extractFirstBulletAfterHeader(data.result,'NÄCHSTE SCHRITTE'):'';
+
+    const sumBox3=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    sumBox3.appendChild(h('div',{className:'home-section-label'},'Termin nachbereiten · Stand'));
+    sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
+      h('span',{},hasResult3?'✔':'•'),
+      h('span',{style:{flex:1}},hasResult3?'Ergebnis vorhanden':'Ergebnis noch offen')
+    ));
+    if(hasResult3){
+      sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+        h('span',{},'→'),
+        h('span',{style:{flex:1}},erkenntnis||'Noch keine Erkenntnis im Ergebnistext gefunden.')
+      ));
+    }
+    sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+      h('span',{},'▸'),
+      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt3||'Phase 3 ausführen')
+    ));
+    wrap.appendChild(sumBox3);
+  }
+  // ── Ende Termin nachbereiten Dashboard ──
+
+  // ── Nutzen-Kosten-Analyse Dashboard (Phase 4) ──
+  // Kernfrage: Ist der Business Case wirtschaftlich tragfähig? → zeigt direkt die ROI-Ampel-
+  // Zeile aus dem Ergebnis (🟢/🟡/🔴) statt einer allgemeinen Einschätzung. Kein neuer Score.
+  if(sitId===3){
+    const aid=state.activeId;
+    const health=aid?getOpportunityHealth(aid):null;
+    const heroDash4=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    const healthTop4=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
+      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
+    healthTop4.appendChild(h('div',{className:'home-hero-label'},
+      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
+    healthTop4.appendChild(buildHealthBar(health?health.score:null));
+    heroDash4.appendChild(healthTop4);
+    wrap.appendChild(heroDash4);
+
+    const hasResult4=!!data.result;
+    const roiLine=hasResult4?extractLineContaining(data.result,'ROI:'):'';
+    const naechsterSchritt4=hasResult4?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
+
+    const sumBox4=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    sumBox4.appendChild(h('div',{className:'home-section-label'},'Nutzen-Kosten-Analyse · Stand'));
+    sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
+      h('span',{},hasResult4?'✔':'•'),
+      h('span',{style:{flex:1}},hasResult4?'Ergebnis vorhanden':'Ergebnis noch offen')
+    ));
+    if(hasResult4){
+      sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+        h('span',{},'€'),
+        h('span',{style:{flex:1}},roiLine||'Noch keine ROI-Einschätzung im Ergebnistext gefunden.')
+      ));
+    }
+    sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+      h('span',{},'▸'),
+      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt4||'Phase 4 ausführen')
+    ));
+    wrap.appendChild(sumBox4);
+  }
+  // ── Ende Nutzen-Kosten-Analyse Dashboard ──
+
+  // ── Angebot & Abschluss Dashboard (Phase 5) ──
+  // Kernfrage: Was erhöht oder gefährdet die Abschlusswahrscheinlichkeit? → zeigt "DIE EINE
+  // SACHE DIE FEHLT" (das größte Risiko) statt einer allgemeinen Einschätzung. Kein neuer Score.
+  if(sitId===4){
+    const aid=state.activeId;
+    const health=aid?getOpportunityHealth(aid):null;
+    const heroDash5=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    const healthTop5=h('div',{className:'home-hero-colR',style:{width:'100%',cursor:'pointer'},
+      onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}});
+    healthTop5.appendChild(h('div',{className:'home-hero-label'},
+      h('span',{},'Opportunity Health'),h('span',{className:'home-info-dot'},'ⓘ')));
+    healthTop5.appendChild(buildHealthBar(health?health.score:null));
+    heroDash5.appendChild(healthTop5);
+    wrap.appendChild(heroDash5);
+
+    const hasResult5=!!data.result;
+    const groesstesRisiko=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
+    const naechsterSchritt5=hasResult5?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
+
+    const sumBox5=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
+    sumBox5.appendChild(h('div',{className:'home-section-label'},'Angebot & Abschluss · Stand'));
+    sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
+      h('span',{},hasResult5?'✔':'•'),
+      h('span',{style:{flex:1}},hasResult5?'Ergebnis vorhanden':'Ergebnis noch offen')
+    ));
+    if(hasResult5){
+      sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+        h('span',{},'⚠'),
+        h('span',{style:{flex:1}},groesstesRisiko||'Noch kein größtes Risiko im Ergebnistext gefunden.')
+      ));
+    }
+    sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
+      h('span',{},'▸'),
+      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt5||'Phase 5 ausführen')
+    ));
+    wrap.appendChild(sumBox5);
+  }
+  // ── Ende Angebot & Abschluss Dashboard ──
 
 
 
@@ -3598,7 +3741,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.73';
+const KI21_VERSION='v4.74';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
