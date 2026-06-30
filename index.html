@@ -1472,8 +1472,8 @@ function getOpportunityHealth(accId){
   const positive=(auto.positive||[]).map(s=>({text:s.text,origin:'AUTO',type:'positive',disabled:manual.removedAutoTexts.includes(s.text)}));
   const warning=(auto.warning||[]).map(s=>({text:s.text,origin:'AUTO',type:'warning',disabled:manual.removedAutoTexts.includes(s.text)}));
   const open=(auto.open||[]).map(s=>({text:s.text,origin:'AUTO',type:'open',disabled:manual.removedAutoTexts.includes(s.text)}));
-  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.unshift(r); });
-  risk.positive.forEach(r=>{ if(!positive.find(w=>w.text===r.text)) positive.unshift(r); });
+  risk.warning.forEach(r=>{ if(!warning.find(w=>w.text===r.text)) warning.unshift({...r,disabled:manual.removedAutoTexts.includes(r.text)}); });
+  risk.positive.forEach(r=>{ if(!positive.find(w=>w.text===r.text)) positive.unshift({...r,disabled:manual.removedAutoTexts.includes(r.text)}); });
   manual.added.forEach(m=>{
     const entry={text:m.text,origin:'MANUELL',type:m.type,disabled:m.active===false};
     if(m.type==='positive')positive.push(entry);
@@ -1492,8 +1492,8 @@ function getOpportunityHealth(accId){
   // Moderate +-3 Wirkung nur für NICHT-K.O.-Signale (normale Risiko-Signale)
   const manualPositiveCount=manual.added.filter(m=>m.type==='positive'&&m.active!==false).length;
   const manualWarningCount=manual.added.filter(m=>m.type==='warning'&&m.active!==false&&!isKoSignalText(m.text)).length;
-  const disabledAutoPositive=positive.filter(s=>s.origin==='AUTO'&&s.disabled).length;
-  const disabledAutoWarning=warning.filter(s=>s.origin==='AUTO'&&s.disabled&&!isKoSignalText(s.text)).length;
+  const disabledAutoPositive=positive.filter(s=>(s.origin==='AUTO'||s.origin==='ERGAENZUNG')&&s.disabled).length;
+  const disabledAutoWarning=warning.filter(s=>(s.origin==='AUTO'||s.origin==='ERGAENZUNG')&&s.disabled&&!isKoSignalText(s.text)).length;
   let base=auto.score+manualPositiveCount*3-manualWarningCount*3-disabledAutoPositive*3+disabledAutoWarning*3;
   let score=Math.max(0,Math.min(100,Math.round(base)));
   if(hasActiveKo)score=Math.min(score,koCapMin);
@@ -1559,7 +1559,7 @@ function renderHealthBadgeIfPresent(){
 
 function toggleHealthSignal(accId,text,origin,type,refreshFn){
   const manual=getHealthManual(accId);
-  if(origin==='AUTO'){
+  if(origin==='AUTO'||origin==='ERGAENZUNG'){
     const idx=manual.removedAutoTexts.indexOf(text);
     if(idx>=0)manual.removedAutoTexts.splice(idx,1);
     else manual.removedAutoTexts.push(text);
@@ -2308,7 +2308,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // 1) Opportunity Health Hero
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
     // Volltext direkt anzeigen (kein Aufklappen mehr — die Kurz- und Langfassung waren sich zu ähnlich).
@@ -2415,7 +2415,7 @@ function renderStation(sitId){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
 
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
     const kernaussage=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
@@ -2448,7 +2448,7 @@ function renderStation(sitId){
   if(sitId===2){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult3=!!data.result;
     const erkenntnis=hasResult3?extractFirstBulletAfterHeader(data.result,'DIE WICHTIGSTEN ERKENNTNISSE'):'';
@@ -2480,7 +2480,7 @@ function renderStation(sitId){
   if(sitId===3){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult4=!!data.result;
     const roiLine=hasResult4?extractLineContaining(data.result,'ROI:'):'';
@@ -2512,7 +2512,7 @@ function renderStation(sitId){
   if(sitId===4){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null)));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult5=!!data.result;
     const groesstesRisiko=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
@@ -2925,7 +2925,18 @@ function renderStation(sitId){
           }
         }
         LS.set(KEY,data);
-        if(state.activeId)refreshOpportunityHealth(state.activeId);
+        if(state.activeId){
+          await refreshOpportunityHealth(state.activeId);
+          const freshHealth=getOpportunityHealth(state.activeId);
+          const scoreEl=document.getElementById('station-health-score');
+          const fillEl=document.getElementById('station-health-fill');
+          if(scoreEl&&freshHealth){
+            const color=getHealthColor(freshHealth.score);
+            scoreEl.textContent=String(freshHealth.score);
+            scoreEl.style.color=color;
+            if(fillEl){fillEl.style.width=freshHealth.score+'%';fillEl.style.background=color;}
+          }
+        }
         resultLabel.textContent=getResultLabel(sitId);
         // Phase 5: Auto-extract Besuchsbericht into CRM field
         if(sitId===4){
@@ -3135,12 +3146,14 @@ function showNeuerKunde(initial,accId,initialTab){
   }
 
   const btns=h('div',{className:'modal-row'});
-  const saveB=h('button',{className:'btn-o',onclick:()=>{
+  const saveB=h('button',{className:'btn-o',onclick:async()=>{
     if(!f.firma.trim()){alert('Bitte Firmenname eingeben.');return;}
+    saveB.disabled=true;
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
       LS.set('ki21_kk_'+accId,kk);
-      refreshOpportunityHealth(accId);
+      saveB.textContent='⏳ Wird aktualisiert...';
+      await refreshOpportunityHealth(accId);
     } else {
       const id='acc_'+Date.now();
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
@@ -3354,12 +3367,20 @@ function showStkModal(sitId,sitTitle){
   const KEY='ki21_stk_'+state.activeId+'_'+sitId;
   const ta=h('textarea',{placeholder:'Optionale Ergänzungen für diese Phase...'});
   ta.value=LS.get(KEY,'');
+  const saveBtn=h('button',{className:'btn-o',style:{flex:'1'},onclick:async()=>{
+    LS.set(KEY,ta.value);
+    saveBtn.disabled=true;
+    saveBtn.textContent='⏳ Wird aktualisiert...';
+    renderHealthBadgeIfPresent();
+    if(state.activeId)await refreshOpportunityHealth(state.activeId);
+    m.remove();
+    renderStation(sitId);
+  }},'Speichern');
   const content=h('div',{},
     h('p',{className:'modal-desc'},'Optionale Ergänzungen für diese Phase. Fließen in Prompt und Opportunity Health ein.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set(KEY,ta.value);renderHealthBadgeIfPresent();if(state.activeId)refreshOpportunityHealth(state.activeId);m.remove();renderStation(sitId);}},
-        'Speichern'),
+      saveBtn,
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
@@ -3683,7 +3704,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.75';
+const KI21_VERSION='v4.76';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
