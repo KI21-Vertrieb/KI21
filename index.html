@@ -1317,7 +1317,7 @@ function getAdditionRiskSignals(accId,allResults){
   if(new RegExp(leaderWords+'.{0,120}(sponsor|unterstützt|treibt|will|priorität|dringend)','i').test(raw)){
     addPos('Entscheider unterstützt aktiv',5);
   }
-  if(new RegExp('(champion|fürsprecher|unterstützer|treiber|sponsor).{0,100}(verlässt|verlassen|kündigt|geht|wechselt|weg|nicht mehr im unternehmen)','i').test(raw)){
+  if(new RegExp('(champion|fürsprecher|unterstützer|treiber|sponsor).{0,100}(verlässt|verlassen|kündigt|wechselt den arbeitgeber|\\bweg\\b|nicht mehr im unternehmen)','i').test(raw)){
     addWarn('Interner Champion verlässt das Unternehmen',30,30);
   }
   return {warning,positive,penalty,scoreCap};
@@ -1444,7 +1444,7 @@ function getKoSeverity(text){
   if(new RegExp(leaderWords+'.{0,80}'+preferenceWords+'.{0,80}'+competitorWords,'i').test(t))return {penalty:45,cap:25};
   if(new RegExp(competitorWords+'.{0,80}'+preferenceWords,'i').test(t))return {penalty:45,cap:25};
   if(new RegExp(leaderWords+'.{0,80}'+rejectionWords,'i').test(t))return {penalty:35,cap:30};
-  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|weg)/i.test(t))return {penalty:30,cap:30};
+  if(/(champion|fürsprecher|sponsor).{0,40}(verlässt|verlassen|kündigt|\bweg\b)/i.test(t))return {penalty:30,cap:30};
   if(/budget.{0,40}(komplett gestrichen|vollständig entfallen|endgültig abgelehnt)/i.test(t))return {penalty:20,cap:45};
   if(/(entscheidung|projekt).{0,40}(final gestoppt|endgültig gestoppt|auf unbestimmte zeit eingefroren)/i.test(t))return {penalty:20,cap:45};
   return null;
@@ -3704,7 +3704,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.76';
+const KI21_VERSION='v4.77';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
