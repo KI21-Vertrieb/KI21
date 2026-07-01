@@ -1915,13 +1915,13 @@ function renderHome(){
     kundeCol.appendChild(h('div',{className:'home-fact-list'},
       h('div',{className:'home-fact-row'},
         h('span',{className:'home-fact-label'},h('span',{className:'home-fact-icon'},'📅'),'Erwarteter Abschluss'),
-        h('span',{className:'home-fact-val'},'–')),
+        h('span',{className:'home-fact-val'},cust.abschluss||'–')),
       h('div',{className:'home-fact-row'},
         h('span',{className:'home-fact-label'},h('span',{className:'home-fact-icon'},'📊'),'Potenzial'),
-        h('span',{className:'home-fact-val'},'–')),
+        h('span',{className:'home-fact-val'},cust.potenzial||'–')),
       h('div',{className:'home-fact-row'},
         h('span',{className:'home-fact-label'},h('span',{className:'home-fact-icon'},'👤'),'Verantwortlich'),
-        h('span',{className:'home-fact-val'},'–'))
+        h('span',{className:'home-fact-val'},cust.verantwortlich||'–'))
     ));
   }
 
@@ -2550,6 +2550,8 @@ function renderStation(sitId){
 
     const einschaetzung=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
     const schmerz=hasResult?extractBulletsAfterHeader(data.result,'SCHMERZ',2):[];
+    // Also try with emoji prefix variant if empty
+    const schmerzFinal=schmerz.length?schmerz:(hasResult?extractBulletsAfterHeader(data.result,'🔥',2):[]);
     const vertriebsnotizen=hasResult?extractBulletsAfterHeader(data.result,'VERTRIEBSNOTIZEN',3):[];
     const naechsterSchritt=hasResult?(extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE')||extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT')):'';
     const bestaetigte=hasResult?extractBulletsAfterHeader(data.result,'BESTÄTIGT',4):[];
@@ -2564,7 +2566,7 @@ function renderStation(sitId){
     const kpCard=h('div',{className:'exec-card'});
     kpCard.appendChild(h('div',{className:'exec-card-label'},'🟢 Kernproblem'));
     kpCard.appendChild(h('div',{className:'exec-card-val'},
-      schmerz.length?schmerz.join(' · '):(hasResult?'–':'Ergebnis noch offen')));
+      schmerzFinal.length?schmerzFinal.join(' · '):(hasResult?'–':'Ergebnis noch offen')));
     dashGrid.appendChild(kpCard);
 
     // Entscheider — aus cust.ap + Health-Checkliste
@@ -3438,6 +3440,25 @@ function showNeuerKunde(initial,accId,initialTab){
     twoCol.appendChild(fw);
   });
   stammDiv.appendChild(twoCol);
+  // Deal-Felder für Home-Dashboard
+  const dealCol=h('div',{style:{display:'flex',gap:'8px'}});
+  [{k:'abschluss',l:'Erwarteter Abschluss',p:'z.B. Q3 2025'},{k:'potenzial',l:'Potenzial (€)',p:'z.B. 48.000 €'}].forEach(x=>{
+    const fw=h('div',{style:{flex:1,marginBottom:'10px'}});
+    fw.appendChild(h('div',{className:'field-label'},x.l));
+    const inp=h('input',{type:'text',placeholder:x.p});
+    inp.value=f[x.k]||'';
+    inp.addEventListener('input',e=>f[x.k]=e.target.value);
+    fw.appendChild(inp);
+    dealCol.appendChild(fw);
+  });
+  stammDiv.appendChild(dealCol);
+  const verantFw=h('div',{style:{marginBottom:'10px'}});
+  verantFw.appendChild(h('div',{className:'field-label'},'Verantwortlich'));
+  const verantInp=h('input',{type:'text',placeholder:'z.B. Michael Nordhausen'});
+  verantInp.value=f['verantwortlich']||'';
+  verantInp.addEventListener('input',e=>f['verantwortlich']=e.target.value);
+  verantFw.appendChild(verantInp);
+  stammDiv.appendChild(verantFw);
 
   const kkTa=h('textarea',{placeholder:'Bekannte Herausforderungen, Strategie, Wettbewerber, politische Situation...'});
   kkTa.value=kk;
@@ -4017,7 +4038,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.90';
+const KI21_VERSION='v4.91';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
