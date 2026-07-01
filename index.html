@@ -1456,6 +1456,32 @@ Maximal 5 Einträge pro Liste. Wenn keine Signale einer Kategorie vorliegen, lee
   return s;
 }
 
+// savePhaseSnapshot: isolierter Health-Call mit NUR den Daten dieser einen Phase.
+// Kein kk, keine anderen Phasenergebnisse — ergibt ausschließlich phaseneigene Signale.
+// Alle Signale werden mit sourcePhase getaggt. Globaler Score bleibt unverändert.
+async function savePhaseSnapshot(accId,sitId){
+  if(!accId||sitId===undefined)return;
+  const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust;
+  if(!cust||!cust.firma)return;
+  const sit=SITS[sitId];
+  if(!sit)return;
+  const d=LS.get('ki21_st_'+accId+'_'+sitId,null);
+  if(!d||!d.result)return;
+  const singleResult=[{title:sit.title,text:d.result}];
+  const prompt=buildHealthPrompt(cust,singleResult,'','');
+  const json=await callClaudeJSON(prompt);
+  if(json&&typeof json.score==='number'){
+    const tag=(arr)=>(arr||[]).map(s=>({...s,sourcePhase:sit.id||sitId}));
+    LS.set('ki21_phase_snap_'+accId+'_'+sitId,{
+      positive:tag(json.positive),
+      warning:tag(json.warning),
+      open:tag(json.open||[]),
+      sourcePhase:sit.id||sitId,
+      ts:Date.now()
+    });
+  }
+}
+
 async function refreshOpportunityHealth(accId){
   if(!accId)return;
   const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust;
@@ -2457,11 +2483,18 @@ function renderStation(sitId){
     // entfallen und der Snapshot direkt semantisch aufgebaut werden.
     const LATER_PHASE_KEYWORDS=/preis|angebot|demo|pilot|roi|business case|jahreslizenz|budget-grenze|rollout|abschluss|lizenz|subscription/i;
     const phaseSnap=aid?LS.get('ki21_phase_snap_'+aid+'_0',null):null;
-    const snapHealth=phaseSnap||null;
-    const filterForPhase1=(signals)=>(signals||[]).filter(s=>!LATER_PHASE_KEYWORDS.test(s.text));
-    const phase1Positive=filterForPhase1(snapHealth?snapHealth.positive:(health?health.positive:[]));
-    const phase1Warning=filterForPhase1(snapHealth?snapHealth.warning:(health?health.warning:[]));
-    const phase1Open=filterForPhase1(snapHealth?snapHealth.open:(health?health.open:[]));
+    // sourcePhase-basierter Filter (Hauptmechanismus ab v4.97):
+    // Nur Signale mit sourcePhase===0 (oder 'qualifizierung') werden angezeigt.
+    // Signale ohne sourcePhase (Altdaten) = unknown → nicht anzeigen.
+    // Keyword-Filter: nur als letzter Fallback wenn kein Snapshot vorhanden.
+    const filterBySourcePhase=(signals)=>(signals||[]).filter(s=>
+      s.sourcePhase===0||s.sourcePhase==='qualifizierung'||s.sourcePhase==='0'
+    );
+    const filterFallback=(signals)=>(signals||[]).filter(s=>!LATER_PHASE_KEYWORDS.test(s.text));
+    const hasTaggedSnap=phaseSnap&&(phaseSnap.positive||[]).some(s=>s.sourcePhase!==undefined);
+    const phase1Positive=hasTaggedSnap?filterBySourcePhase(phaseSnap.positive):filterFallback(health?health.positive:[]);
+    const phase1Warning=hasTaggedSnap?filterBySourcePhase(phaseSnap.warning):filterFallback(health?health.warning:[]);
+    const phase1Open=hasTaggedSnap?filterBySourcePhase(phaseSnap.open):filterFallback(health?health.open:[]);
 
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
@@ -3428,6 +3461,8 @@ function renderStation(sitId){
               ts:Date.now()
             });
           }
+          // Isolierter Phasen-Snapshot mit sourcePhase-Tagging (async, Hintergrund)
+          savePhaseSnapshot(state.activeId,sitId);
         }
         resultLabel.textContent=getResultLabel(sitId);
         // Phase 5: Auto-extract Besuchsbericht into CRM field
@@ -4209,7 +4244,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.96';
+const KI21_VERSION='v4.97';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
