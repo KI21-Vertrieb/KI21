@@ -1692,7 +1692,7 @@ function showOpportunityHealthDetail(accId){
     }
     section('Chancen',health.positive,'✔');
     section('Risiken',health.warning,'⚠');
-    section('Offene Punkte',health.open,'•');
+    section('Noch offene Punkte',health.open,'•');
 
     {
       const CHECKLIST_LABELS=[
@@ -1781,7 +1781,7 @@ function renderResultText(text,skipSplit){
     } else if(line.startsWith('ANNAHME:')){
       span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(255,107,0,.15);color:#ff6b00;border-radius:4px;padding:1px 6px;margin-right:6px;">ANNAHME</span>'+escHtml(line.slice('ANNAHME:'.length));
     } else if(line.startsWith('KLÄREN:')){
-      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KLÄREN</span>'+escHtml(line.slice('KLÄREN:'.length));
+      span.innerHTML='<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">NOCH OFFEN</span>'+escHtml(line.slice('KLÄREN:'.length));
     } else if(rest.startsWith('KRITISCH:')){
       span.innerHTML=escHtml(prefix)+'<span style="font-size:9px;font-weight:700;background:rgba(248,81,73,.15);color:#f85149;border-radius:4px;padding:1px 6px;margin-right:6px;">KRITISCH</span>'+escHtml(rest.slice('KRITISCH:'.length));
     } else if(rest.startsWith('WICHTIG:')){
@@ -2443,7 +2443,11 @@ function renderStation(sitId){
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
-    // Volltext direkt anzeigen (kein Aufklappen mehr — die Kurz- und Langfassung waren sich zu ähnlich).
+    // Phase-1-Filter: Signale aus späteren Phasen (Preisverhandlung, Demo, Pilot, ROI, Angebot)
+    // werden in Phase 1 ausgeblendet — nur Qualifizierungsthemen sind hier relevant.
+    const LATER_PHASE_KEYWORDS=/preis|angebot|demo|pilot|roi|business case|jahreslizenz|budget-grenze|rollout|abschluss|lizenz|subscription/i;
+    const filterForPhase1=(signals)=>(signals||[]).filter(s=>!LATER_PHASE_KEYWORDS.test(s.text));
+
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
       const mkCockpitCard=(title,glyph,items)=>{
@@ -2459,9 +2463,9 @@ function renderStation(sitId){
         });
         return card;
       };
-      cockpit.appendChild(mkCockpitCard('Chancen','✔',health.positive));
-      cockpit.appendChild(mkCockpitCard('Risiken','⚠',health.warning));
-      cockpit.appendChild(mkCockpitCard('Offene Punkte','•',health.open));
+      cockpit.appendChild(mkCockpitCard('Chancen','✔',filterForPhase1(health.positive)));
+      cockpit.appendChild(mkCockpitCard('Risiken','⚠',filterForPhase1(health.warning)));
+      cockpit.appendChild(mkCockpitCard('Noch offene Punkte','•',filterForPhase1(health.open)));
       wrap.appendChild(cockpit);
     }
 
@@ -2998,8 +3002,7 @@ function renderStation(sitId){
   }
 
   // Phase nav
-  const phaseNav=h('div',{className:'phase-nav',
-    style:sitId===0?{alignItems:'stretch',marginTop:'2px',marginBottom:'14px',opacity:.92}:{alignItems:'stretch'}});
+  const phaseNav=h('div',{className:'phase-nav',style:{alignItems:'stretch',marginTop:'18px',paddingTop:'14px',borderTop:'1px solid var(--border)'}});
   if(sitId>0){
     phaseNav.appendChild(h('button',{className:'btn',onclick:()=>renderStation(sitId-1)},'← '+SITS[sitId-1].title));
   }
@@ -3010,7 +3013,6 @@ function renderStation(sitId){
       onclick:()=>renderStation(sitId+1)
     },SITS[sitId+1].title+' →'));
   }
-  wrap.appendChild(phaseNav);
 
   // Fields
   const fieldsDiv=h('div',{});
@@ -3462,14 +3464,8 @@ Analyse:
     }
   }
 
-  // Abschluss-CTA — dieselbe Navigation wie der "weiter"-Button in der Phasen-Leiste oben,
-  // hier nur zusätzlich prominent platziert. (Eigene Erkenntnisse/Ergänzungen werden jetzt
-  // ausschließlich im Home-Dashboard angeboten, nicht mehr pro Station.)
-  if(sitId===0&&sitId<SITS.length-1){
-    wrap.appendChild(h('button',{className:'home-next-cta-btn',style:{marginTop:'4px',marginBottom:'14px'},
-      onclick:()=>renderStation(sitId+1)},
-      h('span',{},'Weiter zu '+SITS[sitId+1].title),h('span',{},'→')));
-  }
+  // Navigation ans Ende — erst lesen & arbeiten, dann navigieren
+  wrap.appendChild(phaseNav);
 
   app.appendChild(nav);
   app.appendChild(infoRow);
@@ -4185,7 +4181,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.93';
+const KI21_VERSION='v4.94';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
