@@ -2442,11 +2442,26 @@ function renderStation(sitId){
     // 1) Opportunity Health Hero
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
-    // 2) Entscheidungscockpit — Chancen / Risiken / Offene Punkte (je max. 3, echte Health-Signale).
-    // Phase-1-Filter: Signale aus späteren Phasen (Preisverhandlung, Demo, Pilot, ROI, Angebot)
-    // werden in Phase 1 ausgeblendet — nur Qualifizierungsthemen sind hier relevant.
+    // 2) Entscheidungscockpit — Chancen / Risiken / Noch offene Punkte (je max. 3, echte Health-Signale).
+    //
+    // ARCHITEKTUR (v4.95): Score global, Dashboard phasenspezifisch.
+    //
+    // Primär: Phasenspezifischer Snapshot (ki21_phase_snap_{accId}_0), gespeichert beim letzten
+    // Generate dieser Phase. Zeigt exakt was beim Generieren bekannt war — spätere Phasen
+    // können diesen Stand nicht überschreiben.
+    //
+    // Fallback (vor erstem Generate): Keyword-Filter auf globalem Health.
+    // Keyword-Filter bleibt als temporäre Brücke; wird ersetzt sobald Snapshot vorhanden.
+    //
+    // Mittelfristig (noch nicht gebaut): sourcePhase-Attribut pro Signal, dann kann der Filter
+    // entfallen und der Snapshot direkt semantisch aufgebaut werden.
     const LATER_PHASE_KEYWORDS=/preis|angebot|demo|pilot|roi|business case|jahreslizenz|budget-grenze|rollout|abschluss|lizenz|subscription/i;
+    const phaseSnap=aid?LS.get('ki21_phase_snap_'+aid+'_0',null):null;
+    const snapHealth=phaseSnap||null;
     const filterForPhase1=(signals)=>(signals||[]).filter(s=>!LATER_PHASE_KEYWORDS.test(s.text));
+    const phase1Positive=snapHealth?snapHealth.positive:filterForPhase1(health?health.positive:[]);
+    const phase1Warning=snapHealth?snapHealth.warning:filterForPhase1(health?health.warning:[]);
+    const phase1Open=snapHealth?snapHealth.open:filterForPhase1(health?health.open:[]);
 
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
@@ -2463,9 +2478,9 @@ function renderStation(sitId){
         });
         return card;
       };
-      cockpit.appendChild(mkCockpitCard('Chancen','✔',filterForPhase1(health.positive)));
-      cockpit.appendChild(mkCockpitCard('Risiken','⚠',filterForPhase1(health.warning)));
-      cockpit.appendChild(mkCockpitCard('Noch offene Punkte','•',filterForPhase1(health.open)));
+      cockpit.appendChild(mkCockpitCard('Chancen','✔',phase1Positive));
+      cockpit.appendChild(mkCockpitCard('Risiken','⚠',phase1Warning));
+      cockpit.appendChild(mkCockpitCard('Noch offene Punkte','•',phase1Open));
       wrap.appendChild(cockpit);
     }
 
@@ -3400,6 +3415,19 @@ function renderStation(sitId){
             scoreEl.style.color=color;
             if(fillEl){fillEl.style.width=freshHealth.score+'%';fillEl.style.background=color;}
           }
+          // Phasenspezifischer Signal-Snapshot: Speichert den Signal-Stand zum Zeitpunkt
+          // dieser Phasengenerierung. Der globale Score bleibt global — aber das Dashboard
+          // dieser Phase zeigt genau die Signale, die beim Generieren bekannt waren.
+          // Key: ki21_phase_snap_{accId}_{sitId} = {positive, warning, open, ts}
+          // Wird beim nächsten Generieren dieser Phase überschrieben.
+          if(freshHealth){
+            LS.set('ki21_phase_snap_'+state.activeId+'_'+sitId,{
+              positive:freshHealth.positive||[],
+              warning:freshHealth.warning||[],
+              open:freshHealth.open||[],
+              ts:Date.now()
+            });
+          }
         }
         resultLabel.textContent=getResultLabel(sitId);
         // Phase 5: Auto-extract Besuchsbericht into CRM field
@@ -4181,7 +4209,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.94';
+const KI21_VERSION='v4.95';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
