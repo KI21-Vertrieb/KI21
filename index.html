@@ -164,6 +164,26 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .home-insight-dot.open{background:var(--text3);}
 .home-empty-note{font-size:10.5px;color:var(--text3);padding:2px 0;}
 .home-station-sub{font-size:11.5px;color:var(--text2);margin-top:2px;}
+/* Executive Briefing components (sitId===1 only) */
+.exec-grid{display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap;}
+.exec-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;flex:1;min-width:120px;}
+.exec-card-label{font-size:8.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin-bottom:7px;}
+.exec-card-val{font-size:12px;font-weight:700;color:var(--text);line-height:1.35;}
+.exec-card-val.muted{color:var(--text2);font-weight:400;}
+.exec-divider{display:flex;align-items:center;gap:10px;margin:18px 0 12px;}
+.exec-divider-line{flex:1;height:1px;background:var(--border);}
+.exec-divider-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);white-space:nowrap;}
+.exec-fact-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:11.5px;color:var(--text);border-top:1px solid var(--border);}
+.exec-fact-row:first-child{border-top:none;}
+.exec-fact-icon{width:16px;flex-shrink:0;text-align:center;color:#2ea043;font-size:11px;}
+.exec-interp-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:11.5px;font-style:italic;color:var(--text2);border-top:1px solid var(--border);}
+.exec-interp-row:first-child{border-top:none;}
+.exec-interp-icon{width:16px;flex-shrink:0;text-align:center;color:#ff6b00;font-size:11px;}
+.exec-coach{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;}
+.exec-coach-head{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#ff6b00;margin-bottom:8px;}
+.exec-coach-row{display:flex;align-items:flex-start;gap:8px;padding:3.5px 0;font-size:11px;}
+.exec-coach-key{color:var(--text3);font-size:10px;white-space:nowrap;flex-shrink:0;min-width:90px;}
+.exec-coach-val{color:var(--text);font-weight:700;}
 
 /* Station */
 .station-wrap{padding:14px;max-width:500px;margin:0 auto;}
@@ -498,6 +518,7 @@ function buildCtx(cust,mu,kk,stk){
   s+='  ❌ "Lieferfähigkeits-Auskünfte dauern 10 Minuten bis einen Tag, weil Innendienst und Produktion manuell abgefragt werden." → ✅ "Lieferfähigkeit: bis zu 1 Tag." + "Innendienst ist Bottleneck."\n';
   s+='Trenne solche Fälle IMMER in zwei eigene Bullets: einen für die Ursache/das Faktum, einen für die Wirkung/Konsequenz – außer der Kausalzusammenhang selbst ist die eine, pointierte Kernaussage, die in diesem Block tatsächlich gefordert ist. Im Zweifel: aufteilen.\n';
   s+='KRITISCH – DIE STANDARDANSICHT BEANTWORTET NUR VIER FRAGEN: Was wissen wir? Was ist kritisch? Was fehlt? Was ist der nächste Schritt? Mehr nicht. ALLES andere (Begründungen, Zusammenhänge, Interpretationen, Herleitungen, Strategien, ROI-Rechnungen, Demo-Ideen, Vertriebsnotizen) gehört ausschließlich in "Mehr Details". Qualitätsmaßstab: Der Nutzer öffnet das Fenster, liest 10 Sekunden, und kann dann sofort sagen "Opportunity verstanden, größte Risiken verstanden, wichtigste offene Frage verstanden, nächste Aktion verstanden" – ohne einen einzigen Bullet zweimal lesen zu müssen.\n';
+  s+='QUALITÄTSREGEL – HANDLUNGSORIENTIERUNG: Jede Phase beantwortet drei Kernfragen in ihrem Output: (1) Was ist die wichtigste Erkenntnis dieser Phase? (2) Was ist das größte verbleibende Risiko? (3) Was ist der nächste Schritt mit der höchsten Wirkung auf den Deal? Diese drei Fragen müssen nach dem Lesen des Outputs klar und sofort beantwortbar sein – nicht durch langes Suchen im Text. KI21 erzeugt keine Berichte, sondern Entscheidungsgrundlagen. Das wichtigste Kriterium für die Qualität einer Ausgabe ist: Kann der Verkäufer nach dem Lesen sofort die nächste richtige Handlung ableiten?\n';
   s+='- KRITISCH – REIHENFOLGE INNERHALB JEDER BULLET-LISTE: Sortiere IMMER nach Relevanz für die Kaufentscheidung: zuerst Schmerz/Bedarf (quantifiziert, wenn möglich), dann Risiko, zuletzt allgemeiner Kontext. Die wichtigste, konkreteste Erkenntnis steht IMMER an Position 1 – niemals ein genereller Kontext-Punkt vor einem konkreten Schmerzpunkt.\n';
   s+='- Erkenntnisse als einfache Bullets, OHNE BESTÄTIGT:/ANNAHME:/KLÄREN:-Präfix in der Standardausgabe (diese Kennzeichnung nur noch im Detailbereich nach ###DETAILS### verwenden, falls das jeweilige Phasenformat das vorsieht)\n';
   s+='- KRITISCH: Die abschließende Aktionszeile darf NUR EINE einzige, priorisierte Handlung enthalten – KEINE Aufzählung mehrerer Aktionen mit "und" oder Kommas (z.B. NICHT "Workshop vereinbaren und Unterlagen vorbereiten und Entscheider kontaktieren"). Wenn mehrere Dinge zu tun wären, wähle die EINE wichtigste aus, die diese Woche passieren muss – alles andere ergibt sich danach von selbst oder gehört in den Detailbereich.\n';
@@ -1379,6 +1400,15 @@ KRITISCH – FÜNF KONSISTENZREGELN FÜR DIE SIGNALE:
 5. OFFENE PUNKTE MÜSSEN EINEN SCHRITT WEITERDENKEN, NICHT BEREITS BESTÄTIGTES WIEDERHOLEN: Ein offener Punkt darf NIEMALS eine Frage stellen, die durch bereits bestätigte Informationen schon beantwortet ist. Bestätigte Erkenntnisse sind die Arbeitsgrundlage – baue auf ihnen auf und leite daraus die NÄCHSTE noch ungelöste Wissenslücke oder das nächste offene Entscheidungskriterium ab, statt dieselbe Frage erneut zu stellen. Beispiel: Wenn bereits bestätigt ist "Cloud-Lösung mit täglicher Spiegelung wäre für den Inhaber akzeptabel, IT hat technische Machbarkeit bestätigt", ist "Würde der Inhaber eine Cloud-Lösung mit Spiegelung akzeptieren?" KEIN gültiger offener Punkt mehr (das ist bereits beantwortet) – stattdessen z.B. "Ist die Spiegelungsarchitektur verbindlich umsetzbar?" oder "Welches konkrete Entscheidungskriterium des Inhabers ist jetzt noch offen?". Prüfe vor jedem offenen Punkt: "Wurde das bereits durch ein bestätigtes positives Signal beantwortet?" – falls ja, formuliere stattdessen die nächste, tiefere Frage.
 
 Jeder Punkt darf in GENAU EINER der drei Kategorien (positive/warning/open) erscheinen – niemals doppelt, niemals widersprüchlich zu einem anderen Punkt.
+
+QUALITÄTSREGEL – FAKT VS. BEWERTUNG KONSEQUENT TRENNEN (gilt für alle drei Kategorien):
+- Positive Signale: formuliere sie so, dass der Verkäufer sofort erkennt, ob das ein bestätigter Fakt ("Schmerz quantifiziert: 5.000 €/Monat Einsparung bestätigt") oder eine KI-Einschätzung ("Entscheider wirkt grundsätzlich offen für externe Lösungen") ist.
+- Bei bestätigten Fakten: nutze konkrete, belegte Formulierungen ("Inhaber hat Cloud-Lösung mit Spiegelung akzeptiert", "CFO unterstützt aktiv").
+- Bei Interpretationen/Schlussfolgerungen: nutze Sprache wie "wirkt", "scheint", "lässt darauf schließen" oder nenne explizit, woraus du schlussfolgrest.
+- Niemals eine Interpretation als Fakt formulieren – das würde den Verkäufer über seinen eigenen Wissensstand täuschen.
+
+QUALITÄTSREGEL – JEDES RISIKO LIEFERT EINE STRATEGIE:
+Jedes Warnsignal (warning) MUSS mit einem konkreten Handlungsimpuls verbunden sein. Das Warnsignal beschreibt das Risiko, der Handlungsimpuls zeigt, was dagegen getan werden kann. Format: "Risiko: [Kurze Beschreibung] → Strategie: [konkrete Handlung oder Positionierung]". Beispiele: "Budget kritisch oder unklar → Strategie: Pilotmodell oder modulare Einführung unter 50.000 € vorschlagen." oder "Inhaber skeptisch gegenüber externer Software → Strategie: Demo als 'Innovation im Vertrieb', nicht als CRM-Einführung positionieren." Wenn du für ein Risiko keine sinnvolle Strategie ableiten kannst, ist das ein Zeichen, dass das Signal zu unspezifisch ist – schärfe es dann zuerst.
 
 Bewerte außerdem unabhängig davon die folgenden 11 Qualifizierungskriterien (MEDDPICC-basiert) jeweils einzeln als "geklärt" (true) oder "offen" (false). Ein Kriterium gilt als "geklärt", sobald DAZU IRGENDEINE konkrete Information vorliegt (egal ob positiv oder negativ/kritisch) – "offen" gilt nur, wenn dazu noch GAR NICHTS bekannt ist. KEIN Einfluss auf den Score, dient ausschließlich der separaten Checkliste:
 1. need (Bedarf / Schmerz) – geklärt sobald ein konkreter Schmerzpunkt/Bedarf benannt ist
@@ -2422,29 +2452,129 @@ function renderStation(sitId){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
 
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    // Health-Balken (identisch wie alle anderen Phasen)
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
-    const kernaussage=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const naechsterSchritt=hasResult?(extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE')||extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT')):'';
 
-    const sumBox=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    sumBox.appendChild(h('div',{className:'home-section-label'},'Bedarfsanalyse & Demo · Stand'));
-    sumBox.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
-      h('span',{},hasResult?'✔':'•'),
-      h('span',{style:{flex:1}},hasResult?'Ergebnis vorhanden':'Ergebnis noch offen')
-    ));
-    if(hasResult){
-      sumBox.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-        h('span',{},'→'),
-        h('span',{style:{flex:1}},kernaussage||'Noch keine Kernaussage im Ergebnistext gefunden.')
-      ));
+    // Hilfsfunktion: mehrere Bullets nach einem Header (für BESTÄTIGT/SCHMERZ)
+    function extractBulletsAfterHeader(text,headerKeyword,maxItems){
+      const lines=(text||'').split('\n');
+      const out=[];
+      let found=false;
+      for(let i=0;i<lines.length;i++){
+        if(!found){if(lines[i].toUpperCase().includes(headerKeyword.toUpperCase()))found=true;continue;}
+        const t=lines[i].trim();
+        if(!t)break;
+        if(/^[A-ZÄÖÜ🎯🔥❓•\-]/.test(t)&&out.length>0)break; // neuer Header
+        out.push(t.replace(/^[•\-]\s*/,''));
+        if(out.length>=(maxItems||3))break;
+      }
+      return out;
     }
-    sumBox.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-      h('span',{},'▸'),
-      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt||'Phase 2 ausführen')
+
+    const einschaetzung=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
+    const schmerz=hasResult?extractBulletsAfterHeader(data.result,'SCHMERZ',1):'';
+    const vertriebsnotizen=hasResult?extractBulletsAfterHeader(data.result,'VERTRIEBSNOTIZEN',3):[];
+    const naechsterSchritt=hasResult?(extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE')||extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT')):'';
+    const klaeren=hasResult?extractBulletsAfterHeader(data.result,'KLÄREN',3):[];
+    const bestaetigte=hasResult?extractBulletsAfterHeader(data.result,'BESTÄTIGT',4):[];
+    const morgen=hasResult?extractBulletsAfterHeader(data.result,'WENN DU MORGEN',3):[];
+
+    // ─── EXECUTIVE BRIEFING ─────────────────────────────────────────
+    if(hasResult){
+      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Briefing'));
+
+      // Einschätzung (volle Zeile)
+      if(einschaetzung){
+        const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+        esCard.appendChild(h('div',{className:'exec-card-label'},'KI21-Einschätzung'));
+        esCard.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text)',lineHeight:'1.45'}},einschaetzung));
+        wrap.appendChild(esCard);
+      }
+
+      // 4-Karten-Reihe: Kernproblem / Hauptrisiko / Nächster Schritt
+      const grid=h('div',{className:'exec-grid'});
+      if(schmerz&&schmerz.length){
+        const c=h('div',{className:'exec-card'});
+        c.appendChild(h('div',{className:'exec-card-label'},'Kernproblem'));
+        c.appendChild(h('div',{className:'exec-card-val'},schmerz[0]));
+        grid.appendChild(c);
+      }
+      // Hauptrisiko aus Opportunity Health
+      const topWarning=health?(health.warning||[]).find(w=>!w.disabled):null;
+      if(topWarning){
+        const c=h('div',{className:'exec-card'});
+        c.appendChild(h('div',{className:'exec-card-label'},'Hauptrisiko'));
+        const riskText=topWarning.text;
+        const strategyIdx=riskText.indexOf('→ Strategie:');
+        c.appendChild(h('div',{className:'exec-card-val'},strategyIdx>0?riskText.slice(0,strategyIdx).trim():riskText));
+        if(strategyIdx>0)c.appendChild(h('div',{className:'exec-card-val',style:{color:'#ff6b00',marginTop:'4px'}},riskText.slice(strategyIdx+2)));
+        grid.appendChild(c);
+      }
+      if(naechsterSchritt){
+        const c=h('div',{className:'exec-card'});
+        c.appendChild(h('div',{className:'exec-card-label'},'Nächster Schritt'));
+        c.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt));
+        grid.appendChild(c);
+      }
+      if(grid.children.length)wrap.appendChild(grid);
+
+      // Fakt / Interpretation Split
+      if(bestaetigte.length||klaeren.length||vertriebsnotizen.length){
+        const splitWrap=h('div',{className:'exec-grid',style:{alignItems:'stretch'}});
+
+        if(bestaetigte.length){
+          const fc=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
+          fc.appendChild(h('div',{className:'exec-card-label',style:{color:'#2ea043'}},'Bestätigte Fakten'));
+          bestaetigte.forEach(b=>fc.appendChild(h('div',{className:'exec-fact-row'},
+            h('span',{className:'exec-fact-icon'},'✔'),h('span',{style:{flex:1}},b))));
+          splitWrap.appendChild(fc);
+        }
+
+        if(vertriebsnotizen.length){
+          const ic=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
+          ic.appendChild(h('div',{className:'exec-card-label',style:{color:'#ff6b00'}},'KI21-Einschätzung'));
+          vertriebsnotizen.forEach(n=>ic.appendChild(h('div',{className:'exec-interp-row'},
+            h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1}},n))));
+          splitWrap.appendChild(ic);
+        }
+
+        wrap.appendChild(splitWrap);
+      }
+
+      // Gesprächs-Coach (kompakt, aus vorhandenen Daten)
+      if(morgen.length||naechsterSchritt){
+        const coach=h('div',{className:'exec-coach'});
+        coach.appendChild(h('div',{className:'exec-coach-head'},'Fokus Nächster Termin'));
+        if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},'Nächster Schritt'),
+          h('span',{className:'exec-coach-val'},naechsterSchritt)));
+        if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},'Nicht tun'),
+          h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
+        morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},i===0?'Priorität '+(i+1):'Priorität '+(i+1)),
+          h('span',{className:'exec-coach-val'},m))));
+        wrap.appendChild(coach);
+      }
+    }
+    // Status wenn noch kein Ergebnis
+    else {
+      const placeholder=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
+      placeholder.appendChild(h('div',{className:'exec-card-label'},'Executive Briefing'));
+      placeholder.appendChild(h('div',{className:'home-empty-note',style:{padding:'8px 0'}},'Noch kein Ergebnis vorhanden. Führen Sie zunächst die Bedarfsanalyse durch.'));
+      wrap.appendChild(placeholder);
+    }
+
+    // ─── TRENNLINIE ──────────────────────────────────────────────────
+    wrap.appendChild(h('div',{className:'exec-divider'},
+      h('div',{className:'exec-divider-line'}),
+      h('div',{className:'exec-divider-label'},'Arbeitsbereich'),
+      h('div',{className:'exec-divider-line'})
     ));
-    wrap.appendChild(sumBox);
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'14px',textAlign:'center'}},'Bereiten Sie jetzt den nächsten Kundentermin vor.'));
   }
   // ── Ende Bedarfsanalyse & Demo Dashboard ──
 
@@ -3447,7 +3577,7 @@ function showPDF(title,text,cust){
   <div class="meta">${cust&&cust.firma?cust.firma+' · ':''}${cust&&cust.ap?cust.ap+' · ':''}${new Date().toLocaleDateString('de-DE')}</div>
 </div>
 ${html}
-<div class="footer">Erstellt mit KI21 · ki21-vertrieb.github.io</div>
+<div class="footer">Vertriebsdokumentation · ki21-vertrieb.github.io</div>
 <div class="no-print" style="text-align:center;margin-top:20px;">
   <button onclick="window.print()" style="background:#ff6b00;color:#fff;border:none;
     padding:10px 24px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
@@ -3711,7 +3841,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.80';
+const KI21_VERSION='v4.82';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
