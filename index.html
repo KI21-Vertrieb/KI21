@@ -1563,6 +1563,19 @@ function getOpportunityHealth(accId){
   return {score,label,provisional,positive,warning,open,structuralOpenCount:auto.structuralOpenCount||0,checklist:auto.checklist||null,isKo:hasActiveKo,ts:auto.ts||0};
 }
 
+function extractBulletsAfterHeader3(text,headerKeyword,maxItems){
+  const lines=(text||'').split('\n');const out=[];let found=false;
+  for(let i=0;i<lines.length;i++){
+    if(!found){if(lines[i].toUpperCase().includes(headerKeyword.toUpperCase()))found=true;continue;}
+    const t=lines[i].trim();if(!t)break;
+    if(/^[A-ZÄÖÜ🎯🔥❓•\-]/.test(t)&&out.length>0)break;
+    out.push(t.replace(/^[•\-]\s*/,''));if(out.length>=(maxItems||3))break;
+  }
+  return out;
+}
+function extractFirstBulletAfterHeader3(text,headerKeyword){
+  const b=extractBulletsAfterHeader3(text,headerKeyword,1);return b.length?b[0]:'';
+}
 function getHealthColor(score){
   if(score>=70)return '#2ea043';
   if(score>=40)return '#d29922';
@@ -2558,6 +2571,10 @@ function renderStation(sitId){
     const morgen=hasResult?extractBulletsAfterHeader(data.result,'WENN DU MORGEN',3):[];
     const topWarning=health?(health.warning||[]).find(w=>!w.disabled):null;
 
+    // Roter Faden
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
+      '↳ Aufbauend auf der Qualifizierung'));
+
     // ─── 1. EXECUTIVE DASHBOARD (4 Karten) ───────────────────────────
     wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
     const dashGrid=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
@@ -2763,29 +2780,76 @@ function renderStation(sitId){
   if(sitId===2){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult3=!!data.result;
     const erkenntnis=hasResult3?extractFirstBulletAfterHeader(data.result,'DIE WICHTIGSTEN ERKENNTNISSE'):'';
+    const alleErkenntnisse=hasResult3?extractBulletsAfterHeader3(data.result,'DIE WICHTIGSTEN ERKENNTNISSE',3):[];
     const naechsterSchritt3=hasResult3?extractFirstBulletAfterHeader(data.result,'NÄCHSTE SCHRITTE'):'';
+    const einschaetzung3=hasResult3?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
+    const dieSacheFehlt3=hasResult3?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
+    const topWarning3=health?(health.warning||[]).find(w=>!w.disabled):null;
 
-    const sumBox3=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    sumBox3.appendChild(h('div',{className:'home-section-label'},'Termin nachbereiten · Stand'));
-    sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
-      h('span',{},hasResult3?'✔':'•'),
-      h('span',{style:{flex:1}},hasResult3?'Ergebnis vorhanden':'Ergebnis noch offen')
-    ));
-    if(hasResult3){
-      sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-        h('span',{},'→'),
-        h('span',{style:{flex:1}},erkenntnis||'Noch keine Erkenntnis im Ergebnistext gefunden.')
-      ));
+    // Roter Faden
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
+      '↳ Aufbauend auf der Bedarfsanalyse'));
+
+    // Executive Dashboard
+    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
+    const grid3=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
+
+    const k3=h('div',{className:'exec-card'});
+    k3.appendChild(h('div',{className:'exec-card-label'},'🟢 Kernerkenntnisse'));
+    k3.appendChild(h('div',{className:'exec-card-val'},erkenntnis||(hasResult3?'–':'Ergebnis noch offen')));
+    grid3.appendChild(k3);
+
+    const e3=h('div',{className:'exec-card'});
+    e3.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheiderlage'));
+    const entLines3=[];
+    if(health&&health.checklist){
+      if(health.checklist.economicBuyer)entLines3.push('Entscheider bekannt');
+      if(health.checklist.champion)entLines3.push('Champion aktiv');
     }
-    sumBox3.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-      h('span',{},'▸'),
-      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt3||'Phase 3 ausführen')
-    ));
-    wrap.appendChild(sumBox3);
+    if(!entLines3.length&&health&&(health.positive||[]).find(p=>/entscheid|champion/i.test(p.text)))
+      entLines3.push((health.positive||[]).find(p=>/entscheid|champion/i.test(p.text)).text);
+    e3.appendChild(h('div',{className:'exec-card-val'},entLines3.length?entLines3.join('\n'):'–'));
+    grid3.appendChild(e3);
+
+    const r3=h('div',{className:'exec-card'});
+    r3.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
+    if(topWarning3){
+      const rt3=topWarning3.text;const si3=rt3.indexOf('→ Strategie:');
+      r3.appendChild(h('div',{className:'exec-card-val'},si3>0?rt3.slice(0,si3).trim():rt3));
+      if(si3>0)r3.appendChild(h('div',{className:'exec-card-val accent'},rt3.slice(si3+2)));
+    }else{r3.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));}
+    grid3.appendChild(r3);
+
+    const n3=h('div',{className:'exec-card'});
+    n3.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
+    n3.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt3||'–'));
+    grid3.appendChild(n3);
+    wrap.appendChild(grid3);
+
+    if(hasResult3){
+      if(einschaetzung3||dieSacheFehlt3){
+        wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
+        const es3=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+        if(einschaetzung3)es3.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung3));
+        if(dieSacheFehlt3)es3.appendChild(h('div',{style:{marginTop:einschaetzung3?'8px':'0',paddingTop:einschaetzung3?'8px':'0',borderTop:einschaetzung3?'1px solid var(--border)':'none',fontSize:'12px',color:'#f85149',fontWeight:'600'}},'⚠ '+dieSacheFehlt3));
+        wrap.appendChild(es3);
+      }
+      if(alleErkenntnisse.length>1){
+        wrap.appendChild(h('div',{className:'home-section-label'},'Erkenntnisse'));
+        const erkCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+        alleErkenntnisse.forEach((e,i)=>erkCard.appendChild(h('div',{className:'exec-fact-row',style:i===0?{borderTop:'none'}:{}},
+          h('span',{className:'exec-fact-icon'},'→'),h('span',{style:{flex:1}},e))));
+        wrap.appendChild(erkCard);
+      }
+    }
+    wrap.appendChild(h('div',{className:'exec-divider'},
+      h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Erkenntnisse aus diesem Termin dokumentieren.'));
   }
   // ── Ende Termin nachbereiten Dashboard ──
 
@@ -2795,29 +2859,62 @@ function renderStation(sitId){
   if(sitId===3){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult4=!!data.result;
     const roiLine=hasResult4?extractLineContaining(data.result,'ROI:'):'';
+    const businessCase=hasResult4?extractAfterHeader(data.result,'IHR BUSINESS CASE'):'';
     const naechsterSchritt4=hasResult4?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
+    const einschaetzung4=hasResult4?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
+    const dieSacheFehlt4=hasResult4?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
+    const topWarning4=health?(health.warning||[]).find(w=>!w.disabled):null;
 
-    const sumBox4=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    sumBox4.appendChild(h('div',{className:'home-section-label'},'Nutzen-Kosten-Analyse · Stand'));
-    sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
-      h('span',{},hasResult4?'✔':'•'),
-      h('span',{style:{flex:1}},hasResult4?'Ergebnis vorhanden':'Ergebnis noch offen')
-    ));
-    if(hasResult4){
-      sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-        h('span',{},'€'),
-        h('span',{style:{flex:1}},roiLine||'Noch keine ROI-Einschätzung im Ergebnistext gefunden.')
-      ));
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
+      '↳ Aufbauend auf der Terminnachbereitung'));
+
+    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
+    const grid4=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
+
+    const bc4=h('div',{className:'exec-card'});
+    bc4.appendChild(h('div',{className:'exec-card-label'},'💰 Business Case'));
+    bc4.appendChild(h('div',{className:'exec-card-val'},roiLine||businessCase||(hasResult4?'–':'Ergebnis noch offen')));
+    grid4.appendChild(bc4);
+
+    const e4=h('div',{className:'exec-card'});
+    e4.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
+    const e4lines=[];
+    if(health&&health.checklist&&health.checklist.economicBuyer)e4lines.push('Entscheider eingebunden');
+    const champPos4=(health?health.positive||[]:[]). find(p=>/champion|fürsprecher/i.test(p.text));
+    if(champPos4)e4lines.push(champPos4.text);
+    e4.appendChild(h('div',{className:'exec-card-val'},e4lines.length?e4lines.join('\n'):'–'));
+    grid4.appendChild(e4);
+
+    const r4=h('div',{className:'exec-card'});
+    r4.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
+    if(topWarning4){
+      const rt4=topWarning4.text;const si4=rt4.indexOf('→ Strategie:');
+      r4.appendChild(h('div',{className:'exec-card-val'},si4>0?rt4.slice(0,si4).trim():rt4));
+      if(si4>0)r4.appendChild(h('div',{className:'exec-card-val accent'},rt4.slice(si4+2)));
+    }else{r4.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));}
+    grid4.appendChild(r4);
+
+    const n4=h('div',{className:'exec-card'});
+    n4.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
+    n4.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt4||'–'));
+    grid4.appendChild(n4);
+    wrap.appendChild(grid4);
+
+    if(hasResult4&&(einschaetzung4||dieSacheFehlt4)){
+      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
+      const es4=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+      if(einschaetzung4)es4.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung4));
+      if(dieSacheFehlt4)es4.appendChild(h('div',{style:{marginTop:einschaetzung4?'8px':'0',paddingTop:einschaetzung4?'8px':'0',borderTop:einschaetzung4?'1px solid var(--border)':'none',fontSize:'12px',color:'#f85149',fontWeight:'600'}},'⚠ '+dieSacheFehlt4));
+      wrap.appendChild(es4);
     }
-    sumBox4.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-      h('span',{},'▸'),
-      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt4||'Phase 4 ausführen')
-    ));
-    wrap.appendChild(sumBox4);
+    wrap.appendChild(h('div',{className:'exec-divider'},
+      h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Wirtschaftlichen Nutzen und ROI ermitteln.'));
   }
   // ── Ende Nutzen-Kosten-Analyse Dashboard ──
 
@@ -2827,29 +2924,56 @@ function renderStation(sitId){
   if(sitId===4){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult5=!!data.result;
-    const groesstesRisiko=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
+    const groesstesRisiko5=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
     const naechsterSchritt5=hasResult5?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
+    const einschaetzung5=hasResult5?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
+    const einwaende5=hasResult5?extractBulletsAfterHeader3(data.result,'EINWÄNDE',2):[];
+    const topWarning5=health?(health.warning||[]).find(w=>!w.disabled):null;
 
-    const sumBox5=h('div',{className:'home-hero',style:{marginBottom:'10px'}});
-    sumBox5.appendChild(h('div',{className:'home-section-label'},'Angebot & Abschluss · Stand'));
-    sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'none'}},
-      h('span',{},hasResult5?'✔':'•'),
-      h('span',{style:{flex:1}},hasResult5?'Ergebnis vorhanden':'Ergebnis noch offen')
-    ));
-    if(hasResult5){
-      sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-        h('span',{},'⚠'),
-        h('span',{style:{flex:1}},groesstesRisiko||'Noch kein größtes Risiko im Ergebnistext gefunden.')
-      ));
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
+      '↳ Aufbauend auf dem Business Case'));
+
+    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
+    const grid5=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
+
+    const g5=h('div',{className:'exec-card'});
+    g5.appendChild(h('div',{className:'exec-card-label'},'⚠️ Größtes Hindernis'));
+    g5.appendChild(h('div',{className:'exec-card-val'},groesstesRisiko5||(hasResult5?'–':'Ergebnis noch offen')));
+    grid5.appendChild(g5);
+
+    const e5=h('div',{className:'exec-card'});
+    e5.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
+    const e5lines=[];
+    if(health&&health.checklist&&health.checklist.economicBuyer)e5lines.push('Entscheider eingebunden');
+    const champ5=(health?health.positive||[]:[]). find(p=>/champion|fürsprecher/i.test(p.text));
+    if(champ5)e5lines.push(champ5.text);
+    e5.appendChild(h('div',{className:'exec-card-val'},e5lines.length?e5lines.join('\n'):'–'));
+    grid5.appendChild(e5);
+
+    const r5=h('div',{className:'exec-card'});
+    r5.appendChild(h('div',{className:'exec-card-label'},'🔴 Haupteinwand'));
+    r5.appendChild(h('div',{className:'exec-card-val'},einwaende5.length?einwaende5[0]:(topWarning5?topWarning5.text:'–')));
+    grid5.appendChild(r5);
+
+    const n5=h('div',{className:'exec-card'});
+    n5.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
+    n5.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt5||'–'));
+    grid5.appendChild(n5);
+    wrap.appendChild(grid5);
+
+    if(hasResult5&&einschaetzung5){
+      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
+      const es5=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+      es5.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung5));
+      wrap.appendChild(es5);
     }
-    sumBox5.appendChild(h('div',{className:'home-insight-row',style:{borderTop:'1px solid var(--border)',paddingTop:'8px',marginTop:'4px'}},
-      h('span',{},'▸'),
-      h('span',{style:{flex:1,fontWeight:'700'}},naechsterSchritt5||'Phase 5 ausführen')
-    ));
-    wrap.appendChild(sumBox5);
+    wrap.appendChild(h('div',{className:'exec-divider'},
+      h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Einwände und Abschlussstrategie entwickeln.'));
   }
   // ── Ende Angebot & Abschluss Dashboard ──
 
@@ -3011,8 +3135,24 @@ function renderStation(sitId){
       shareAsPdf(sit.title,data.result,getActiveCust(),'KI21_'+sit.title.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf',data.result);
     }
   },'Teilen ↗');
+  // Overflow-Menü für selten genutzte Aktionen
+  let overflowOpen=false;
+  const overflowMenu=h('div',{style:{position:'absolute',right:'0',top:'34px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'10px',padding:'6px',zIndex:'50',display:'none',flexDirection:'column',gap:'4px',minWidth:'120px',boxShadow:'0 8px 24px rgba(0,0,0,.4)'}});
+  overflowMenu.appendChild(h('button',{className:'btn',style:{fontSize:'11px',width:'100%',textAlign:'left'},onclick:()=>{overflowMenu.style.display='none';overflowOpen=false;showFullscreen(sit.title,data.result);}}, '⛶ Vollbild'));
+  overflowMenu.appendChild(h('button',{className:'btn',style:{fontSize:'11px',color:'#f85149',borderColor:'rgba(248,81,73,.3)',width:'100%',textAlign:'left'},onclick:()=>{
+    overflowMenu.style.display='none';overflowOpen=false;
+    if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
+    data.result='';data.result2='';data.summary='';data.detail='';
+    LS.set(KEY,data);renderStation(sitId);
+  }},'🗑 Löschen'));
+  const overflowWrap=h('div',{style:{position:'relative'}});
+  const overflowBtn=h('button',{className:'btn',style:{fontSize:'14px',padding:'4px 10px',lineHeight:'1'},onclick:(e)=>{
+    e.stopPropagation();overflowOpen=!overflowOpen;
+    overflowMenu.style.display=overflowOpen?'flex':'none';
+  }},'···');
+  overflowWrap.appendChild(overflowBtn);
+  overflowWrap.appendChild(overflowMenu);
   resultBtns.appendChild(copyBtn);
-  resultBtns.appendChild(fullBtn);
   const {details:initialDetailsTxt}=splitDetailsFromResult(data.result||'');
   const detailsBody=h('div',{className:'result-body',style:{display:'none',borderTop:'1px solid #30363d',marginTop:'2px'}});
   const moreBtn=h('button',{className:'btn',
@@ -3024,7 +3164,7 @@ function renderStation(sitId){
         detailsBody.innerHTML='';
         detailsBody.appendChild(renderDetailsText(freshDetails));
         detailsBody.style.display='block';
-        moreBtn.textContent='Weniger Details ▲';
+        moreBtn.textContent='Weniger ▲';
       } else {
         detailsBody.style.display='none';
         moreBtn.textContent='Mehr Details ▼';
@@ -3032,7 +3172,7 @@ function renderStation(sitId){
     }},'Mehr Details ▼');
   resultBtns.appendChild(moreBtn);
   resultBtns.appendChild(shareBtn);
-  resultBtns.appendChild(delBtn);
+  resultBtns.appendChild(overflowWrap);
   resultHead.appendChild(resultLabel);
   resultHead.appendChild(resultBtns);
   const resultBody=h('div',{className:'result-body'});
@@ -4038,7 +4178,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.91';
+const KI21_VERSION='v4.92';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
