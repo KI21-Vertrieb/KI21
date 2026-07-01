@@ -675,18 +675,29 @@ NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 2. [zweite Priorität]
 3. [dritte Priorität]
 
-SPIN-FRAGEN FÜR DIE BEDARFSANALYSE – KRITISCH: STRIKTE SPIN-METHODOLOGIE EINHALTEN.
-Jede Frage MUSS dem Typ entsprechen. Kein Vermischen.
-• S (SITUATION): Nur Faktenfragen – wie läuft es heute ab, welche Systeme werden genutzt, wer macht was. KEINE Lösungsvorschläge, KEINE Interpretationen, KEINE Zielbilder.
-• P (PROBLEM): Nur Schwierigkeiten und Engpässe identifizieren – wo hakt es, was ist unbefriedigend, wo verliert man Zeit/Geld. KEINE Lösungsvalidierung (z.B. "Würde Feature X helfen?" ist VERBOTEN – das gehört zu N).
-• I (IMPLICATION): Nur Auswirkungen des Problems sichtbar machen – was kostet das, welche Folgen hat das für Kunden/Umsatz/Team, was wird verzögert oder verloren. KEINE Lösungsvorschläge.
-• N (NEED-PAYOFF): Nur den Nutzen einer Lösung sichtbar machen – was wäre anders, wenn das Problem gelöst wäre. KEIN Problemrekap, KEINE Features nennen – der Kunde beschreibt den Wunschzustand.
-Es kann mehrere Fragen pro Kategorie geben. Format IMMER: Buchstabe + Doppelpunkt + Frage (Beispiel: "S: Wie läuft heute die Angebotserstellung ab?")
-• S: [Faktenfrage zur aktuellen Situation]
-• P: [Frage nach einem konkreten Problem/Engpass]
-• P: [Vertiefende Problem-Frage, falls sinnvoll]
-• I: [Frage nach Auswirkung/Konsequenz des Problems]
-• N: [Frage nach dem Nutzen/Wunschzustand bei gelöstem Problem]
+SPIN-FRAGEN FÜR DIE BEDARFSANALYSE – STRIKTE SPIN-METHODOLOGIE. Bevor du jede Frage schreibst: prüfe selbst, ob sie dem Typ entspricht. Wenn nicht, schreibe sie um.
+
+S (SITUATION) = FAKTENFRAGEN. Sammle nur nachprüfbare Fakten über den Ist-Zustand.
+✅ Erlaubt: "Wie viele Verkäufer nutzen heute das CRM aktiv?" / "Wie läuft die Angebotserstellung heute ab?" / "Welche Systeme werden im Außendienst genutzt?"
+❌ VERBOTEN: Zielbilder ("Was wären Ihre größten Hebel?"), Interpretationen, Meinungsfragen, Lösungsvorschläge, Framing wie "Innovation im Vertrieb" – all das ist KEINE Situationsfrage.
+
+P (PROBLEM) = SCHWIERIGKEITEN UND ENGPÄSSE. Lass den Kunden selbst benennen, was ihn stört.
+✅ Erlaubt: "Wo verliert Ihr Team am meisten Zeit?" / "Was läuft bei der Angebotserstellung am häufigsten schief?" / "Welche Systemprobleme nerven Ihren Außendienst am meisten?"
+❌ VERBOTEN: Lösungsvalidierung ("Würde Feature X helfen?"), Hypothesen über Lösungen, Bestätigung von Annahmen des Verkäufers – das gehört zu N, nicht zu P.
+
+I (IMPLICATION) = KONSEQUENZEN DES PROBLEMS. Mach die Kosten/Folgen des ungelösten Problems sichtbar.
+✅ Erlaubt: "Was passiert, wenn ein Angebot einen Tag zu spät kommt?" / "Wie viele Abschlüsse verzögern sich dadurch?" / "Was kostet diese manuelle Arbeit pro Woche in Stunden?"
+❌ VERBOTEN: Lösungsvorschläge, Features nennen.
+
+N (NEED-PAYOFF) = NUTZEN SICHTBAR MACHEN. Der Kunde beschreibt, was besser wäre.
+✅ Erlaubt: "Was würde sich für Ihr Team ändern, wenn diese Information sofort verfügbar wäre?" / "Wie würde sich das auf Ihre Abschlussquote auswirken?"
+❌ VERBOTEN: Lösungsvalidierung ("Wäre unser Produkt dann das Richtige?"), Features nennen.
+
+Es kann mehrere Fragen pro Kategorie geben. Jede Frage MUSS auf dem bereits bekannten Kontext dieser Opportunity basieren – keine generischen Fragen. Format: Buchstabe + Doppelpunkt + konkrete Frage.
+• S: [Faktenfrage zum Ist-Zustand]
+• P: [Frage nach konkretem Schmerz/Engpass]
+• I: [Frage nach Konsequenz des Problems]
+• N: [Frage nach Nutzen/Wunschzustand]
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
@@ -2825,7 +2836,7 @@ function renderStation(sitId){
 
   // Fields
   const fieldsDiv=h('div',{});
-  sit.felder.filter(f=>!f.post&&!f.hidden).forEach(f=>{
+  sit.felder.filter(f=>!f.post&&!f.hidden&&!(sitId===1&&(f.id==='spin'||f.id==='antworten'))).forEach(f=>{
     const fw=h('div',{className:'field-wrap'});
     const isCollapsibleTa=(f.t==='ta'&&!f.readonly&&f.big);
     const hasExistingVal=!!(data.fv[f.id]&&data.fv[f.id].trim());
@@ -3961,7 +3972,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.86';
+const KI21_VERSION='v4.88';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
