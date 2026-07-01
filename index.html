@@ -186,6 +186,11 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .exec-coach-key{color:#8b949e;font-size:10.5px;font-weight:600;white-space:nowrap;flex-shrink:0;min-width:96px;padding-top:1px;}
 .exec-coach-val{color:var(--text);font-weight:400;line-height:1.4;}
 .exec-einschaetzung{font-size:12.5px;font-weight:400;color:var(--text);line-height:1.6;}
+.exec-spin-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.exec-spin-header{display:flex;align-items:center;gap:9px;padding:10px 12px 8px;}
+.exec-spin-letter{width:22px;height:22px;border-radius:50%;background:#ff6b00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.exec-spin-q{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.4;}
+.exec-spin-ta{width:100%;background:var(--bg3);border:none;border-top:1px solid var(--border);color:var(--text);font-family:inherit;font-size:11.5px;padding:9px 12px;resize:none;outline:none;min-height:52px;}
 
 /* Station */
 .station-wrap{padding:14px;max-width:500px;margin:0 auto;}
@@ -2454,22 +2459,21 @@ function renderStation(sitId){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
 
-    // Health-Balken (identisch wie alle anderen Phasen)
+    // Health-Balken
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
 
-    // Hilfsfunktion: mehrere Bullets nach einem Header (für BESTÄTIGT/SCHMERZ)
+    // Hilfsfunktion: mehrere Bullets nach einem Header
     function extractBulletsAfterHeader(text,headerKeyword,maxItems){
       const lines=(text||'').split('\n');
-      const out=[];
-      let found=false;
+      const out=[];let found=false;
       for(let i=0;i<lines.length;i++){
         if(!found){if(lines[i].toUpperCase().includes(headerKeyword.toUpperCase()))found=true;continue;}
         const t=lines[i].trim();
         if(!t)break;
-        if(/^[A-ZÄÖÜ🎯🔥❓•\-]/.test(t)&&out.length>0)break; // neuer Header
+        if(/^[A-ZÄÖÜ🎯🔥❓•\-]/.test(t)&&out.length>0)break;
         out.push(t.replace(/^[•\-]\s*/,''));
         if(out.length>=(maxItems||3))break;
       }
@@ -2477,56 +2481,72 @@ function renderStation(sitId){
     }
 
     const einschaetzung=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const schmerz=hasResult?extractBulletsAfterHeader(data.result,'SCHMERZ',1):'';
+    const schmerz=hasResult?extractBulletsAfterHeader(data.result,'SCHMERZ',2):[];
     const vertriebsnotizen=hasResult?extractBulletsAfterHeader(data.result,'VERTRIEBSNOTIZEN',3):[];
     const naechsterSchritt=hasResult?(extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE')||extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT')):'';
-    const klaeren=hasResult?extractBulletsAfterHeader(data.result,'KLÄREN',3):[];
     const bestaetigte=hasResult?extractBulletsAfterHeader(data.result,'BESTÄTIGT',4):[];
     const morgen=hasResult?extractBulletsAfterHeader(data.result,'WENN DU MORGEN',3):[];
+    const topWarning=health?(health.warning||[]).find(w=>!w.disabled):null;
 
-    // ─── EXECUTIVE BRIEFING ─────────────────────────────────────────
-    if(hasResult){
+    // ─── 1. EXECUTIVE DASHBOARD (4 Karten) ───────────────────────────
+    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
+    const dashGrid=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
+
+    // Kernproblem
+    const kpCard=h('div',{className:'exec-card'});
+    kpCard.appendChild(h('div',{className:'exec-card-label'},'🟢 Kernproblem'));
+    kpCard.appendChild(h('div',{className:'exec-card-val'},
+      schmerz.length?schmerz.join(' · '):(hasResult?'–':'Ergebnis noch offen')));
+    dashGrid.appendChild(kpCard);
+
+    // Entscheider — aus cust.ap + Health-Checkliste
+    const entCard=h('div',{className:'exec-card'});
+    entCard.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
+    const entLines=[];
+    if(cust.ap)entLines.push(cust.ap+' (Ansprechpartner)');
+    if(health&&health.checklist){
+      if(health.checklist.champion){
+        const champPos=(health.positive||[]).find(p=>/champion|fürsprecher|sponsor/i.test(p.text));
+        if(champPos)entLines.push(champPos.text);
+        else entLines.push('Champion identifiziert');
+      }
+      if(health.checklist.economicBuyer===false)entLines.push('Entscheidungsträger noch unklar');
+    }
+    entCard.appendChild(h('div',{className:'exec-card-val'},
+      entLines.length?entLines.join('\n'):'–'));
+    dashGrid.appendChild(entCard);
+
+    // Hauptrisiko
+    const riskCard=h('div',{className:'exec-card'});
+    riskCard.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
+    if(topWarning){
+      const rt=topWarning.text;const si=rt.indexOf('→ Strategie:');
+      riskCard.appendChild(h('div',{className:'exec-card-val'},si>0?rt.slice(0,si).trim():rt));
+      if(si>0)riskCard.appendChild(h('div',{className:'exec-card-val accent'},rt.slice(si+2)));
+    } else {
+      riskCard.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));
+    }
+    dashGrid.appendChild(riskCard);
+
+    // Nächster Schritt
+    const nsCard=h('div',{className:'exec-card'});
+    nsCard.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
+    nsCard.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt||'–'));
+    dashGrid.appendChild(nsCard);
+
+    wrap.appendChild(dashGrid);
+
+    // ─── 2. KI21-EINSCHÄTZUNG ─────────────────────────────────────────
+    if(hasResult&&(einschaetzung||vertriebsnotizen.length||bestaetigte.length)){
       wrap.appendChild(h('div',{className:'home-section-label'},'Executive Briefing'));
-
-      // Einschätzung (volle Zeile)
       if(einschaetzung){
         const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
         esCard.appendChild(h('div',{className:'exec-card-label'},'KI21-Einschätzung'));
         esCard.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung));
         wrap.appendChild(esCard);
       }
-
-      // 4-Karten-Reihe: Kernproblem / Hauptrisiko / Nächster Schritt
-      const grid=h('div',{className:'exec-grid'});
-      if(schmerz&&schmerz.length){
-        const c=h('div',{className:'exec-card'});
-        c.appendChild(h('div',{className:'exec-card-label'},'Kernproblem'));
-        c.appendChild(h('div',{className:'exec-card-val'},schmerz[0]));
-        grid.appendChild(c);
-      }
-      // Hauptrisiko aus Opportunity Health
-      const topWarning=health?(health.warning||[]).find(w=>!w.disabled):null;
-      if(topWarning){
-        const c=h('div',{className:'exec-card'});
-        c.appendChild(h('div',{className:'exec-card-label'},'Hauptrisiko'));
-        const riskText=topWarning.text;
-        const strategyIdx=riskText.indexOf('→ Strategie:');
-        c.appendChild(h('div',{className:'exec-card-val'},strategyIdx>0?riskText.slice(0,strategyIdx).trim():riskText));
-        if(strategyIdx>0)c.appendChild(h('div',{className:'exec-card-val accent'},riskText.slice(strategyIdx+2)));
-        grid.appendChild(c);
-      }
-      if(naechsterSchritt){
-        const c=h('div',{className:'exec-card'});
-        c.appendChild(h('div',{className:'exec-card-label'},'Nächster Schritt'));
-        c.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt));
-        grid.appendChild(c);
-      }
-      if(grid.children.length)wrap.appendChild(grid);
-
-      // Fakt / Interpretation Split
-      if(bestaetigte.length||klaeren.length||vertriebsnotizen.length){
-        const splitWrap=h('div',{className:'exec-grid',style:{alignItems:'stretch'}});
-
+      if(bestaetigte.length||vertriebsnotizen.length){
+        const splitWrap=h('div',{className:'exec-grid',style:{alignItems:'stretch',marginBottom:'10px'}});
         if(bestaetigte.length){
           const fc=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
           fc.appendChild(h('div',{className:'exec-card-label',style:{color:'#2ea043'}},'Bestätigte Fakten'));
@@ -2534,7 +2554,6 @@ function renderStation(sitId){
             h('span',{className:'exec-fact-icon'},'✔'),h('span',{style:{flex:1}},b))));
           splitWrap.appendChild(fc);
         }
-
         if(vertriebsnotizen.length){
           const ic=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
           ic.appendChild(h('div',{className:'exec-card-label',style:{color:'#ff6b00'}},'KI-Einschätzung'));
@@ -2542,41 +2561,96 @@ function renderStation(sitId){
             h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1}},n))));
           splitWrap.appendChild(ic);
         }
-
         wrap.appendChild(splitWrap);
       }
-
-      // Gesprächs-Coach (kompakt, aus vorhandenen Daten)
-      if(morgen.length||naechsterSchritt){
-        const coach=h('div',{className:'exec-coach'});
-        coach.appendChild(h('div',{className:'exec-coach-head'},'Fokus Nächster Termin'));
-        if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},'Nächster Schritt'),
-          h('span',{className:'exec-coach-val'},naechsterSchritt)));
-        if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},'Nicht tun'),
-          h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
-        morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},i===0?'Priorität '+(i+1):'Priorität '+(i+1)),
-          h('span',{className:'exec-coach-val'},m))));
-        wrap.appendChild(coach);
-      }
-    }
-    // Status wenn noch kein Ergebnis
-    else {
-      const placeholder=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
-      placeholder.appendChild(h('div',{className:'exec-card-label'},'Executive Briefing'));
-      placeholder.appendChild(h('div',{className:'home-empty-note',style:{padding:'8px 0'}},'Noch kein Ergebnis vorhanden. Führen Sie zunächst die Bedarfsanalyse durch.'));
-      wrap.appendChild(placeholder);
     }
 
-    // ─── TRENNLINIE ──────────────────────────────────────────────────
+    // ─── 3. COACHING ──────────────────────────────────────────────────
+    if(hasResult&&(naechsterSchritt||morgen.length)){
+      const coach=h('div',{className:'exec-coach',style:{marginBottom:'10px'}});
+      coach.appendChild(h('div',{className:'exec-coach-head'},'Fokus Nächster Termin'));
+      if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
+        h('span',{className:'exec-coach-key'},'Nächster Schritt'),
+        h('span',{className:'exec-coach-val'},naechsterSchritt)));
+      if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
+        h('span',{className:'exec-coach-key'},'Nicht tun'),
+        h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
+      morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
+        h('span',{className:'exec-coach-key'},'Priorität '+(i+1)),
+        h('span',{className:'exec-coach-val'},m))));
+      wrap.appendChild(coach);
+    }
+
+    // ─── TRENNLINIE ───────────────────────────────────────────────────
     wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),
       h('div',{className:'exec-divider-label'},'Arbeitsbereich'),
       h('div',{className:'exec-divider-line'})
     ));
-    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'14px',textAlign:'center'}},'Bereiten Sie jetzt den nächsten Kundentermin vor.'));
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'14px',textAlign:'center'}},
+      'Bereiten Sie jetzt den nächsten Kundentermin vor.'));
+
+    // ─── SPIN+ANTWORT INLINE ──────────────────────────────────────────
+    // Der spin-Feldinhalt kommt aus SITS[0].result (Phase 1 → Phase 2 Übertragung).
+    // Wir parsen die Fragen und zeigen unter jeder Frage ein eigenes Textarea.
+    // Gespeichert wird das Ergebnis weiterhin in data.fv.antworten als nummerierte Liste
+    // (kompatibel mit dem bestehenden Prompt-Format und der Ergebnis-Anzeige).
+    const spinRaw=data.fv&&data.fv['spin']?data.fv['spin']:'';
+    const antwortenRaw=data.fv&&data.fv['antworten']?data.fv['antworten']:'';
+
+    // Parse SPIN-Fragen aus dem raw-Text (Zeilen die mit S:/P:/I:/N:/ oder • beginnen)
+    const spinLines=spinRaw.split('\n').map(l=>l.trim()).filter(Boolean);
+    // Extrahiere individuelle Fragen (Zeilen die mit Buchstabe: oder Bullet anfangen, oder einfach nicht leer)
+    const spinQuestions=[];
+    let currentQ='';
+    spinLines.forEach(line=>{
+      const isNewQ=/^(S|P|I|N|•|\d+\.)\s*/i.test(line);
+      if(isNewQ&&currentQ)spinQuestions.push(currentQ.trim());
+      currentQ=(isNewQ?currentQ+'\n'+line:currentQ+' '+line).replace(/^\n/,'');
+      if(!currentQ.trim())currentQ=line;
+    });
+    if(currentQ.trim())spinQuestions.push(currentQ.trim());
+
+    // Parse bestehende Antworten (Format "1. Frage: Antwort\n2. ...")
+    const antwortenParsed=[];
+    antwortenRaw.split(/\n(?=\d+\.\s)/).forEach((block,i)=>{
+      const match=block.match(/^\d+\.\s*(?:Frage:\s*)?(.*)$/s);
+      antwortenParsed[i]=match?match[1].trim():block.trim();
+    });
+
+    const SPIN_LETTERS=['S','P','I','N','N'];
+
+    if(spinQuestions.length){
+      wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'10px'}},'Leitfragen & Antworten'));
+      const taRefs=[];
+      spinQuestions.forEach((q,i)=>{
+        const letter=SPIN_LETTERS[i]||String(i+1);
+        const item=h('div',{className:'exec-spin-item'});
+        const header=h('div',{className:'exec-spin-header'});
+        header.appendChild(h('span',{className:'exec-spin-letter'},letter));
+        header.appendChild(h('span',{className:'exec-spin-q'},q.replace(/^[SPIN]\s*:\s*/i,'')));
+        item.appendChild(header);
+        const ta=h('textarea',{className:'exec-spin-ta',
+          rows:2,
+          placeholder:'Antwort aus dem Gespräch...',
+          oninput:()=>{
+            // Rebuild antworten-Feld aus allen TAs
+            data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
+            LS.set(KEY,data);
+          }
+        });
+        ta.value=antwortenParsed[i]||'';
+        taRefs.push(ta);
+        item.appendChild(ta);
+        wrap.appendChild(item);
+      });
+      // Falls kein spinText: normales Fallback-Textarea (Originalfeld)
+    } else if(!spinRaw){
+      // Kein SPIN aus Phase 1 übertragen — zeige Original-Textarea
+      wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'8px'}},'Leitfragen für die Bedarfsanalyse'));
+      wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
+        'Leitfragen werden automatisch aus Phase 1 übertragen. Führen Sie zunächst die Qualifizierung durch.'));
+    }
   }
   // ── Ende Bedarfsanalyse & Demo Dashboard ──
 
@@ -3843,7 +3917,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.83';
+const KI21_VERSION='v4.84';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
