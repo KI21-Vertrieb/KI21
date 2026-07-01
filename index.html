@@ -186,11 +186,11 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .exec-coach-key{color:#8b949e;font-size:10.5px;font-weight:600;white-space:nowrap;flex-shrink:0;min-width:96px;padding-top:1px;}
 .exec-coach-val{color:var(--text);font-weight:400;line-height:1.4;}
 .exec-einschaetzung{font-size:12.5px;font-weight:400;color:var(--text);line-height:1.6;}
-.exec-spin-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
-.exec-spin-header{display:flex;align-items:center;gap:9px;padding:10px 12px 8px;}
-.exec-spin-letter{width:22px;height:22px;border-radius:50%;background:#ff6b00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.exec-spin-q{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.4;}
-.exec-spin-ta{width:100%;background:var(--bg3);border:none;border-top:1px solid var(--border);color:var(--text);font-family:inherit;font-size:11.5px;padding:9px 12px;resize:none;outline:none;min-height:52px;}
+.exec-spin-item{background:var(--bg2);border:1px solid var(--border);border-radius:11px;margin-bottom:10px;overflow:hidden;}
+.exec-spin-header{display:flex;align-items:flex-start;gap:10px;padding:12px 13px 10px;}
+.exec-spin-letter{width:24px;height:24px;border-radius:50%;background:#ff6b00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.exec-spin-q{font-size:12px;font-weight:600;color:var(--text);line-height:1.5;}
+.exec-spin-ta{width:100%;background:var(--bg3);border:none;border-top:1px solid var(--border);color:var(--text);font-family:inherit;font-size:12px;line-height:1.6;padding:11px 13px;resize:none;outline:none;min-height:72px;}
 
 /* Station */
 .station-wrap{padding:14px;max-width:500px;margin:0 auto;}
@@ -2536,32 +2536,29 @@ function renderStation(sitId){
 
     wrap.appendChild(dashGrid);
 
-    // ─── 2. KI21-EINSCHÄTZUNG ─────────────────────────────────────────
+    // ─── 2. EXECUTIVE SUMMARY (ein konsolidierter Block) ─────────────
     if(hasResult&&(einschaetzung||vertriebsnotizen.length||bestaetigte.length)){
-      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Briefing'));
+      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
+
+      // Einschätzung + Vertriebsnotizen als EIN zusammenhängender Block
+      const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
       if(einschaetzung){
-        const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-        esCard.appendChild(h('div',{className:'exec-card-label'},'KI21-Einschätzung'));
         esCard.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung));
-        wrap.appendChild(esCard);
       }
-      if(bestaetigte.length||vertriebsnotizen.length){
-        const splitWrap=h('div',{className:'exec-grid',style:{alignItems:'stretch',marginBottom:'10px'}});
-        if(bestaetigte.length){
-          const fc=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
-          fc.appendChild(h('div',{className:'exec-card-label',style:{color:'#2ea043'}},'Bestätigte Fakten'));
-          bestaetigte.forEach(b=>fc.appendChild(h('div',{className:'exec-fact-row'},
-            h('span',{className:'exec-fact-icon'},'✔'),h('span',{style:{flex:1}},b))));
-          splitWrap.appendChild(fc);
-        }
-        if(vertriebsnotizen.length){
-          const ic=h('div',{className:'exec-card',style:{flex:'1 1 140px'}});
-          ic.appendChild(h('div',{className:'exec-card-label',style:{color:'#ff6b00'}},'KI-Einschätzung'));
-          vertriebsnotizen.forEach(n=>ic.appendChild(h('div',{className:'exec-interp-row'},
-            h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1}},n))));
-          splitWrap.appendChild(ic);
-        }
-        wrap.appendChild(splitWrap);
+      if(vertriebsnotizen.length){
+        const stratDiv=h('div',{style:{marginTop:einschaetzung?'10px':'0',borderTop:einschaetzung?'1px solid var(--border)':'none',paddingTop:einschaetzung?'10px':'0'}});
+        vertriebsnotizen.forEach(n=>stratDiv.appendChild(h('div',{className:'exec-interp-row',style:{borderTop:'none',paddingBottom:'4px'}},
+          h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1}},n))));
+        esCard.appendChild(stratDiv);
+      }
+      if(einschaetzung||vertriebsnotizen.length)wrap.appendChild(esCard);
+
+      if(bestaetigte.length){
+        const fc=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+        fc.appendChild(h('div',{className:'exec-card-label',style:{color:'#2ea043',marginBottom:'6px'}},'Bestätigte Fakten'));
+        bestaetigte.forEach(b=>fc.appendChild(h('div',{className:'exec-fact-row'},
+          h('span',{className:'exec-fact-icon'},'✔'),h('span',{style:{flex:1}},b))));
+        wrap.appendChild(fc);
       }
     }
 
@@ -2587,67 +2584,102 @@ function renderStation(sitId){
       h('div',{className:'exec-divider-label'},'Arbeitsbereich'),
       h('div',{className:'exec-divider-line'})
     ));
-    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'14px',textAlign:'center'}},
+    wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},
       'Bereiten Sie jetzt den nächsten Kundentermin vor.'));
 
     // ─── SPIN+ANTWORT INLINE ──────────────────────────────────────────
-    // Der spin-Feldinhalt kommt aus SITS[0].result (Phase 1 → Phase 2 Übertragung).
-    // Wir parsen die Fragen und zeigen unter jeder Frage ein eigenes Textarea.
-    // Gespeichert wird das Ergebnis weiterhin in data.fv.antworten als nummerierte Liste
-    // (kompatibel mit dem bestehenden Prompt-Format und der Ergebnis-Anzeige).
+    // Robuster SPIN-Parser: extrahiert Fragen aus dem übertragenen spin-Feldinhalt.
+    // Bereinigt alle Rohtextmarker (###DETAILS###, VERTRIEBSNOTIZEN, SPIN-FRAGEN etc.)
+    // und zeigt jede Frage als eigene Karte mit großem Textarea.
+    // Antworten werden in data.fv.antworten gespeichert (kompatibel mit bestehendem Prompt).
     const spinRaw=data.fv&&data.fv['spin']?data.fv['spin']:'';
     const antwortenRaw=data.fv&&data.fv['antworten']?data.fv['antworten']:'';
 
-    // Parse SPIN-Fragen aus dem raw-Text (Zeilen die mit S:/P:/I:/N:/ oder • beginnen)
-    const spinLines=spinRaw.split('\n').map(l=>l.trim()).filter(Boolean);
-    // Extrahiere individuelle Fragen (Zeilen die mit Buchstabe: oder Bullet anfangen, oder einfach nicht leer)
+    // Bereinige Rohtext: entferne alle Marker-Zeilen, Details-Blöcke, Überschriften
+    const STRIP_PATTERNS=[
+      /###DETAILS###[\s\S]*/gi,
+      /VERTRIEBSNOTIZEN[\s\S]{0,300}/gi,
+      /SPIN-FRAGEN[^\n]*/gi,
+      /BEDARFSANALYSE-FRAGEN[^\n]*/gi,
+      /LEITFRAGEN[^\n]*/gi,
+      /^[A-ZÄÖÜ\s]{5,}:?\s*$/gm,  // Caps-only Überschriften
+    ];
+    let spinClean=spinRaw;
+    STRIP_PATTERNS.forEach(p=>spinClean=spinClean.replace(p,''));
+
+    // Extrahiere Fragen: Zeilen mit S: / P: / I: / N: oder • S: / Nummer.
+    // Mehrzeilige Fragen (Fortsetzung ohne neuen Marker) werden zusammengeführt.
     const spinQuestions=[];
-    let currentQ='';
-    spinLines.forEach(line=>{
-      const isNewQ=/^(S|P|I|N|•|\d+\.)\s*/i.test(line);
-      if(isNewQ&&currentQ)spinQuestions.push(currentQ.trim());
-      currentQ=(isNewQ?currentQ+'\n'+line:currentQ+' '+line).replace(/^\n/,'');
-      if(!currentQ.trim())currentQ=line;
+    const spinLetters=[];
+    const SPIN_LINE=/^(?:•\s*)?([SPIN])\s*[:\-–]\s*(.+)/i;
+    const NUM_LINE=/^(?:•\s*)?(\d+)[.\)]\s*(.+)/;
+
+    let curLetter='';let curQ='';
+    spinClean.split('\n').forEach(rawLine=>{
+      const line=rawLine.trim();
+      if(!line)return;
+      const mSpin=line.match(SPIN_LINE);
+      const mNum=line.match(NUM_LINE);
+      if(mSpin){
+        if(curQ)spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
+        curLetter=mSpin[1].toUpperCase();curQ=mSpin[2];
+      } else if(mNum&&!curQ){
+        if(curQ)spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
+        curLetter=String(mNum[1]);curQ=mNum[2];
+      } else if(curQ){
+        // Fortsetzungszeile — nur anhängen wenn keine neue Überschrift
+        if(!/^[A-ZÄÖÜ\s]{4,}:?\s*$/.test(line))curQ+=' '+line;
+      }
     });
-    if(currentQ.trim())spinQuestions.push(currentQ.trim());
+    if(curQ.trim())spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
 
     // Parse bestehende Antworten (Format "1. Frage: Antwort\n2. ...")
-    const antwortenParsed=[];
-    antwortenRaw.split(/\n(?=\d+\.\s)/).forEach((block,i)=>{
-      const match=block.match(/^\d+\.\s*(?:Frage:\s*)?(.*)$/s);
-      antwortenParsed[i]=match?match[1].trim():block.trim();
+    const antwortenParsed={};
+    antwortenRaw.split('\n').forEach(line=>{
+      const m=line.match(/^(\d+)\.\s*(?:Frage:\s*)?(.*)$/s);
+      if(m)antwortenParsed[parseInt(m[1])-1]=m[2].trim();
     });
 
-    const SPIN_LETTERS=['S','P','I','N','N'];
+    const SPIN_FULL_NAMES={S:'Situation',P:'Problem',I:'Implication',N:'Need-Payoff'};
+    let lastGroup='';
 
     if(spinQuestions.length){
       wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'10px'}},'Leitfragen & Antworten'));
       const taRefs=[];
       spinQuestions.forEach((q,i)=>{
-        const letter=SPIN_LETTERS[i]||String(i+1);
+        const letter=spinLetters[i]||String(i+1);
+        const groupName=SPIN_FULL_NAMES[letter]||'';
+
+        // Gruppenüberschrift (S → Situation, P → Problem, ...)
+        if(groupName&&groupName!==lastGroup){
+          wrap.appendChild(h('div',{style:{fontSize:'10px',fontWeight:'700',letterSpacing:'1px',
+            textTransform:'uppercase',color:'#ff6b00',margin:'14px 0 6px'}},groupName));
+          lastGroup=groupName;
+        }
+
         const item=h('div',{className:'exec-spin-item'});
         const header=h('div',{className:'exec-spin-header'});
         header.appendChild(h('span',{className:'exec-spin-letter'},letter));
-        header.appendChild(h('span',{className:'exec-spin-q'},q.replace(/^[SPIN]\s*:\s*/i,'')));
+        header.appendChild(h('span',{className:'exec-spin-q'},q));
         item.appendChild(header);
+
         const ta=h('textarea',{className:'exec-spin-ta',
-          rows:2,
-          placeholder:'Antwort aus dem Gespräch...',
+          placeholder:'Antwort aus dem Gespräch ...',
           oninput:()=>{
-            // Rebuild antworten-Feld aus allen TAs
             data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
             LS.set(KEY,data);
           }
         });
         ta.value=antwortenParsed[i]||'';
+        // Auto-resize on load
+        setTimeout(()=>{if(ta.value){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,240)+'px';}},0);
+        ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,240)+'px';});
         taRefs.push(ta);
         item.appendChild(ta);
         wrap.appendChild(item);
       });
-      // Falls kein spinText: normales Fallback-Textarea (Originalfeld)
-    } else if(!spinRaw){
-      // Kein SPIN aus Phase 1 übertragen — zeige Original-Textarea
-      wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'8px'}},'Leitfragen für die Bedarfsanalyse'));
+    } else {
+      // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
         'Leitfragen werden automatisch aus Phase 1 übertragen. Führen Sie zunächst die Qualifizierung durch.'));
     }
@@ -3917,7 +3949,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.84';
+const KI21_VERSION='v4.85';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
