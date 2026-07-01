@@ -2263,31 +2263,78 @@ function transferAndGo(fromId, toId, result){
     1:{f1:'kontext'}
   };
 
-  // Phase 1→2: transfer SPIN-Fragen + Antworten
+  // Phase 1→2: isolierter SPIN-Generator
+  // Kernidee: SPIN-Fragen werden NICHT aus dem Phase-1-Ergebnis extrahiert (das enthält
+  // strategisches Messaging/Framing, das S-Fragen verfälscht), sondern in einem zweiten,
+  // kontextisolierten API-Call mit nur den nackten Kundenfakten neu erzeugt.
   if(fromId===0){
-    const lines=result.split('\n');
-    const spinKeywords=['DIE 5 WICHTIGSTEN FRAGEN','SPIN-FRAGEN','BEDARFSANALYSE-FRAGEN','LEITFRAGEN'];
-    let splitIdx=-1;
-    for(const kw of spinKeywords){
-      splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
-      if(splitIdx>=0)break;
-    }
-    let spinText='';
-    if(splitIdx>=0){
-      // Extract from header until ###DETAILS### or end
-      const endIdx=lines.findIndex((l,i)=>i>splitIdx&&(l.includes('###DETAILS###')||l.includes('VERTRIEBSNOTIZEN')));
-      const spinSlice=endIdx>0?lines.slice(splitIdx,endIdx):lines.slice(splitIdx);
-      spinText=spinSlice.join('\n').trim();
-    } else {
-      // No header: extract ONLY lines matching SPIN letter patterns — nothing else
-      spinText=lines.filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l.trim())).join('\n').trim();
-    }
-    // Strip ###DETAILS### tail if it crept in
-    spinText=spinText.replace(/###DETAILS###[\s\S]*/,'').trim();
-    nextData.fv['spin']=spinText;
+    const cust=getActiveCust();
+    // Zeige sofort die Phase-2-Seite mit Ladezustand im spin-Feld
+    nextData.fv['spin']='⏳ SPIN-Fragen werden isoliert generiert...';
     LS.set(nextKEY,nextData);
     state.pendingSit=null;
     renderStation(toId);
+
+    // Isolierter Kontext: NUR nackte Kundenfakten — bewusst KEIN buildCtx(), kein kk/stk,
+    // kein Ergebnis aus Phase 1, damit kein Messaging/Strategie-Framing einfliesst.
+    const isolatedCtx=`Firma: ${cust.firma||'–'}
+Branche: ${cust.branche||'–'}
+Mitarbeiter: ${cust.ma||'–'}
+Ansprechpartner: ${cust.ap||'–'}
+Umsatz: ${cust.um||'–'}
+Bekannte Herausforderungen/Stichworte aus erstem Gespräch:
+${LS.get('ki21_kk_'+state.activeId,'')||'(keine Ergänzungen)'}`;
+
+    const spinPrompt=`Du bist ein SPIN-Selling-Experte. Deine einzige Aufgabe: Generiere methodisch korrekte SPIN-Fragen für das nächste Kundengespräch.
+
+STRIKTE METHODENREGEL – KEINE AUSNAHMEN:
+S (SITUATION): Sammle nur Fakten zum Ist-Zustand. Frage nach Prozessen, Systemen, Rollen, Zahlen. NIEMALS nach Meinungen, Zielen, Wünschen oder Strategien.
+  ✅ "Wie läuft heute die Angebotserstellung konkret ab?"
+  ✅ "Welche Systeme nutzt Ihr Außendienst?"
+  ❌ "Wo sehen Sie die größten Hebel?" (Meinung, kein Fakt)
+  ❌ "Wäre Innovation im Vertrieb wichtig?" (Framing, kein Fakt)
+
+P (PROBLEM): Lass den Kunden selbst benennen, was ihn stört. Frage nach Schwierigkeiten, Engpässen, Frustration.
+  ✅ "Wo verliert Ihr Team am meisten Zeit?"
+  ❌ "Würde Feature X das lösen?" (Lösungsvalidierung, gehört zu N)
+
+I (IMPLICATION): Mach die Konsequenzen des Problems sichtbar. Kosten, Verzögerungen, Risiken.
+  ✅ "Was passiert, wenn ein Angebot einen Tag zu spät kommt?"
+
+N (NEED-PAYOFF): Lass den Kunden den Nutzen einer Lösung beschreiben.
+  ✅ "Was würde sich ändern, wenn diese Information sofort verfügbar wäre?"
+
+KUNDENDATEN (nur diese – kein weiterer Kontext):
+${isolatedCtx}
+
+Generiere jetzt 5–7 SPIN-Fragen. Jede Frage auf einer Zeile, Format "Buchstabe: Frage".
+Nur die Fragen, keine Erklärungen, keine Einleitung.`;
+
+    (async()=>{
+      try{
+        const spinResult=await callClaude(spinPrompt,null);
+        if(spinResult){
+          const freshData=LS.get(nextKEY,{fv:{},result:''});
+          // Bereinige Output: nur Zeilen mit echtem SPIN-Letter-Pattern
+          const cleanLines=spinResult.split('\n')
+            .map(l=>l.trim())
+            .filter(l=>/^[SPIN]\s*[:\-–]/i.test(l));
+          freshData.fv['spin']=cleanLines.join('\n');
+          LS.set(nextKEY,freshData);
+          // Re-render nur wenn Nutzer noch auf Phase 2 ist
+          if(LS.get('ki21_view','')!=='home')renderStation(toId);
+        }
+      }catch(e){
+        // Fallback: extrahiere SPIN-Zeilen aus Phase-1-Ergebnis (alter Mechanismus)
+        const freshData=LS.get(nextKEY,{fv:{},result:''});
+        const fallbackLines=result.split('\n')
+          .map(l=>l.trim())
+          .filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l));
+        freshData.fv['spin']=fallbackLines.join('\n')||result.slice(0,800);
+        LS.set(nextKEY,freshData);
+        if(LS.get('ki21_view','')!=='home')renderStation(toId);
+      }
+    })();
     return;
   }
 
@@ -3972,7 +4019,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.88';
+const KI21_VERSION='v4.89';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
