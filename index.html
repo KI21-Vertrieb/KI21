@@ -675,12 +675,18 @@ NÄCHSTER SCHRITT DIESE WOCHE: [genau EINE priorisierte Aktion + wann]
 2. [zweite Priorität]
 3. [dritte Priorität]
 
-SPIN-FRAGEN FÜR DIE BEDARFSANALYSE (das S/P/P/I/N-Format dient als Orientierung für die Darstellung, NICHT als starre Vorgabe – wähle methodenoffen die 5 Fragen, die für DIESEN konkreten Fall am besten zur tieferen Discovery führen. Wenn z.B. zwei Problemfragen oder eine andere Reihenfolge sinnvoller sind als exakt eine Frage pro Buchstabe, ist das ausdrücklich erlaubt. Maßstab ist die Qualität der Discovery, nicht die Einhaltung der Methode. KEINE Platzhalter wie "S: [Situation]", sondern ausgeschriebene, direkt im Gespräch verwendbare Fragen):
-• S: [konkrete, ausgeschriebene Frage – Situation oder die für diesen Fall passendste erste Discovery-Frage]
-• P: [konkrete, ausgeschriebene Frage – Problem/Symptom]
-• P: [konkrete, ausgeschriebene Frage – Ursache, oder eine weitere vertiefende Frage, falls das für diesen Fall mehr Discovery-Wert hat]
-• I: [konkrete, ausgeschriebene Frage – Auswirkung/Kosten des Problems]
-• N: [konkrete, ausgeschriebene Frage – Nutzen einer Lösung]
+SPIN-FRAGEN FÜR DIE BEDARFSANALYSE – KRITISCH: STRIKTE SPIN-METHODOLOGIE EINHALTEN.
+Jede Frage MUSS dem Typ entsprechen. Kein Vermischen.
+• S (SITUATION): Nur Faktenfragen – wie läuft es heute ab, welche Systeme werden genutzt, wer macht was. KEINE Lösungsvorschläge, KEINE Interpretationen, KEINE Zielbilder.
+• P (PROBLEM): Nur Schwierigkeiten und Engpässe identifizieren – wo hakt es, was ist unbefriedigend, wo verliert man Zeit/Geld. KEINE Lösungsvalidierung (z.B. "Würde Feature X helfen?" ist VERBOTEN – das gehört zu N).
+• I (IMPLICATION): Nur Auswirkungen des Problems sichtbar machen – was kostet das, welche Folgen hat das für Kunden/Umsatz/Team, was wird verzögert oder verloren. KEINE Lösungsvorschläge.
+• N (NEED-PAYOFF): Nur den Nutzen einer Lösung sichtbar machen – was wäre anders, wenn das Problem gelöst wäre. KEIN Problemrekap, KEINE Features nennen – der Kunde beschreibt den Wunschzustand.
+Es kann mehrere Fragen pro Kategorie geben. Format IMMER: Buchstabe + Doppelpunkt + Frage (Beispiel: "S: Wie läuft heute die Angebotserstellung ab?")
+• S: [Faktenfrage zur aktuellen Situation]
+• P: [Frage nach einem konkreten Problem/Engpass]
+• P: [Vertiefende Problem-Frage, falls sinnvoll]
+• I: [Frage nach Auswirkung/Konsequenz des Problems]
+• N: [Frage nach dem Nutzen/Wunschzustand bei gelöstem Problem]
 
 === MEHR DETAILS (folgt NACH den Blöcken oben, beginnt mit der exakten Zeile "###DETAILS###") ===
 ###DETAILS###
@@ -2248,19 +2254,25 @@ function transferAndGo(fromId, toId, result){
 
   // Phase 1→2: transfer SPIN-Fragen + Antworten
   if(fromId===0){
-    const curKEY='ki21_st_'+state.activeId+'_0';
-    const curData=LS.get(curKEY,{fv:{},result:''});
-    // Extract SPIN questions from result
     const lines=result.split('\n');
-    const spinKeywords=['DIE 5 WICHTIGSTEN FRAGEN','SPIN-FRAGEN','BEDARFSANALYSE-FRAGEN'];
+    const spinKeywords=['DIE 5 WICHTIGSTEN FRAGEN','SPIN-FRAGEN','BEDARFSANALYSE-FRAGEN','LEITFRAGEN'];
     let splitIdx=-1;
     for(const kw of spinKeywords){
       splitIdx=lines.findIndex(l=>l.toUpperCase().includes(kw));
       if(splitIdx>=0)break;
     }
-    // If no SPIN found, use full result as spin
-    let spinText=splitIdx>=0?lines.slice(splitIdx).join('\n').trim():result;
-    spinText=spinText.replace(/^###DETAILS###\s*\n?/,'').trim();
+    let spinText='';
+    if(splitIdx>=0){
+      // Extract from header until ###DETAILS### or end
+      const endIdx=lines.findIndex((l,i)=>i>splitIdx&&(l.includes('###DETAILS###')||l.includes('VERTRIEBSNOTIZEN')));
+      const spinSlice=endIdx>0?lines.slice(splitIdx,endIdx):lines.slice(splitIdx);
+      spinText=spinSlice.join('\n').trim();
+    } else {
+      // No header: extract ONLY lines matching SPIN letter patterns — nothing else
+      spinText=lines.filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l.trim())).join('\n').trim();
+    }
+    // Strip ###DETAILS### tail if it crept in
+    spinText=spinText.replace(/###DETAILS###[\s\S]*/,'').trim();
     nextData.fv['spin']=spinText;
     LS.set(nextKEY,nextData);
     state.pendingSit=null;
@@ -2536,46 +2548,46 @@ function renderStation(sitId){
 
     wrap.appendChild(dashGrid);
 
-    // ─── 2. EXECUTIVE SUMMARY (ein konsolidierter Block) ─────────────
-    if(hasResult&&(einschaetzung||vertriebsnotizen.length||bestaetigte.length)){
-      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
-
-      // Einschätzung + Vertriebsnotizen als EIN zusammenhängender Block
-      const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
+    if(hasResult){
+      // ─── EBENE 2: EXECUTIVE SUMMARY ──────────────────────────────────
+      // Reiner Management-Text — was ist der Stand der Opportunity?
       if(einschaetzung){
+        wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
+        const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
         esCard.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung));
+        wrap.appendChild(esCard);
       }
+
+      // ─── EBENE 3: VERKAUFSSTRATEGIE ──────────────────────────────────
+      // Coaching für den Verkäufer — wie gewinnen wir diesen Deal?
       if(vertriebsnotizen.length){
-        const stratDiv=h('div',{style:{marginTop:einschaetzung?'10px':'0',borderTop:einschaetzung?'1px solid var(--border)':'none',paddingTop:einschaetzung?'10px':'0'}});
-        vertriebsnotizen.forEach(n=>stratDiv.appendChild(h('div',{className:'exec-interp-row',style:{borderTop:'none',paddingBottom:'4px'}},
-          h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1}},n))));
-        esCard.appendChild(stratDiv);
+        wrap.appendChild(h('div',{className:'home-section-label'},'Verkaufsstrategie'));
+        const stratCard=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
+        vertriebsnotizen.forEach(n=>stratCard.appendChild(h('div',{className:'exec-interp-row',style:{borderTop:'none',paddingBottom:'5px'}},
+          h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1,fontWeight:'400'}},n))));
+        wrap.appendChild(stratCard);
       }
-      if(einschaetzung||vertriebsnotizen.length)wrap.appendChild(esCard);
 
-      if(bestaetigte.length){
-        const fc=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-        fc.appendChild(h('div',{className:'exec-card-label',style:{color:'#2ea043',marginBottom:'6px'}},'Bestätigte Fakten'));
-        bestaetigte.forEach(b=>fc.appendChild(h('div',{className:'exec-fact-row'},
-          h('span',{className:'exec-fact-icon'},'✔'),h('span',{style:{flex:1}},b))));
-        wrap.appendChild(fc);
+      // ─── FOKUS NÄCHSTER TERMIN ────────────────────────────────────────
+      // Klar vom Executive-Bereich getrennt: gehört zum Arbeitsmodus
+      if(naechsterSchritt||morgen.length){
+        wrap.appendChild(h('div',{className:'exec-divider',style:{margin:'14px 0 10px'}},
+          h('div',{className:'exec-divider-line'}),
+          h('div',{className:'exec-divider-label',style:{color:'#ff6b00'}},'Fokus nächster Termin'),
+          h('div',{className:'exec-divider-line'})
+        ));
+        const coach=h('div',{className:'exec-coach',style:{marginBottom:'10px'}});
+        if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},'Nächster Schritt'),
+          h('span',{className:'exec-coach-val'},naechsterSchritt)));
+        if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},'Nicht tun'),
+          h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
+        morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
+          h('span',{className:'exec-coach-key'},'Priorität '+(i+1)),
+          h('span',{className:'exec-coach-val'},m))));
+        wrap.appendChild(coach);
       }
-    }
-
-    // ─── 3. COACHING ──────────────────────────────────────────────────
-    if(hasResult&&(naechsterSchritt||morgen.length)){
-      const coach=h('div',{className:'exec-coach',style:{marginBottom:'10px'}});
-      coach.appendChild(h('div',{className:'exec-coach-head'},'Fokus Nächster Termin'));
-      if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
-        h('span',{className:'exec-coach-key'},'Nächster Schritt'),
-        h('span',{className:'exec-coach-val'},naechsterSchritt)));
-      if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
-        h('span',{className:'exec-coach-key'},'Nicht tun'),
-        h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
-      morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
-        h('span',{className:'exec-coach-key'},'Priorität '+(i+1)),
-        h('span',{className:'exec-coach-val'},m))));
-      wrap.appendChild(coach);
     }
 
     // ─── TRENNLINIE ───────────────────────────────────────────────────
@@ -3949,7 +3961,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.85';
+const KI21_VERSION='v4.86';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
