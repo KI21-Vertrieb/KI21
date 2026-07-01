@@ -2459,9 +2459,9 @@ function renderStation(sitId){
     const phaseSnap=aid?LS.get('ki21_phase_snap_'+aid+'_0',null):null;
     const snapHealth=phaseSnap||null;
     const filterForPhase1=(signals)=>(signals||[]).filter(s=>!LATER_PHASE_KEYWORDS.test(s.text));
-    const phase1Positive=snapHealth?snapHealth.positive:filterForPhase1(health?health.positive:[]);
-    const phase1Warning=snapHealth?snapHealth.warning:filterForPhase1(health?health.warning:[]);
-    const phase1Open=snapHealth?snapHealth.open:filterForPhase1(health?health.open:[]);
+    const phase1Positive=filterForPhase1(snapHealth?snapHealth.positive:(health?health.positive:[]));
+    const phase1Warning=filterForPhase1(snapHealth?snapHealth.warning:(health?health.warning:[]));
+    const phase1Open=filterForPhase1(snapHealth?snapHealth.open:(health?health.open:[]));
 
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
@@ -4209,7 +4209,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.95';
+const KI21_VERSION='v4.96';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
