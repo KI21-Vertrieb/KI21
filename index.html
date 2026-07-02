@@ -2481,15 +2481,16 @@ function renderStation(sitId){
     //
     // Mittelfristig (noch nicht gebaut): sourcePhase-Attribut pro Signal, dann kann der Filter
     // entfallen und der Snapshot direkt semantisch aufgebaut werden.
-    const LATE_PHASE=/preis|verhandlung|angebot|demo|pilot|roi|business case|jahreslizenz|rollout|abschluss|lizenz|subscription|obergrenze|spielraum|implementierung|ownership/i;
-    const filterQ=(signals)=>(signals||[]).filter(s=>!LATE_PHASE.test(s.text));
+    // Phase-1-Dashboard: ausschließlich phasenspezifische Datenquelle.
+    // Primärquelle: ki21_phase_snap_{accId}_0 — erzeugt von savePhaseSnapshot()
+    // mit NUR Phase-1-Ergebnistext, kein kk, keine anderen Phasen.
+    // Kein Keyword-Filter: die Datenquelle selbst ist die Grenze, nicht ein Wortfilter.
+    // Fallback auf globalen Health nur wenn noch kein Snapshot vorhanden.
     const phaseSnap=aid?LS.get('ki21_phase_snap_'+aid+'_0',null):null;
-    const snapSrc=phaseSnap||(health?{positive:health.positive,warning:health.warning}:{});
-    const phase1Positive=filterQ(snapSrc.positive);
-    const phase1Warning=filterQ(snapSrc.warning);
-    // open-Bereich in Phase 1 bewusst weggelassen (Pilot-Entscheidung):
-    // Offene Punkte enthalten zu oft Wissen aus späteren Phasen.
-    // Mittelfristig: sourcePhase-Architektur oder Initial-Snapshot.
+    const snapSrc=phaseSnap||{};
+    const phase1Positive=snapSrc.positive||(health?health.positive:[]);
+    const phase1Warning=snapSrc.warning||(health?health.warning:[]);
+    const phase1Open=snapSrc.open||[];
 
     if(health){
       const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
@@ -2508,6 +2509,7 @@ function renderStation(sitId){
       };
       cockpit.appendChild(mkCockpitCard('Chancen','✔',phase1Positive));
       cockpit.appendChild(mkCockpitCard('Risiken','⚠',phase1Warning));
+      cockpit.appendChild(mkCockpitCard('Noch offene Punkte','•',phase1Open));
       wrap.appendChild(cockpit);
     }
 
@@ -4238,7 +4240,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.98';
+const KI21_VERSION='v4.99';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
