@@ -4298,7 +4298,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.102';
+const KI21_VERSION='v4.104';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -4587,6 +4587,18 @@ function showSettings(){
       else renderStation(currentView);
     }},
     'Schließen'));
+
+  // Einmalige Bereinigung: Legacy-Ergänzungsfeld leeren
+  const cleanBtn=h('button',{className:'btn',style:{width:'100%',marginTop:'8px',color:'#f85149',borderColor:'rgba(248,81,73,.3)'},
+    onclick:()=>{
+      let count=0;
+      state.accounts.forEach(acc=>{
+        const old=LS.get('ki21_kk_'+acc.id,'');
+        if(old){LS.set('ki21_kk_'+acc.id,'');count++;}
+      });
+      alert('Bereinigt: '+count+' Legacy-Ergänzungsfelder geleert. Bitte Phase 1 neu generieren.');
+    }},'🧹 Legacy-Ergänzungen bereinigen');
+  content.appendChild(cleanBtn);
   const m=modal('Einstellungen',content,()=>{
     const currentView=LS.get('ki21_view','home');
     if(currentView==='home')renderHome();
@@ -4596,58 +4608,99 @@ function showSettings(){
 
 
 function showExport(){
-  const data={accounts:state.accounts,activeId:state.activeId,mu:LS.get('ki21_mu',{}),stationData:{},kontextData:{}};
+  // Rohdaten-Export: NUR was der Nutzer eingegeben oder bestätigt hat.
+  // KI-Ergebnisse (result, result2, summary, detail, health-cache, snapshots) werden NICHT exportiert.
+  // Sie sind jederzeit neu erzeugbar und sollen mit der jeweils aktuellen KI-Version neu erstellt werden.
+  const AI_FIELDS=['result','result2','summary','detail'];
+  const exportData={
+    version:'rohdaten-v1',
+    exportedAt:new Date().toISOString(),
+    accounts:state.accounts, // Stammdaten
+    activeId:state.activeId,
+    mu:LS.get('ki21_mu',{}),  // Mein Unternehmen
+    inputs:{},   // Nutzereingaben pro Phase
+    kk:{},       // Phasenbezogene Ergänzungen
+    manual:{}    // Manuelle Health-Bewertungen
+  };
   state.accounts.forEach(acc=>{
+    // Feldeingaben: nur fv.* ohne KI-Ergebnisfelder
     for(let i=0;i<5;i++){
       const sval=LS.get('ki21_st_'+acc.id+'_'+i,null);
-      if(sval)data.stationData['ki21_st_'+acc.id+'_'+i]=sval;
-      const kval=LS.get('ki21_stk_'+acc.id+'_'+i,null);
-      if(kval)data.kontextData['ki21_stk_'+acc.id+'_'+i]=kval;
+      if(sval){
+        const fvOnly={fv:{}};
+        if(sval.fv){
+          Object.keys(sval.fv).forEach(k=>{
+            if(!AI_FIELDS.includes(k))fvOnly.fv[k]=sval.fv[k];
+          });
+        }
+        if(Object.keys(fvOnly.fv).length)exportData.inputs['ki21_st_'+acc.id+'_'+i]=fvOnly;
+      }
+      // Phasenbezogene Ergänzungen (ki21_kk_{accId}_0 bis _4)
+      const kkSlot=LS.get('ki21_kk_'+acc.id+'_'+i,null);
+      if(kkSlot&&kkSlot.trim())exportData.kk['ki21_kk_'+acc.id+'_'+i]=kkSlot;
     }
-    const kkval=LS.get('ki21_kk_'+acc.id,null);
-    if(kkval)data.kontextData['ki21_kk_'+acc.id]=kkval;
+    // Manuelle Health-Bewertungen (bewusste Nutzerentscheidungen)
+    const manual=LS.get('ki21_health_manual_'+acc.id,null);
+    if(manual)exportData.manual['ki21_health_manual_'+acc.id]=manual;
   });
-  const txt=JSON.stringify(data);
-  let copied=false;
+
+  const txt=JSON.stringify(exportData,null,2);
   const copyB=h('button',{className:'btn-o',onclick:()=>{
-    universalCopy(txt,()=>{copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Backup kopieren',2000);});
-  }},'Backup kopieren');
+    universalCopy(txt,()=>{copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Rohdaten kopieren',2000);});
+  }},'Rohdaten kopieren');
   const content=h('div',{},
     h('div',{className:'status-box',style:{background:'#1c2333',border:'1px solid #30363d'}},
-      h('div',{style:{fontSize:'28px',marginBottom:'6px'}},'💾'),
+      h('div',{style:{fontSize:'28px',marginBottom:'6px'}},'📋'),
       h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#e6edf3',marginBottom:'4px'}},
-        state.accounts.length+' Kunde'+(state.accounts.length!==1?'n':'')+' gespeichert'),
+        state.accounts.length+' Opportunity'+(state.accounts.length!==1?'s':'')+' · Rohdaten'),
       h('div',{style:{fontSize:'11px',color:'#8b949e'}},
         new Date().toLocaleDateString('de-DE')+' · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr')
     ),
-    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'12px'}},
-      'Backup kopieren → in Notizen → über Import wiederherstellen.'),
+    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'6px'}},
+      'Exportiert: Stammdaten, Eingaben und Ergänzungen.'),
+    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'12px',color:'#8b949e'}},
+      'KI-Ergebnisse werden nach dem Import neu generiert.'),
     copyB
   );
-  modal('Daten exportieren',content,null);
+  modal('Rohdaten exportieren',content,null);
 }
 
 function showImport(){
   const ta=h('textarea',{placeholder:'Export-Text hier einfügen...',style:{minHeight:'80px'}});
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Export-Text einfügen und importieren.'),
+    h('p',{className:'modal-desc'},'Rohdaten einfügen. KI-Ergebnisse werden anschließend neu generiert.'),
     ta,
     h('div',{className:'modal-row',style:{marginTop:'8px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{
         try{
           const d=JSON.parse(ta.value);
+          // Accounts + Stammdaten
           if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
           if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
           if(d.mu){LS.set('ki21_mu',d.mu);}
-          if(d.stationData){Object.keys(d.stationData).forEach(k=>LS.set(k,d.stationData[k]));}
-          if(d.kontextData){Object.keys(d.kontextData).forEach(k=>LS.set(k,d.kontextData[k]));}
+          // Nutzereingaben (fv ohne KI-Felder)
+          if(d.inputs){Object.keys(d.inputs).forEach(k=>{
+            const existing=LS.get(k,{fv:{},result:''});
+            existing.fv={...existing.fv,...d.inputs[k].fv};
+            LS.set(k,existing);
+          });}
+          // Phasenbezogene Ergänzungen
+          if(d.kk){Object.keys(d.kk).forEach(k=>LS.set(k,d.kk[k]));}
+          // Manuelle Bewertungen
+          if(d.manual){Object.keys(d.manual).forEach(k=>LS.set(k,d.manual[k]));}
+          // Legacy-Format (ältere Exporte) — Fallback
+          if(!d.version&&d.stationData){Object.keys(d.stationData).forEach(k=>{
+            const sval=d.stationData[k];
+            if(sval){const clean={fv:{}};if(sval.fv)Object.keys(sval.fv).forEach(f=>{if(!['result','result2','summary','detail'].includes(f))clean.fv[f]=sval.fv[f];});LS.set(k,clean);}
+          });}
           m.remove();renderHome();
+          alert('Import erfolgreich. Bitte alle Phasen neu generieren.');
         }catch(e){alert('Ungültiger Text.');}
       }},'Importieren'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Daten importieren',content,null);
+  const m=modal('Rohdaten importieren',content,null);
 }
 
 // ── START ──────────────────────────────────────────────────
