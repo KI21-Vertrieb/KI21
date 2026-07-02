@@ -4298,7 +4298,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.105';
+const KI21_VERSION='v4.106';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -4657,13 +4657,27 @@ function showExport(){
   const backupTxt=JSON.stringify(backupData);
   const cleanTxt=cleanExport?JSON.stringify(cleanExport,null,2):null;
 
-  const backupBtn=h('button',{className:'btn',style:{width:'100%',marginBottom:'8px'},onclick:()=>{
-    universalCopy(backupTxt,()=>{backupBtn.textContent='✓ Kopiert';setTimeout(()=>backupBtn.textContent='💾 Gesamtbackup kopieren',2000);});
-  }},'💾 Gesamtbackup kopieren');
+  const backupBtn=h('button',{className:'btn',style:{width:'100%',marginBottom:'8px'}},
+    '💾 Gesamtbackup kopieren');
+  backupBtn.onclick=()=>{
+    universalCopy(backupTxt,()=>{
+      backupBtn.textContent='✓ Kopiert';
+      backupBtn.style.color='#2ea043';
+      setTimeout(()=>{backupBtn.textContent='💾 Gesamtbackup kopieren';backupBtn.style.color='';},2000);
+    });
+  };
 
-  const cleanBtn=cleanExport?h('button',{className:'btn-o',style:{width:'100%'},onclick:()=>{
-    universalCopy(cleanTxt,()=>{cleanBtn.textContent='✓ Kopiert';setTimeout(()=>cleanBtn.textContent='📋 Opportunity-Rohdaten kopieren',2000);});
-  }},'📋 Opportunity-Rohdaten kopieren'):null;
+  const cleanBtn=cleanExport?h('button',{className:'btn-o',style:{width:'100%'}},
+    '📋 Opportunity-Rohdaten kopieren'):null;
+  if(cleanBtn){
+    cleanBtn.onclick=()=>{
+      universalCopy(cleanTxt,()=>{
+        cleanBtn.textContent='✓ Kopiert';
+        cleanBtn.style.background='#2ea043';
+        setTimeout(()=>{cleanBtn.textContent='📋 Opportunity-Rohdaten kopieren';cleanBtn.style.background='';},2000);
+      });
+    };
+  }
 
   const content=h('div',{},
     h('div',{style:{background:'#1c2333',border:'1px solid #30363d',borderRadius:'12px',padding:'14px',marginBottom:'14px'}},
