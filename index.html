@@ -567,7 +567,27 @@ function buildCtx(cust,mu,kk,stk,currentSitId){
     else if(umNum>=1000)umDisplay=(umNum/1000).toFixed(1)+' Tsd. €';
     s+='Umsatz: '+umDisplay+'\n';
   }
-  if(kk)s+='\nKontext Kunde:\n'+kk+'\n';
+  // Phasenbezogene Ergänzungen: kk_0 bis kk_{currentSitId}
+  // Jede Phase sieht nur den Wissensstand der sie selbst + alle früheren Phasen.
+  // Migration: alter globaler ki21_kk_{accId}-Key wird als Slot 0 behandelt.
+  {
+    const aid2=LS.get('ki21_aid',null);
+    if(aid2){
+      const limit2=(currentSitId!==undefined)?currentSitId+1:5;
+      let kkCombined='';
+      for(let i=0;i<limit2;i++){
+        // Prüfe phasenbezogenen Slot
+        const slotVal=LS.get('ki21_kk_'+aid2+'_'+i,null);
+        if(slotVal&&slotVal.trim())kkCombined+=slotVal.trim()+'\n';
+      }
+      // Migration: alter globaler Key → nur verwenden wenn noch kein Slot vorhanden
+      if(!kkCombined){
+        const legacyKk=LS.get('ki21_kk_'+aid2,'');
+        if(legacyKk&&legacyKk.trim())kkCombined=legacyKk.trim();
+      }
+      if(kkCombined.trim())s+='\nKontext Kunde:\n'+kkCombined.trim()+'\n';
+    }
+  }
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
   const intelData=LS.get('ki21_intelligence',{});
@@ -2426,6 +2446,7 @@ function scoreColor(s){
   return '#f85149';
 }
 function renderStation(sitId){
+  state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
@@ -3663,10 +3684,44 @@ function showNeuerKunde(initial,accId,initialTab){
   verantFw.appendChild(verantInp);
   stammDiv.appendChild(verantFw);
 
-  const kkTa=h('textarea',{placeholder:'Bekannte Herausforderungen, Strategie, Wettbewerber, politische Situation...'});
-  kkTa.value=kk;
-  kkTa.addEventListener('input',e=>kk=e.target.value);
-  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Fließt in alle Stationen ein.'));
+  // Ergänzungen-Tab: phasenbezogene Notizen
+  // currentSitId aus State ableiten (welche Phase ist gerade aktiv?)
+  const currentPhaseForKk=state.pendingSit!==null?state.pendingSit:(state.currentSitId!==undefined?state.currentSitId:0);
+  const phaseNames5=['Phase 1 · Qualifizierung','Phase 2 · Bedarfsanalyse & Demo','Phase 3 · Termin nachbereiten','Phase 4 · Wirtschaftlicher Nutzen','Phase 5 · Angebot & Abschluss'];
+
+  // Migration: alter globaler Key → Slot 0 (einmalig)
+  const legacyKk=LS.get('ki21_kk_'+accId,'');
+  if(legacyKk&&!LS.get('ki21_kk_'+accId+'_migrated',false)){
+    LS.set('ki21_kk_'+accId+'_0',legacyKk);
+    LS.set('ki21_kk_'+accId+'_migrated',true);
+  }
+
+  // Bisheriger Wissensstand (Phasen 0..currentPhaseForKk-1) — nur lesen
+  let historyText='';
+  for(let i=0;i<currentPhaseForKk;i++){
+    const slotVal=LS.get('ki21_kk_'+accId+'_'+i,'');
+    if(slotVal&&slotVal.trim()){
+      historyText+=(historyText?'\n\n':'')+phaseNames5[i]+':\n'+slotVal.trim();
+    }
+  }
+  // Aktueller Phasen-Slot — bearbeitbar
+  let currentKkSlot=LS.get('ki21_kk_'+accId+'_'+currentPhaseForKk,'');
+
+  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Neue Erkenntnisse werden automatisch der aktuellen Phase zugeordnet.'));
+
+  if(historyText){
+    kontextDiv.appendChild(h('div',{className:'field-label',style:{marginBottom:'4px'}},'Bisheriger Wissensstand (nur lesen)'));
+    const histArea=h('textarea',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'8px',padding:'8px',fontSize:'12px',color:'var(--text2)',fontFamily:'inherit',width:'100%',resize:'none',minHeight:'80px',marginBottom:'10px'}});
+    histArea.value=historyText;
+    histArea.readOnly=true;
+    kontextDiv.appendChild(histArea);
+  }
+
+  kontextDiv.appendChild(h('div',{className:'field-label',style:{marginBottom:'4px'}},
+    'Neue Erkenntnisse — '+(phaseNames5[currentPhaseForKk]||'Aktuell')));
+  const kkTa=h('textarea',{placeholder:'Was hast du in diesem Gespräch gelernt? Was ist neu?'});
+  kkTa.value=currentKkSlot;
+  kkTa.addEventListener('input',e=>{currentKkSlot=e.target.value;});
   kontextDiv.appendChild(kkTa);
 
   content.appendChild(stammDiv);
@@ -3688,7 +3743,8 @@ function showNeuerKunde(initial,accId,initialTab){
     saveB.disabled=true;
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
-      LS.set('ki21_kk_'+accId,kk);
+      // Phasenbezogenen Slot speichern (nicht mehr globaler Key)
+      LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
       saveB.textContent='⏳ Wird aktualisiert...';
       await refreshOpportunityHealth(accId);
     } else {
@@ -3696,7 +3752,7 @@ function showNeuerKunde(initial,accId,initialTab){
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
       state.activeId=id;
       LS.set('ki21_aid',id);
-      LS.set('ki21_kk_'+id,kk);
+      if(currentKkSlot.trim())LS.set('ki21_kk_'+id+'_'+currentPhaseForKk,currentKkSlot);
     }
     LS.set('ki21_acc',state.accounts);
     m.remove();
@@ -4241,7 +4297,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.100';
+const KI21_VERSION='v4.101';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
