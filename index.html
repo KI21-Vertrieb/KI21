@@ -1503,71 +1503,20 @@ async function savePhaseSnapshot(accId,sitId){
   }
 }
 
-// runImpactAnalysis: wertet eine neue Erkenntnis gegen den aktuellen Phasenstand aus.
-// Gibt strukturierte Handlungsempfehlungen zurück und speichert sie persistent.
-// Läuft immer nach dem Speichern neuer Erkenntnisse — leichtgewichtig, kein Vollprompt.
-async function runImpactAnalysis(accId,newInsight){
-  if(!accId||!newInsight||!newInsight.trim())return;
-  const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust||{};
-  const phaseLabels=[
-    {id:0,label:'Discovery / Qualifizierung'},
-    {id:1,label:'Bedarfsanalyse & Demo'},
-    {id:2,label:'Terminnachbereitung'},
-    {id:3,label:'Business Case'},
-    {id:4,label:'Angebot & Abschluss'}
-  ];
-  // Kurzzusammenfassung des aktuellen Stands pro Phase
-  const phaseSummaries=phaseLabels.map(p=>{
-    const d=LS.get('ki21_st_'+accId+'_'+p.id,null);
-    const hasResult=d&&(d.result||d.result2);
-    return p.label+': '+(hasResult?'Ergebnis vorhanden, letzte Auswertung liegt vor':'noch nicht bearbeitet');
-  }).join('\n');
-
-  const prompt=`Du bist ein erfahrener B2B-Vertriebscoach. Eine neue Erkenntnis wurde zu einer Opportunity eingetragen.
-
-Firma: ${cust.firma||'–'}
-Branche: ${cust.branche||'–'}
-
-Neue Erkenntnis: "${newInsight.trim()}"
-
-Aktueller Phasenstand:
-${phaseSummaries}
-
-Bewerte für jede der folgenden Vertriebsphasen, ob eine Aktualisierung empfohlen wird.
-Berücksichtige nur fachliche Auswirkungen — nicht ob eine Phase bereits bearbeitet wurde.
-
-Antworte NUR mit diesem JSON (kein Text davor oder danach):
-{
-  "phases": [
-    {"id": 0, "needsUpdate": true/false, "reason": "Kurze Begründung (max. 1 Satz)"},
-    {"id": 1, "needsUpdate": true/false, "reason": "..."},
-    {"id": 2, "needsUpdate": true/false, "reason": "..."},
-    {"id": 3, "needsUpdate": true/false, "reason": "..."},
-    {"id": 4, "needsUpdate": true/false, "reason": "..."}
-  ]
-}`;
-
-  const json=await callClaudeJSON(prompt);
-  if(json&&Array.isArray(json.phases)){
-    const existing=LS.get('ki21_impact_'+accId,{phases:[],insight:'',ts:0});
-    // Merge: neue Empfehlungen überschreiben bestehende, aber bereits abgearbeitete bleiben wenn nicht betroffen
-    const merged=phaseLabels.map((p,i)=>{
-      const newRec=json.phases.find(r=>r.id===p.id);
-      const oldRec=(existing.phases||[]).find(r=>r.id===p.id);
-      if(newRec&&newRec.needsUpdate){
-        return {id:p.id,label:p.label,needsUpdate:true,reason:newRec.reason,dismissed:false};
-      }
-      // Wenn neue Analyse sagt "kein Update nötig", alte unerledigte behalten falls noch offen
-      if(oldRec&&oldRec.needsUpdate&&!oldRec.dismissed){
-        return oldRec; // noch offen, bleibt
-      }
-      return {id:p.id,label:p.label,needsUpdate:false,reason:newRec?newRec.reason:'',dismissed:false};
-    });
-    LS.set('ki21_impact_'+accId,{phases:merged,insight:newInsight.trim(),ts:Date.now()});
-    renderHealthBadgeIfPresent();
-    // Falls Home aktiv: neu rendern um Badges zu zeigen
-    if(LS.get('ki21_view','home')==='home')renderHome();
+// Setzt einen einfachen "neue Erkenntnisse vorhanden"-Flag nach jeder Ergänzung.
+// Kein KI-Call, keine Impact-Analyse. Der Verkäufer entscheidet selbst wann er
+// eine vollständige Neubewertung startet (Opportunity neu bewerten).
+function buildKkForSitId(accId,sitId){
+  let kk='';
+  for(let i=0;i<=sitId;i++){
+    const slot=LS.get('ki21_kk_'+accId+'_'+i,'');
+    if(slot&&slot.trim())kk+=slot.trim()+'\n';
   }
+  return kk.trim();
+}
+
+function markOpportunityPending(accId){
+  if(accId)LS.set('ki21_pending_'+accId,true);
 }
 
 async function refreshOpportunityHealth(accId){
@@ -2085,6 +2034,39 @@ function renderHome(){
   wrap.appendChild(heroCard);
   setTimeout(updateHomeHeroHealthVisual,0);
 
+  // "Opportunity neu bewerten"-Button — erscheint wenn neue Erkenntnisse vorliegen
+  if(state.activeId&&hasPending){
+    const revalBtn=h('button',{className:'btn',
+      style:{width:'100%',marginBottom:'12px',borderColor:'rgba(255,107,0,.5)',color:'#ff6b00',fontWeight:'700',fontSize:'12px'},
+      onclick:async()=>{
+        if(!state.activeId)return;
+        revalBtn.disabled=true;
+        revalBtn.textContent='⏳ Opportunity wird neu bewertet...';
+        const accId=state.activeId;
+        // Alle Phasen mit vorhandenem Ergebnis neu generieren
+        for(let i=0;i<5;i++){
+          const KEY='ki21_st_'+accId+'_'+i;
+          const d=LS.get(KEY,null);
+          if(d&&(d.result||d.result2)){
+            revalBtn.textContent='⏳ Phase '+(i+1)+' von 5 wird aktualisiert...';
+            const sit=SITS[i];
+            const fv=d.fv||{};
+            const mu2=LS.get('ki21_mu',{});
+            const kk2=buildKkForSitId(accId,i);
+            try{
+              const result=await callClaude(sit.build(fv,cust,mu2,kk2,''),null);
+              if(result){d.result=result;LS.set(KEY,d);}
+            }catch(e){}
+          }
+        }
+        await refreshOpportunityHealth(accId);
+        LS.set('ki21_pending_'+accId,false);
+        renderHome();
+      }
+    },h('span',{style:{marginRight:'6px'}},'●'),'Opportunity neu bewerten');
+    wrap.appendChild(revalBtn);
+  }
+
   const schnellstartActive=LS.get('ki21_schnellstart',false);
 
   if(cust.firma){
@@ -2102,8 +2084,8 @@ function renderHome(){
     {label:'Angebot & Abschluss', icon:'🤝', primary:4, sub:'Phase 5'},
   ];
 
-  // Impact-Empfehlungen für die Phasenkarten laden
-  const impactData=state.activeId?LS.get('ki21_impact_'+state.activeId,null):null;
+  // Pending-Flag: neue Erkenntnisse seit letzter Neubewertung?
+  const hasPending=state.activeId&&LS.get('ki21_pending_'+state.activeId,false);
 
   groups.forEach(g=>{
     const status=getPhaseStatus(g.primary);
@@ -2135,27 +2117,9 @@ function renderHome(){
     const pct=status==='empty'?0:getPhaseProgressPct(g.primary);
     const sit=SITS[g.primary];
 
-    // Impact-Badge für diese Phase
-    const impactRec=impactData&&impactData.phases?impactData.phases.find(r=>r.id===g.primary):null;
-    const showBadge=impactRec&&impactRec.needsUpdate&&!impactRec.dismissed;
-
     const rightCol=h('div',{className:'home-station-right'},
       h('span',{className:pillClass},h('span',{},pillIcon),h('span',{},pillText))
     );
-    if(showBadge){
-      const badge=h('div',{style:{display:'flex',alignItems:'center',gap:'5px',marginTop:'4px'}},
-        h('span',{style:{fontSize:'10px',fontWeight:'700',color:'#ff6b00',background:'rgba(255,107,0,.15)',border:'1px solid rgba(255,107,0,.4)',borderRadius:'6px',padding:'2px 7px',lineHeight:'1.4'}},'⚠ Aktualisierung empfohlen'),
-        h('button',{className:'btn',style:{fontSize:'9px',padding:'1px 5px',color:'var(--text3)',lineHeight:'1.4'},
-          onclick:(e)=>{
-            e.stopPropagation();
-            const d=LS.get('ki21_impact_'+state.activeId,null);
-            if(d&&d.phases){d.phases=d.phases.map(r=>r.id===g.primary?{...r,dismissed:true}:r);LS.set('ki21_impact_'+state.activeId,d);}
-            renderHome();
-          }},'✕')
-      );
-      if(impactRec.reason){badge.title=impactRec.reason;}
-      rightCol.appendChild(badge);
-    }
     if(status!=='empty'){
       rightCol.appendChild(h('div',{className:'home-progress-row'},
         h('div',{className:'home-progress-track'},
@@ -3568,14 +3532,6 @@ function renderStation(sitId){
               ts:Date.now()
             });
           }
-          // Impact-Empfehlung für diese Phase als erledigt markieren
-          if(state.activeId){
-            const imp=LS.get('ki21_impact_'+state.activeId,null);
-            if(imp&&imp.phases){
-              imp.phases=imp.phases.map(r=>r.id===sitId?{...r,needsUpdate:false,dismissed:true}:r);
-              LS.set('ki21_impact_'+state.activeId,imp);
-            }
-          }
           // Isolierter Phasen-Snapshot mit sourcePhase-Tagging (async, Hintergrund)
           savePhaseSnapshot(state.activeId,sitId);
         }
@@ -3846,8 +3802,7 @@ function showNeuerKunde(initial,accId,initialTab){
       LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
       saveB.textContent='⏳ Wird aktualisiert...';
       await refreshOpportunityHealth(accId);
-      // Impact-Analyse im Hintergrund (async, blockiert nicht)
-      if(currentKkSlot.trim())runImpactAnalysis(accId,currentKkSlot);
+      markOpportunityPending(accId);
     } else {
       const id='acc_'+Date.now();
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
@@ -4398,7 +4353,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.108';
+const KI21_VERSION='v4.110';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
