@@ -3686,7 +3686,8 @@ function showNeuerKunde(initial,accId,initialTab){
 
   // Ergänzungen-Tab: phasenbezogene Notizen
   // currentSitId aus State ableiten (welche Phase ist gerade aktiv?)
-  const currentPhaseForKk=state.pendingSit!==null?state.pendingSit:(state.currentSitId!==undefined?state.currentSitId:0);
+  const isFromHome=LS.get('ki21_view','home')==='home';
+  const currentPhaseForKk=isFromHome?0:(state.pendingSit!==null?state.pendingSit:(state.currentSitId!==undefined?state.currentSitId:0));
   const phaseNames5=['Phase 1 · Qualifizierung','Phase 2 · Bedarfsanalyse & Demo','Phase 3 · Termin nachbereiten','Phase 4 · Wirtschaftlicher Nutzen','Phase 5 · Angebot & Abschluss'];
 
   // Migration: alter globaler Key → Slot 0 (einmalig)
@@ -4298,7 +4299,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.106';
+const KI21_VERSION='v4.107';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
