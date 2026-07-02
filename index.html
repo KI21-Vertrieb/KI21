@@ -462,7 +462,7 @@ const savedAid = LS.get('ki21_aid',null);
 if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 
 // ── BUILD CONTEXT ───────────────────────────────────────────
-function buildCtx(cust,mu,kk,stk){
+function buildCtx(cust,mu,kk,stk,currentSitId){
   let s='--- KONTEXT ---\n';
   if(LS.get('ki21_schnellstart',false)){
     s+='SCHNELLSTART-MODUS AKTIV\n';
@@ -538,7 +538,8 @@ function buildCtx(cust,mu,kk,stk){
     const aid=LS.get('ki21_aid',null);
     if(aid){
       let prevResults='';
-      for(let i=0;i<5;i++){
+      const limit=(currentSitId!==undefined)?currentSitId:5;
+      for(let i=0;i<limit;i++){
         const d=LS.get('ki21_st_'+aid+'_'+i,{});
         if(d.result&&d.result.trim()){
           const {main:prevMain}=splitDetailsFromResult(d.result);
@@ -583,7 +584,7 @@ const SITS=[
      {id:'info',l:'Bekannte Herausforderungen / Vermutungen',t:'ta',p:'Trigger / Anlass: z.B. neuer GF, Wachstum, Pressemitteilung\nHerausforderungen: Was weißt du bereits?'},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. ...\n2. ...\n3. ...\n4. ...\n5. ...',post:true,big:true}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst, was du über diesen Lead weißt – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie an dieser Stelle.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk,0)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst, was du über diesen Lead weißt – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie an dieser Stelle.
 
 KERNFRAGE DIESER PHASE: Lohnt es sich, diese Opportunity weiterzuverfolgen? Jede Aussage muss dieser Frage dienen.
 
@@ -633,7 +634,7 @@ DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN:
 3. WICHTIG: ___ | Antwort: ___
 4. WICHTIG: ___ | Antwort: ___
 5. NICE-TO-HAVE: ___ | Antwort: ___`,
-   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst das Qualifizierungsgespräch – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie in der Discovery-Dokumentation.
+   build2:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk,0)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein Strategieberater. Du dokumentierst das Qualifizierungsgespräch – du entwirfst KEINE Lösungsarchitektur und KEINE Beratungsstrategie in der Discovery-Dokumentation.
 
 KERNFRAGE DIESER PHASE: Lohnt es sich, diese Opportunity weiterzuverfolgen? Jede Aussage muss dieser Frage dienen.
 
@@ -714,7 +715,7 @@ WICHTIG: Die SPIN-Fragen oben sind NEUE, noch unbeantwortete Fragen für das nä
      {id:'spin',l:'Leitfragen für die Bedarfsanalyse',t:'ta',p:'Wird automatisch aus Phase 1 übertragen...',readonly:true},
      {id:'antworten',l:'Deine Antworten',t:'ta',p:'1. Frage: ...\n2. Frage: ...\n3. Frage: ...\n4. Frage: ...\n5. Frage: ...',big:true}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein BI-Berater. Du denkst konsequent in Geschäftsproblemen, Auswirkungen, Kundennutzen und Entscheidungen – nicht in Softwarefunktionen.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk,1)+`Du bist ein erfahrener B2B-Vertriebsprofi – kein BI-Berater. Du denkst konsequent in Geschäftsproblemen, Auswirkungen, Kundennutzen und Entscheidungen – nicht in Softwarefunktionen.
 
 KERNFRAGEN DIESER PHASE (zwei Funktionen in einer Phase, klar trennen): SCHMERZ und KLÄREN beantworten "Welche Informationen fehlen und welche Fragen bringen den Kunden weiter?" (Bedarfsanalyse-Funktion). ZEIGEN beantwortet "Welche Funktionen demonstrieren den bestätigten Kundennutzen?" (Demo-Funktion). Jeder Block dient ausschließlich SEINER eigenen Kernfrage.
 DIESE PHASE BEGINNT DORT, WO DIE QUALIFIZIERUNG ENDET: Erkläre NICHT erneut, warum die Opportunity interessant ist – das wurde bereits bewertet. Setze direkt bei den fehlenden Informationen an.
@@ -807,7 +808,7 @@ GESCHÄFTLICHER NUTZEN (max. 3 Bullets – warum diese KPI für den Kunden relev
      {id:'kontext',l:'Kontext aus der Bedarfsanalyse (zur Erinnerung)',t:'ta',p:'Wird automatisch aus Phase 2 übernommen',readonly:true,hidden:true},
      {id:'stichworte',l:'Was wurde in diesem Termin NEU besprochen?',t:'ta',p:'Was wurde besprochen?\nWas wurde zugesagt?\nOffene Fragen?',big:true}
    ],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk,2)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 Termin nachbereiten: ${c.firma||''}, AP: ${c.ap||''}
 Kontext aus vorheriger Bedarfsanalyse (zur Einordnung, NICHT der heutige Termin): ${f.kontext||'(kein Kontext vorhanden)'}
@@ -856,7 +857,7 @@ DIE NÄCHSTEN SCHRITTE (ausführlich):
   {id:3,num:4,phase:'Phase 4',title:'Nutzen-Kosten-Analyse',icon:'💰',
    regel:'Warum lohnt sich die Investition wirtschaftlich?',
    felder:[],
-   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
+   build:(f,c,mu,kk,stk)=>buildCtx(c,mu,kk,stk,3)+`Du bist ein erfahrener B2B-Vertriebsprofi und Business-Case-Experte.
 
 KERNFRAGE DIESER PHASE: Ist der wirtschaftliche Nutzen überzeugend und belastbar? Jede Aussage muss dieser Frage dienen.
 DIESE PHASE BEGINNT DORT, WO DIE DEMO ENDET: Fasse NICHT erneut Discovery oder Bedarfsanalyse zusammen. Setze direkt bei der wirtschaftlichen Bewertung an.
@@ -964,7 +965,7 @@ Bitte gemeinsam mit dem Kunden validieren.`
          +'Nutze diese Werte als Grundlage für die Nutzenargumentation, statt sie neu zu schätzen.\n'
          +'KRITISCH: Falls Phase 4 ein Krisen-/Schadenspotenzial UNBEZIFFERT gelassen hat (z.B. "lässt sich ohne konkrete Fallbeispiele nicht beziffern"), darfst du in Phase 5 KEINE €-Zahl dafür nennen – AUCH NICHT als angeblichen "Benchmark", "KI21-Benchmark" oder Branchenvergleich. KEIN €-Betrag in Klammern, KEIN "spart X-Y €/Jahr", KEINE Aussage wie "ROI springt von A auf B wenn..." mit einer Zahl dahinter. Übernimm den unbezifferten Status unverändert – beschreibe das Potenzial NUR qualitativ in Worten (z.B. "Größenordnung kann erst nach Validierung mit dem Kunden benannt werden"), und kennzeichne es weiterhin als ZU VALIDIEREN. Dieses Verbot gilt für JEDE Erwähnung des Krisenpotenzials im gesamten Phase-5-Output, nicht nur an der ersten Stelle.\n';
      }
-     return buildCtx(c,mu,kk,stk)+`Du bist ein erfahrener B2B-Vertriebsprofi.
+     return buildCtx(c,mu,kk,stk,4)+`Du bist ein erfahrener B2B-Vertriebsprofi.
 
 KERNFRAGE DIESER PHASE: Wie erhöhen wir jetzt die Abschlusswahrscheinlichkeit? Jede Aussage muss dieser Frage dienen.
 DIESE PHASE BEGINNT DORT, WO DIE NUTZEN-KOSTEN-ANALYSE ENDET: Erkläre NICHT erneut den Business Case. Setze direkt bei der Abschlussstrategie an.
@@ -4240,7 +4241,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.99';
+const KI21_VERSION='v4.100';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
