@@ -4298,7 +4298,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.104';
+const KI21_VERSION='v4.105';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -4608,99 +4608,136 @@ function showSettings(){
 
 
 function showExport(){
-  // Rohdaten-Export: NUR was der Nutzer eingegeben oder bestätigt hat.
-  // KI-Ergebnisse (result, result2, summary, detail, health-cache, snapshots) werden NICHT exportiert.
-  // Sie sind jederzeit neu erzeugbar und sollen mit der jeweils aktuellen KI-Version neu erstellt werden.
-  const AI_FIELDS=['result','result2','summary','detail'];
-  const exportData={
-    version:'rohdaten-v1',
-    exportedAt:new Date().toISOString(),
-    accounts:state.accounts, // Stammdaten
-    activeId:state.activeId,
-    mu:LS.get('ki21_mu',{}),  // Mein Unternehmen
-    inputs:{},   // Nutzereingaben pro Phase
-    kk:{},       // Phasenbezogene Ergänzungen
-    manual:{}    // Manuelle Health-Bewertungen
-  };
+  const aid=state.activeId;
+  const activeCust=(state.accounts.find(a=>a.id===aid)||{}).cust;
+
+  // ── VOLLSTÄNDIGES BACKUP (alle Accounts, alles) ──────────────────
+  const backupData={accounts:state.accounts,activeId:aid,mu:LS.get('ki21_mu',{}),stationData:{},kontextData:{}};
   state.accounts.forEach(acc=>{
-    // Feldeingaben: nur fv.* ohne KI-Ergebnisfelder
     for(let i=0;i<5;i++){
       const sval=LS.get('ki21_st_'+acc.id+'_'+i,null);
-      if(sval){
-        const fvOnly={fv:{}};
-        if(sval.fv){
-          Object.keys(sval.fv).forEach(k=>{
-            if(!AI_FIELDS.includes(k))fvOnly.fv[k]=sval.fv[k];
-          });
-        }
-        if(Object.keys(fvOnly.fv).length)exportData.inputs['ki21_st_'+acc.id+'_'+i]=fvOnly;
-      }
-      // Phasenbezogene Ergänzungen (ki21_kk_{accId}_0 bis _4)
-      const kkSlot=LS.get('ki21_kk_'+acc.id+'_'+i,null);
-      if(kkSlot&&kkSlot.trim())exportData.kk['ki21_kk_'+acc.id+'_'+i]=kkSlot;
+      if(sval)backupData.stationData['ki21_st_'+acc.id+'_'+i]=sval;
     }
-    // Manuelle Health-Bewertungen (bewusste Nutzerentscheidungen)
+    for(let i=0;i<5;i++){
+      const kkSlot=LS.get('ki21_kk_'+acc.id+'_'+i,null);
+      if(kkSlot)backupData.kontextData['ki21_kk_'+acc.id+'_'+i]=kkSlot;
+    }
+    const legKk=LS.get('ki21_kk_'+acc.id,null);
+    if(legKk)backupData.kontextData['ki21_kk_'+acc.id]=legKk;
     const manual=LS.get('ki21_health_manual_'+acc.id,null);
-    if(manual)exportData.manual['ki21_health_manual_'+acc.id]=manual;
+    if(manual)backupData.kontextData['ki21_health_manual_'+acc.id]=manual;
   });
 
-  const txt=JSON.stringify(exportData,null,2);
-  const copyB=h('button',{className:'btn-o',onclick:()=>{
-    universalCopy(txt,()=>{copyB.textContent='✓ Kopiert';setTimeout(()=>copyB.textContent='Rohdaten kopieren',2000);});
-  }},'Rohdaten kopieren');
+  // ── CLEAN OPPORTUNITY EXPORT (aktiver Account, nur Rohdaten) ─────
+  const AI_FIELDS=['result','result2','summary','detail'];
+  const cleanExport=aid?{
+    version:'opportunity-rohdaten-v1',
+    exportedAt:new Date().toISOString(),
+    cust:activeCust||{},
+    mu:LS.get('ki21_mu',{}),
+    inputs:{},
+    kk:{},
+    manual:{}
+  }:null;
+  if(cleanExport){
+    for(let i=0;i<5;i++){
+      const sval=LS.get('ki21_st_'+aid+'_'+i,null);
+      if(sval){
+        const fvOnly={fv:{}};
+        if(sval.fv)Object.keys(sval.fv).forEach(k=>{if(!AI_FIELDS.includes(k))fvOnly.fv[k]=sval.fv[k];});
+        if(Object.keys(fvOnly.fv).length)cleanExport.inputs['slot_'+i]=fvOnly;
+      }
+      const kkSlot=LS.get('ki21_kk_'+aid+'_'+i,null);
+      if(kkSlot&&kkSlot.trim())cleanExport.kk['slot_'+i]=kkSlot;
+    }
+    const manual=LS.get('ki21_health_manual_'+aid,null);
+    if(manual)cleanExport.manual=manual;
+  }
+
+  const backupTxt=JSON.stringify(backupData);
+  const cleanTxt=cleanExport?JSON.stringify(cleanExport,null,2):null;
+
+  const backupBtn=h('button',{className:'btn',style:{width:'100%',marginBottom:'8px'},onclick:()=>{
+    universalCopy(backupTxt,()=>{backupBtn.textContent='✓ Kopiert';setTimeout(()=>backupBtn.textContent='💾 Gesamtbackup kopieren',2000);});
+  }},'💾 Gesamtbackup kopieren');
+
+  const cleanBtn=cleanExport?h('button',{className:'btn-o',style:{width:'100%'},onclick:()=>{
+    universalCopy(cleanTxt,()=>{cleanBtn.textContent='✓ Kopiert';setTimeout(()=>cleanBtn.textContent='📋 Opportunity-Rohdaten kopieren',2000);});
+  }},'📋 Opportunity-Rohdaten kopieren'):null;
+
   const content=h('div',{},
-    h('div',{className:'status-box',style:{background:'#1c2333',border:'1px solid #30363d'}},
-      h('div',{style:{fontSize:'28px',marginBottom:'6px'}},'📋'),
-      h('div',{style:{fontSize:'14px',fontWeight:'700',color:'#e6edf3',marginBottom:'4px'}},
-        state.accounts.length+' Opportunity'+(state.accounts.length!==1?'s':'')+' · Rohdaten'),
-      h('div',{style:{fontSize:'11px',color:'#8b949e'}},
-        new Date().toLocaleDateString('de-DE')+' · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr')
+    h('div',{style:{background:'#1c2333',border:'1px solid #30363d',borderRadius:'12px',padding:'14px',marginBottom:'14px'}},
+      h('div',{style:{fontSize:'11px',fontWeight:'700',color:'#8b949e',letterSpacing:'1px',textTransform:'uppercase',marginBottom:'6px'}},'Gesamtbackup'),
+      h('div',{style:{fontSize:'12px',color:'#e6edf3',marginBottom:'10px'}},state.accounts.length+' Opportunit'+(state.accounts.length!==1?'ies':'y')+' · alle Daten inkl. KI-Ergebnisse'),
+      backupBtn
     ),
-    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'6px'}},
-      'Exportiert: Stammdaten, Eingaben und Ergänzungen.'),
-    h('p',{className:'modal-desc',style:{textAlign:'center',marginBottom:'12px',color:'#8b949e'}},
-      'KI-Ergebnisse werden nach dem Import neu generiert.'),
-    copyB
+    cleanExport?h('div',{style:{background:'#1c2333',border:'1px solid rgba(255,107,0,.4)',borderRadius:'12px',padding:'14px'}},
+      h('div',{style:{fontSize:'11px',fontWeight:'700',color:'#ff6b00',letterSpacing:'1px',textTransform:'uppercase',marginBottom:'6px'}},'Opportunity-Rohdaten'),
+      h('div',{style:{fontSize:'12px',color:'#e6edf3',marginBottom:'4px'}},(activeCust&&activeCust.firma)||'Aktuelle Opportunity'),
+      h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'10px'}},'Nur Eingaben & Ergänzungen · KI-Ergebnisse werden neu generiert'),
+      cleanBtn
+    ):h('div',{style:{fontSize:'12px',color:'#8b949e'}},'Bitte zuerst eine Opportunity öffnen.')
   );
-  modal('Rohdaten exportieren',content,null);
+  modal('Exportieren',content,null);
 }
 
 function showImport(){
   const ta=h('textarea',{placeholder:'Export-Text hier einfügen...',style:{minHeight:'80px'}});
+  const info=h('div',{style:{fontSize:'11px',color:'#8b949e',marginBottom:'8px'}});
+  ta.addEventListener('input',()=>{
+    try{
+      const d=JSON.parse(ta.value);
+      if(d.version==='opportunity-rohdaten-v1'){
+        info.textContent='📋 Opportunity-Rohdaten erkannt → wird als neue Opportunity angelegt';
+        info.style.color='#ff6b00';
+      } else {
+        info.textContent='💾 Gesamtbackup erkannt → stellt vorhandene Daten wieder her';
+        info.style.color='#8b949e';
+      }
+    }catch(e){info.textContent='';}
+  });
   const content=h('div',{},
-    h('p',{className:'modal-desc'},'Rohdaten einfügen. KI-Ergebnisse werden anschließend neu generiert.'),
-    ta,
+    h('p',{className:'modal-desc'},'Backup oder Opportunity-Rohdaten einfügen.'),
+    info,ta,
     h('div',{className:'modal-row',style:{marginTop:'8px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{
         try{
           const d=JSON.parse(ta.value);
-          // Accounts + Stammdaten
-          if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
-          if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
-          if(d.mu){LS.set('ki21_mu',d.mu);}
-          // Nutzereingaben (fv ohne KI-Felder)
-          if(d.inputs){Object.keys(d.inputs).forEach(k=>{
-            const existing=LS.get(k,{fv:{},result:''});
-            existing.fv={...existing.fv,...d.inputs[k].fv};
-            LS.set(k,existing);
-          });}
-          // Phasenbezogene Ergänzungen
-          if(d.kk){Object.keys(d.kk).forEach(k=>LS.set(k,d.kk[k]));}
-          // Manuelle Bewertungen
-          if(d.manual){Object.keys(d.manual).forEach(k=>LS.set(k,d.manual[k]));}
-          // Legacy-Format (ältere Exporte) — Fallback
-          if(!d.version&&d.stationData){Object.keys(d.stationData).forEach(k=>{
-            const sval=d.stationData[k];
-            if(sval){const clean={fv:{}};if(sval.fv)Object.keys(sval.fv).forEach(f=>{if(!['result','result2','summary','detail'].includes(f))clean.fv[f]=sval.fv[f];});LS.set(k,clean);}
-          });}
-          m.remove();renderHome();
-          alert('Import erfolgreich. Bitte alle Phasen neu generieren.');
+          if(d.version==='opportunity-rohdaten-v1'){
+            // Clean Import: neue Opportunity anlegen
+            const newId='acc_'+Date.now();
+            const newCust={...d.cust};
+            state.accounts=[{id:newId,cust:newCust,ts:Date.now()},...state.accounts].slice(0,10);
+            state.activeId=newId;
+            LS.set('ki21_acc',state.accounts);
+            LS.set('ki21_aid',newId);
+            if(d.mu)LS.set('ki21_mu',d.mu);
+            if(d.inputs)Object.keys(d.inputs).forEach(k=>{
+              const idx=parseInt(k.replace('slot_',''));
+              if(!isNaN(idx))LS.set('ki21_st_'+newId+'_'+idx,d.inputs[k]);
+            });
+            if(d.kk)Object.keys(d.kk).forEach(k=>{
+              const idx=parseInt(k.replace('slot_',''));
+              if(!isNaN(idx))LS.set('ki21_kk_'+newId+'_'+idx,d.kk[k]);
+            });
+            if(d.manual)LS.set('ki21_health_manual_'+newId,d.manual);
+            m.remove();renderHome();
+            alert('Opportunity angelegt: '+(newCust.firma||'Neu')+'\nBitte alle Phasen neu generieren.');
+          } else {
+            // Vollständiges Backup wiederherstellen
+            if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
+            if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
+            if(d.mu)LS.set('ki21_mu',d.mu);
+            if(d.stationData)Object.keys(d.stationData).forEach(k=>LS.set(k,d.stationData[k]));
+            if(d.kontextData)Object.keys(d.kontextData).forEach(k=>LS.set(k,d.kontextData[k]));
+            m.remove();renderHome();
+          }
         }catch(e){alert('Ungültiger Text.');}
       }},'Importieren'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Rohdaten importieren',content,null);
+  const m=modal('Importieren',content,null);
 }
 
 // ── START ──────────────────────────────────────────────────
