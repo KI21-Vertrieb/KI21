@@ -67,9 +67,9 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .home-greeting{font-size:12.5px;font-weight:600;color:var(--text2);margin:8px 0 8px;}
 .home-hero{background:var(--bg2);border:1px solid var(--border);border-radius:13px;
   padding:11px;margin-bottom:10px;}
-.home-hero-body{display:flex;gap:11px;flex-wrap:wrap;}
-.home-hero-colL{flex:1.2;min-width:0;}
-.home-hero-colR{flex:1;min-width:0;display:flex;flex-direction:column;align-items:stretch;}
+.home-hero-body{display:flex;flex-direction:column;gap:8px;}
+.home-hero-colL{min-width:0;}
+.home-hero-colR{min-width:0;display:flex;flex-direction:column;align-items:stretch;}
 .home-hero-label{font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
   color:var(--text3);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
 .home-info-dot{color:var(--text3);font-size:9px;cursor:default;}
@@ -77,8 +77,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .home-hero-icon{width:30px;height:30px;border-radius:7px;background:var(--bg3);
   border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
   font-size:14px;flex-shrink:0;}
-.home-hero-firma{font-size:15px;font-weight:800;color:var(--text);overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.2px;}
+.home-hero-firma{font-size:15px;font-weight:800;color:var(--text);overflow-wrap:break-word;word-break:break-word;letter-spacing:-.2px;}
 .home-hero-firma.placeholder{color:var(--text2);font-weight:600;font-size:12px;}
 .home-hero-meta{font-size:9.5px;color:var(--text2);margin-top:2px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
@@ -1445,7 +1444,7 @@ KRITISCH – FÜNF KONSISTENZREGELN FÜR DIE SIGNALE:
 
 5. OFFENE PUNKTE MÜSSEN EINEN SCHRITT WEITERDENKEN, NICHT BEREITS BESTÄTIGTES WIEDERHOLEN: Ein offener Punkt darf NIEMALS eine Frage stellen, die durch bereits bestätigte Informationen schon beantwortet ist. Bestätigte Erkenntnisse sind die Arbeitsgrundlage – baue auf ihnen auf und leite daraus die NÄCHSTE noch ungelöste Wissenslücke oder das nächste offene Entscheidungskriterium ab, statt dieselbe Frage erneut zu stellen. Beispiel: Wenn bereits bestätigt ist "Cloud-Lösung mit täglicher Spiegelung wäre für den Inhaber akzeptabel, IT hat technische Machbarkeit bestätigt", ist "Würde der Inhaber eine Cloud-Lösung mit Spiegelung akzeptieren?" KEIN gültiger offener Punkt mehr (das ist bereits beantwortet) – stattdessen z.B. "Ist die Spiegelungsarchitektur verbindlich umsetzbar?" oder "Welches konkrete Entscheidungskriterium des Inhabers ist jetzt noch offen?". Prüfe vor jedem offenen Punkt: "Wurde das bereits durch ein bestätigtes positives Signal beantwortet?" – falls ja, formuliere stattdessen die nächste, tiefere Frage.
 
-Jeder Punkt darf in GENAU EINER der drei Kategorien (positive/warning/open) erscheinen – niemals doppelt, niemals widersprüchlich zu einem anderen Punkt.
+Jeder Punkt darf in GENAU EINER der drei Kategorien (positive/warning/open) erscheinen – niemals doppelt, niemals widersprüchlich zu einem anderen Punkt. KRITISCH: Wenn "Budget bestätigt" in positive steht, darf "Budget kritisch oder unklar" NICHT in warning stehen. Wenn "Entscheider aktiv eingebunden" in positive steht, darf "Entscheider nicht eingebunden" NICHT in warning stehen. Widersprüche zwischen Kategorien sind der häufigste Qualitätsfehler – vor dem Abschluss immer prüfen ob positive und warning sich inhaltlich widersprechen.
 
 QUALITÄTSREGEL – FAKT VS. BEWERTUNG KONSEQUENT TRENNEN (gilt für alle drei Kategorien):
 - Positive Signale: formuliere sie so, dass der Verkäufer sofort erkennt, ob das ein bestätigter Fakt ("Schmerz quantifiziert: 5.000 €/Monat Einsparung bestätigt") oder eine KI-Einschätzung ("Entscheider wirkt grundsätzlich offen für externe Lösungen") ist.
@@ -3648,7 +3647,7 @@ function showKunde(){
           ),
           h('div',{className:'acc-btns'},
             a.id===state.activeId?h('span',{className:'acc-active'},'aktiv'):h('span',{},''),
-            h('button',{className:'btn',onclick:e=>{e.stopPropagation();m.remove();showEditKunde(a);}},'\u270E'),
+            h('button',{className:'btn',style:{padding:'8px 14px',fontSize:'16px',minWidth:'44px',minHeight:'44px'},onclick:e=>{e.stopPropagation();m.remove();showEditKunde(a);}},'\u270E'),
             h('button',{style:{background:'transparent',border:'none',color:'#484f58',
               fontSize:'16px',cursor:'pointer',padding:'0 2px'},
               onclick:e=>{e.stopPropagation();
@@ -3949,7 +3948,7 @@ Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nich
           lines.map(l=>'<div style="font-size:12px;color:#e6edf3;padding:2px 0;">'+l+'</div>').join('')+
           '</div>';
         analyzeBtn.textContent='✓ Schließen';
-        analyzeBtn.onclick=()=>m.remove();
+        analyzeBtn.onclick=()=>{if(modalRef)modalRef.remove();};
         
       }catch(e){
         statusDiv.textContent='Fehler: '+e.message;
@@ -3966,34 +3965,85 @@ Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nich
     analyzeBtn,
     statusDiv
   );
+  let modalRef=null;
   const m=modal('📥 CRM-Text importieren',content,null);
+  modalRef=m;
 }
 
 function generateKundePDF(aid, cust){
   const SITS_LABELS=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten',
     'Nutzen-Kosten-Analyse','Angebot & Abschluss'];
 
+  const health=getOpportunityHealth(aid);
+  const scoreColor=health?getHealthColor(health.score):'#666';
+
+  // Discovery-Status: hat Phase 2 (Bedarfsanalyse) ein Ergebnis?
+  const phase2=LS.get('ki21_st_'+aid+'_1',{});
+  const phase3=LS.get('ki21_st_'+aid+'_2',{});
+  const hasDiscovery=!!(phase2.result||phase2.result2);
+  const hasVisit=!!(phase3.result||phase3.result2);
+
+  // Positive & negative Score-Treiber (max 3 je)
+  const topPositive=health?(health.positive||[]).filter(s=>!s.disabled).slice(0,3):[];
+  const topWarning=health?(health.warning||[]).filter(s=>!s.disabled).slice(0,3):[];
+
   let html=`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Kundendossier – ${cust.firma||'Kunde'}</title>
+  <title>Vertriebsdossier – ${cust.firma||'Kunde'}</title>
   <style>
     body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#1a1a1a;font-size:13px;line-height:1.6;}
-    h1{color:#ff6b00;font-size:20px;border-bottom:2px solid #ff6b00;padding-bottom:8px;}
-    h2{color:#ff6b00;font-size:14px;margin-top:20px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
-    .meta{color:#666;font-size:12px;margin-bottom:20px;}
+    h1{color:#ff6b00;font-size:20px;border-bottom:2px solid #ff6b00;padding-bottom:8px;margin-bottom:4px;}
+    h2{color:#ff6b00;font-size:13px;margin-top:20px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+    .meta{color:#666;font-size:12px;margin-bottom:14px;}
+    .score-box{display:flex;gap:20px;background:#f8f8f8;border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:14px;align-items:flex-start;}
+    .score-num{font-size:36px;font-weight:800;color:${scoreColor};line-height:1;min-width:70px;}
+    .score-detail{flex:1;}
+    .score-label{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+    .driver{font-size:12px;margin:2px 0;}
+    .driver.pos::before{content:'✓ ';color:#2ea043;font-weight:700;}
+    .driver.neg::before{content:'⚠ ';color:#f85149;font-weight:700;}
+    .status-box{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+    .status-pill{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;}
+    .status-ok{background:#e6f4ea;color:#2ea043;border:1px solid #2ea04330;}
+    .status-open{background:#fff3e0;color:#e65100;border:1px solid #ff6b0030;}
+    .evidence-note{font-size:11px;color:#666;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 12px;margin-bottom:14px;}
     .phase{background:#f8f8f8;border-left:3px solid #ff6b00;padding:12px;margin-bottom:12px;border-radius:4px;}
     .phase-title{font-weight:700;font-size:13px;margin-bottom:6px;color:#ff6b00;}
     .empty{color:#999;font-style:italic;}
-    pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;margin:0;}
+    .footer{margin-top:30px;padding-top:10px;border-top:1px solid #e0e0e0;font-size:10px;color:#999;}
     @media print{body{padding:10px;}}
   </style></head><body>
-  <h1>Kundendossier</h1>
+  <h1>Vertriebsdossier</h1>
   <div class="meta">
     <strong>${cust.firma||'–'}</strong> | 
     Branche: ${cust.branche||'–'} | 
-    MA: ${cust.ma||'–'} | 
+    Mitarbeiter: ${cust.ma||'–'} | 
     Umsatz: ${cust.um||'–'}<br>
-    Ansprechpartner: ${cust.ap||'–'}<br>
+    Ansprechpartner: ${cust.ap||'–'} | 
     Erstellt: ${new Date().toLocaleDateString('de-DE')}
+  </div>
+
+  <div class="score-box">
+    <div>
+      <div class="score-label">Opportunity Health</div>
+      <div class="score-num">${health?health.score:'–'}</div>
+      <div style="font-size:10px;color:#666;">/100</div>
+    </div>
+    <div class="score-detail">
+      <div class="score-label">Score-Treiber</div>
+      ${topPositive.map(s=>`<div class="driver pos">${s.text}</div>`).join('')}
+      ${topWarning.map(s=>`<div class="driver neg">${s.text.replace(/→ Strategie:.*/,'').trim()}</div>`).join('')}
+      ${!health?'<div style="font-size:12px;color:#666;">Noch keine Bewertung vorhanden.</div>':''}
+    </div>
+  </div>
+
+  <div class="status-box">
+    <span class="status-pill ${hasDiscovery?'status-ok':'status-open'}">${hasDiscovery?'✓ Discovery durchgeführt':'○ Discovery ausstehend'}</span>
+    <span class="status-pill ${hasVisit?'status-ok':'status-open'}">${hasVisit?'✓ Termin nachbereitet':'○ Besuchsbericht ausstehend'}</span>
+    ${health&&health.provisional?'<span class="status-pill status-open">⚠ Vorläufige Bewertung</span>':''}
+  </div>
+
+  <div class="evidence-note">
+    <strong>Hinweis zur Evidenz:</strong> Dieses Dossier enthält eine Mischung aus bestätigten Kundeninformationen (BESTÄTIGT), KI-Einschätzungen (ANNAHME) und noch offenen Punkten (ZU KLÄREN / NOCH OFFEN). Bitte diese Kennzeichnungen im Text beachten.
   </div>`;
 
   for(let i=0;i<5;i++){
@@ -4006,7 +4056,7 @@ function generateKundePDF(aid, cust){
     </div>`;
   }
 
-  html+=`</body></html>`;
+  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div></body></html>`;
 
   exportHtmlAsPdf(html,'KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
 }
@@ -4354,7 +4404,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.112';
+const KI21_VERSION='v4.114';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
