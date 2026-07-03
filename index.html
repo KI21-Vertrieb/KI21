@@ -2096,7 +2096,7 @@ function renderHome(){
       onclick:async()=>{
         if(!state.activeId)return;
         revalBtn.disabled=true;
-        revalBtn.textContent='⏳ Opportunity wird neu bewertet...';
+        revalBtn.textContent='⏳ Wird aktualisiert...';
         const accId=state.activeId;
         // Alle Phasen mit vorhandenem Ergebnis neu generieren
         for(let i=0;i<5;i++){
@@ -3293,16 +3293,14 @@ function renderStation(sitId){
   const resultBox=h('div',{className:'result-box',style:{display:data.result?'block':'none'}});
   const resultHead=h('div',{className:'result-head'});
   const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
-  // Phasenspezifischer Pending-Badge aus Impact-Analyse
-  const phasePending=state.activeId?LS.get('ki21_phase_pending_'+state.activeId+'_'+sitId,null):null;
-  if(phasePending&&data.result){
-    const badge=h('span',{
+  // Globaler Pending-Badge — zeigt wenn neue Erkenntnisse seit letztem Generate vorliegen
+  const isPending=state.activeId&&LS.get('ki21_pending_'+state.activeId,false);
+  if(isPending&&data.result){
+    resultLabel.appendChild(h('span',{
       style:{marginLeft:'8px',fontSize:'9px',fontWeight:'700',color:'#ff6b00',
         background:'rgba(255,107,0,.12)',border:'1px solid rgba(255,107,0,.3)',
-        borderRadius:'4px',padding:'1px 6px',cursor:'default'},
-      title:phasePending.reason||'Neue Erkenntnisse vorhanden'
-    },'⟳ Überprüfung empfohlen');
-    resultLabel.appendChild(badge);
+        borderRadius:'4px',padding:'1px 6px'}
+    },'⟳ Neue Erkenntnisse vorhanden'));
   }
   const resultBtns=h('div',{className:'result-btns'});
   let detailsExpanded=false;
@@ -3597,7 +3595,9 @@ function renderStation(sitId){
             });
           }
           // Phase-Pending-Flag löschen nach erfolgreicher Generierung
-          if(state.activeId)LS.set('ki21_phase_pending_'+state.activeId+'_'+sitId,null);
+          if(state.activeId){
+            LS.set('ki21_phase_pending_'+state.activeId+'_'+sitId,null);
+          }
           // Isolierter Phasen-Snapshot mit sourcePhase-Tagging (async, Hintergrund)
           savePhaseSnapshot(state.activeId,sitId);
         }
@@ -3869,8 +3869,6 @@ function showNeuerKunde(initial,accId,initialTab){
       saveB.textContent='⏳ Wird aktualisiert...';
       await refreshOpportunityHealth(accId);
       markOpportunityPending(accId);
-      // Phase-spezifische Impact-Analyse im Hintergrund
-      if(currentKkSlot.trim())runPhaseImpactAnalysis(accId,currentKkSlot);
     } else {
       const id='acc_'+Date.now();
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
@@ -4472,7 +4470,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.119';
+const KI21_VERSION='v4.120';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
