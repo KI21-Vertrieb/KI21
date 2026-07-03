@@ -2080,11 +2080,25 @@ function renderHome(){
 
   // ── 2. NÄCHSTER SCHRITT KARTE ────────────────────────────────────
   // Quelle: health.open[0] als "Die eine Sache" → nächster Schritt aus Phase-Ergebnissen
+  // Nächster Schritt — sicher formuliert falls extractAfterHeader noch nicht definiert
+  const _extractSafe=(text,header)=>{
+    if(typeof extractAfterHeader==='function')return extractAfterHeader(text,header);
+    // Inline-Fallback
+    const lines=(text||'').split('\n');
+    for(let i=0;i<lines.length;i++){
+      if(lines[i].toUpperCase().includes(header.toUpperCase())){
+        const ci=lines[i].indexOf(':');
+        if(ci!==-1&&lines[i].slice(ci+1).trim())return lines[i].slice(ci+1).trim();
+        for(let j=i+1;j<lines.length;j++){if(!lines[j].trim())break;return lines[j].trim();}
+      }
+    }
+    return '';
+  };
   const naechsterSchrittText=(()=>{
     for(let i=4;i>=0;i--){
       const d=LS.get('ki21_st_'+aid+'_'+i,null);
       if(d&&d.result){
-        const line=extractAfterHeader(d.result,'NÄCHSTER SCHRITT DIESE WOCHE');
+        const line=_extractSafe(d.result,'NÄCHSTER SCHRITT DIESE WOCHE');
         if(line)return line;
       }
     }
@@ -2178,7 +2192,7 @@ function renderHome(){
     const dieSache=open.length?open[0].text:(()=>{
       for(let i=4;i>=0;i--){
         const d=LS.get('ki21_st_'+aid+'_'+i,null);
-        if(d&&d.result){const t=extractAfterHeader(d.result,'DIE EINE SACHE DIE FEHLT');if(t)return t;}
+        if(d&&d.result){const t=_extractSafe(d.result,'DIE EINE SACHE DIE FEHLT');if(t)return t;}
       }
       return null;
     })();
@@ -4500,7 +4514,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.121';
+const KI21_VERSION='v4.122';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
