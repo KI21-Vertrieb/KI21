@@ -2155,14 +2155,16 @@ function renderHome(){
     const open=(health.open||[]).slice(0,1);
 
     // Fragen: aus Phase 1 SPIN oder Phase 2 KLÄREN
+    const PROMPT_MARKERS=/^(KLÄREN|BESTÄTIGT|ANNAHME|ZU KLÄREN|ZU VALIDIEREN|NICHT BEKANNT|ÜBERHOLT|DETAILS|BRANCHENHYPOTHESE|ARBEITSWERT|SPIN-FRAGEN|LEITFRAGEN|EINSCHÄTZUNG|SCHMERZ|VERTRIEBSNOTIZEN|NÄCHSTER SCHRITT|WENN DU MORGEN|BESTÄTIGT|EMPFEHLUNG|KI-BEWERTUNG|EXECUTIVE|COCKPIT)(\s*:|\s*$)/i;
     const fragenItems=(()=>{
       const items=[];
       for(let i=1;i>=0;i--){
         const d=LS.get('ki21_st_'+aid+'_'+i,null);
         if(d&&d.result){
-          const lines=d.result.split('\n').filter(l=>
-            /^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l.trim())||l.includes('❓')
-          ).slice(0,2).map(l=>l.replace(/^[•❓\-SPIN:\s]+/i,'').trim());
+          const lines=d.result.split('\n')
+            .filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l.trim())||l.includes('❓'))
+            .map(l=>l.replace(/^[•❓\-SPIN:\s]+/i,'').trim())
+            .filter(l=>l.length>8&&!PROMPT_MARKERS.test(l)); // min 8 chars, no markers
           if(lines.length){items.push(...lines);break;}
         }
       }
@@ -2214,8 +2216,7 @@ function renderHome(){
   }
 
   // ── 4. PHASEN ALS EINFACHE TOUCH-LISTE ──────────────────────────
-  const phaseNames=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten',
-    'Wirtschaftlicher Nutzen','Angebot & Abschluss'];
+  const phaseNames=['Qualifizierung','Discovery & Demo','Nachbereitung','Nutzen / ROI','Angebot'];
   const phaseList=h('div',{className:'cockpit-phase-list'});
   phaseNames.forEach((name,i)=>{
     const status=getPhaseStatus(i);
@@ -2640,55 +2641,7 @@ function renderStation(sitId){
     // 1) Opportunity Health Hero
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
-    // 2) Entscheidungscockpit — Chancen / Risiken / Noch offene Punkte (je max. 3, echte Health-Signale).
-    //
-    // ARCHITEKTUR (v4.95): Score global, Dashboard phasenspezifisch.
-    //
-    // Primär: Phasenspezifischer Snapshot (ki21_phase_snap_{accId}_0), gespeichert beim letzten
-    // Generate dieser Phase. Zeigt exakt was beim Generieren bekannt war — spätere Phasen
-    // können diesen Stand nicht überschreiben.
-    //
-    // Fallback (vor erstem Generate): Keyword-Filter auf globalem Health.
-    // Keyword-Filter bleibt als temporäre Brücke; wird ersetzt sobald Snapshot vorhanden.
-    //
-    // Mittelfristig (noch nicht gebaut): sourcePhase-Attribut pro Signal, dann kann der Filter
-    // entfallen und der Snapshot direkt semantisch aufgebaut werden.
-    // Phase-1-Dashboard: ausschließlich phasenspezifische Datenquelle.
-    // Primärquelle: ki21_phase_snap_{accId}_0 — erzeugt von savePhaseSnapshot()
-    // mit NUR Phase-1-Ergebnistext, kein kk, keine anderen Phasen.
-    // Kein Keyword-Filter: die Datenquelle selbst ist die Grenze, nicht ein Wortfilter.
-    // Fallback auf globalen Health nur wenn noch kein Snapshot vorhanden.
-    const phaseSnap=aid?LS.get('ki21_phase_snap_'+aid+'_0',null):null;
-    const snapSrc=phaseSnap||{};
-    const phase1Positive=snapSrc.positive||(health?health.positive:[]);
-    const phase1Warning=snapSrc.warning||(health?health.warning:[]);
-    const phase1Open=snapSrc.open||[];
-
-    if(health){
-      const cockpit=h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
-      const mkCockpitCard=(title,glyph,items)=>{
-        const card=h('div',{className:'home-insights-card',style:{flex:'1 1 150px',marginTop:'0',padding:'10px'}});
-        card.appendChild(h('div',{className:'home-section-label',style:{margin:'0 0 6px'}},title));
-        const active=(items||[]).filter(s=>!s.disabled).slice(0,3);
-        if(!active.length){card.appendChild(h('div',{className:'home-empty-note'},'–'));}
-        else active.forEach(it=>{
-          const row=h('div',{className:'home-insight-row',style:{borderTop:'none',padding:'3px 0'}},
-            h('span',{},glyph),h('span',{style:{flex:1}},it.text)
-          );
-          card.appendChild(row);
-        });
-        return card;
-      };
-      cockpit.appendChild(mkCockpitCard('Chancen','✔',phase1Positive));
-      cockpit.appendChild(mkCockpitCard('Risiken','⚠',phase1Warning));
-      cockpit.appendChild(mkCockpitCard('Noch offene Punkte','•',phase1Open));
-      wrap.appendChild(cockpit);
-    }
-
-    // 3) Lead-Steckbrief entfällt hier bewusst — Kunde/Branche/MA/Ansprechpartner stehen
-    //    bereits im Home-Dashboard, keine doppelte Anzeige.
-
-    // 4) Qualifizierungscheck — dieselbe Checkliste wie im Health-Detail (11 Punkte)
+    // Qualifizierungscheck (Arbeitsbereich Phase 1) — dieselbe Checkliste wie im Health-Detail (11 Punkte)
     if(health){
       const CHECKLIST_LABELS=[
         ['need','Bedarf / Schmerz'],['budget','Budget'],['economicBuyer','Entscheider'],
@@ -2767,130 +2720,11 @@ function renderStation(sitId){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
 
-    // Health-Balken
+    // Health-Balken (kompakt, ohne Dashboard)
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
-
-    // Hilfsfunktion: mehrere Bullets nach einem Header
-    function extractBulletsAfterHeader(text,headerKeyword,maxItems){
-      const lines=(text||'').split('\n');
-      const out=[];let found=false;
-      for(let i=0;i<lines.length;i++){
-        if(!found){if(lines[i].toUpperCase().includes(headerKeyword.toUpperCase()))found=true;continue;}
-        const t=lines[i].trim();
-        if(!t)break;
-        if(/^[A-ZÄÖÜ🎯🔥❓•\-]/.test(t)&&out.length>0)break;
-        out.push(t.replace(/^[•\-]\s*/,''));
-        if(out.length>=(maxItems||3))break;
-      }
-      return out;
-    }
-
-    const einschaetzung=hasResult?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const schmerz=hasResult?extractBulletsAfterHeader(data.result,'SCHMERZ',2):[];
-    // Also try with emoji prefix variant if empty
-    const schmerzFinal=schmerz.length?schmerz:(hasResult?extractBulletsAfterHeader(data.result,'🔥',2):[]);
-    const vertriebsnotizen=hasResult?extractBulletsAfterHeader(data.result,'VERTRIEBSNOTIZEN',3):[];
-    const naechsterSchritt=hasResult?(extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE')||extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT')):'';
-    const bestaetigte=hasResult?extractBulletsAfterHeader(data.result,'BESTÄTIGT',4):[];
-    const morgen=hasResult?extractBulletsAfterHeader(data.result,'WENN DU MORGEN',3):[];
-    const topWarning=health?(health.warning||[]).find(w=>!w.disabled):null;
-
-    // Roter Faden
-    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
-      h('span',{style:{color:'#ff6b00',fontWeight:'700'}},'Phase 2 · Bedarfsanalyse & Demo'),' ',h('span',{},'· Grundlage: Qualifizierung')));
-
-    // ─── 1. EXECUTIVE DASHBOARD (4 Karten) ───────────────────────────
-    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
-    const dashGrid=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
-
-    // Kernproblem
-    const kpCard=h('div',{className:'exec-card'});
-    kpCard.appendChild(h('div',{className:'exec-card-label'},'🟢 Kernproblem'));
-    kpCard.appendChild(h('div',{className:'exec-card-val'},
-      schmerzFinal.length?schmerzFinal.join(' · '):(hasResult?'–':'Ergebnis noch offen')));
-    dashGrid.appendChild(kpCard);
-
-    // Entscheider — aus cust.ap + Health-Checkliste
-    const entCard=h('div',{className:'exec-card'});
-    entCard.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
-    const entLines=[];
-    if(cust.ap)entLines.push(cust.ap+' (Ansprechpartner)');
-    if(health&&health.checklist){
-      if(health.checklist.champion){
-        const champPos=(health.positive||[]).find(p=>/champion|fürsprecher|sponsor/i.test(p.text));
-        if(champPos)entLines.push(champPos.text);
-        else entLines.push('Champion identifiziert');
-      }
-      if(health.checklist.economicBuyer===false)entLines.push('Entscheidungsträger noch unklar');
-    }
-    entCard.appendChild(h('div',{className:'exec-card-val'},
-      entLines.length?entLines.join('\n'):'–'));
-    dashGrid.appendChild(entCard);
-
-    // Hauptrisiko
-    const riskCard=h('div',{className:'exec-card'});
-    riskCard.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
-    if(topWarning){
-      const rt=topWarning.text;const si=rt.indexOf('→ Strategie:');
-      riskCard.appendChild(h('div',{className:'exec-card-val'},si>0?rt.slice(0,si).trim():rt));
-      if(si>0)riskCard.appendChild(h('div',{className:'exec-card-val accent'},rt.slice(si+2)));
-    } else {
-      riskCard.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));
-    }
-    dashGrid.appendChild(riskCard);
-
-    // Nächster Schritt
-    const nsCard=h('div',{className:'exec-card'});
-    nsCard.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
-    nsCard.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt||'–'));
-    dashGrid.appendChild(nsCard);
-
-    wrap.appendChild(dashGrid);
-
-    if(hasResult){
-      // ─── EBENE 2: EXECUTIVE SUMMARY ──────────────────────────────────
-      // Reiner Management-Text — was ist der Stand der Opportunity?
-      if(einschaetzung){
-        wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
-        const esCard=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
-        esCard.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung));
-        wrap.appendChild(esCard);
-      }
-
-      // ─── EBENE 3: VERKAUFSSTRATEGIE ──────────────────────────────────
-      // Coaching für den Verkäufer — wie gewinnen wir diesen Deal?
-      if(vertriebsnotizen.length){
-        wrap.appendChild(h('div',{className:'home-section-label'},'Verkaufsstrategie'));
-        const stratCard=h('div',{className:'home-insights-card',style:{marginBottom:'10px'}});
-        vertriebsnotizen.forEach(n=>stratCard.appendChild(h('div',{className:'exec-interp-row',style:{borderTop:'none',paddingBottom:'5px'}},
-          h('span',{className:'exec-interp-icon'},'→'),h('span',{style:{flex:1,fontWeight:'400'}},n))));
-        wrap.appendChild(stratCard);
-      }
-
-      // ─── FOKUS NÄCHSTER TERMIN ────────────────────────────────────────
-      // Klar vom Executive-Bereich getrennt: gehört zum Arbeitsmodus
-      if(naechsterSchritt||morgen.length){
-        wrap.appendChild(h('div',{className:'exec-divider',style:{margin:'14px 0 10px'}},
-          h('div',{className:'exec-divider-line'}),
-          h('div',{className:'exec-divider-label',style:{color:'#ff6b00'}},'Fokus nächster Termin'),
-          h('div',{className:'exec-divider-line'})
-        ));
-        const coach=h('div',{className:'exec-coach',style:{marginBottom:'10px'}});
-        if(naechsterSchritt)coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},'Nächster Schritt'),
-          h('span',{className:'exec-coach-val'},naechsterSchritt)));
-        if(topWarning)coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},'Nicht tun'),
-          h('span',{className:'exec-coach-val'},'Über Funktionen sprechen, bevor Entscheidungslogik geklärt')));
-        morgen.forEach((m,i)=>coach.appendChild(h('div',{className:'exec-coach-row'},
-          h('span',{className:'exec-coach-key'},'Priorität '+(i+1)),
-          h('span',{className:'exec-coach-val'},m))));
-        wrap.appendChild(coach);
-      }
-    }
 
     // ─── TRENNLINIE ───────────────────────────────────────────────────
     wrap.appendChild(h('div',{className:'exec-divider'},
@@ -3010,71 +2844,7 @@ function renderStation(sitId){
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
-    const hasResult3=!!data.result;
-    const erkenntnis=hasResult3?extractFirstBulletAfterHeader(data.result,'DIE WICHTIGSTEN ERKENNTNISSE'):'';
-    const alleErkenntnisse=hasResult3?extractBulletsAfterHeader3(data.result,'DIE WICHTIGSTEN ERKENNTNISSE',3):[];
-    const naechsterSchritt3=hasResult3?extractFirstBulletAfterHeader(data.result,'NÄCHSTE SCHRITTE'):'';
-    const einschaetzung3=hasResult3?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const dieSacheFehlt3=hasResult3?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
-    const topWarning3=health?(health.warning||[]).find(w=>!w.disabled):null;
-
-    // Roter Faden
-    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
-      h('span',{style:{color:'#ff6b00',fontWeight:'700'}},'Phase 3 · Termin nachbereiten'),' ',h('span',{},'· Grundlage: Bedarfsanalyse')));
-
-    // Executive Dashboard
-    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
-    const grid3=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
-
-    const k3=h('div',{className:'exec-card'});
-    k3.appendChild(h('div',{className:'exec-card-label'},'🟢 Kernerkenntnisse'));
-    k3.appendChild(h('div',{className:'exec-card-val'},erkenntnis||(hasResult3?'–':'Ergebnis noch offen')));
-    grid3.appendChild(k3);
-
-    const e3=h('div',{className:'exec-card'});
-    e3.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheiderlage'));
-    const entLines3=[];
-    if(health&&health.checklist){
-      if(health.checklist.economicBuyer)entLines3.push('Entscheider bekannt');
-      if(health.checklist.champion)entLines3.push('Champion aktiv');
-    }
-    if(!entLines3.length&&health&&(health.positive||[]).find(p=>/entscheid|champion/i.test(p.text)))
-      entLines3.push((health.positive||[]).find(p=>/entscheid|champion/i.test(p.text)).text);
-    e3.appendChild(h('div',{className:'exec-card-val'},entLines3.length?entLines3.join('\n'):'–'));
-    grid3.appendChild(e3);
-
-    const r3=h('div',{className:'exec-card'});
-    r3.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
-    if(topWarning3){
-      const rt3=topWarning3.text;const si3=rt3.indexOf('→ Strategie:');
-      r3.appendChild(h('div',{className:'exec-card-val'},si3>0?rt3.slice(0,si3).trim():rt3));
-      if(si3>0)r3.appendChild(h('div',{className:'exec-card-val accent'},rt3.slice(si3+2)));
-    }else{r3.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));}
-    grid3.appendChild(r3);
-
-    const n3=h('div',{className:'exec-card'});
-    n3.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
-    n3.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt3||'–'));
-    grid3.appendChild(n3);
-    wrap.appendChild(grid3);
-
-    if(hasResult3){
-      if(einschaetzung3||dieSacheFehlt3){
-        wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
-        const es3=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-        if(einschaetzung3)es3.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung3));
-        if(dieSacheFehlt3)es3.appendChild(h('div',{style:{marginTop:einschaetzung3?'8px':'0',paddingTop:einschaetzung3?'8px':'0',borderTop:einschaetzung3?'1px solid var(--border)':'none',fontSize:'12px',color:'#f85149',fontWeight:'600'}},'⚠ '+dieSacheFehlt3));
-        wrap.appendChild(es3);
-      }
-      if(alleErkenntnisse.length>1){
-        wrap.appendChild(h('div',{className:'home-section-label'},'Erkenntnisse'));
-        const erkCard=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-        alleErkenntnisse.forEach((e,i)=>erkCard.appendChild(h('div',{className:'exec-fact-row',style:i===0?{borderTop:'none'}:{}},
-          h('span',{className:'exec-fact-icon'},'→'),h('span',{style:{flex:1}},e))));
-        wrap.appendChild(erkCard);
-      }
-    }
-    wrap.appendChild(h('div',{className:'exec-divider'},
+        wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
     wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Erkenntnisse aus diesem Termin dokumentieren.'));
   }
@@ -3089,57 +2859,7 @@ function renderStation(sitId){
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
-    const hasResult4=!!data.result;
-    const roiLine=hasResult4?extractLineContaining(data.result,'ROI:'):'';
-    const businessCase=hasResult4?extractAfterHeader(data.result,'IHR BUSINESS CASE'):'';
-    const naechsterSchritt4=hasResult4?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
-    const einschaetzung4=hasResult4?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const dieSacheFehlt4=hasResult4?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
-    const topWarning4=health?(health.warning||[]).find(w=>!w.disabled):null;
-
-    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
-      h('span',{style:{color:'#ff6b00',fontWeight:'700'}},'Phase 4 · Wirtschaftlicher Nutzen'),' ',h('span',{},'· Grundlage: Terminnachbereitung')));
-
-    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
-    const grid4=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
-
-    const bc4=h('div',{className:'exec-card'});
-    bc4.appendChild(h('div',{className:'exec-card-label'},'💰 Business Case'));
-    bc4.appendChild(h('div',{className:'exec-card-val'},roiLine||businessCase||(hasResult4?'–':'Ergebnis noch offen')));
-    grid4.appendChild(bc4);
-
-    const e4=h('div',{className:'exec-card'});
-    e4.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
-    const e4lines=[];
-    if(health&&health.checklist&&health.checklist.economicBuyer)e4lines.push('Entscheider eingebunden');
-    const champPos4=(health?health.positive||[]:[]). find(p=>/champion|fürsprecher/i.test(p.text));
-    if(champPos4)e4lines.push(champPos4.text);
-    e4.appendChild(h('div',{className:'exec-card-val'},e4lines.length?e4lines.join('\n'):'–'));
-    grid4.appendChild(e4);
-
-    const r4=h('div',{className:'exec-card'});
-    r4.appendChild(h('div',{className:'exec-card-label'},'⚠️ Hauptrisiko'));
-    if(topWarning4){
-      const rt4=topWarning4.text;const si4=rt4.indexOf('→ Strategie:');
-      r4.appendChild(h('div',{className:'exec-card-val'},si4>0?rt4.slice(0,si4).trim():rt4));
-      if(si4>0)r4.appendChild(h('div',{className:'exec-card-val accent'},rt4.slice(si4+2)));
-    }else{r4.appendChild(h('div',{className:'exec-card-val muted'},'Keine kritischen Risiken'));}
-    grid4.appendChild(r4);
-
-    const n4=h('div',{className:'exec-card'});
-    n4.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
-    n4.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt4||'–'));
-    grid4.appendChild(n4);
-    wrap.appendChild(grid4);
-
-    if(hasResult4&&(einschaetzung4||dieSacheFehlt4)){
-      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
-      const es4=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-      if(einschaetzung4)es4.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung4));
-      if(dieSacheFehlt4)es4.appendChild(h('div',{style:{marginTop:einschaetzung4?'8px':'0',paddingTop:einschaetzung4?'8px':'0',borderTop:einschaetzung4?'1px solid var(--border)':'none',fontSize:'12px',color:'#f85149',fontWeight:'600'}},'⚠ '+dieSacheFehlt4));
-      wrap.appendChild(es4);
-    }
-    wrap.appendChild(h('div',{className:'exec-divider'},
+        wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
     wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Wirtschaftlichen Nutzen und ROI ermitteln.'));
   }
@@ -3154,51 +2874,7 @@ function renderStation(sitId){
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
-    const hasResult5=!!data.result;
-    const groesstesRisiko5=hasResult5?extractAfterHeader(data.result,'DIE EINE SACHE DIE FEHLT'):'';
-    const naechsterSchritt5=hasResult5?extractAfterHeader(data.result,'NÄCHSTER SCHRITT DIESE WOCHE'):'';
-    const einschaetzung5=hasResult5?extractAfterHeader(data.result,'EINSCHÄTZUNG'):'';
-    const einwaende5=hasResult5?extractBulletsAfterHeader3(data.result,'EINWÄNDE',2):[];
-    const topWarning5=health?(health.warning||[]).find(w=>!w.disabled):null;
-
-    wrap.appendChild(h('div',{style:{fontSize:'10.5px',color:'var(--text3)',marginBottom:'10px',letterSpacing:'.3px'}},
-      h('span',{style:{color:'#ff6b00',fontWeight:'700'}},'Phase 5 · Angebot & Abschluss'),' ',h('span',{},'· Grundlage: Business Case')));
-
-    wrap.appendChild(h('div',{className:'home-section-label'},'Executive Dashboard'));
-    const grid5=h('div',{className:'exec-grid',style:{marginBottom:'12px'}});
-
-    const g5=h('div',{className:'exec-card'});
-    g5.appendChild(h('div',{className:'exec-card-label'},'⚠️ Größtes Hindernis'));
-    g5.appendChild(h('div',{className:'exec-card-val'},groesstesRisiko5||(hasResult5?'–':'Ergebnis noch offen')));
-    grid5.appendChild(g5);
-
-    const e5=h('div',{className:'exec-card'});
-    e5.appendChild(h('div',{className:'exec-card-label'},'👤 Entscheider'));
-    const e5lines=[];
-    if(health&&health.checklist&&health.checklist.economicBuyer)e5lines.push('Entscheider eingebunden');
-    const champ5=(health?health.positive||[]:[]). find(p=>/champion|fürsprecher/i.test(p.text));
-    if(champ5)e5lines.push(champ5.text);
-    e5.appendChild(h('div',{className:'exec-card-val'},e5lines.length?e5lines.join('\n'):'–'));
-    grid5.appendChild(e5);
-
-    const r5=h('div',{className:'exec-card'});
-    r5.appendChild(h('div',{className:'exec-card-label'},'🔴 Haupteinwand'));
-    r5.appendChild(h('div',{className:'exec-card-val'},einwaende5.length?einwaende5[0]:(topWarning5?topWarning5.text:'–')));
-    grid5.appendChild(r5);
-
-    const n5=h('div',{className:'exec-card'});
-    n5.appendChild(h('div',{className:'exec-card-label'},'🎯 Nächster Schritt'));
-    n5.appendChild(h('div',{className:'exec-card-val'},naechsterSchritt5||'–'));
-    grid5.appendChild(n5);
-    wrap.appendChild(grid5);
-
-    if(hasResult5&&einschaetzung5){
-      wrap.appendChild(h('div',{className:'home-section-label'},'Executive Summary'));
-      const es5=h('div',{className:'home-insights-card',style:{marginBottom:'9px'}});
-      es5.appendChild(h('div',{className:'exec-einschaetzung'},einschaetzung5));
-      wrap.appendChild(es5);
-    }
-    wrap.appendChild(h('div',{className:'exec-divider'},
+        wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
     wrap.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'16px',textAlign:'center'}},'Einwände und Abschlussstrategie entwickeln.'));
   }
@@ -4514,7 +4190,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.122';
+const KI21_VERSION='v4.123';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
