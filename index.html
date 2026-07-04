@@ -2343,16 +2343,49 @@ function getOpportunityHealth(accId){
   return applyScoreMatrixConsistencyPostProcessing(accId,applyBudgetOfferPostProcessing(accId,applyDecisionAuthorityPostProcessing(accId,_getOpportunityHealthBase(accId))));
 }
 
+function rewriteSalesQuestionText(s){
+  let q=String(s||'').trim();
+  if(!q)return '';
+  const low=q.toLowerCase();
+  // v4.151: Top-Fragen sollen wirtschaftlich klar und ohne unnötige GF-/Geschäftsführer-Abhängigkeit formuliert sein.
+  // Alte KI-Formulierungen wie "Geschäftsführer-Akzeptanz" oder "nicht mehr als diese 4 schwachen Deals" wirken verdreht.
+  const weakDeals=(q.match(/(\d+)\s*(?:schwach|schlechte|schwachen|schlecht)\s*(?:qualifizierte[nr]?\s*)?(?:deals|opportunit(?:y|ies|äten)?)/i)||[])[1];
+  if(/geschäftsführer|geschäftsführung|\bgf\b/i.test(q) && /(akzeptanz|forecast|pipeline|glaubwürdigkeit|zahlen|management)/i.test(q) && /(wenn|falls)/i.test(q)){
+    if(weakDeals){
+      return `Was kostet es euch in den nächsten 6 Monaten, wenn weiterhin ${weakDeals} schwach qualifizierte Deals pro Monat zu spät erkannt werden?`;
+    }
+    if(/forecast|pipeline|glaubwürdigkeit/i.test(q)){
+      return 'Was passiert mit Forecast-Glaubwürdigkeit und Management-Vertrauen, wenn ihr das Problem nicht löst?';
+    }
+    return 'Was passiert wirtschaftlich, wenn ihr dieses Problem in den nächsten 6 Monaten nicht löst?';
+  }
+  if(/nicht\s+mehr\s+als\s+(?:diese\s+)?\d+\s*(?:schwach|schlechte|schwachen)/i.test(q)){
+    const n=(q.match(/nicht\s+mehr\s+als\s+(?:diese\s+)?(\d+)/i)||[])[1]||weakDeals||'mehrere';
+    return `Was kostet es euch in den nächsten 6 Monaten, wenn weiterhin ${n} schwach qualifizierte Deals pro Monat zu spät erkannt werden?`;
+  }
+  // GF-Bezug in Discovery-/Need-Payoff-Fragen neutralisieren, wenn er nicht wirklich Entscheidungsgegenstand ist.
+  q=q.replace(/Geschäftsführer-Akzeptanz/gi,'Management-Akzeptanz')
+     .replace(/Geschäftsführung/gi,'Management')
+     .replace(/Geschäftsführer/gi,'Management')
+     .replace(/\bGF\b/g,'Management');
+  // Technische Integrationsfragen im Cockpit nicht als Top-Frage formulieren.
+  if(/hubspot.*integration|integration.*hubspot|spin-fragen.*aufwand|aufwand.*hubspot/i.test(q)){
+    return 'Wo gehen Discovery-Informationen heute zwischen Gespräch, Notizen und CRM verloren?';
+  }
+  return q;
+}
+
 function normalizeQuestionText(q,forPreview){
   let s=String(q||'').trim();
   // v4.150: UI-Artefakte/Bullets konsequent entfernen, damit Cockpit-Fragen sauber wirken.
   s=s.replace(/^[•\-\s⚪️⚪○◦▪▫–—]*/u,'').replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim();
   s=s.replace(/\s+/g,' ');
+  s=rewriteSalesQuestionText(s);
   if(!s)return '';
   if(forPreview){
     const low=s.toLowerCase();
     // v4.150: Für die Cockpit-Kachel zählen vertriebliche Wirkung und Discovery-Relevanz – Technikfragen werden nicht priorisiert.
-    if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(s)){
+    if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt|wenn\s+weiterhin)/i.test(s)){
       if(low.includes('discovery'))return 'Was passiert, wenn Discovery-Probleme ungelöst bleiben?';
       if(low.includes('forecast')||low.includes('pipeline'))return 'Was passiert mit Forecast und Pipeline, wenn ihr nichts verändert?';
       return 'Was passiert, wenn ihr das Problem nicht löst?';
@@ -2388,7 +2421,7 @@ function ensureExplicitNonActionImplicationLines(lines,accId){
 function questionCockpitRank(q){
   const s=String(q||'').toLowerCase();
   // v4.150: Fragen im Cockpit nach Vertriebswirkung sortieren, nicht nach technischer Reihenfolge.
-  if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(q))return 10;
+  if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt|wenn\s+weiterhin)/i.test(q))return 10;
   if(/(kosten|umsatz|geld|zeit|schaden|jahres|monat|quote|vermeidungsquote|abschlussquote|forecast|pipeline|vertriebszeit|nachqualifizierung|reparatur)/i.test(q))return 20;
   if(/(was\s+würde|was\s+wäre|verbessern|ändern|profitieren|erreichen|entlast|nutzen|wert|zielbild|wenn.*gelöst|lösen\s+würde)/i.test(q))return 30;
   if(/(discovery|qualifizier|informationen|notizen|crm|hubspot|e-mails|emails)/i.test(q))return 40;
@@ -5345,7 +5378,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.150';
+const KI21_VERSION='v4.151';
 
 
 function runKi21VersionMigration(){
