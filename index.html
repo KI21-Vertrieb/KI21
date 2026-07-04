@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.149: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.150: bessere Priorisierung der Cockpit-Fragen */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -530,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.149: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.150: bessere Priorisierung der Cockpit-Fragen */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -2345,12 +2345,19 @@ function getOpportunityHealth(accId){
 
 function normalizeQuestionText(q,forPreview){
   let s=String(q||'').trim();
-  s=s.replace(/^[•\-\s]*/,'').replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim();
+  // v4.150: UI-Artefakte/Bullets konsequent entfernen, damit Cockpit-Fragen sauber wirken.
+  s=s.replace(/^[•\-\s⚪️⚪○◦▪▫–—]*/u,'').replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim();
   s=s.replace(/\s+/g,' ');
   if(!s)return '';
   if(forPreview){
     const low=s.toLowerCase();
-    if(low.includes('discovery')&&(low.includes('hubspot')||low.includes('notizen')||low.includes('e-mails')||low.includes('emails')))return 'Wo gehen Discovery-Informationen heute verloren?';
+    // v4.150: Für die Cockpit-Kachel zählen vertriebliche Wirkung und Discovery-Relevanz – Technikfragen werden nicht priorisiert.
+    if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(s)){
+      if(low.includes('discovery'))return 'Was passiert, wenn Discovery-Probleme ungelöst bleiben?';
+      if(low.includes('forecast')||low.includes('pipeline'))return 'Was passiert mit Forecast und Pipeline, wenn ihr nichts verändert?';
+      return 'Was passiert, wenn ihr das Problem nicht löst?';
+    }
+    if(low.includes('discovery')&&(low.includes('hubspot')||low.includes('notizen')||low.includes('e-mails')||low.includes('emails')||low.includes('crm')))return 'Wo gehen Discovery-Informationen heute verloren?';
     if(low.includes('nachqualifizierung')||low.includes('reparatur'))return 'Wie viel Zeit kostet Nachqualifizierung pro Deal?';
     if(low.includes('discovery-fehler')||low.includes('deals später scheitern')||low.includes('verzögern'))return 'Welche Discovery-Fehler verzögern Abschlüsse?';
     if(low.includes('vermeidungsquote'))return 'Welche Vermeidungsquote hält der Entscheider für realistisch?';
@@ -2378,11 +2385,26 @@ function ensureExplicitNonActionImplicationLines(lines,accId){
   if(idx>=0)out.splice(idx+1,0,required); else out.push(required);
   return out;
 }
-function prioritizeNonActionQuestions(qs){
+function questionCockpitRank(q){
+  const s=String(q||'').toLowerCase();
+  // v4.150: Fragen im Cockpit nach Vertriebswirkung sortieren, nicht nach technischer Reihenfolge.
+  if(/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|ungelöst\s+bleib|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(q))return 10;
+  if(/(kosten|umsatz|geld|zeit|schaden|jahres|monat|quote|vermeidungsquote|abschlussquote|forecast|pipeline|vertriebszeit|nachqualifizierung|reparatur)/i.test(q))return 20;
+  if(/(was\s+würde|was\s+wäre|verbessern|ändern|profitieren|erreichen|entlast|nutzen|wert|zielbild|wenn.*gelöst|lösen\s+würde)/i.test(q))return 30;
+  if(/(discovery|qualifizier|informationen|notizen|crm|hubspot|e-mails|emails)/i.test(q))return 40;
+  if(/(integration|aufwand|setup|einbauen|technisch|implementier|trainer|hubspot)/i.test(q))return 90;
+  return 60;
+}
+function prioritizeCockpitQuestions(qs){
   const arr=(qs||[]).filter(Boolean);
-  const hit=arr.find(q=>/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(String(q)));
-  if(!hit)return arr;
-  return [hit,...arr.filter(q=>q!==hit)];
+  return arr
+    .map((q,i)=>({q,i,r:questionCockpitRank(q)}))
+    .sort((a,b)=>(a.r-b.r)||(a.i-b.i))
+    .map(x=>x.q);
+}
+function prioritizeNonActionQuestions(qs){
+  // Abwärtskompatibilität: alter Name bleibt bestehen, nutzt aber jetzt die vollständige Cockpit-Priorisierung.
+  return prioritizeCockpitQuestions(qs);
 }
 
 function extractQuestionsFromText(text){
@@ -2406,14 +2428,14 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   if(p1&&p1.result2)sources.push(p1.result2);
   if(p1&&p1.result)sources.push(p1.result);
   let qs=[];
+  // v4.150: Alle verfügbaren Quellen zusammenführen. Nicht nach der ersten Quelle abbrechen,
+  // sonst können stärkere I-/N-Fragen durch technische oder ältere Fragen verdrängt werden.
   for(const src of sources){
-    qs=extractQuestionsFromText(src);
-    if(qs.length)break;
+    qs=qs.concat(extractQuestionsFromText(src));
   }
   qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
   qs=[...new Set(qs)];
-  // v4.149: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
-  qs=prioritizeNonActionQuestions(qs);
+  qs=prioritizeCockpitQuestions(qs);
   return qs.slice(0,maxItems||3);
 }
 
@@ -5323,7 +5345,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.149';
+const KI21_VERSION='v4.150';
 
 
 function runKi21VersionMigration(){
