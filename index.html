@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.148: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.149: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -530,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.148: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.149: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -2104,8 +2104,8 @@ function getConfirmedDecisionMakerName(accId){
 function isObsoleteGfCfoText(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
-  const mentionsGf=/(geschäftsführer|gf|cfo|ceo|geschäftsleitung)/i.test(s);
-  const obsolete=/(freigabe|validier|bestätig|kennt|klären|gespräch|einbindung|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt)/i.test(s);
+  const mentionsGf=/(geschäftsführer|geschäftsführung|geschäftsleitung|gf|cfo|ceo)/i.test(s);
+  const obsolete=/(freigabe|validier|bestätig|kennt|klären|gespräch|einbindung|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt|quote|verbesserung|rechtfertigt|schaden|jahresschaden|umsatzverlust|budget)/i.test(s);
   return mentionsGf&&obsolete;
 }
 
@@ -2192,10 +2192,11 @@ function hasLowKi21PilotUnderBudget(accId){return hasKnownOfferUnderBudget(accId
 function isObsoleteBudgetPriceConfusion(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
-  const moneyBudget=/(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60\s*k|50\s*k|60\.000).{0,120}(budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert)|(?:budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert).{0,120}(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60\s*k|50\s*k|60\.000)/i.test(s);
-  return /pass(t|ung|en)?.{0,100}(budget|budgetrahmen|budgetgrenze|50|60|k€|000|preisstruktur)/i.test(s)
-    || /(preisstruktur|preismodell|kosten|investition|angebotspreis).{0,120}(budget|50|60|k€|000|validiert|offen|unklar|klären|passt|machbar)/i.test(s)
-    || /(budget|budgetrahmen|budgetgrenze).{0,120}(offen|unklar|hürde|kritisch|passt nicht|machbar\?|validiert)/i.test(s)
+  const budgetAmount='(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60\s*k|50\s*k|60\.000|60\.000\s*€|60\s*000\s*€)';
+  const moneyBudget=new RegExp(budgetAmount+'.{0,150}(budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert|machbar)|(?:budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert|machbar).{0,150}'+budgetAmount,'i').test(s);
+  return /pass(t|ung|en)?.{0,120}(budget|budgetrahmen|budgetgrenze|50|60|k€|000|preisstruktur|preismodell)/i.test(s)
+    || /(preisstruktur|preismodell|kosten|investition|angebotspreis|lizenzkosten|lizenzgebühr).{0,150}(budget|50|60|k€|000|validiert|offen|unklar|klären|passt|machbar|rechtfertig)/i.test(s)
+    || /(budget|budgetrahmen|budgetgrenze).{0,150}(offen|unklar|hürde|kritisch|passt nicht|machbar\?|validiert|preismodell|preisstruktur)/i.test(s)
     || moneyBudget
     || /(budgethürde|budget hürde|budget kritisch|passt nicht ins budget|ins budget\?)/i.test(s);
 }
@@ -2267,7 +2268,8 @@ function sanitizeDashboardTextForDecisionAuthority(accId,text,kind){
   return text;
 }
 function applyDecisionAuthorityPostProcessing(accId,health){
-  if(!health||!hasConfirmedFullDecisionAuthority(accId))return health;
+  const authorityDetected=hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(health);
+  if(!health||!authorityDetected)return health;
   const copy={...health};
   const cleanArr=(arr)=>(arr||[]).filter(x=>!isObsoleteGfCfoText(x&&x.text?x.text:x));
   copy.positive=cleanArr(copy.positive);
@@ -2318,7 +2320,7 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
 
   let floor=0;
 
-  // v4.148: Score und Matrix konsistent halten.
+  // v4.149: Score und Matrix konsistent halten.
   // Wenn die Kernkriterien positiv sind und nur normale Bremsen offen sind,
   // darf der Score nicht wie eine schwache Opportunity wirken.
   if(!hardRisk&&authority&&budget&&concretePain)floor=Math.max(floor,65);
@@ -2410,7 +2412,7 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   }
   qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
   qs=[...new Set(qs)];
-  // v4.148: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
+  // v4.149: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
   qs=prioritizeNonActionQuestions(qs);
   return qs.slice(0,maxItems||3);
 }
@@ -2467,7 +2469,17 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
     return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären';
   }
   x=sanitizeBudgetPriceText(accId,x,kind);
+  // Nach der Budget-Säuberung nochmals prüfen: alte Budget-Fit-Fragen dürfen im Cockpit nicht sichtbar bleiben,
+  // sobald ein passender Angebotsbaustein oder ein belastbares Budgetsignal vorhanden ist.
+  if(isObsoleteBudgetPriceConfusion(x) && (budgetFit||budgetSignal||fit.fits)){
+    if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt im Budgetrahmen';
+    if(kind==='warning'||kind==='risk')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Angebotsumfang noch nicht verbindlich festgelegt';
+    return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären';
+  }
   if(authority&&isObsoleteGfCfoText(x)){
+    if(/80\.?000|80000|schaden|jahresschaden|umsatzverlust|quote|vermeidungsquote|roi/i.test(x)){
+      return (kind==='warning'||kind==='risk')?'Wirtschaftliche Wirkung mit Entscheider validieren':'Vermeidungsquote mit Entscheider validieren';
+    }
     if(kind==='missing'||kind==='open')return 'Wirtschaftlichen Nutzen mit Entscheider validieren';
     if(kind==='warning'||kind==='risk')return 'Formale Beauftragung / Startentscheidung noch offen';
     return '';
@@ -2530,6 +2542,13 @@ function buildCockpitMatrixData(accId,health){
   if(authorityContext&&!hasTextInList(finalOpen,/wirtschaft|nutzen|vermeidungsquote|pilot|start/i)){
     finalOpen.push('Wirtschaftlichen Nutzen und Pilotkriterien validieren');
   }
+  // v4.149: absolute finale Cockpit-Sperre gegen alte Budget-/GF-Rückfälle aus gecachten Health-Texten.
+  finalPositive=cleanFinal(finalPositive,'positive');
+  finalRisks=cleanFinal(finalRisks,'warning').filter(t=>!(authorityContext&&isObsoleteGfCfoText(t))).filter(t=>!(lowPilotUnderBudget&&isObsoleteBudgetPriceConfusion(t)));
+  finalOpen=cleanFinal(finalOpen,'open').filter(t=>!(authorityContext&&isObsoleteGfCfoText(t))).filter(t=>!(lowPilotUnderBudget&&isObsoleteBudgetPriceConfusion(t)));
+  if(lowPilotUnderBudget&&!hasTextInList(finalPositive,/angebot|startangebot|budgetrahmen|budget/i))finalPositive.push('Startangebot liegt klar im Budgetrahmen');
+  if((health.score||0)<70&&finalRisks.length===0)finalRisks.push('ROI-Annahme / Vermeidungsquote noch nicht gemessen');
+  if(!finalOpen.length)finalOpen.push(authorityContext?'Wirtschaftlichen Nutzen mit Entscheider validieren':'Wirtschaftlichen Entscheider validieren');
   return {
     positive:shortUniqueList(finalPositive,4),
     risks:shortUniqueList(finalRisks,4),
@@ -3581,7 +3600,7 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
           let cleanLines=spinResult.split('\n')
             .map(l=>l.trim())
             .filter(l=>/^[SPIN]\s*[:\-–]/i.test(l));
-          // v4.148: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
+          // v4.149: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
           // Prompt allein reicht nicht zuverlässig; deshalb deterministisch nachschärfen.
           cleanLines=ensureExplicitNonActionImplicationLines(cleanLines, LS.get('ki21_active',''));
           freshData.fv['spin']=cleanLines.join('\n');
@@ -5304,7 +5323,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.148';
+const KI21_VERSION='v4.149';
 
 
 function runKi21VersionMigration(){
