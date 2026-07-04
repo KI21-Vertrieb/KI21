@@ -367,7 +367,7 @@ select option{background:var(--bg3);}
 
 
 
-/* v4.130 Cockpit Mobile Compact Patch */
+/* v4.131 Cockpit Mobile Compact Patch */
 .cockpit-next-card{padding:10px 12px !important;margin-bottom:8px !important;border-radius:12px !important;}
 .cockpit-next-eyebrow{font-size:8.5px !important;letter-spacing:.9px !important;margin-bottom:4px !important;}
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11.5px !important;line-height:1.28 !important;margin-bottom:8px !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
@@ -388,7 +388,7 @@ select option{background:var(--bg3);}
 }
 
 
-/* v4.130: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.131: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -396,6 +396,11 @@ select option{background:var(--bg3);}
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11px !important;line-height:1.22 !important;margin-bottom:7px !important;-webkit-line-clamp:2 !important;}
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
+
+
+/* v4.131: Cockpit-Matrix dichter befüllen und weniger leer wirken */
+.cockpit-tile{min-height:118px !important;}
+.cockpit-tile-empty{opacity:.85 !important;}
 
 </style>
 </head>
@@ -1820,7 +1825,7 @@ function _getOpportunityHealthBase(accId){
 
 
 
-// v4.130 Deterministische Nachkorrektur: bestätigte Entscheidungsbefugnis schlägt alte Phasentexte.
+// v4.131 Deterministische Nachkorrektur: bestätigte Entscheidungsbefugnis schlägt alte Phasentexte.
 function getCurrentUserKnowledgeText(accId){
   if(!accId)return '';
   let parts=[];
@@ -1948,6 +1953,74 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
   qs=[...new Set(qs)];
   return qs.slice(0,maxItems||3);
+}
+
+
+
+// v4.131 Cockpit-Matrix-Auffüllung: Dashboard darf nicht leer wirken.
+// Wenn Score < 70, aber keine formalen Risiken vorhanden sind, werden die sichtbaren Bremsfaktoren
+// aus offenen Punkten und bestätigten Lücken abgeleitet. Das ist Anzeige-Logik, kein neuer KI-Score.
+function shortUniqueList(items,maxItems){
+  const seen=new Set();
+  const out=[];
+  (items||[]).forEach(item=>{
+    const text=String(item&&item.text?item.text:item||'').replace(/→ Strategie:.*/,'').trim();
+    if(!text)return;
+    const key=text.toLowerCase().replace(/[.,;:!?]/g,'');
+    if(seen.has(key))return;
+    seen.add(key);
+    out.push(text);
+  });
+  return out.slice(0,maxItems||3);
+}
+function hasTextInList(list,pattern){
+  return (list||[]).some(t=>pattern.test(String(t||'')));
+}
+function buildCockpitMatrixData(accId,health){
+  const raw=getCurrentUserKnowledgeText(accId).toLowerCase();
+  const positives=shortUniqueList((health.positive||[]).filter(s=>!s.disabled).map(s=>s.text),4);
+  const risks=shortUniqueList((health.warning||[]).filter(s=>!s.disabled).map(s=>s.text),4);
+  const open=shortUniqueList((health.open||[]).map(s=>s.text),4);
+
+  // Chancen aus bestätigten harten Fakten ergänzen, falls die KI-Liste zu dünn ist.
+  if(hasConfirmedFullDecisionAuthority(accId)&&!hasTextInList(positives,/entscheidungsbefugnis|entscheider/i)){
+    positives.unshift('Entscheidungsbefugnis bestätigt');
+  }
+  if(/budget|freigabe|pilotstart|beauftragung/.test(raw)&&!hasTextInList(positives,/budget/i)){
+    positives.push('Budgetrahmen vorhanden');
+  }
+  if(/80\.000|80000|schmerz|vermeidungsquote|schlechte deals|qualifizierte deals|discovery/.test(raw)&&!hasTextInList(positives,/schmerz|bedarf|nutzen/i)){
+    positives.push('Schmerz konkret benannt');
+  }
+
+  // Wenn der Score sichtbar mittelmäßig ist, darf die Matrix nicht "keine Risiken" zeigen.
+  // Dann sind fehlender Business Case, Pilotstart oder Vertragsprozess Bremsfaktoren.
+  if((health.score||0)<70 && risks.length===0){
+    if(!hasTextInList(open,/wirtschaft|nutzen|business|roi|vermeidungsquote/i)){
+      risks.push('Business Case noch nicht belastbar');
+    }
+    if(!hasTextInList(open,/pilot|start|zeitplan/i)){
+      risks.push('Pilotstart noch nicht verbindlich');
+    }
+    if(!hasTextInList(open,/vertrag|beschaffung|einkauf|paper/i)){
+      risks.push('Vertragsprozess noch offen');
+    }
+  }
+
+  // Offene Punkte auffüllen, damit "Die eine Sache" nicht leer oder zu generisch bleibt.
+  if(!hasTextInList(open,/wirtschaft|nutzen|business|roi|vermeidungsquote/i)){
+    open.push(hasConfirmedFullDecisionAuthority(accId)
+      ? 'Wirtschaftlichen Nutzen mit Entscheider validieren'
+      : 'Wirtschaftlichen Entscheider validieren');
+  }
+  if((health.score||0)<70 && !hasTextInList(open,/pilot|start/i))open.push('Pilotstart konkretisieren');
+  if((health.score||0)<70 && !hasTextInList(open,/vertrag|beschaffung|einkauf|paper/i))open.push('Vertragsprozess klären');
+
+  return {
+    positive:shortUniqueList(positives,4),
+    risks:shortUniqueList(risks,4),
+    open:shortUniqueList(open,4)
+  };
 }
 
 function extractBulletsAfterHeader3(text,headerKeyword,maxItems){
@@ -2491,9 +2564,10 @@ function renderHome(){
 
   // ── 3. VIER COCKPIT-KACHELN 2×2 ─────────────────────────────────
   if(cust.firma&&health){
-    const pos=(health.positive||[]).filter(s=>!s.disabled).slice(0,2);
-    const warn=(health.warning||[]).filter(s=>!s.disabled).slice(0,2);
-    const open=(health.open||[]).slice(0,1);
+    const matrix=buildCockpitMatrixData(aid,health);
+    const pos=matrix.positive.slice(0,3);
+    const warn=matrix.risks.slice(0,3);
+    const open=matrix.open.slice(0,2);
 
     // Fragen: aus Phase 1 SPIN oder Phase 2 KLÄREN
     const PROMPT_MARKERS=/^(KLÄREN|BESTÄTIGT|ANNAHME|ZU KLÄREN|ZU VALIDIEREN|NICHT BEKANNT|ÜBERHOLT|DETAILS|BRANCHENHYPOTHESE|ARBEITSWERT|SPIN-FRAGEN|LEITFRAGEN|EINSCHÄTZUNG|SCHMERZ|VERTRIEBSNOTIZEN|NÄCHSTER SCHRITT|WENN DU MORGEN|BESTÄTIGT|EMPFEHLUNG|KI-BEWERTUNG|EXECUTIVE|COCKPIT)(\s*:|\s*$)/i;
@@ -2506,16 +2580,17 @@ function renderHome(){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
       } else {
         items.forEach(it=>tile.appendChild(h('div',{className:'cockpit-tile-item '+(cls||'')},it)));
-        const total=cls==='chance'?(health.positive||[]).filter(s=>!s.disabled).length:
-          cls==='risk'?(health.warning||[]).filter(s=>!s.disabled).length:0;
-        if(total>2)tile.appendChild(h('div',{className:'cockpit-tile-more'},'+ '+(total-2)+' weitere'));
+        const total=cls==='chance'?matrix.positive.length:
+          cls==='risk'?matrix.risks.length:0;
+        const visibleCount=items.length;
+        if(total>visibleCount)tile.appendChild(h('div',{className:'cockpit-tile-more'},'+ '+(total-visibleCount)+' weitere'));
       }
       return tile;
     };
 
-    const allPos=(health.positive||[]).filter(s=>!s.disabled);
-    const allWarn=(health.warning||[]).filter(s=>!s.disabled);
-    const allOpen=(health.open||[]);
+    const allPos=matrix.positive.map(text=>({text}));
+    const allWarn=matrix.risks.map(text=>({text}));
+    const allOpen=matrix.open.map(text=>({text}));
 
     // "Die eine Sache": aus offenen Punkten oder Phase-Ergebnis
     let dieSache=allOpen.length?allOpen[0].text:(()=>{
@@ -2530,12 +2605,12 @@ function renderHome(){
     const erkTile=mkTile('Erkenntnisse',pos.map(s=>s.text),'chance','Noch keine Erkenntnisse',
       ()=>showBottomSheet('Wichtigste Erkenntnisse',
         allPos.map(s=>({glyph:'✔',text:s.text})),'Noch keine bestätigten Erkenntnisse.'));
-    const riskTile=mkTile('Größte Risiken',warn.map(s=>s.text.replace(/→ Strategie:.*/,'').trim()),'risk','Keine Risiken erkannt',
+    const riskTile=mkTile('Risiken / Bremsen',warn.map(s=>s.text.replace(/→ Strategie:.*/,'').trim()),'risk','Keine Bremsfaktoren erkannt',
       ()=>showBottomSheet('Größte Risiken',
         allWarn.map(s=>{
           const t=s.text;const si=t.indexOf('→ Strategie:');
           return si>0?{glyph:'⚠',text:t.slice(0,si).trim(),sub:t.slice(si+2)}:{glyph:'⚠',text:t};
-        }),'Keine aktiven Risiken.'));
+        }),'Keine aktiven Risiken oder Bremsfaktoren.'));
 
     const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
       onclick:()=>showBottomSheet('Noch offene Punkte',
@@ -2803,7 +2878,7 @@ function exportAutopilotPDF(cust,dossierResults){
     @media print{body{padding:10px;}}
   
 
-/* v4.130: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.131: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -4164,7 +4239,7 @@ function generateKundePDF(aid, cust){
     @media print{body{padding:10px;}}
   
 
-/* v4.130: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.131: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -4297,7 +4372,7 @@ function showPDF(title,text,cust){
   @media print{body{margin:20px;}.no-print{display:none;}}
 
 
-/* v4.130: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.131: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -4577,7 +4652,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.130';
+const KI21_VERSION='v4.131';
 
 
 function runKi21VersionMigration(){
