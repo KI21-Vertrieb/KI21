@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.146: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.147: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -530,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.146: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.147: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -1021,7 +1021,7 @@ P (PROBLEM) = SCHWIERIGKEITEN UND ENGPÄSSE. Lass den Kunden selbst benennen, wa
 
 I (IMPLICATION) = KONSEQUENZEN DES PROBLEMS. Mach die Kosten/Folgen des ungelösten Problems sichtbar.
 ✅ Erlaubt: "Was passiert, wenn ein Angebot einen Tag zu spät kommt?" / "Wie viele Abschlüsse verzögern sich dadurch?" / "Was kostet diese manuelle Arbeit pro Woche in Stunden?"
-✅ PFLICHT: Mindestens eine I-Frage muss die Folgen des Nicht-Handelns adressieren: "Was passiert, wenn das Problem nicht gelöst wird?" bzw. "Was kostet es, wenn der heutige Zustand die nächsten Monate bleibt?"
+✅ PFLICHT: Mindestens eine I-Frage muss EXPLIZIT nach Nicht-Handeln fragen und eine klare Formulierung enthalten wie: "Was passiert, wenn ihr das Problem nicht löst?" oder "Was passiert, wenn ihr nichts verändert?". Eine reine Bleibt-Frage ist zu schwach, wenn "nicht lösen / nichts verändern" fehlt.
 ❌ VERBOTEN: Lösungsvorschläge, Features nennen.
 
 N (NEED-PAYOFF) = NUTZEN SICHTBAR MACHEN. Der Kunde beschreibt, was besser wäre.
@@ -2317,7 +2317,7 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
 
   let floor=0;
 
-  // v4.146: Score und Matrix konsistent halten.
+  // v4.147: Score und Matrix konsistent halten.
   // Wenn die Kernkriterien positiv sind und nur normale Bremsen offen sind,
   // darf der Score nicht wie eine schwache Opportunity wirken.
   if(!hardRisk&&authority&&budget&&concretePain)floor=Math.max(floor,65);
@@ -2356,6 +2356,32 @@ function normalizeQuestionText(q,forPreview){
   }
   return s;
 }
+
+function isExplicitNonActionImplication(q){
+  const s=String(q||'').toLowerCase();
+  return /^[\s•\-]*i\s*[:\-–]/i.test(String(q||'')) && /\b(wenn|falls)\b/.test(s) && /(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt|weiterhin)/i.test(s);
+}
+function buildExplicitNonActionQuestion(accId){
+  const raw=(getCurrentUserKnowledgeText(accId)||'').toLowerCase();
+  if(/forecast|pipeline|opportunit/i.test(raw))return 'I: Was passiert mit Forecast, Pipeline-Qualität und Vertriebszeit, wenn ihr dieses Problem in den nächsten 6 Monaten nicht löst?';
+  if(/discovery|qualifizier/i.test(raw))return 'I: Was passiert mit Discovery-Qualität, Abschlussquote und Vertriebszeit, wenn ihr an der heutigen Qualifizierung nichts verändert?';
+  return 'I: Was passiert in den nächsten 6 Monaten, wenn ihr dieses Problem nicht löst und der heutige Zustand bleibt?';
+}
+function ensureExplicitNonActionImplicationLines(lines,accId){
+  let out=(lines||[]).map(x=>String(x||'').trim()).filter(Boolean);
+  if(out.some(isExplicitNonActionImplication))return out;
+  const idx=out.findIndex(l=>/^[\s•\-]*i\s*[:\-–]/i.test(l));
+  const required=buildExplicitNonActionQuestion(accId);
+  if(idx>=0)out.splice(idx+1,0,required); else out.push(required);
+  return out;
+}
+function prioritizeNonActionQuestions(qs){
+  const arr=(qs||[]).filter(Boolean);
+  const hit=arr.find(q=>/(nicht\s+(löst|gelöst|angeht|verändert|macht|adressiert|klärt)|nichts\s+(ändert|verändert|passiert|macht)|unverändert\s+bleibt|so\s+bleibt|zustand\s+bleibt)/i.test(String(q)));
+  if(!hit)return arr;
+  return [hit,...arr.filter(q=>q!==hit)];
+}
+
 function extractQuestionsFromText(text){
   const out=[];
   const lines=String(text||'').split('\n');
@@ -2383,6 +2409,8 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   }
   qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
   qs=[...new Set(qs)];
+  // v4.147: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
+  qs=prioritizeNonActionQuestions(qs);
   return qs.slice(0,maxItems||3);
 }
 
@@ -3495,7 +3523,7 @@ P (PROBLEM): Lass den Kunden selbst benennen, was ihn stört. Frage nach Schwier
 
 I (IMPLICATION): Mach die Konsequenzen des Problems sichtbar. Kosten, Verzögerungen, Risiken.
   ✅ "Was passiert, wenn ein Angebot einen Tag zu spät kommt?"
-  ✅ PFLICHT: Stelle mindestens eine Nicht-Handeln-Frage: "Was passiert, wenn dieses Problem nicht gelöst wird?" oder "Was kostet es, wenn der heutige Zustand in den nächsten Monaten bleibt?"
+  ✅ PFLICHT: Stelle mindestens eine EXPLIZITE Nicht-Handeln-Frage mit klarer Formulierung wie "wenn ihr dieses Problem nicht löst" oder "wenn ihr nichts verändert". Nicht nur indirekt "wenn der Zustand bleibt" fragen.
 
 N (NEED-PAYOFF): Lass den Kunden den Nutzen einer Lösung beschreiben.
   ✅ "Was würde sich ändern, wenn diese Information sofort verfügbar wäre?"
@@ -3504,7 +3532,7 @@ KUNDENDATEN (nur diese – kein weiterer Kontext):
 ${isolatedCtx}
 
 Generiere jetzt 5–7 SPIN-Fragen. Jede Frage auf einer Zeile, Format "Buchstabe: Frage".
-Mindestens eine I-Frage muss ausdrücklich nach den Folgen des Nicht-Handelns fragen.
+Mindestens eine I-Frage muss ausdrücklich nach den Folgen des Nicht-Handelns fragen und die Wörter "nicht löst" oder "nichts verändert" enthalten.
 Nur die Fragen, keine Erklärungen, keine Einleitung.`;
 
     (async()=>{
@@ -3513,9 +3541,12 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
         if(spinResult){
           const freshData=LS.get(nextKEY,{fv:{},result:''});
           // Bereinige Output: nur Zeilen mit echtem SPIN-Letter-Pattern
-          const cleanLines=spinResult.split('\n')
+          let cleanLines=spinResult.split('\n')
             .map(l=>l.trim())
             .filter(l=>/^[SPIN]\s*[:\-–]/i.test(l));
+          // v4.147: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
+          // Prompt allein reicht nicht zuverlässig; deshalb deterministisch nachschärfen.
+          cleanLines=ensureExplicitNonActionImplicationLines(cleanLines, LS.get('ki21_active',''));
           freshData.fv['spin']=cleanLines.join('\n');
           LS.set(nextKEY,freshData);
           // Re-render nur wenn Nutzer noch auf Phase 2 ist
@@ -3524,9 +3555,10 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
       }catch(e){
         // Fallback: extrahiere SPIN-Zeilen aus Phase-1-Ergebnis (alter Mechanismus)
         const freshData=LS.get(nextKEY,{fv:{},result:''});
-        const fallbackLines=result.split('\n')
+        let fallbackLines=result.split('\n')
           .map(l=>l.trim())
           .filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l));
+        fallbackLines=ensureExplicitNonActionImplicationLines(fallbackLines, LS.get('ki21_active',''));
         freshData.fv['spin']=fallbackLines.join('\n')||result.slice(0,800);
         LS.set(nextKEY,freshData);
         if(LS.get('ki21_view','')!=='home')renderStation(toId);
@@ -5235,7 +5267,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.146';
+const KI21_VERSION='v4.147';
 
 
 function runKi21VersionMigration(){
