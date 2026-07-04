@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.145: generische Budget-/Angebotslogik, Pilotrollen, SPIN-Nicht-Handeln */
+/* v4.146: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -530,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.145: generische Budget-/Angebotslogik, Pilotrollen, SPIN-Nicht-Handeln */
+/* v4.146: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -2290,16 +2290,45 @@ function hasQuantifiedPainSignal(accId,health){
   const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
   return /(80\.?000|80000|jahresschaden|jahresverlust|umsatzverlust|vermeidungsquote|4\s*(schlechte|verlorene|qualifizierte)?\s*deals|deals\/monat|pro monat)/i.test(raw);
 }
+function hasConfirmedBudgetSignal(accId,health){
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
+  return /(operatives budget vorhanden|budget vorhanden|budgetrahmen.{0,40}(vorhanden|bestätigt|verfügbar)|budget.{0,40}(vorhanden|bestätigt|verfügbar|freigegeben)|"budget"\s*:\s*true)/i.test(raw);
+}
+function hasConcretePainSignal(accId,health){
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
+  return hasQuantifiedPainSignal(accId,health)||/(schmerz.{0,50}(konkret|benannt|bestätigt|quantifiziert)|konkreter schmerz|problem.{0,40}(konkret|benannt|bestätigt))/i.test(raw);
+}
+function hasHardVisibleRisk(accId,health){
+  const all=[...(health.warning||[]),...(health.open||[])].map(x=>String(x&&x.text?x.text:x)).join(' | ').toLowerCase();
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+all).toLowerCase();
+  return /(entscheider.{0,40}(unklar|fehlt|offen)|kein budget|budget.{0,30}(fehlt|gestrichen|nicht vorhanden)|projekt.{0,40}(gestoppt|verschoben|pausiert)|wettbewerber.{0,50}(bevorzugt|favorisiert|gesetzt)|no[- ]?decision|keine nächste aktion|kein konkreter schmerz|schmerz.{0,30}(unklar|fehlt)|entscheidung.{0,30}(blockiert|unwahrscheinlich)|rechtliche sperre|procurement blockiert)/i.test(raw);
+}
 function applyScoreMatrixConsistencyPostProcessing(accId,health){
   if(!health)return health;
   const copy={...health};
   if(copy.isKo)return copy;
+
   const authority=hasConfirmedFullDecisionAuthority(accId);
-  const lowPilotUnderBudget=hasLowKi21PilotUnderBudget(accId);
-  const pain=hasQuantifiedPainSignal(accId,copy);
+  const budget=hasConfirmedBudgetSignal(accId,copy);
+  const offerUnderBudget=hasKnownOfferUnderBudget(accId);
+  const quantifiedPain=hasQuantifiedPainSignal(accId,copy);
+  const concretePain=hasConcretePainSignal(accId,copy);
+  const hardRisk=hasHardVisibleRisk(accId,copy);
+
   let floor=0;
-  if(authority&&lowPilotUnderBudget)floor=60;
-  if(authority&&lowPilotUnderBudget&&pain)floor=65;
+
+  // v4.146: Score und Matrix konsistent halten.
+  // Wenn die Kernkriterien positiv sind und nur normale Bremsen offen sind,
+  // darf der Score nicht wie eine schwache Opportunity wirken.
+  if(!hardRisk&&authority&&budget&&concretePain)floor=Math.max(floor,65);
+  if(!hardRisk&&authority&&budget&&quantifiedPain)floor=Math.max(floor,65);
+  if(!hardRisk&&authority&&budget&&concretePain&&offerUnderBudget)floor=Math.max(floor,68);
+  if(!hardRisk&&authority&&budget&&quantifiedPain&&offerUnderBudget)floor=Math.max(floor,70);
+
+  // Rückwärtskompatibilität mit alter Angebotsregel.
+  if(!hardRisk&&authority&&offerUnderBudget)floor=Math.max(floor,60);
+  if(!hardRisk&&authority&&offerUnderBudget&&quantifiedPain)floor=Math.max(floor,65);
+
   if(floor&&Number(copy.score||0)<floor){
     copy.score=floor;
     copy.label=floor>=70?'Gesund':'Stabil';
@@ -5206,7 +5235,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.145';
+const KI21_VERSION='v4.146';
 
 
 function runKi21VersionMigration(){
