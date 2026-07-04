@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.137: Budgetrahmen, KI21-Angebotspreis und Entscheiderbefugnis werden deterministisch im Cockpit getrennt */
+/* v4.140: Phasen-Löschen robust gemacht; Score-Untergrenzen halten Cockpit-Logik konsistent mit Entscheider, Budget und quantifiziertem Schmerz */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -389,7 +389,7 @@ select option{background:var(--bg3);}
 
 
 
-/* v4.137 Cockpit Mobile Compact Patch */
+/* v4.139 Cockpit Mobile Compact Patch */
 .cockpit-next-card{padding:10px 12px !important;margin-bottom:8px !important;border-radius:12px !important;}
 .cockpit-next-eyebrow{font-size:8.5px !important;letter-spacing:.9px !important;margin-bottom:4px !important;}
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11.5px !important;line-height:1.28 !important;margin-bottom:8px !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
@@ -410,7 +410,7 @@ select option{background:var(--bg3);}
 }
 
 
-/* v4.137: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.139: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -420,9 +420,22 @@ select option{background:var(--bg3);}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
 
 
-/* v4.137: Cockpit-Matrix dichter befüllen und weniger leer wirken */
+/* v4.139: Cockpit-Matrix dichter befüllen und weniger leer wirken */
 .cockpit-tile{min-height:118px !important;}
 .cockpit-tile-empty{opacity:.85 !important;}
+
+
+/* v4.139 UI polish: abgeschlossene Phasen nur über grüne Nummer kennzeichnen; Detailfunktion der Matrix sichtbar machen */
+.cockpit-tile-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.cockpit-tile-header .cockpit-tile-label{margin-bottom:0 !important;}
+.cockpit-tile-expand{width:18px;height:18px;border-radius:999px;border:1px solid rgba(139,148,158,.38);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;line-height:1;flex-shrink:0;background:rgba(255,255,255,.025);}
+.cockpit-tile:hover .cockpit-tile-expand,.cockpit-tile:active .cockpit-tile-expand{border-color:rgba(255,107,0,.58);color:#ff6b00;background:rgba(255,107,0,.08);}
+.cockpit-phase-status.done{display:none !important;}
+.cockpit-phase-row{gap:10px;}
+.cockpit-phase-name{flex:1;}
+.cockpit-phase-chevron{font-size:20px;line-height:1;color:var(--text3);opacity:.55;flex-shrink:0;}
+.cockpit-phase-row:active .cockpit-phase-chevron{color:#ff6b00;opacity:1;}
+.phase-nav .btn{touch-action:manipulation;}
 
 </style>
 </head>
@@ -1227,6 +1240,7 @@ async function callClaude(prompt, onStream){
 // ── HELPERS ────────────────────────────────────────────────
 function h(tag,attrs,...children){
   const el=document.createElement(tag);
+  if(tag==='button' && (!attrs || attrs.type==null))el.setAttribute('type','button');
   if(attrs)Object.entries(attrs).forEach(([k,v])=>{
     if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
     else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);
@@ -1994,8 +2008,33 @@ function applyDecisionAuthorityPostProcessing(accId,health){
   copy.structuralOpenCount=Math.max(0,(copy.structuralOpenCount||0)-1);
   return copy;
 }
+// v4.139: Score, Matrix und harte Fakten müssen zusammenpassen.
+// Wenn Entscheiderbefugnis, Budget und KI21 Compact unter Budgetrahmen bestätigt sind,
+// darf der sichtbare Health Score nicht mehr wie eine schwache Opportunity wirken.
+// Harte K.O.-Risiken bleiben unberührt und deckeln weiterhin.
+function hasQuantifiedPainSignal(accId,health){
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
+  return /(80\.?000|80000|jahresschaden|jahresverlust|umsatzverlust|vermeidungsquote|4\s*(schlechte|verlorene|qualifizierte)?\s*deals|deals\/monat|pro monat)/i.test(raw);
+}
+function applyScoreMatrixConsistencyPostProcessing(accId,health){
+  if(!health)return health;
+  const copy={...health};
+  if(copy.isKo)return copy;
+  const authority=hasConfirmedFullDecisionAuthority(accId);
+  const lowPilotUnderBudget=hasLowKi21PilotUnderBudget(accId);
+  const pain=hasQuantifiedPainSignal(accId,copy);
+  let floor=0;
+  if(authority&&lowPilotUnderBudget)floor=60;
+  if(authority&&lowPilotUnderBudget&&pain)floor=65;
+  if(floor&&Number(copy.score||0)<floor){
+    copy.score=floor;
+    copy.label=floor>=70?'Gesund':'Stabil';
+    copy.provisional=false;
+  }
+  return copy;
+}
 function getOpportunityHealth(accId){
-  return applyBudgetOfferPostProcessing(accId,applyDecisionAuthorityPostProcessing(accId,_getOpportunityHealthBase(accId)));
+  return applyScoreMatrixConsistencyPostProcessing(accId,applyBudgetOfferPostProcessing(accId,applyDecisionAuthorityPostProcessing(accId,_getOpportunityHealthBase(accId))));
 }
 
 function normalizeQuestionText(q,forPreview){
@@ -2541,7 +2580,7 @@ function showBottomSheet(title, items, emptyText){
 }
 
 
-// v4.137: robuste Cockpit → Arbeitsbereich Navigation.
+// v4.139: robuste Cockpit → Arbeitsbereich Navigation.
 // Es wird bewusst NICHT zu einem exakten KI-Satz gesprungen, weil Phasentexte nach Regenerierung variieren.
 // Stattdessen: passende Phase öffnen + klaren Cockpit-Arbeitsauftrag oben anzeigen.
 function getCockpitWorkTarget(kind,text){
@@ -2593,6 +2632,13 @@ function buildCockpitFocusBanner(focus){
     h('div',{className:'cockpit-focus-kicker'},'Aus dem Cockpit · '+(focus.section||'Arbeitsbereich')),
     h('div',{className:'cockpit-focus-text'},focus.text||''),
     h('div',{className:'cockpit-focus-hint'},focus.hint||'Diesen Punkt hier weiterbearbeiten.')
+  );
+}
+
+function buildCockpitTileHeader(label){
+  return h('div',{className:'cockpit-tile-header'},
+    h('div',{className:'cockpit-tile-label'},label),
+    h('span',{className:'cockpit-tile-expand','aria-hidden':'true'},'+')
   );
 }
 
@@ -2760,7 +2806,7 @@ function renderHome(){
 
     const mkTile=(label,items,cls,emptyText,onTap,kind)=>{
       const tile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},onclick:onTap||null});
-      tile.appendChild(h('div',{className:'cockpit-tile-label'},label));
+      tile.appendChild(buildCockpitTileHeader(label));
       if(!items.length){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
       } else {
@@ -2805,7 +2851,7 @@ function renderHome(){
     const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
       onclick:()=>showBottomSheet('Noch offene Punkte',
         allOpen.map(s=>({glyph:'•',text:s.text,onClick:()=>openCockpitWorkTarget('open',s.text)})),'Keine offenen Punkte.')});
-    dieSacheTile.appendChild(h('div',{className:'cockpit-tile-label'},'Die eine Sache, die fehlt'));
+    dieSacheTile.appendChild(buildCockpitTileHeader('Die eine Sache, die fehlt'));
     dieSacheTile.appendChild(dieSache
       ? h('div',{className:'cockpit-tile-item is-actionable',onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('open',dieSache);}},dieSache)
       : h('div',{className:'cockpit-tile-empty'},'Noch nicht ermittelt'));
@@ -2830,7 +2876,7 @@ function renderHome(){
           sheetItems,
           'Leitfragen noch nicht generiert. Phase 1 durchführen.');
       }});
-    fragenTile.appendChild(h('div',{className:'cockpit-tile-label'},'Fragen für nächsten Termin'));
+    fragenTile.appendChild(buildCockpitTileHeader('Fragen für nächsten Termin'));
     if(!fragenItems.length){
       fragenTile.appendChild(h('div',{className:'cockpit-tile-empty'},'Leitfragen noch nicht generiert'));
     } else {
@@ -2849,7 +2895,7 @@ function renderHome(){
   const phaseList=h('div',{className:'cockpit-phase-list'});
   phaseNames.forEach((name,i)=>{
     const status=getPhaseStatus(i);
-    const statusLabel=status==='done'?'✓ Abgeschlossen':status==='progress'?'In Bearbeitung':'';
+    const statusLabel=status==='progress'?'In Bearbeitung':'';
     const row=h('div',{className:'cockpit-phase-row',onclick:()=>{
       if(!aid){state.pendingSit=i;showKunde();return;}
       renderStation(i);
@@ -2857,7 +2903,7 @@ function renderHome(){
       h('span',{className:'cockpit-phase-num '+(status==='done'?'done':'')},String(i+1)),
       h('span',{className:'cockpit-phase-name'},'Phase '+(i+1)+' – '+name),
       statusLabel?h('span',{className:'cockpit-phase-status '+status},statusLabel):
-        h('span',{style:{color:'var(--text3)',fontSize:'18px'},'aria-hidden':'true'},'›')
+        h('span',{className:'cockpit-phase-chevron','aria-hidden':'true'},'›')
     );
     phaseList.appendChild(row);
   });
@@ -3082,7 +3128,7 @@ function exportAutopilotPDF(cust,dossierResults){
     @media print{body{padding:10px;}}
   
 
-/* v4.137: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.139: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -3236,6 +3282,31 @@ function renderStation(sitId){
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
   let loading=false;
+
+  // v4.140: robustes Löschen von KI-Ergebnissen in Phasen.
+  // Wichtig: immer frisch aus localStorage lesen, damit kein alter Closure-Stand zurückgeschrieben wird.
+  function deletePhaseResult(kind='result'){
+    const label=kind==='result2'?'Dieses Abschluss-Ergebnis löschen? Eingaben bleiben erhalten.':'Dieses Ergebnis löschen? Eingaben bleiben erhalten.';
+    if(!confirm(label))return;
+    const fresh=LS.get(KEY,{fv:{},result:''});
+    fresh[kind]='';
+    if(kind==='result'){
+      fresh.summary='';
+      fresh.detail='';
+    }
+    // Wenn beide Ergebnisarten leer sind, alle KI-Ausgabe-Metadaten bereinigen, Eingaben aber behalten.
+    if(!fresh.result&&!fresh.result2){
+      fresh.summary='';
+      fresh.detail='';
+    }
+    LS.set(KEY,fresh);
+    data=fresh;
+    if(state.activeId){
+      LS.set('ki21_health_'+state.activeId,null);
+      LS.set('ki21_pending_'+state.activeId,true);
+    }
+    renderStation(sitId);
+  }
 
   const app=document.getElementById('app');
   app.innerHTML='';
@@ -3620,7 +3691,7 @@ function renderStation(sitId){
 
   // Generate button
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
-  const genBtn=h('button',{className:'btn-o',onclick:generate},genLabels[sitId]||'⚡ Mit Claude generieren');
+  const genBtn=h('button',{className:'btn-o',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}generate();}},genLabels[sitId]||'⚡ KI21 generieren');
   const genRow=h('div',{className:'gen-row'});
   genRow.appendChild(genBtn);
 
@@ -3670,18 +3741,14 @@ function renderStation(sitId){
     universalCopy(txt,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);});
   }},'Kopieren');
   const fullBtn=h('button',{className:'btn',style:{display:(data.result&&data.result.length>400)?'':'none'},onclick:()=>showFullscreen(sit.title,data.result)},'⛶ Vollbild');
-  const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:()=>{
-    if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
-    data.result='';
-    data.result2='';
-    data.summary='';
-    data.detail='';
-    LS.set(KEY,data);
-    renderStation(sitId);
+  const delBtn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:(e)=>{
+    if(e){e.preventDefault();e.stopPropagation();}
+    deletePhaseResult('result');
   }},'🗑');
   const shareBtn=h('button',{className:'btn',
     style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
-    onclick:()=>{
+    onclick:(e)=>{
+      if(e){e.preventDefault();e.stopPropagation();}
       shareAsPdf(sit.title,data.result,getActiveCust(),'KI21_'+sit.title.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf',data.result);
     }
   },'Teilen ↗');
@@ -3689,11 +3756,10 @@ function renderStation(sitId){
   let overflowOpen=false;
   const overflowMenu=h('div',{style:{position:'absolute',right:'0',top:'34px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'10px',padding:'6px',zIndex:'50',display:'none',flexDirection:'column',gap:'4px',minWidth:'120px',boxShadow:'0 8px 24px rgba(0,0,0,.4)'}});
   overflowMenu.appendChild(h('button',{className:'btn',style:{fontSize:'11px',width:'100%',textAlign:'left'},onclick:()=>{overflowMenu.style.display='none';overflowOpen=false;showFullscreen(sit.title,data.result);}}, '⛶ Vollbild'));
-  overflowMenu.appendChild(h('button',{className:'btn',style:{fontSize:'11px',color:'#f85149',borderColor:'rgba(248,81,73,.3)',width:'100%',textAlign:'left'},onclick:()=>{
+  overflowMenu.appendChild(h('button',{className:'btn',style:{fontSize:'11px',color:'#f85149',borderColor:'rgba(248,81,73,.3)',width:'100%',textAlign:'left'},onclick:(e)=>{
+    if(e){e.preventDefault();e.stopPropagation();}
     overflowMenu.style.display='none';overflowOpen=false;
-    if(!confirm('Dieses Ergebnis löschen? Eingaben bleiben erhalten.'))return;
-    data.result='';data.result2='';data.summary='';data.detail='';
-    LS.set(KEY,data);renderStation(sitId);
+    deletePhaseResult('result');
   }},'🗑 Löschen'));
   const overflowWrap=h('div',{style:{position:'relative'}});
   const overflowBtn=h('button',{className:'btn',style:{fontSize:'14px',padding:'4px 10px',lineHeight:'1'},onclick:(e)=>{
@@ -3802,14 +3868,20 @@ function renderStation(sitId){
         }},'Mehr Details ▼');
       const share2Btn=h('button',{className:'btn',
         style:{background:'#ff6b00',color:'#fff',borderColor:'#ff6b00'},
-        onclick:()=>{
+        onclick:(e)=>{
+          if(e){e.preventDefault();e.stopPropagation();}
           shareAsPdf('Qualifizierung Abschluss',data.result2,getActiveCust(),'KI21_Qualifizierung_Abschluss.pdf',data.result2);
         }
       },'Teilen ↗');
+      const del2Btn=h('button',{className:'btn',style:{color:'#f85149',borderColor:'rgba(248,81,73,.4)'},onclick:(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
+        deletePhaseResult('result2');
+      }},'🗑 Löschen');
       result2Btns.appendChild(copy2Btn);
       result2Btns.appendChild(zoom2Btn);
       result2Btns.appendChild(more2Btn);
       result2Btns.appendChild(share2Btn);
+      result2Btns.appendChild(del2Btn);
       result2Head.appendChild(result2Label);
       result2Head.appendChild(result2Btns);
       const result2Body=h('div',{className:'result-body'});
@@ -4020,7 +4092,7 @@ Analyse:
     }finally{
       loading=false;
       genBtn.disabled=false;
-      genBtn.textContent=genLabels[sitId]||'⚡ Mit Claude generieren';
+      genBtn.textContent=genLabels[sitId]||'⚡ KI21 generieren';
     }
   }
 
@@ -4445,7 +4517,7 @@ function generateKundePDF(aid, cust){
     @media print{body{padding:10px;}}
   
 
-/* v4.137: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.139: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -4578,7 +4650,7 @@ function showPDF(title,text,cust){
   @media print{body{margin:20px;}.no-print{display:none;}}
 
 
-/* v4.137: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
+/* v4.139: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
 .cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
 .cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
 .cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
@@ -4858,7 +4930,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.137';
+const KI21_VERSION='v4.140';
 
 
 function runKi21VersionMigration(){
