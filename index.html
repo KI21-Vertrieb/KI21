@@ -159,12 +159,15 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.144: Erkenntnis-Chip höher, Textkollision verhindert */
+/* v4.145: generische Budget-/Angebotslogik, Pilotrollen, SPIN-Nicht-Handeln */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
 .cockpit-focus-banner{background:rgba(255,107,0,.10);border:1px solid rgba(255,107,0,.35);border-left:3px solid #ff6b00;border-radius:11px;padding:9px 10px;margin-bottom:10px;}
 .cockpit-focus-kicker{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#ff6b00;margin-bottom:3px;}
+.cockpit-focus-kicker.is-back{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 6px 2px 0;}
+.cockpit-focus-kicker.is-back::before{content:'‹';font-size:13px;line-height:1;color:#ff6b00;}
+.cockpit-focus-kicker.is-back:active{background:rgba(255,107,0,.10);}
 .cockpit-focus-text{font-size:11.5px;font-weight:700;color:var(--text);line-height:1.35;}
 .cockpit-focus-hint{font-size:10px;color:var(--text2);line-height:1.35;margin-top:4px;}
 .bs-row.clickable{cursor:pointer;border-radius:8px;}
@@ -527,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.144: Top-Card CTA höher, Text ohne Kollision, Phasen dicht */
+/* v4.145: generische Budget-/Angebotslogik, Pilotrollen, SPIN-Nicht-Handeln */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -831,7 +834,8 @@ function buildCtx(cust,mu,kk,stk,currentSitId){
   s+='QUALITÄTSREGEL – HANDLUNGSORIENTIERUNG: Jede Phase beantwortet drei Kernfragen in ihrem Output: (1) Was ist die wichtigste Erkenntnis dieser Phase? (2) Was ist das größte verbleibende Risiko? (3) Was ist der nächste Schritt mit der höchsten Wirkung auf den Deal? Diese drei Fragen müssen nach dem Lesen des Outputs klar und sofort beantwortbar sein – nicht durch langes Suchen im Text. KI21 erzeugt keine Berichte, sondern Entscheidungsgrundlagen. Das wichtigste Kriterium für die Qualität einer Ausgabe ist: Kann der Verkäufer nach dem Lesen sofort die nächste richtige Handlung ableiten?\n';
   s+='GLOBALE REGEL 1 – SPONSOR ≠ ENTSCHEIDER: Ein engagierter Ansprechpartner darf NUR dann als Entscheider bezeichnet werden, wenn seine Budget- oder Entscheidungsbefugnis ausdrücklich bestätigt ist. Ist das nicht der Fall, verwende immer: "operativer Sponsor", "fachlicher Sponsor" oder "interner Treiber". NIEMALS automatisch aus einer aktiven Unterstützung eine Entscheidungsbefugnis ableiten. Ein Head of Sales, Director oder Teamleiter kann ein wertvoller Sponsor sein – Entscheider ist er erst wenn explizit bestätigt.\n';
   s+='GLOBALE REGEL 2 – BUDGETSTATUS DIFFERENZIERT AUSWEISEN: Es gibt vier klar unterschiedliche Budgetstufen – (a) Budgetrahmen bekannt (grober Rahmen existiert, aber keine Freigabe), (b) Budget plausibel verfügbar (passender Budgettopf vorhanden, aber nicht zugewiesen), (c) Budgetfreigabe bestätigt (entscheidungsbefugte Person hat Freigabe explizit bestätigt), (d) Investitionsentscheidung getroffen (Kunde ist bereit für diese konkrete Lösung zu zahlen). Wenn nur (a) oder (b) vorliegt: NIEMALS "Budget bestätigt" schreiben. Stattdessen: "Budgetrahmen vorhanden, konkrete Freigabe offen" oder "Budgetverfügbarkeit plausibel, Entscheidungsfreigabe durch GF/CFO ausstehend".\n';
-  s+='GLOBALE REGEL 2b – KUNDENBUDGET ≠ KI21-PREIS: Verwechsle NIEMALS das verfügbare Budget des Kunden mit den Kosten von KI21. Wenn ein Budgetrahmen von z.B. 60.000 € genannt ist und KI21 Compact 2.900 € kostet, dann ist das Budget KEINE Hürde – die Investition liegt drastisch unterhalb des Budgets. Schreibe in diesem Fall NICHT "60.000 €/Jahr rechtfertigen", NICHT "GF muss 60.000 € freigeben" und NICHT "Lizenzgebühr 60.000 €", solange 60.000 € nur als Budgetrahmen genannt wurde. KI21 Compact für 2.900 € ist bereits ein Pilot und muss als sehr niedrige Anfangsinvestition bewertet werden. Bei unklarer Jahres-/Einmaligkeit gilt: Für die Budgethürde ist das unerheblich, wenn 2.900 € deutlich unter 60.000 € liegt.\n';
+  s+='GLOBALE REGEL 2b – KUNDENBUDGET ≠ ANGEBOTSPREIS: Verwechsle NIEMALS das verfügbare Budget des Kunden mit den Kosten des Angebots. Nutze für Investition und ROI ausschließlich die in "Mein Unternehmen" hinterlegten Angebotsbausteine/Preise oder explizit genannte Angebotspreise. Wenn ein konkreter Angebotsbaustein preislich klar innerhalb/unterhalb des Kundenbudgets liegt, ist Budget-Passung für diesen Baustein KEIN offener Punkt mehr. Schreibe dann NICHT "passt ins Budget?", NICHT "Budgethürde" und NICHT "Budgetfreigabe für [Budgetrahmen] nötig", solange der Budgetrahmen nicht der Angebotspreis ist. Offen bleiben dürfen Umfang, Starttermin, Erfolgskriterien und formale Beauftragung.\n';
+  s+='GLOBALE REGEL 2c – PILOT/EINSTIEG NUR BEI ANGEBOTSROLLE: Behandle ein Angebot nur dann als Pilot, Einstieg, Startangebot oder Compact-Angebot, wenn diese Rolle in "Mein Unternehmen"/Angebotsbausteinen ausdrücklich genannt ist (z.B. Pilot, Einstieg, Startangebot, Compact/Kompakt). Leite Pilotstatus NIEMALS nur aus niedrigem Preis ab. Erfinde keine konkrete Pilotdauer (z.B. 4 Wochen, 6 Wochen, 2 Monate), wenn sie nicht ausdrücklich genannt wurde.\n';
   s+='GLOBALE REGEL 3 – SPÄTE PHASEN BEI OFFENER VALIDIERUNG KENNZEICHNEN: Wenn finale Entscheider (GF/CEO/CFO), ROI, wirtschaftliche Zielgröße oder Entscheidungsprozess noch nicht validiert sind, dürfen Phase 4 (Business Case) und Phase 5 (Angebot & Abschluss) nicht wie belastbarer Angebots- oder Abschlussstatus wirken. In diesem Fall MUSS die Ausgabe zu Beginn klar kennzeichnen: "⚠ VORBEREITUNGSSTAND: Diese Analyse ist vorbereitend – [konkrete offene Punkte] fehlen noch." Dann trotzdem vollständige Inhalte ausgeben – aber als Vorbereitung, nicht als abschlussreifen Stand.\n';
   s+='GLOBALE REGEL 4 – ALTE HYPOTHESEN DURCH BESTÄTIGTE ERKENNTNISSE ERSETZEN: Wenn im Kontext Kunde (Ergänzungen) neuere, konkretere oder bestätigte Informationen vorliegen, die einer früheren Hypothese widersprechen, MUSS die Hypothese ersetzt werden. Beispiel: Steht in den Ergänzungen "80.000 € Umsatzwirkung durch schlecht qualifizierte Deals bestätigt", darf nicht gleichzeitig stehen "Keine bestätigten Schmerzen aus direktem Gespräch." Stattdessen: "Bestätigter Schmerz: schlecht qualifizierte Deals verursachen ca. 80.000 € Umsatzwirkung." Ebenso: Wenn Ergänzungen eine Entscheidungsbefugnis nennen ("Marius darf alleine entscheiden"), darf nicht parallel stehen "Entscheider noch unklar" – sondern: "Entscheiderstatus vorläufig bestätigt, Budgetrahmen und Vertragsfreigabe noch zu validieren."\n';
   s+='EVIDENZLABELS (verbindlich für alle KI21-Ausgaben): Verwende exakt diese fünf Labels, niemals andere Formulierungen:\n• BESTÄTIGT – Kunde hat dies explizit genannt oder schriftlich bestätigt.\n• ANNAHME – Schlussfolgerung aus vorliegenden Informationen, noch nicht direkt bestätigt.\n• ZU KLÄREN – Information fehlt, muss im nächsten Gespräch erfragt werden.\n• NICHT BEKANNT – Kein Hinweis in den vorliegenden Daten, noch kein Gespräch darüber.\n• ÜBERHOLT – Diese Aussage war früher gültig, wurde aber durch neuere Ergenntnisse ersetzt. Nur verwenden wenn ein expliziter Widerspruch zu einer früheren Aussage vorliegt.\nKritische Konsistenzregel: BESTÄTIGT und ZU KLÄREN dürfen nicht für dieselbe Information gleichzeitig vergeben werden. Wenn neue Ergänzungen eine ZU KLÄREN-Frage beantworten, ersetzt BESTÄTIGT den bisherigen Status – nie beide parallel.\n';
@@ -1017,6 +1021,7 @@ P (PROBLEM) = SCHWIERIGKEITEN UND ENGPÄSSE. Lass den Kunden selbst benennen, wa
 
 I (IMPLICATION) = KONSEQUENZEN DES PROBLEMS. Mach die Kosten/Folgen des ungelösten Problems sichtbar.
 ✅ Erlaubt: "Was passiert, wenn ein Angebot einen Tag zu spät kommt?" / "Wie viele Abschlüsse verzögern sich dadurch?" / "Was kostet diese manuelle Arbeit pro Woche in Stunden?"
+✅ PFLICHT: Mindestens eine I-Frage muss die Folgen des Nicht-Handelns adressieren: "Was passiert, wenn das Problem nicht gelöst wird?" bzw. "Was kostet es, wenn der heutige Zustand die nächsten Monate bleibt?"
 ❌ VERBOTEN: Lösungsvorschläge, Features nennen.
 
 N (NEED-PAYOFF) = NUTZEN SICHTBAR MACHEN. Der Kunde beschreibt, was besser wäre.
@@ -1217,7 +1222,7 @@ KRITISCH – VERKETTUNGSRECHNUNGEN VERBOTEN:
 - Wenn du einen Rechenweg zeigst, darf es nur EINEN durchgängigen Rechenweg geben – niemals zwei verschiedene Endergebnisse (z.B. erst 44 Monate, dann "konservativer" 6 Monate) ohne expliziten Hinweis welches davon gilt und warum das andere verworfen wurde.
 - EINHEITEN NIEMALS VERWECHSELN: "Prozessdauer/Durchlaufzeit" (Kalenderzeit, z.B. "Monatsabschluss dauert X Tage") und "Arbeitsaufwand" (reine Personenstunden, z.B. "Y Stunden Aufwand im Team") sind unterschiedliche Größen, die NICHT gegeneinander verglichen werden dürfen. Ein Prozess der "12-18 Tage" Kalenderzeit dauert, schrumpft durch Automatisierung typischerweise auf wenige Tage (nicht auf Stunden) – da Validierung, Freigabe und Abstimmung weiterhin Zeit brauchen. Prüfe bei jeder Vorher/Nachher-Aussage, ob die Einheit auf beiden Seiten gleich ist (Tage→Tage, Stunden→Stunden), bevor du sie formulierst.
 - SAAS-/LIZENZPREISE SIND STANDARDMÄSSIG JÄHRLICH WIEDERKEHREND (ARR): Im Software-/SaaS-Kontext gilt: Wenn der Nutzer Begriffe wie Lizenzpreis, Jahreslizenz, User-Lizenz, Subscription, SaaS, Mietpreis, Jahrespreis oder ähnliches nennt, ist das eine jährlich wiederkehrende Zahlung (ARR) — NICHT eine Einmalinvestition. Typische Konsequenz: Ein Lizenzpreis von 49.900 €/Jahr muss als 49.900 €/Jahr in der Investitionsrechnung erscheinen, NICHT als Einmalbetrag. Der Business Case lautet dann: Jährlicher Nutzen vs. jährliche Lizenzkosten. CRITICAL: Wenn der Nutzen 60.000 €/Jahr beträgt und die Lizenz 49.900 €/Jahr kostet, ist der Netto-Nutzen 10.100 €/Jahr — kein klassischer "Amortisationszeitraum", da die Kosten wiederkehrend sind. Formuliere in solchen Fällen: "Jährlicher Netto-Nutzen: X €/Jahr (Nutzen Y €/Jahr minus Lizenz Z €/Jahr)". Wenn unklar ist ob eine genannte Zahl jährlich oder einmalig ist, stelle in den offenen Punkten eine Klärfrage, z.B.: "Bezieht sich die genannte Budget-Grenze auf jährliche Lizenzkosten oder auf einmalige Projektkosten?"
-- KUNDENBUDGET UND KI21-KOSTEN STRICT TRENNEN: Ein genannter Budgetrahmen (z.B. 60.000 €) ist NICHT automatisch der KI21-Preis. Rechne ROI und Investition ausschließlich mit den tatsächlichen KI21-Kosten aus Angebotsbausteinen/Angebotspreis. Wenn KI21 Compact mit 2.900 € genannt ist, ist das die relevante Anfangsinvestition und zugleich ein Pilot. Formuliere dann: "KI21 Compact kostet 2.900 € und liegt deutlich unter dem verfügbaren Budget von 60.000 €." Der offene Punkt ist dann NICHT Budgetfreigabe, sondern nur noch Erfolgsmessung/Pilotkriterium.
+- KUNDENBUDGET UND ANGEBOTSPREIS STRICT TRENNEN: Ein genannter Budgetrahmen (z.B. 60.000 €) ist NICHT automatisch der Preis des Angebots. Rechne ROI und Investition ausschließlich mit den tatsächlichen Kosten aus den Angebotsbausteinen/Angebotspreisen. Wenn ein konkreter Angebotsbaustein preislich klar innerhalb/unterhalb des Kundenbudgets liegt, ist Budget-Passung für diesen Baustein KEIN offener Punkt mehr. Der offene Punkt ist dann NICHT Budget-Fit, sondern Umfang, Starttermin, Erfolgsmessung, Entscheidungs-/Bestellprozess. Behandle ein Angebot nur dann als Pilot/Einstieg/Startangebot, wenn diese Rolle im Angebotsbaustein ausdrücklich genannt ist; erfinde keine Pilotrolle und keine konkrete Pilotdauer.
 - PREISMODELL: Glätte die Investition immer auf eine EINHEITLICHE Monatsrate über einen 3-Jahres-Betrachtungszeitraum (36 Monate) – unabhängig davon ob einmalige und/oder wiederkehrende Kosten genannt wurden. Berechnung: monatliche Investitionsrate = (Einmalkosten ÷ 36) + (Jahreslizenz ÷ 12). Stelle dieser Monatsrate den monatlichen laufenden Nutzen (jährlicher Nutzen ÷ 12) gegenüber. ROI/Amortisation wird dann einfach als Verhältnis dieser beiden Monatsraten ausgedrückt (z.B. "Nutzen 5.000 €/Monat vs. Investition 1.800 €/Monat über 3 Jahre geglättet"). Bei reinen SaaS/ARR-Modellen ohne Einmalkosten: monatliche Rate = Jahreslizenz ÷ 12, und der "ROI" ist der jährliche Netto-Nutzen, nicht ein Amortisationszeitraum.
 - ARBEITSWERT STATT VOLLER RANGE: Wenn du eine Benchmark-Bandbreite nennst (z.B. "300-600 Stunden/Jahr"), rechne für die eigentliche ROI-Berechnung NICHT mit der ganzen Range, sondern mit einem konkreten Arbeitswert – standardmäßig dem arithmetischen Mittelwert (z.B. "450 Stunden/Jahr"). Weiche davon nur ab, wenn das Unternehmensprofil eine plausible Anpassung rechtfertigt (z.B. mehrere Werke/Sparten → Wert nach oben anpassen; sehr kleines Unternehmen → nach unten), und nenne dann explizit den Grund. Zeige IMMER beides: die Range UND den verwendeten Arbeitswert (z.B. "Typische Range: 300-600 Stunden/Jahr → für diese Berechnung verwendet: 450 Stunden/Jahr (Mittelwert)"). Ergänze am Ende des Outputs den Hinweis: "Die Berechnung basiert auf anonymisierten Erfahrungswerten vergleichbarer Unternehmen. Sobald belastbare unternehmensspezifische Kennzahlen vorliegen, sollten diese die Annahmen ersetzen."
 
@@ -1262,7 +1267,7 @@ IHR BUSINESS CASE (basierend auf den Kundenangaben):
 [1 Satz mit geschätztem Nutzen basierend auf den genannten KPIs – falls keine KPIs vorhanden: "Noch keine konkreten Zahlen vom Kunden – siehe Rückfragen unten"]
 
 LAUFENDER NUTZEN: ___ €/Monat (geglättet, oder "noch zu validieren")
-INVESTITION: [aus den Angebotsbausteinen oben ableiten, z.B. "KI21 Compact, 2.900 €"] – geglättet auf ___ €/Monat (über 3 Jahre)
+INVESTITION: [aus den Angebotsbausteinen oben ableiten, z.B. "Startangebot, 2.900 €"] – geglättet auf ___ €/Monat (über 3 Jahre)
 ROI / AMORTISATION: [Nutzen €/Monat vs. Investition €/Monat als vorläufiger Business Case auf Basis der verwendeten Arbeitswerte, z.B. "5.000 €/Monat Nutzen vs. 1.800 €/Monat Investition – vorläufiger Business Case, finale Validierung im nächsten Gespräch erforderlich" – oder "noch nicht berechenbar – Zahlen fehlen". Vermeide eine einzelne, zu sicher wirkende Prozentzahl (z.B. "ROI 250%") ohne den Hinweis, dass sie auf Arbeitswerten/Annahmen basiert.]
 
 ZUSÄTZLICHES POTENZIAL (falls vom Kunden Krisen-/Schadensszenarien genannt wurden):
@@ -1306,7 +1311,7 @@ Budget: ${f.budget||''} | Angebot: ${f.paket||''} | Mindestpreis: ${f.minimum||'
 
 WICHTIGE QUELLE: Erkenntnisse aus der Bedarfsanalyse/Nachbereitung findest du im Abschnitt "BISHERIGE ERGEBNISSE" oben.
 
-KRITISCH – BUDGET VERSUS KI21-KOSTEN: Verwechsle NIEMALS das Kundenbudget mit dem KI21-Preis. Ein Budgetrahmen von 60.000 € ist NICHT die KI21-Investition, solange als Angebot/Angebotsbaustein z.B. KI21 Compact für 2.900 € genannt ist. KI21 Compact für 2.900 € ist bereits ein Pilot und liegt drastisch unter 60.000 € – egal ob dieses Budget jährlich oder einmalig gemeint ist. In diesem Fall darfst du NICHT schreiben: "60.000 €/Jahr rechtfertigen", "GF muss 60.000 € freigeben", "Lizenzgebühr 60.000 €" oder "Budget-Freigabe offen". Der richtige offene Punkt ist dann: Erfolgskriterien des Piloten mit dem bestätigten Entscheider definieren und nach dem Pilot messen.
+KRITISCH – BUDGET VERSUS ANGEBOTSPREIS: Verwechsle NIEMALS das Kundenbudget mit dem tatsächlichen Angebotspreis. Ein Budgetrahmen von 60.000 € ist NICHT automatisch die Investition. Maßgeblich sind nur konkrete Angebotsbausteine/Angebotspreise aus "Mein Unternehmen" oder aus dem Angebot. Wenn ein konkretes Angebot klar im Budget liegt, ist Budget-Passung kein offener Punkt mehr. In diesem Fall darfst du NICHT schreiben: "passt ins Budget?", "Budgethürde", "Budget-Freigabe offen für den Budgetrahmen" oder "Budget muss den Angebotspreis rechtfertigen". Der richtige offene Punkt ist dann: Umfang, Starttermin, Erfolgskriterien und formale Beauftragung klären. Pilot/Einstieg nur nennen, wenn der Angebotsbaustein ausdrücklich als Pilot, Einstieg, Startangebot oder Compact/Kompakt gekennzeichnet ist. Erfinde keine konkrete Pilotdauer.
 
 KRITISCH – MARIUS-/ENTSCHEIDER-FALL: Wenn Marius oder eine andere Person ausdrücklich vollständiger wirtschaftlicher/fachlicher Entscheider ist und KI21 eigenständig beauftragen darf, dann gilt: kein Geschäftsführertermin, keine GF-Freigabe, kein GF-Commitment als nächster Schritt. Nächster Schritt: Pilot mit dem Entscheider starten oder Erfolgskriterien/Vermeidungsquote mit diesem Entscheider festlegen.
 
@@ -2104,7 +2109,8 @@ function isObsoleteGfCfoText(txt){
   return mentionsGf&&obsolete;
 }
 
-// v4.137 Deterministische Nachkorrektur: Kundenbudget ist nicht automatisch KI21-Preis.
+// v4.145 Generische Nachkorrektur: Kundenbudget ist nicht automatisch Angebotspreis.
+// Gilt für jedes konfigurierte "Mein Unternehmen" und alle Angebotsbausteine.
 function getBudgetOfferContextText(accId){
   const parts=[getCurrentUserKnowledgeText(accId)];
   try{parts.push(JSON.stringify(LS.get('ki21_mu',{})));}catch(e){}
@@ -2113,36 +2119,120 @@ function getBudgetOfferContextText(accId){
   }
   return parts.join('\n');
 }
-function hasLowKi21PilotUnderBudget(accId){
-  const raw=getBudgetOfferContextText(accId);
-  if(!raw.trim())return false;
-  const hasLowOffer=/(ki21|k21|compact|kompakt|pilot|anfangsinvestition).{0,80}(2\.?900|2900|€\s*2\.?900)/i.test(raw)
-    || /(2\.?900|2900|€\s*2\.?900).{0,80}(ki21|k21|compact|kompakt|pilot|anfangsinvestition)/i.test(raw);
-  const hasBudgetFrame=/(budget|budgetrahmen|budgettopf|budgetgrenze|rahmen|verfügbar).{0,100}(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60k|50k)/i.test(raw)
-    || /(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60k|50k).{0,100}(budget|budgetrahmen|budgettopf|budgetgrenze|rahmen|verfügbar)/i.test(raw);
-  return hasLowOffer&&hasBudgetFrame;
+function getCompanyOfferText(){
+  try{
+    const mu=LS.get('ki21_mu',{});
+    return String((mu.bausteine||'')+'\n'+(mu.profil||''));
+  }catch(e){return '';}
 }
+function normalizeEuroNumber(str){
+  let s=String(str||'').trim().toLowerCase();
+  if(!s)return null;
+  const hasK=/k\b|k€|tausend/.test(s);
+  s=s.replace(/€/g,'').replace(/eur/g,'').replace(/\s/g,'').replace(/k€?/g,'').replace(/tausend/g,'');
+  if(/,\d{1,2}$/.test(s))s=s.replace(/\./g,'').replace(',','.');
+  else s=s.replace(/[.,]/g,'');
+  let n=parseFloat(s);
+  if(!isFinite(n))return null;
+  if(hasK||n<1000&&/\b\d{1,3}\s*k/i.test(str))n*=1000;
+  return Math.round(n);
+}
+function extractEuroNumbers(text){
+  const out=[];
+  const src=String(text||'');
+  const re=/(\d{1,3}(?:[\.\s]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)\s*(?:k\s*)?(?:€|eur|euro|k€|k\b)?/gi;
+  let m;
+  while((m=re.exec(src))){
+    const token=m[0];
+    if(!/(€|eur|euro|k\b|k€|\.|,|\d{4,})/i.test(token))continue;
+    const n=normalizeEuroNumber(token);
+    if(n&&n>=100)out.push({value:n,index:m.index,token});
+  }
+  return out;
+}
+function getCustomerBudgetNumbers(accId){
+  const raw=getCurrentUserKnowledgeText(accId)+'\n'+getBudgetOfferContextText(accId);
+  const nums=[];
+  const budgetRe=/(budget|budgetrahmen|budgettopf|budgetgrenze|investitionsrahmen|rahmen|freigabe|verfügbar|verfügbares budget|maximalbudget)/ig;
+  let m;
+  while((m=budgetRe.exec(raw))){
+    const seg=raw.slice(Math.max(0,m.index-90),Math.min(raw.length,m.index+160));
+    extractEuroNumbers(seg).forEach(x=>nums.push(x.value));
+  }
+  // Spezialfall: "50-60k" im Budgetsegment
+  const rangeRe=/(budget|budgetrahmen|budgettopf|budgetgrenze|investitionsrahmen|rahmen).{0,100}?(\d{1,3})\s*[–\-]\s*(\d{1,3})\s*k/ig;
+  while((m=rangeRe.exec(raw))){nums.push(parseInt(m[2],10)*1000,parseInt(m[3],10)*1000);}
+  return [...new Set(nums)].filter(n=>n>=1000).sort((a,b)=>a-b);
+}
+function getOfferNumbers(){
+  const raw=getCompanyOfferText();
+  const nums=extractEuroNumbers(raw).map(x=>x.value).filter(n=>n>=100 && n<=10000000);
+  return [...new Set(nums)].sort((a,b)=>a-b);
+}
+function hasExplicitEntryOfferRole(){
+  const raw=getCompanyOfferText();
+  return /(pilot|einstieg|startangebot|starter|compact|kompakt|proof\s*of\s*concept|poc|testpaket|schnupper|validierungsangebot)/i.test(raw);
+}
+function hasExplicitPilotDuration(accId){
+  const raw=getBudgetOfferContextText(accId);
+  return /(\b\d+|vier|sechs|acht|zwei)\s*(wochen|monate).{0,30}(pilot|test|poc|einstieg)|(?:pilot|test|poc|einstieg).{0,30}(\b\d+|vier|sechs|acht|zwei)\s*(wochen|monate)/i.test(raw);
+}
+function getGenericOfferBudgetFit(accId){
+  const budgets=getCustomerBudgetNumbers(accId);
+  const offers=getOfferNumbers();
+  if(!budgets.length||!offers.length)return {fits:false,offer:null,budget:null,entryRole:hasExplicitEntryOfferRole()};
+  const budgetMax=Math.max(...budgets);
+  const offerMin=Math.min(...offers);
+  const fits=offerMin<=budgetMax*0.9; // klar innerhalb/unterhalb des Budgets
+  return {fits,offer:offerMin,budget:budgetMax,entryRole:hasExplicitEntryOfferRole()};
+}
+function hasKnownOfferUnderBudget(accId){return !!getGenericOfferBudgetFit(accId).fits;}
+// Rückwärtskompatibilität für bestehende Score-/Matrix-Logik: Name bleibt, Logik ist generisch.
+function hasLowKi21PilotUnderBudget(accId){return hasKnownOfferUnderBudget(accId);}
 function isObsoleteBudgetPriceConfusion(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
-  return /passung.{0,60}(50|60|budget|k€|000|preisstruktur)/i.test(s)
-    || /(ki21|k21).{0,80}(preisstruktur|kosten|investition).{0,80}(50|60|budget|k€|000).{0,80}(offen|unklar|klären)/i.test(s)
-    || /(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60k|50k|60\.000).{0,80}(freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|ki21-kosten|investition|passung|offen|unklar)/i.test(s)
-    || /(budgethürde|budget hürde|budget kritisch|passt nicht ins budget)/i.test(s);
+  return /pass(t|ung|en)?.{0,80}(budget|budgetrahmen|budgetgrenze|50|60|k€|000|preisstruktur)/i.test(s)
+    || /(preisstruktur|preismodell|kosten|investition|angebotspreis).{0,90}(budget|50|60|k€|000).{0,90}(offen|unklar|klären|passt|machbar)/i.test(s)
+    || /(budget|budgetrahmen|budgetgrenze).{0,90}(offen|unklar|hürde|kritisch|passt nicht|machbar\?)/i.test(s)
+    || /(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60k|50k|60\.000).{0,90}(freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar)/i.test(s)
+    || /(budgethürde|budget hürde|budget kritisch|passt nicht ins budget|ins budget\?)/i.test(s);
+}
+function isInventedPilotDurationText(accId,txt){
+  const s=String(txt||'');
+  if(!/(\b\d+|vier|sechs|acht|zwei)\s*(wochen|monate).{0,30}(pilot|test|poc|einstieg)|(?:pilot|test|poc|einstieg).{0,30}(\b\d+|vier|sechs|acht|zwei)\s*(wochen|monate)/i.test(s))return false;
+  return !hasExplicitPilotDuration(accId);
+}
+function isPilotBeforeEntryOfferConfusion(accId,txt){
+  const fit=getGenericOfferBudgetFit(accId);
+  if(!fit.entryRole)return false;
+  const s=String(txt||'').toLowerCase();
+  return /(pilot|test|poc).{0,60}(vor|bevor|erst).{0,60}(voll|gesamt|investition|freigegeben|entscheidung)/i.test(s)
+    || /(pilot|test|poc).{0,80}(noch nicht vereinbart|nicht verbindlich|überzeugungsarbeit ausstehend)/i.test(s);
 }
 function sanitizeBudgetPriceText(accId,text,kind){
   if(!text)return text;
-  if(!hasLowKi21PilotUnderBudget(accId))return text;
-  if(isObsoleteBudgetPriceConfusion(text)){
-    if(kind==='positive')return 'KI21 Compact liegt klar unter Budgetrahmen';
-    if(kind==='missing'||kind==='open')return 'Pilot-Erfolgskriterien und Starttermin bestätigen';
-    if(kind==='risk'||kind==='warning')return 'Pilot noch nicht verbindlich vereinbart';
+  const fit=getGenericOfferBudgetFit(accId);
+  if(isInventedPilotDurationText(accId,text)){
+    if(fit.entryRole)return kind==='warning'||kind==='risk'?'Startangebot noch nicht verbindlich gestartet':'Starttermin und Erfolgskriterien festlegen';
+    return kind==='warning'||kind==='risk'?'Startmodell noch nicht verbindlich geklärt':'Startmodell und Erfolgskriterien klären';
+  }
+  if(fit.fits&&isObsoleteBudgetPriceConfusion(text)){
+    if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt klar im Budgetrahmen';
+    if(kind==='missing'||kind==='open')return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Umfang und Starttermin festlegen';
+    if(kind==='risk'||kind==='warning')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Formale Beauftragung noch offen';
     return '';
+  }
+  if(fit.fits&&isPilotBeforeEntryOfferConfusion(accId,text)){
+    if(kind==='warning'||kind==='risk')return 'Startangebot noch nicht verbindlich gestartet';
+    return 'Starttermin und Erfolgskriterien festlegen';
   }
   return text;
 }
 function applyBudgetOfferPostProcessing(accId,health){
-  if(!health||!hasLowKi21PilotUnderBudget(accId))return health;
+  if(!health)return health;
+  const fit=getGenericOfferBudgetFit(accId);
+  if(!fit.fits&&!fit.entryRole)return health;
   const copy={...health};
   const cleanMap=(arr,kind)=>(arr||[])
     .map(x=>{
@@ -2155,11 +2245,11 @@ function applyBudgetOfferPostProcessing(accId,health){
   copy.positive=cleanMap(copy.positive,'positive');
   copy.warning=cleanMap(copy.warning,'warning');
   copy.open=cleanMap(copy.open,'open');
-  if(!copy.positive.find(x=>/compact|unter budget|budgetrahmen/i.test(x.text||''))){
-    copy.positive.push({text:'KI21 Compact liegt klar unter Budgetrahmen',origin:'REGEL',type:'positive',disabled:false});
+  if(fit.fits&&!copy.positive.find(x=>/(angebot|startangebot).{0,40}(budgetrahmen|budget)/i.test(x.text||''))){
+    copy.positive.push({text:fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt klar im Budgetrahmen',origin:'REGEL',type:'positive',disabled:false});
   }
   copy.checklist={...(copy.checklist||{})};
-  copy.checklist.budget=true;
+  if(fit.fits)copy.checklist.budget=true;
   return copy;
 }
 function sanitizeDashboardTextForDecisionAuthority(accId,text,kind){
@@ -2193,7 +2283,7 @@ function applyDecisionAuthorityPostProcessing(accId,health){
   return copy;
 }
 // v4.139: Score, Matrix und harte Fakten müssen zusammenpassen.
-// Wenn Entscheiderbefugnis, Budget und KI21 Compact unter Budgetrahmen bestätigt sind,
+// Wenn Entscheiderbefugnis, Budget und ein konkretes Angebot im Budgetrahmen bestätigt sind,
 // darf der sichtbare Health Score nicht mehr wie eine schwache Opportunity wirken.
 // Harte K.O.-Risiken bleiben unberührt und deckeln weiterhin.
 function hasQuantifiedPainSignal(accId,health){
@@ -2299,8 +2389,8 @@ function buildCockpitMatrixData(accId,health){
   if(hasConfirmedFullDecisionAuthority(accId)&&!hasTextInList(positives,/entscheidungsbefugnis|entscheider/i)){
     positives.unshift('Entscheidungsbefugnis bestätigt');
   }
-  if(lowPilotUnderBudget&&!hasTextInList(positives,/compact|unter budget|budgetrahmen/i)){
-    positives.push('KI21 Compact liegt klar unter Budgetrahmen');
+  if(lowPilotUnderBudget&&!hasTextInList(positives,/angebot|startangebot|budgetrahmen|budget/i)){
+    positives.push('Startangebot liegt klar im Budgetrahmen');
   } else if(/budget|freigabe|pilotstart|beauftragung/.test(raw)&&!hasTextInList(positives,/budget/i)){
     positives.push('Budgetrahmen vorhanden');
   }
@@ -2340,8 +2430,8 @@ function buildCockpitMatrixData(accId,health){
   let finalPositive=cleanFinal(positives,'positive');
   let finalRisks=cleanFinal(risks,'warning');
   let finalOpen=cleanFinal(open,'open');
-  if(lowPilotUnderBudget&&!hasTextInList(finalPositive,/compact|unter budget|budgetrahmen/i)){
-    finalPositive.push('KI21 Compact liegt klar unter Budgetrahmen');
+  if(lowPilotUnderBudget&&!hasTextInList(finalPositive,/angebot|startangebot|budgetrahmen|budget/i)){
+    finalPositive.push('Startangebot liegt klar im Budgetrahmen');
   }
   if(hasConfirmedFullDecisionAuthority(accId)&&!hasTextInList(finalOpen,/wirtschaft|nutzen|vermeidungsquote|pilot|start/i)){
     finalOpen.push('Wirtschaftlichen Nutzen und Pilotkriterien validieren');
@@ -2813,7 +2903,7 @@ function getCockpitFocusForPhase(accId,sitId){
 function buildCockpitFocusBanner(focus){
   if(!focus)return null;
   return h('div',{className:'cockpit-focus-banner',id:'cockpit-focus-banner'},
-    h('div',{className:'cockpit-focus-kicker'},'Aus dem Cockpit · '+(focus.section||'Arbeitsbereich')),
+    h('button',{type:'button',className:'cockpit-focus-kicker is-back',onclick:(e)=>{e.stopPropagation();state.cockpitFocus=null;if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);renderHome();}},'Aus dem Cockpit · '+(focus.section||'Arbeitsbereich')),
     h('div',{className:'cockpit-focus-text'},focus.text||''),
     h('div',{className:'cockpit-focus-hint'},focus.hint||'Diesen Punkt hier weiterbearbeiten.')
   );
@@ -3376,6 +3466,7 @@ P (PROBLEM): Lass den Kunden selbst benennen, was ihn stört. Frage nach Schwier
 
 I (IMPLICATION): Mach die Konsequenzen des Problems sichtbar. Kosten, Verzögerungen, Risiken.
   ✅ "Was passiert, wenn ein Angebot einen Tag zu spät kommt?"
+  ✅ PFLICHT: Stelle mindestens eine Nicht-Handeln-Frage: "Was passiert, wenn dieses Problem nicht gelöst wird?" oder "Was kostet es, wenn der heutige Zustand in den nächsten Monaten bleibt?"
 
 N (NEED-PAYOFF): Lass den Kunden den Nutzen einer Lösung beschreiben.
   ✅ "Was würde sich ändern, wenn diese Information sofort verfügbar wäre?"
@@ -3384,6 +3475,7 @@ KUNDENDATEN (nur diese – kein weiterer Kontext):
 ${isolatedCtx}
 
 Generiere jetzt 5–7 SPIN-Fragen. Jede Frage auf einer Zeile, Format "Buchstabe: Frage".
+Mindestens eine I-Frage muss ausdrücklich nach den Folgen des Nicht-Handelns fragen.
 Nur die Fragen, keine Erklärungen, keine Einleitung.`;
 
     (async()=>{
@@ -5114,7 +5206,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.144';
+const KI21_VERSION='v4.145';
 
 
 function runKi21VersionMigration(){
