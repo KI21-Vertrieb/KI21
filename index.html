@@ -159,7 +159,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'D
 .cockpit-phase-status.progress{color:#ff6b00;background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);}
 .cockpit-phase-status.empty{color:var(--text3);}
 
-/* v4.147: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.148: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-tile-item.is-actionable{cursor:pointer;border-radius:6px;padding-top:2px;padding-bottom:2px;padding-right:4px;transition:background .12s,border-color .12s;}
 .cockpit-tile-item.is-actionable:active{background:rgba(255,107,0,.10);}
 .cockpit-tile-item.is-actionable::after{content:'›';position:absolute;right:1px;color:var(--text3);font-weight:800;opacity:.75;}
@@ -530,7 +530,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 
 
 
-/* v4.147: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
+/* v4.148: Score-Matrix-Konsistenz + generische Budget-/Angebotslogik */
 .cockpit-next-card{
   padding:12px 13px 12px 14px !important;
   min-height:94px !important;
@@ -2192,10 +2192,11 @@ function hasLowKi21PilotUnderBudget(accId){return hasKnownOfferUnderBudget(accId
 function isObsoleteBudgetPriceConfusion(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
-  return /pass(t|ung|en)?.{0,80}(budget|budgetrahmen|budgetgrenze|50|60|k€|000|preisstruktur)/i.test(s)
-    || /(preisstruktur|preismodell|kosten|investition|angebotspreis).{0,90}(budget|50|60|k€|000).{0,90}(offen|unklar|klären|passt|machbar)/i.test(s)
-    || /(budget|budgetrahmen|budgetgrenze).{0,90}(offen|unklar|hürde|kritisch|passt nicht|machbar\?)/i.test(s)
-    || /(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60k|50k|60\.000).{0,90}(freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar)/i.test(s)
+  const moneyBudget=/(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60\s*k|50\s*k|60\.000).{0,120}(budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert)|(?:budget|freigeben|rechtfertigen|lizenzgebühr|lizenzkosten|angebot|kosten|investition|passung|offen|unklar|validiert).{0,120}(50\s*[–-]\s*60|50\.?000|50000|60\.?000|60000|60\s*k|50\s*k|60\.000)/i.test(s);
+  return /pass(t|ung|en)?.{0,100}(budget|budgetrahmen|budgetgrenze|50|60|k€|000|preisstruktur)/i.test(s)
+    || /(preisstruktur|preismodell|kosten|investition|angebotspreis).{0,120}(budget|50|60|k€|000|validiert|offen|unklar|klären|passt|machbar)/i.test(s)
+    || /(budget|budgetrahmen|budgetgrenze).{0,120}(offen|unklar|hürde|kritisch|passt nicht|machbar\?|validiert)/i.test(s)
+    || moneyBudget
     || /(budgethürde|budget hürde|budget kritisch|passt nicht ins budget|ins budget\?)/i.test(s);
 }
 function isInventedPilotDurationText(accId,txt){
@@ -2317,7 +2318,7 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
 
   let floor=0;
 
-  // v4.147: Score und Matrix konsistent halten.
+  // v4.148: Score und Matrix konsistent halten.
   // Wenn die Kernkriterien positiv sind und nur normale Bremsen offen sind,
   // darf der Score nicht wie eine schwache Opportunity wirken.
   if(!hardRisk&&authority&&budget&&concretePain)floor=Math.max(floor,65);
@@ -2409,7 +2410,7 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   }
   qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
   qs=[...new Set(qs)];
-  // v4.147: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
+  // v4.148: Nicht-Handeln-Implication im Cockpit bevorzugt zeigen, wenn vorhanden.
   qs=prioritizeNonActionQuestions(qs);
   return qs.slice(0,maxItems||3);
 }
@@ -2435,15 +2436,55 @@ function shortUniqueList(items,maxItems){
 function hasTextInList(list,pattern){
   return (list||[]).some(t=>pattern.test(String(t||'')));
 }
+function hasAuthoritySignalInHealth(health){
+  const all=[]
+    .concat((health&&health.positive)||[])
+    .concat((health&&health.warning)||[])
+    .concat((health&&health.open)||[])
+    .map(x=>String(x&&x.text?x.text:x||''));
+  return all.some(t=>/(entscheidungsbefugnis|entscheiderstatus|wirtschaftlicher entscheider|fachlicher entscheider).{0,50}(bestätigt|klar|vorhanden)|entscheider.{0,50}(bestätigt|klar)|kann.{0,50}(eigenständig|allein).{0,50}(entscheiden|freigeben|beauftragen)/i.test(t));
+}
+function hasBudgetSignalInHealth(health){
+  const all=[]
+    .concat((health&&health.positive)||[])
+    .concat((health&&health.warning)||[])
+    .concat((health&&health.open)||[])
+    .map(x=>String(x&&x.text?x.text:x||''));
+  return all.some(t=>/(operatives budget|budgetrahmen|budget).{0,60}(vorhanden|bestätigt|verfügbar|klar)/i.test(t));
+}
+function sanitizeCockpitTextFinal(accId,text,kind,opts){
+  let x=String(text||'').trim();
+  if(!x)return '';
+  const authority=!!(opts&&opts.authority);
+  const budgetFit=!!(opts&&opts.budgetFit);
+  const budgetSignal=!!(opts&&opts.budgetSignal);
+  const fit=getGenericOfferBudgetFit(accId);
+  // Budget-/Preisverwechslungen im Cockpit immer entschärfen, sobald ein Budgetsignal oder ein echter Angebots-Fit vorliegt.
+  // Falls kein Angebotspreis bekannt ist, bleibt es eine Angebots-/Umfangsfrage, aber keine Budget-Passung zu einem Budgetrahmen.
+  if(isObsoleteBudgetPriceConfusion(x) && (budgetFit||budgetSignal||fit.fits)){
+    if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt im Budgetrahmen';
+    if(kind==='warning'||kind==='risk')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Angebotsumfang noch nicht verbindlich festgelegt';
+    return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären';
+  }
+  x=sanitizeBudgetPriceText(accId,x,kind);
+  if(authority&&isObsoleteGfCfoText(x)){
+    if(kind==='missing'||kind==='open')return 'Wirtschaftlichen Nutzen mit Entscheider validieren';
+    if(kind==='warning'||kind==='risk')return 'Formale Beauftragung / Startentscheidung noch offen';
+    return '';
+  }
+  return x;
+}
 function buildCockpitMatrixData(accId,health){
   const raw=getCurrentUserKnowledgeText(accId).toLowerCase();
+  const authorityContext=hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(health);
+  const budgetSignalContext=hasBudgetSignalInHealth(health)||/budget|freigabe|pilotstart|beauftragung/.test(raw);
   const lowPilotUnderBudget=hasLowKi21PilotUnderBudget(accId);
-  const positives=shortUniqueList((health.positive||[]).filter(s=>!s.disabled).map(s=>sanitizeBudgetPriceText(accId,s.text,'positive')),4);
-  const risks=shortUniqueList((health.warning||[]).filter(s=>!s.disabled).map(s=>sanitizeBudgetPriceText(accId,s.text,'warning')),4);
-  const open=shortUniqueList((health.open||[]).map(s=>sanitizeBudgetPriceText(accId,s.text,'open')),4);
+  const positives=shortUniqueList((health.positive||[]).filter(s=>!s.disabled).map(s=>sanitizeCockpitTextFinal(accId,s.text,'positive',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
+  const risks=shortUniqueList((health.warning||[]).filter(s=>!s.disabled).map(s=>sanitizeCockpitTextFinal(accId,s.text,'warning',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
+  const open=shortUniqueList((health.open||[]).map(s=>sanitizeCockpitTextFinal(accId,s.text,'open',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
 
   // Chancen aus bestätigten harten Fakten ergänzen, falls die KI-Liste zu dünn ist.
-  if(hasConfirmedFullDecisionAuthority(accId)&&!hasTextInList(positives,/entscheidungsbefugnis|entscheider/i)){
+  if(authorityContext&&!hasTextInList(positives,/entscheidungsbefugnis|entscheider/i)){
     positives.unshift('Entscheidungsbefugnis bestätigt');
   }
   if(lowPilotUnderBudget&&!hasTextInList(positives,/angebot|startangebot|budgetrahmen|budget/i)){
@@ -2471,7 +2512,7 @@ function buildCockpitMatrixData(accId,health){
 
   // Offene Punkte auffüllen, damit "Die eine Sache" nicht leer oder zu generisch bleibt.
   if(!hasTextInList(open,/wirtschaft|nutzen|business|roi|vermeidungsquote/i)){
-    open.push(hasConfirmedFullDecisionAuthority(accId)
+    open.push(authorityContext
       ? 'Wirtschaftlichen Nutzen mit Entscheider validieren'
       : 'Wirtschaftlichen Entscheider validieren');
   }
@@ -2479,18 +2520,14 @@ function buildCockpitMatrixData(accId,health){
   if((health.score||0)<70 && !hasTextInList(open,/vertrag|beschaffung|einkauf|paper/i))open.push('Vertragsprozess klären');
 
   // Finale Cockpit-Säuberung: Budget-/Preisverwechslungen und überholte GF-Punkte dürfen nicht sichtbar bleiben.
-  const cleanFinal=(list,kind)=>shortUniqueList((list||[]).map(t=>{
-    let x=sanitizeBudgetPriceText(accId,t,kind);
-    if(hasConfirmedFullDecisionAuthority(accId)&&isObsoleteGfCfoText(x))return '';
-    return x;
-  }).filter(Boolean),4);
+  const cleanFinal=(list,kind)=>shortUniqueList((list||[]).map(t=>sanitizeCockpitTextFinal(accId,t,kind,{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})).filter(Boolean),4);
   let finalPositive=cleanFinal(positives,'positive');
   let finalRisks=cleanFinal(risks,'warning');
   let finalOpen=cleanFinal(open,'open');
   if(lowPilotUnderBudget&&!hasTextInList(finalPositive,/angebot|startangebot|budgetrahmen|budget/i)){
     finalPositive.push('Startangebot liegt klar im Budgetrahmen');
   }
-  if(hasConfirmedFullDecisionAuthority(accId)&&!hasTextInList(finalOpen,/wirtschaft|nutzen|vermeidungsquote|pilot|start/i)){
+  if(authorityContext&&!hasTextInList(finalOpen,/wirtschaft|nutzen|vermeidungsquote|pilot|start/i)){
     finalOpen.push('Wirtschaftlichen Nutzen und Pilotkriterien validieren');
   }
   return {
@@ -3544,7 +3581,7 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
           let cleanLines=spinResult.split('\n')
             .map(l=>l.trim())
             .filter(l=>/^[SPIN]\s*[:\-–]/i.test(l));
-          // v4.147: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
+          // v4.148: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
           // Prompt allein reicht nicht zuverlässig; deshalb deterministisch nachschärfen.
           cleanLines=ensureExplicitNonActionImplicationLines(cleanLines, LS.get('ki21_active',''));
           freshData.fv['spin']=cleanLines.join('\n');
@@ -5267,7 +5304,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.147';
+const KI21_VERSION='v4.148';
 
 
 function runKi21VersionMigration(){
