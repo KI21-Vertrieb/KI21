@@ -2105,7 +2105,9 @@ function isObsoleteGfCfoText(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
   const mentionsGf=/(geschäftsführer|geschäftsführung|geschäftsleitung|gf|cfo|ceo)/i.test(s);
-  const obsolete=/(freigabe|validier|bestätig|kennt|klären|gespräch|einbindung|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt|quote|verbesserung|rechtfertigt|schaden|jahresschaden|umsatzverlust|budget)/i.test(s);
+  const obsolete=/(freigabe|validier|bestätig|kennt|klären|gespräch|einbindung|eingebunden|einbinden|einbezogen|beteiligt|aktiv|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt|quote|verbesserung|rechtfertigt|schaden|jahresschaden|umsatzverlust|budget)/i.test(s);
+  // Auch Formulierungen wie "Wirtschaftlicher Entscheider (GF) noch nicht aktiv eingebunden" sind überholt, sobald ein anderer Entscheider bestätigt ist.
+  if(mentionsGf&&/(entscheider|economic buyer|wirtschaftlich).{0,80}(nicht|noch nicht|offen|fehlt|ausstehend|eingebunden|einbezogen|aktiv)/i.test(s))return true;
   return mentionsGf&&obsolete;
 }
 
@@ -2597,7 +2599,7 @@ function buildCockpitMatrixData(accId,health){
   if(authorityContext&&!hasTextInList(finalOpen,/wirtschaft|nutzen|vermeidungsquote|pilot|start/i)){
     finalOpen.push('Wirtschaftlichen Nutzen und Pilotkriterien validieren');
   }
-  // v4.149: absolute finale Cockpit-Sperre gegen alte Budget-/GF-Rückfälle aus gecachten Health-Texten.
+  // v4.152: absolute finale Cockpit- und Bottom-Sheet-Sperre gegen alte Budget-/GF-Rückfälle aus gecachten Health-Texten.
   finalPositive=cleanFinal(finalPositive,'positive');
   finalRisks=cleanFinal(finalRisks,'warning').filter(t=>!(authorityContext&&isObsoleteGfCfoText(t))).filter(t=>!(lowPilotUnderBudget&&isObsoleteBudgetPriceConfusion(t)));
   finalOpen=cleanFinal(finalOpen,'open').filter(t=>!(authorityContext&&isObsoleteGfCfoText(t))).filter(t=>!(lowPilotUnderBudget&&isObsoleteBudgetPriceConfusion(t)));
@@ -5378,7 +5380,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.151';
+const KI21_VERSION='v4.152';
 
 
 function runKi21VersionMigration(){
