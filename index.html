@@ -1460,9 +1460,21 @@ function applyHealthRiskRules(baseScore,risk){
 function buildHealthPrompt(cust,allResults,kontext,phaseAdditions){
   let s='Du bewertest den "Opportunity Health" einer B2B-Vertriebsopportunity ausschließlich auf Basis der folgenden, tatsächlich erfassten Informationen. Erfinde NIEMALS ein Signal, das nicht wörtlich oder sinngemäß im Text vorkommt – jedes Signal muss auf eine echte Textstelle zurückführbar sein.\n\n';
   s+='KUNDE: '+(cust.firma||'')+'\n\n';
-  if(kontext)s+='--- Globale Ergänzungen/Kontext Kunde ---\n'+kontext.slice(0,3000)+'\n\n';
-  if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen des Nutzers ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
-  allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
+
+  // Ergänzungen = harte Fakten mit Vorrang vor älteren Phasenergebnissen
+  if(kontext||phaseAdditions){
+    s+='=== AKTUELLE ERKENNTNISSE UND ERGÄNZUNGEN (höchste Priorität – überschreiben ältere Phasenergebnisse bei Widerspruch) ===\n';
+    s+='WICHTIG: Diese Informationen sind neuer als die Phasenergebnisse unten. Wenn ein Fakt hier explizit bestätigt wird (z.B. "Person X ist Entscheider und darf alleine beauftragen"), dann ist dieses Thema GEKLÄRT – auch wenn ältere Phasenergebnisse noch "offen" oder "unklar" sagen. Harte neue Fakten gewinnen immer.\n\n';
+    if(kontext)s+='--- Globale Ergänzungen ---\n'+kontext.slice(0,3000)+'\n\n';
+    if(phaseAdditions)s+='--- Phasenspezifische Ergänzungen ---\n'+phaseAdditions.slice(0,5000)+'\n\n';
+    s+='=== ENDE AKTUELLE ERKENNTNISSE ===\n\n';
+  }
+
+  if(allResults.length){
+    s+='=== FRÜHERE PHASENERGEBNISSE (können durch obige Ergänzungen überholt sein – bei Widerspruch gelten die Ergänzungen oben) ===\n';
+    allResults.forEach(r=>{if(r.text)s+='--- '+r.title+' ---\n'+r.text.slice(0,3000)+'\n\n';});
+    s+='=== ENDE FRÜHERE PHASENERGEBNISSE ===\n\n';
+  }
   s+=`Der Opportunity Health Score repräsentiert die geschätzte Wahrscheinlichkeit eines erfolgreichen Auftragsgewinns – basierend auf allen bekannten Informationen, deiner B2B-Vertriebserfahrung und typischen Vertriebsmustern.
 
 KRITISCH – DER SCORE MISST NICHT: Dokumentationsqualität, Informationsmenge, Bearbeitungsfortschritt oder Anzahl ausgefüllter Felder. Die Menge der gesammelten Informationen ist NEUTRAL für den Score. Mehr dokumentierte Information darf den Score NICHT automatisch erhöhen. Bewerte stattdessen jede einzelne Information danach, ob sie die TATSÄCHLICHE Abschlusswahrscheinlichkeit erhöht, senkt, oder unverändert lässt.
@@ -1613,6 +1625,53 @@ Nur betroffene Phasen einschließen.`;
   }catch(e){}
 }
 
+// Smarte Bereichsanalyse: erkennt welche Bereiche von einer neuen Erkenntnis betroffen sind.
+// Gibt Array von {id, label, dependsOn?} zurück.
+async function runSmartImpactAnalysis(accId, newInsight){
+  if(!accId||!newInsight||!newInsight.trim())return;
+  const cust=(LS.get('ki21_acc',[]).find(a=>a.id===accId)||{}).cust||{};
+
+  // Nur generierte Bereiche können betroffen sein
+  const generated=[];
+  for(let i=0;i<5;i++){
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&(d.result||d.result2))generated.push(i);
+  }
+  const hasSpin=generated.includes(0)&&(()=>{
+    const d=LS.get('ki21_st_'+accId+'_1',{});
+    return !!(d.fv&&d.fv.spin);
+  })();
+
+  const areaLabels={0:'Qualifizierung',1:'Discovery & Demo',2:'Nachbereitung',3:'Nutzen/ROI',4:'Angebot'};
+  if(!generated.length)return;
+
+  const prompt=`Entscheide welche Vertriebsbereiche durch diese neue Erkenntnis inhaltlich betroffen sind.
+Firma: ${cust.firma||'–'}, Neue Erkenntnis: "${newInsight.slice(0,200)}"
+Generierte Bereiche: ${generated.map(i=>i+':'+areaLabels[i]).join(', ')}${hasSpin?', SPIN-Fragen':''}
+
+NUR betroffen wenn Strategie/Argumente/Fragen sich inhaltlich ändern müssen.
+NICHT betroffen: Statusbestätigungen, reine Titeländerungen.
+Muster: Entscheider→0,4 | Schmerz/Budget→0,1,3 | Technik→1,3 | Termin→2 | Wettbewerb→1,4
+
+Antworte NUR mit JSON: {"areas":[{"id":0,"label":"Qualifizierung"},{"id":"spin","label":"SPIN-Fragen"}]}
+Nur betroffene Bereiche. "spin" nur wenn SPIN-Fragen existieren und betroffen.`;
+
+  try{
+    const json=await callClaudeJSON(prompt);
+    if(json&&Array.isArray(json.areas)){
+      const filtered=json.areas.filter(a=>
+        a.id==='spin'?hasSpin:generated.includes(a.id)
+      );
+      if(filtered.length){
+        LS.set('ki21_smart_pending_'+accId,{areas:filtered,insight:newInsight.slice(0,120),ts:Date.now()});
+        markOpportunityPending(accId);
+        if(LS.get('ki21_view','home')==='home')renderHome();
+      }
+    }
+  }catch(e){
+    markOpportunityPending(accId);
+  }
+}
 function markOpportunityPending(accId){
   if(accId)LS.set('ki21_pending_'+accId,true);
 }
@@ -2194,33 +2253,73 @@ function renderHome(){
     if(acc)showNeuerKunde(acc.cust,acc.id,'kontext');
   }},h('span',{},'+ '),h('span',{},'Erkenntnis ergänzen'));
 
+  const smartPending=aid?LS.get('ki21_smart_pending_'+aid,null):null;
   const updateBtn=h('button',{
     className:'cockpit-btn-secondary',
-    style:{display:hasPending?'block':'none'},
+    style:{display:(hasPending&&smartPending)?'block':'none'},
     onclick:async()=>{
-      if(!aid)return;
+      if(!aid||!smartPending)return;
       updateBtn.disabled=true;
-      updateBtn.textContent='⏳ Aktualisiert...';
-      for(let i=0;i<5;i++){
-        const KEY='ki21_st_'+aid+'_'+i;
+      const areas=smartPending.areas||[];
+      updateBtn.textContent='⏳ Wird aktualisiert...';
+
+      const phase1Affected=areas.some(a=>a.id===0);
+      const spinAffected=areas.some(a=>a.id==='spin');
+      const otherPhases=areas.filter(a=>typeof a.id==='number'&&a.id!==0);
+
+      // Phase 1 zuerst (SPIN hängt davon ab), dann parallel
+      if(phase1Affected){
+        const KEY='ki21_st_'+aid+'_0';
         const d=LS.get(KEY,null);
-        if(d&&(d.result||d.result2)){
-          const sit=SITS[i];const fv=d.fv||{};
-          const mu2=LS.get('ki21_mu',{});const kk2=buildKkForSitId(aid,i);
+        if(d){
+          const fv=d.fv||{};const mu2=LS.get('ki21_mu',{});const kk2=buildKkForSitId(aid,0);
           try{
-            const result=await callClaude(sit.build(fv,cust,mu2,kk2,''),null);
+            updateBtn.textContent='⏳ Qualifizierung...';
+            const result=await callClaude(SITS[0].build(fv,cust,mu2,kk2,''),null);
+            if(result){d.result=result;LS.set(KEY,d);}
+            await savePhaseSnapshot(aid,0);
+          }catch(e){}
+        }
+        // SPIN nach Phase 1
+        if(spinAffected){
+          updateBtn.textContent='⏳ SPIN-Fragen...';
+          const d1=LS.get('ki21_st_'+aid+'_0',null);
+          if(d1&&d1.result)await transferAndGo(0,1,d1.result,aid);
+        }
+      }
+
+      // Restliche Phasen parallel
+      if(otherPhases.length){
+        updateBtn.textContent='⏳ '+(otherPhases.length)+' Bereiche parallel...';
+        await Promise.all(otherPhases.map(async a=>{
+          const i=a.id;
+          const KEY='ki21_st_'+aid+'_'+i;
+          const d=LS.get(KEY,null);
+          if(!d)return;
+          const fv=d.fv||{};const mu2=LS.get('ki21_mu',{});const kk2=buildKkForSitId(aid,i);
+          try{
+            const result=await callClaude(SITS[i].build(fv,cust,mu2,kk2,''),null);
             if(result){d.result=result;LS.set(KEY,d);}
             await savePhaseSnapshot(aid,i);
           }catch(e){}
-        }
+        }));
       }
+
       await refreshOpportunityHealth(aid);
       LS.set('ki21_pending_'+aid,false);
+      LS.set('ki21_smart_pending_'+aid,null);
       renderHome();
     }
-  },'● Aktualisieren');
-
-  const btnRow=h('div',{className:'cockpit-btn-row'},erkenntnisBtn);
+  });
+  // Button-Label mit Bereichsnamen
+  if(smartPending&&smartPending.areas){
+    const names=smartPending.areas.map(a=>a.label).join(', ');
+    updateBtn.textContent='● '+smartPending.areas.length+' Bereiche aktualisieren: '+names;
+  } else {
+    updateBtn.textContent='● Mit neuen Erkenntnissen aktualisieren';
+  }
+  const btnRow=h('div',{className:'cockpit-btn-row'});
+  btnRow.appendChild(erkenntnisBtn);
   if(hasPending)btnRow.appendChild(updateBtn);
   nextCard.appendChild(btnRow);
   wrap.appendChild(nextCard);
@@ -2714,16 +2813,28 @@ function renderStation(sitId){
   const kk=LS.get('ki21_kk_'+state.activeId,'');
   const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
 
-  const nav=h('div',{className:'nav'},
-    h('button',{className:'nav-brand',onclick:renderHome},'KI21'),
-    h('div',{className:'nav-right'},
+  const health2=state.activeId?getOpportunityHealth(state.activeId):null;
+  const scoreColor2=health2?getHealthColor(health2.score):'var(--text3)';
+
+  const nav=h('div',{className:'cockpit-header'},
+    h('div',{className:'cockpit-header-left'},
+      h('div',{className:'cockpit-brand',style:{display:'flex',alignItems:'center',gap:'6px'}},
+        h('button',{onclick:renderHome,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'0',cursor:'pointer',lineHeight:'1'}},'←'),
+        h('span',{},'KI2','1')
+      ),
+      cust.firma?h('div',{className:'cockpit-opp-name',onclick:renderHome},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
+    ),
+    h('div',{className:'cockpit-header-right'},
+      health2?h('div',{
+        className:'cockpit-score-badge',
+        style:{color:scoreColor2,borderColor:scoreColor2+'60',background:scoreColor2+'15'},
+        onclick:()=>{if(state.activeId)showOpportunityHealthDetail(state.activeId);}
+      },health2.score+'/100'):null,
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
-  const infoRow=h('div',{className:'subnav'},
-    cust.firma?h('button',{className:'nav-station-customer',onclick:showKunde},cust.firma):h('div',{}),
-    h('button',{id:'health-badge-station',className:'btn nav-station-health',onclick:()=>{const aid=LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);}},'')
-  );
+
+  const infoRow=h('div',{style:{display:'none'}});
 
   const wrap=h('div',{className:'station-wrap'});
 
@@ -3682,7 +3793,9 @@ function showNeuerKunde(initial,accId,initialTab){
       LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
       saveB.textContent='⏳ Wird aktualisiert...';
       await refreshOpportunityHealth(accId);
-      markOpportunityPending(accId);
+      // Smart Impact Analyse im Hintergrund
+      if(currentKkSlot.trim())runSmartImpactAnalysis(accId,currentKkSlot);
+      else markOpportunityPending(accId);
     } else {
       const id='acc_'+Date.now();
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
@@ -4284,7 +4397,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.126';
+const KI21_VERSION='v4.128';
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
