@@ -2165,7 +2165,8 @@ function getConfirmedDecisionMakerName(accId){
   const m3=raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{2,})\b\s+einen\s+(?:Compact[-\s]?Kickoff|Termin|Pilot|Start)/i);
   const n3=m3&&cleanPerson(m3[1]);
   if(n3)return n3;
-  const ap=cleanPerson(cust.ap||'');
+  const acc = typeof getAcc==='function' ? getAcc(accId) : null;
+  const ap=cleanPerson(acc && acc.ap ? acc.ap : '');
   if(ap)return ap;
   return 'der bestätigte Entscheider';
 }
@@ -5753,7 +5754,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.163';
+const KI21_VERSION='v4.164';
 
 
 function runKi21VersionMigration(){
