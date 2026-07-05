@@ -2434,12 +2434,26 @@ function hasDirectMonthlyUserPrice(seg){
   const hasPer=/(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)|(?:user|nutzer|anwender|lizenz)\s*\/\s*(?:monat|month)|(?:pro|je|per)\s*(?:monat|month).{0,50}(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)/i.test(st);
   return hasMonthly&&hasUser&&hasPer;
 }
+// v4.186: Ein Betrag ist nur dann eine laufende pro-User-Monatsgebühr, wenn die Perioden-/Userrolle
+// direkt am Betrag steht. Ein Budget oder Jahresschaden darf nicht wegen später erwähnter Userzahl multipliziert werden.
+function isDirectRecurringFeeAmount(raw,idx){
+  const txt=String(raw||'');
+  const before=txt.slice(Math.max(0,idx-70),idx);
+  const after=txt.slice(idx,Math.min(txt.length,idx+90));
+  const local=(before+' '+after);
+  if(hasBudgetOrPainRoleNear(txt.slice(Math.max(0,idx-45),Math.min(txt.length,idx+45))))return false;
+  // Eindeutige Beispiele: "49 €/User/Monat", "49 € pro User pro Monat", "49 € pro Monat und pro User".
+  const directAfter=/^(?:\s*[\d.,]+\s*(?:€|eur|euro))?[^\n.;]{0,70}(?:\/\s*(?:user|nutzer|anwender|lizenz)\s*\/\s*(?:monat|month)|(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)[^\n.;]{0,35}(?:pro|je|per|\/)\s*(?:monat|month)|(?:pro|je|per)\s*(?:monat|month)[^\n.;]{0,35}(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz))/i.test(after);
+  const directBefore=/(?:\/\s*(?:user|nutzer|anwender|lizenz)\s*\/\s*(?:monat|month)|(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)[^\n.;]{0,35}(?:pro|je|per|\/)\s*(?:monat|month)|(?:pro|je|per)\s*(?:monat|month)[^\n.;]{0,35}(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz))[^\n.;]{0,70}$/i.test(before);
+  return (directAfter||directBefore)&&hasDirectMonthlyUserPrice(local);
+}
 function sanitizeImpossibleMoneyRoleLine(accId,line){
   let x=String(line||'');
   const ctx=extractOfferPricingPeriodContext(accId);
   if(!ctx.startAmount)return x;
   const safe=buildSafeOfferEconomicsText(accId);
   if(/startangebot/i.test(x)&&/(danach|anschlie(?:ß|ss)end|später)/i.test(x)&&/monat/i.test(x))return safe;
+  if(/(?:danach|anschlie(?:ß|ss)end|später)[^\n]{0,100}\d[\d.\s,]*\s*(?:€|eur|euro)\s*(?:\/\s*monat|monatlich|pro\s*monat)[^\n]{0,80}(?:user|nutzer|anwender|lizenzen?)/i.test(x))return safe;
   if(/monat/i.test(x)&&/(user|nutzer|anwender|lizenz)/i.test(x)&&ctx.recurringAmount&&ctx.userCount){
     const nums=extractEuroNumbers(x).map(n=>n.value).filter(Boolean);
     const expected=ctx.recurringPerUser?ctx.recurringAmount*ctx.userCount:ctx.recurringAmount;
@@ -2466,7 +2480,7 @@ function extractOfferPricingPeriodContext(accId){
     const local=win(a.index,70);
     const roleBlocked=hasBudgetOrPainRoleNear(local)||(/budget|schaden|verlust|opportunität|nacharbeit|verfügbar/i.test(near)&&!/angebotspreis|startangebot|paketpreis|lizenz|gebühr|fee|app|user|nutzer/i.test(local));
     const hasStartNear=/(startangebot|einstieg|compact|kompakt|starter|einmalig|einmalpreis|inklusive|inkl\.?|erste[nr]?\s+\d+\s+monate|app\s+f[üu]r\s+die\s+ersten)/i.test(local);
-    const isRecurring=hasDirectMonthlyUserPrice(near)&&hasOfferPriceRoleNear(local)&&!hasStartNear&&!roleBlocked;
+    const isRecurring=isDirectRecurringFeeAmount(raw,a.index)&&hasOfferPriceRoleNear(local)&&!hasStartNear&&!roleBlocked;
     const directScore=roleBlocked?0:roleScore(near);
     const broadScore=roleBlocked?0:roleScore(seg);
     const startScore=directScore>=2?directScore:((a.value<=10000&&broadScore>=3)?broadScore:0);
@@ -3624,6 +3638,11 @@ function sanitizeAuthorityRequirementText(accId,text){
 function sanitizeNoRoiCertaintyText(text){
   if(!text)return text;
   let x=String(text);
+  // v4.186: Perioden nicht vermischen. Monatliche Häufigkeit und jährlicher Schaden dürfen nicht zu
+  // falschen Durchschnittswerten oder Nutzenrechnungen kombiniert werden.
+  x=x.replace(/(?:\d{1,3}\s*(?:Deals?|Fälle)[^\n]{0,40}(?:Monat|monatlich)[^\n]{0,80})[×x*][^\n]{0,80}\d[\d.\s,]*\s*(?:€|EUR|Euro)[^\n]{0,40}(?:Jahr|jährlich|p\.a\.)[^\n]*/gi,'Bekannte Größenordnung getrennt halten: monatliche Häufigkeit und jährlicher Schaden sind zu validieren; keine Durchschnitts- oder ROI-Rechnung ohne belastbare Periodenlogik.');
+  x=x.replace(/(?:durchschnittlich|im\s+Schnitt|pro\s+(?:schlechtem\s+)?Deal)[^\n]{0,80}\d[\d.\s,]*\s*(?:€|EUR|Euro)[^\n]*(?:Schaden|Kosten|Verlust)[^\n]*/gi,'Schaden pro Deal noch nicht belastbar beziffert; mit echten Deals validieren.');
+  x=x.replace(/(?:48\s*(?:im\s+)?Jahr|48\s*(?:Deals?|Fälle)\/Jahr)[^\n]{0,120}(?:potenzieller|jährlicher|Nutzen|Schaden|ROI)[^\n]*/gi,'Jahresmenge aus monatlicher Häufigkeit nur als Orientierung verwenden; wirtschaftliche Wirkung mit echten Deals validieren.');
   x=x.replace(/\b(?:25|30|50|75)\s*%\s*,\s*(?:25|30|50|75)\s*%\s*,\s*(?:25|30|50|75)\s*%\??/gi,'welcher Anteil?');
   x=x.replace(/\b(?:25|30|50|75)\s*%\s*\/\s*(?:25|30|50|75)\s*%\s*\/\s*(?:25|30|50|75)\s*%\??/gi,'welcher Anteil?');
   x=x.replace(/\b(?:2\.000|2000)\s*[–-]\s*(?:3\.333|3333)\s*€\s*\/\s*Monat[^\n.]*/gi,'Nutzen/Wirkung noch nicht belastbar bezifferbar');
@@ -3643,6 +3662,11 @@ function sanitizeNoRoiCertaintyText(text){
 function sanitizeOutputIntegrityText(accId,text,kind){
   if(!text)return text;
   let x=String(text);
+  // v4.186: Perioden-/Einheitenintegrität. Keine Monats-/Jahreswerte vermischen und keine
+  // Jahresgesamtsumme als Schaden pro Deal ausgeben.
+  x=x.replace(/(?:\d{1,3}\s*(?:Deals?|Fälle)[^\n]{0,40}(?:Monat|monatlich)[^\n]{0,100})[×x*][^\n]{0,100}\d[\d.\s,]*\s*(?:€|EUR|Euro)[^\n]{0,60}(?:Jahr|jährlich|p\.a\.)[^\n]*/gi,'Bekannte Größenordnung: monatliche Häufigkeit und jährlicher Gesamtschaden getrennt validieren; keine Durchschnittsrechnung ohne belastbare Periodenlogik.');
+  x=x.replace(/(?:durchschnittlich|im\s+Schnitt|pro\s+(?:schlechtem\s+)?Deal)[^\n]{0,100}\d[\d.\s,]*\s*(?:€|EUR|Euro)[^\n]*(?:Schaden|Kosten|Verlust)[^\n]*/gi,'Schaden pro Deal noch nicht belastbar beziffert; mit echten Deals validieren.');
+  x=x.replace(/(?:wieviel|wie\s+viel)\s*%[^\n]{0,160}(?:retten|gerettet|vermeiden|vermeidbar)[^\n]*/gi,'Welche konkreten Fälle wären durch bessere Discovery früher erkannt, gerettet oder disqualifiziert worden?');
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
   const decName=(accId&&getConfirmedDecisionMakerName(accId))||'der bestätigte Entscheider';
   const inv=accId?buildPhaseInvestmentLine(accId).replace(/^Investition:\s*/,'').replace(/\.$/,''):'';
@@ -3666,7 +3690,7 @@ function sanitizeOutputIntegrityText(accId,text,kind){
     x=x.replace(/\b(?:\d{1,3}\s*%\s*\/\s*){1,4}\d{1,3}\s*%\??/gi,'welcher Anteil?');
     x=x.replace(/\b(?:20|25|30|40|50|60|70|75)\s*[–-]\s*(?:30|40|50|60|70|75|80)\s*%[^\n]*(?:€|EUR|Nutzen|ROI|Jahr|Monat|Payback|Amortisation)[^\n]*/gi,'Branchenhypothese nur als Orientierung; keine Nutzen-/ROI-Rechnung daraus ableiten. Wirkung mit echten Deals messen.');
     x=x.replace(/(?:Wenn|Falls)\s+\d{1,3}\s*%[^\n]*(?:=|ergibt|läge|entsteht|entspricht)[^\n]*(?:€|EUR|Nutzen|ROI)[^\n]*/gi,'Wenn eine Wirkung messbar ist, muss sie mit echten Deals validiert werden; keine Prozentrechnung ohne Kundenbeleg.');
-    x=x.replace(/\b(?:30|50|70|75|25)\s*%\??(?=[\s).,;]|$)/gi,'welcher Anteil?');
+    x=x.replace(/\b(?:20|25|30|40|50|60|70|75)\s*%\??(?=[\s).,;]|$)/gi,'welcher Anteil?');
   }
 
   // 3) Kundenhypothesen sauber kennzeichnen: genannte grobe Schadensgrößen sind nicht automatisch validierte Wirkung.
@@ -3681,6 +3705,8 @@ function sanitizeOutputIntegrityText(accId,text,kind){
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung).{0,80}(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Bestätigung|Zusage|Commitment)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+decName+' anhand echter Deals validieren.');
     x=x.replace(/Geschäftsführer(?:in)?\s+involviert:\s*/gi,'Management-Sicht: ');
     x=x.replace(/Geschäftsführung\s+involviert:\s*/gi,'Management-Sicht: ');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,80}(?:durchsprechen|anschauen|validieren|fragen|klären)[^\n.]*(?:\.|$)/gi,'Wirtschaftliche Wirkung mit '+decName+' anhand echter Deals validieren.');
+    x=x.replace(/(?:durch|mit)\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'mit '+decName+' anhand echter Deals validieren.');
   }
 
   // 5) Abschluss-/ROI-Ton entschärfen.
@@ -3698,7 +3724,11 @@ function sanitizeOutputIntegrityText(accId,text,kind){
     x=x.replace(/Angebotspreis\s+geklärt:\s*2\.900\s*€\s*Startangebot(?![^\n]*(?:inkl|danach))/gi,'Angebotspreis geklärt: '+inv);
   }
 
-  // 7) Doppelte oder verdrehte Negationen bereinigen.
+  // 7) Perioden-/ROI-Formulierungen final neutralisieren.
+  x=x.replace(/(?:\d{1,3}\s*(?:Deals?|Fälle)\/Monat|\d{1,3}\s*(?:Deals?|Fälle)\s+pro\s+Monat)[^\n]{0,120}=\s*[^\n]*(?:€|EUR|Euro)[^\n]*/gi,'Monatliche Häufigkeit und wirtschaftliche Wirkung getrennt validieren; keine Rechnung ohne belastbare Kundendaten.');
+  x=x.replace(/(?:30|50|70|75|25)\s*%[^\n]{0,80}(?:realistisch|retten|vermeid|Quote)[^\n]*/gi,'Vermeidungsquote offen; Wirkung mit echten Deals messen.');
+
+  // 8) Doppelte oder verdrehte Negationen bereinigen.
   x=x.replace(/keine\s+Validierung\s+mit\s+([^\n]{1,60})\s+anhand\s+echter\s+Deals\s+erforderlich/gi,'keine zusätzliche Freigabe erforderlich; Wirkung mit echten Deals validieren');
   x=x.replace(/keine\s+Keine/gi,'keine');
   x=x.replace(/\n{3,}/g,'\n\n');
@@ -6424,7 +6454,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.185';
+const KI21_VERSION='v4.186';
 
 
 function runKi21VersionMigration(){
@@ -6433,7 +6463,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.185: stabile Klickbasis beibehalten; Output-Integrity-Guards generisch nach Rollen/Evidenzstatus, keine Case-Hardcodierung und keine UI-Event-Änderungen.
+    // v4.186: stabile Klickbasis beibehalten; Perioden-/Money-Role-Guards generisch nach Rollen/Evidenzstatus, keine Case-Hardcodierung und keine UI-Event-Änderungen.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6448,7 +6478,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.185',
+        protectedSchema:'v4.186',
         migratedAt:Date.now()
       });
     }
