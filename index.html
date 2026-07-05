@@ -2131,12 +2131,21 @@ function hasConfirmedFullDecisionAuthority(accId){
 
   return ((explicitNoExtraApproval&&fullAuthority)||namedDecisionAuthority)&&!explicitNeedForApproval;
 }
+
+function sanitizeDecisionMakerName(name){
+  const n=String(name||'').trim();
+  if(!n)return '';
+  // Generische Sperre gegen falsch extrahierte Kategorien/Artefakte statt Personennamen.
+  if(/^(dimension|budget|budgetrahmen|schmerz|bedarf|angebot|phase|entscheidung|entscheider|account|opportunity|pipeline|forecast|unternehmen|kunde|vertrieb|sales|roi|compact|pilot|start|geschäftsführer|management)$/i.test(n))return '';
+  if(/^(und|oder|mit|ohne|der|die|das|ein|eine|einen|einem|im|in|am|an|von|für)$/i.test(n))return '';
+  return n;
+}
 function getConfirmedDecisionMakerName(accId){
   const raw=getCurrentUserKnowledgeText(accId);
   const m=raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{2,})\b.{0,80}(vollständig|eigenständig|allein|selbstständig).{0,100}(entscheider|freigeben|beauftragen|budget|pilotstart|beauftragung)/);
-  if(m&&m[1])return m[1];
+  if(m&&sanitizeDecisionMakerName(m[1]))return sanitizeDecisionMakerName(m[1]);
   const m2=raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{2,})\b.{0,120}(entscheidungsbefugt|entscheider|darf|kann|allein|eigenständig|budget|beauftragen|freigeben)/);
-  if(m2&&m2[1])return m2[1];
+  if(m2&&sanitizeDecisionMakerName(m2[1]))return sanitizeDecisionMakerName(m2[1]);
   return 'der bestätigte Entscheider';
 }
 function isObsoleteGfCfoText(txt){
@@ -2172,7 +2181,7 @@ function isForecastValueLeverAllowed(accId){
   // v4.155: Forecast-Genauigkeit ist ein direkter Hebel nur bei KI21 oder bei Angeboten,
   // die selbst Opportunity-/Pipeline-/Forecast-/Sales-Steuerung verbessern. Bei fremden
   // Angeboten nicht automatisch KI21-Nutzen hineinprojizieren.
-  const ownIsKi21=/ki\s*[-]?\s*21|ki21|opportunity\s*health|health\s*score/i.test(own);
+  const ownIsKi21=/(^|\b)ki\s*[-]?\s*21(\b|$)|(^|\b)ki21(\b|$)|opportunity\s*health|health\s*score/i.test(own);
   const ownAddressesForecast=/forecast|pipeline|opportunit|opportunity\s*health|health\s*score|scoring|crm|hubspot|sales\s*performance|vertriebssteuer|vertriebscontrolling|qualifizier|discovery|deal\s*review|opportunity\s*review/i.test(own);
   const customerExplicitForecast=/forecast|forecastgenauigkeit|forecast-?genauigkeit|pipeline\s*(qualit|genau|belast|realistisch)|prognose|vorhersage|abschlus(s|ss)wahrscheinlichkeit|commit\s*forecast/i.test(raw);
   return !!(ownIsKi21||ownAddressesForecast||customerExplicitForecast);
@@ -2202,7 +2211,7 @@ function extractEuroNumbers(text){
   }
   return out;
 }
-// v4.160: Geldbeträge nicht nach festen Zahlenwerten, sondern nach semantischer Rolle zuordnen.
+// v4.161: Geldbeträge nicht nach festen Zahlenwerten, sondern nach semantischer Rolle zuordnen.
 // Dadurch funktioniert die Logik bei beliebigen Beträgen (z.B. 81.000 €, 57.500 €, 3.400 €).
 function euroRoleKeywordDistance(text, amountIndex, pattern){
   const raw=String(text||'');
@@ -2335,7 +2344,7 @@ function sanitizeBudgetPriceText(accId,text,kind){
   }
   if(fit.fits&&isObsoleteBudgetPriceConfusion(text)){
     if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt klar im Budgetrahmen';
-    if(kind==='missing'||kind==='open')return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Umfang und Starttermin festlegen';
+    if(kind==='missing'||kind==='open')return hasVermeidungsquoteBusinessCase(accId,null)?'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen':(fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Umfang und Starttermin festlegen');
     if(kind==='risk'||kind==='warning')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Formale Beauftragung noch offen';
     return '';
   }
@@ -2704,6 +2713,18 @@ function normalizeRoiHebelText(text){
   x=x.replace(/Konkrete\s+Pilot[-\s]?Deals\s+und\s+Messmetriken\s+offen/gi,'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen');
   x=x.replace(/Konkrete\s+Pilot[-\s]?Deals\s+und\s+Messkriterien\s+offen/gi,'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen');
   x=x.replace(/Pilot[-\s]?Erfolgskriterien\s+noch\s+nicht\s+konkret\s+definiert/gi,'Pilot-Erfolgskriterien und Messkriterien noch nicht konkret definiert');
+  x=x.replace(/ROI[-\s]?Validierung\s+erst\s+nach\s+Pilot\s+planbar,?\s+aktuell\s+hypothetisch/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+  x=x.replace(/ROI[-\s]?Annahme\s+aktuell\s+hypothetisch/gi,'ROI-Annahme noch nicht belastbar validiert');
+  return x;
+}
+function sanitizeBadExtractionArtifacts(accId,text,kind){
+  let x=String(text||'').trim();
+  if(!x)return x;
+  if(/^Dimension\s+allein\s+entscheidungsbefugt$/i.test(x)||/^Dimension\s+entscheidungsbefugt$/i.test(x)){
+    const name=sanitizeDecisionMakerName(getConfirmedDecisionMakerName(accId));
+    return name?name+' allein entscheidungsbefugt':'Entscheider allein entscheidungsbefugt';
+  }
+  x=x.replace(/^Dimension\s+/i,'');
   return x;
 }
 function hasAuthoritySignalInHealth(health){
@@ -2752,11 +2773,13 @@ function preferConcreteCockpitFacts(accId,positives){
   };
   replaceOrAdd(/schmerz konkret benannt|schmerz quantifiziert|umsatzschaden|jahresschaden|wirtschaftlicher schaden|verlust/i,facts.pain,1);
   replaceOrAdd(/budgetrahmen vorhanden|budget bestätigt|budget.{0,80}verfügbar|budget/i,facts.budget,2);
-  replaceOrAdd(/entscheidungsbefugnis bestätigt|entscheider.*entscheid|entscheidungsbefugt/i,facts.authority,0);
+  replaceOrAdd(/entscheidungsbefugnis bestätigt|entscheider.*entscheid|entscheidungsbefugt|allein entscheidungsbefugt/i,facts.authority,0);
   return shortUniqueList(list,4);
 }
 function sanitizeCockpitTextFinal(accId,text,kind,opts){
   let x=String(text||'').trim();
+  if(!x)return '';
+  x=sanitizeBadExtractionArtifacts(accId,x,kind);
   if(!x)return '';
   const authority=!!(opts&&opts.authority);
   const budgetFit=!!(opts&&opts.budgetFit);
@@ -2767,17 +2790,18 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
   if(isObsoleteBudgetPriceConfusion(x) && (budgetFit||budgetSignal||fit.fits)){
     if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt im Budgetrahmen';
     if(kind==='warning'||kind==='risk')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Angebotsumfang noch nicht verbindlich festgelegt';
-    return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären';
+    return hasVermeidungsquoteBusinessCase(accId,null)?'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen':(fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären');
   }
   x=sanitizeInventedPrecisionText(accId,x,kind);
   x=normalizeRoiHebelText(x);
+  if(/keine\s+konkurrenzanalyse|wettbewerbslage\s+unbekannt|wettbewerb\s+unklar/i.test(x)){x='Wettbewerbslage im Auge behalten; kein Wettbewerber bekannt';}
   x=sanitizeBudgetPriceText(accId,x,kind);
   // Nach der Budget-Säuberung nochmals prüfen: alte Budget-Fit-Fragen dürfen im Cockpit nicht sichtbar bleiben,
   // sobald ein passender Angebotsbaustein oder ein belastbares Budgetsignal vorhanden ist.
   if(isObsoleteBudgetPriceConfusion(x) && (budgetFit||budgetSignal||fit.fits)){
     if(kind==='positive')return fit.entryRole?'Startangebot liegt klar im Budgetrahmen':'Angebot liegt im Budgetrahmen';
     if(kind==='warning'||kind==='risk')return fit.entryRole?'Startangebot noch nicht verbindlich gestartet':'Angebotsumfang noch nicht verbindlich festgelegt';
-    return fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären';
+    return hasVermeidungsquoteBusinessCase(accId,null)?'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen':(fit.entryRole?'Einstiegsumfang und Starttermin festlegen':'Angebotsumfang und Starttermin klären');
   }
   if(authority&&isObsoleteGfCfoText(x)){
     if(/schaden|jahresschaden|umsatzverlust|umsatzschaden|wirtschaftlicher schaden|quote|vermeidungsquote|roi/i.test(x)){
@@ -2862,6 +2886,14 @@ function buildCockpitMatrixData(accId,health){
   if(hasVQCase&&!hasTextInList(finalRisks,/vermeidungsquote|vermeidbar/i)){
     const insertAt=finalRisks.length&&/entscheidung|gestoppt|verzögert|beauftragung|startentscheidung/i.test(finalRisks[0])?1:0;
     finalRisks.splice(insertAt,0,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+  }
+  if(hasVQCase){
+    const comp=finalRisks.filter(t=>/wettbewerb|konkurrenz/i.test(String(t||'')));
+    finalRisks=finalRisks.filter(t=>!/wettbewerb|konkurrenz/i.test(String(t||'')));
+    finalRisks=finalRisks.concat(comp);
+  }
+  if(hasVQCase){
+    finalOpen=finalOpen.filter(t=>!/^(Einstiegsumfang und Starttermin festlegen|Umfang und Starttermin festlegen|Angebotsumfang und Starttermin klären)$/i.test(String(t||'')));
   }
   if(hasVQCase&&!hasTextInList(finalOpen,/pilot[-\s]?deals|messkriterien|vermeidungsquote/i)){
     finalOpen.unshift('Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen');
@@ -3078,7 +3110,7 @@ function splitDetailsFromResult(text){
   return {main:text.slice(0,idx).trim(),details:text.slice(idx+m[0].length).trim()};
 }
 
-// v4.160: Geldbeträge generisch nach Rollen klassifizieren und harte Fallzahlen vermeiden.
+// v4.161: Geldbeträge generisch nach Rollen klassifizieren und harte Fallzahlen vermeiden.
 // Ziel: abschlussorientiert, aber nicht überzogen. Kein "grünes Licht", solange keine
 // ausdrückliche Beauftragung/Zusage vorliegt. Gilt zusätzlich zum Prompt als harte Leitplanke.
 function sanitizePhase5CloseTone(text){
@@ -5676,7 +5708,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.160';
+const KI21_VERSION='v4.161';
 
 
 function runKi21VersionMigration(){
