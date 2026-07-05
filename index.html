@@ -2471,6 +2471,12 @@ function extractOfferPricingPeriodContext(accId){
   }
   if(!includedMonths && /(erste[nr]?|inklusive|inkl\.?|enthalten|app).{0,80}(sechs|6)\s*monate/i.test(raw))includedMonths=6;
 
+  // v4.178: Einmaliges Startangebot darf nie durch Useranzahl zu Monatskosten werden.
+  // Wenn derselbe Betrag sowohl als Startangebot als auch als wiederkehrender Betrag erkannt wurde,
+  // zählt die explizite Startrolle stärker; laufende Kosten bleiben dann unbekannt statt erfunden.
+  if(start&&recurring&&recurring.amount===start.amount){
+    recurring=null;
+  }
   return {
     startAmount:start?start.amount:null,
     recurringAmount:recurring?recurring.amount:null,
@@ -2494,7 +2500,7 @@ function buildSafeOfferEconomicsText(accId){
   if(!ctx.startAmount)return 'Wirtschaftliche Plausibilität separat validieren: Startangebot, laufende Gebühren und Vermeidungswirkung nicht vermischen';
   let txt=formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
@@ -2507,7 +2513,7 @@ function buildOfferPricingBusinessCaseText(accId){
   if(!ctx.startAmount)return '';
   let txt='Angebotslogik geklärt: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
@@ -3558,7 +3564,7 @@ function buildPhaseInvestmentLine(accId){
   if(!ctx.startAmount)return 'Investition: konkreter Angebotspreis noch zu klären.';
   let txt='Investition: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inkl. '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+'/Monat bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+'/Monat';
   }
@@ -3630,6 +3636,17 @@ function sanitizeAuthorityAndRoiFinalText(accId,text,kind){
       if(kind==='missing')return 'Pilot-Deals und Messkriterien zur Vermeidungsquote mit '+name+' festlegen.';
       return 'Mit '+name+' Pilot-Deals, Erfolgskriterien und KI21-Compact-Start festlegen.';
     }
+  }
+  // v4.178: keine monatliche Multiplikation eines Startangebots und keine Nutzenrange aus unvalidierter Quote.
+  x=x.replace(/(?:danach\s+)?\d[\d\.\s,]*\s*€\s*(?:monatlich|\/Monat|pro\s*Monat)\s*bei\s*\d+\s*Usern/gi, function(m){
+    const safe=buildSafeOfferEconomicsText(accId||'');
+    return safe||'laufende Gebühren nur bei expliziter Preisperiode ausweisen';
+  });
+  x=x.replace(/Laufender\s+Nutzen\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/Monat[^\n.]*/gi,'Laufender Nutzen: noch nicht beziffern – Vermeidungsquote/Wirkung mit echten Deals messen');
+  x=x.replace(/\b(?:25|50|75)\s*%\b/gi,'unvalidierter Anteil');
+  if(authority){
+    x=x.replace(/Geschäftsführer[-\s]?Bestätigung\s+ist\s+Voraussetzung/gi,'Validierung mit '+name+' anhand echter Deals ist Voraussetzung');
+    x=x.replace(/Geschäftsführer(?:in)?[-\s]?Freigabe[^\n.]*/gi,'Keine zusätzliche GF-Freigabe erforderlich; Startentscheidung mit '+name+' klären');
   }
   return x;
 }
@@ -4009,15 +4026,15 @@ function renderHome(){
     className:'cockpit-score-badge',
     style:{color:scoreColor,borderColor:scoreColor+'60',background:scoreColor+'15',
       display:health?'block':'none'},
-    onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}
+    onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}
   },health?health.score+'/100':'');
 
   const header=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand'},'KI','21'),
       cust.firma
-        ? h('div',{className:'cockpit-opp-name',onclick:showKunde},cust.firma)
-        : h('div',{className:'cockpit-opp-placeholder',onclick:showKunde},'Opportunity wählen →')
+        ? h('div',{className:'cockpit-opp-name',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},cust.firma)
+        : h('div',{className:'cockpit-opp-placeholder',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},'Opportunity wählen →')
     ),
     h('div',{className:'cockpit-header-right'},
       scoreBadge,
@@ -4756,7 +4773,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // 1) Opportunity Health Hero
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     // Qualifizierungscheck (Arbeitsbereich Phase 1) — dieselbe Checkliste wie im Health-Detail (11 Punkte)
     if(health){
@@ -4838,7 +4855,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // Health-Balken (kompakt, ohne Dashboard)
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
@@ -4966,7 +4983,7 @@ function renderStation(sitId){
   if(sitId===2){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -4980,7 +4997,7 @@ function renderStation(sitId){
   if(sitId===3){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -4994,7 +5011,7 @@ function renderStation(sitId){
   if(sitId===4){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -6344,7 +6361,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.177';
+const KI21_VERSION='v4.178';
 
 
 function runKi21VersionMigration(){
@@ -6368,7 +6385,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.177',
+        protectedSchema:'v4.178',
         migratedAt:Date.now()
       });
     }
