@@ -4087,6 +4087,43 @@ function exportAutopilotPDF(cust,dossierResults){
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 }
 
+
+// v4.169: Schutz gegen veraltete Antworten nach neu generierten SPIN-/Leitfragen.
+// Wenn Leitfragen aktualisiert werden, dürfen alte Antworten nicht nummerisch unter neuen Fragen stehen.
+function ki21SpinQuestionSignature(questions){
+  return (questions||[])
+    .map(q=>String(q||'').toLowerCase().replace(/\s+/g,' ').replace(/[„“"'’]/g,'').trim())
+    .filter(Boolean)
+    .join(' || ');
+}
+function ki21InvalidateAnswersIfSpinChanged(stData, spinQuestions){
+  if(!stData) return {cleared:false,sig:''};
+  stData.fv=stData.fv||{};
+  const sig=ki21SpinQuestionSignature(spinQuestions);
+  if(!sig) return {cleared:false,sig:''};
+  const oldSig=stData.fv.antwortenSpinSig||'';
+  const hasAnswers=!!(stData.fv.antworten&&String(stData.fv.antworten).trim());
+  let cleared=false;
+  if(hasAnswers && oldSig!==sig){
+    stData.fv.antwortenArchiv=String(stData.fv.antworten||'');
+    stData.fv.antwortenArchivHinweis='Archiviert, weil sich die Leitfragen geändert haben und die alten Antworten nicht mehr sicher zuordenbar waren.';
+    stData.fv.antworten='';
+    cleared=true;
+  }
+  stData.fv.antwortenSpinSig=sig;
+  return {cleared,sig};
+}
+function ki21ClearAnswersOnNewSpin(stData,newSpin){
+  if(!stData) return;
+  stData.fv=stData.fv||{};
+  if(stData.fv['spin']!==newSpin && stData.fv['antworten']&&String(stData.fv['antworten']).trim()){
+    stData.fv['antwortenArchiv']=String(stData.fv['antworten']);
+    stData.fv['antwortenArchivHinweis']='Archiviert, weil neue Leitfragen erzeugt wurden.';
+    stData.fv['antworten']='';
+    stData.fv['antwortenSpinSig']='';
+  }
+}
+
 function transferAndGo(fromId, toId, result){
   // Direct transfer - output is already compact
   const nextKEY='ki21_st_'+state.activeId+'_'+toId;
@@ -4158,7 +4195,9 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
           // v4.149: SPIN muss eine explizite Nicht-Handeln-I-Frage enthalten.
           // Prompt allein reicht nicht zuverlässig; deshalb deterministisch nachschärfen.
           cleanLines=ensureExplicitNonActionImplicationLines(cleanLines, LS.get('ki21_active',''));
-          freshData.fv['spin']=cleanLines.join('\n');
+          const newSpin=cleanLines.join('\n');
+          ki21ClearAnswersOnNewSpin(freshData,newSpin);
+          freshData.fv['spin']=newSpin;
           LS.set(nextKEY,freshData);
           // Re-render nur wenn Nutzer noch auf Phase 2 ist
           if(LS.get('ki21_view','')!=='home')renderStation(toId);
@@ -4170,7 +4209,9 @@ Nur die Fragen, keine Erklärungen, keine Einleitung.`;
           .map(l=>l.trim())
           .filter(l=>/^(?:•\s*)?[SPIN]\s*[:\-–]/i.test(l));
         fallbackLines=ensureExplicitNonActionImplicationLines(fallbackLines, LS.get('ki21_active',''));
-        freshData.fv['spin']=fallbackLines.join('\n')||result.slice(0,800);
+        const newSpinFallback=fallbackLines.join('\n')||result.slice(0,800);
+        ki21ClearAnswersOnNewSpin(freshData,newSpinFallback);
+        freshData.fv['spin']=newSpinFallback;
         LS.set(nextKEY,freshData);
         if(LS.get('ki21_view','')!=='home')renderStation(toId);
       }
@@ -4454,6 +4495,14 @@ function renderStation(sitId){
     let lastGroup='';
 
     if(spinQuestions.length){
+      const spinGuard=ki21InvalidateAnswersIfSpinChanged(data, spinQuestions);
+      if(spinGuard.cleared){
+        LS.set(KEY,data);
+        wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
+          'Die Leitfragen wurden aktualisiert. Alte Antworten wurden archiviert und die Antwortfelder geleert, damit keine Antwort zur falschen Frage steht.'));
+      } else {
+        LS.set(KEY,data);
+      }
       wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'10px'}},'Leitfragen & Antworten'));
       const taRefs=[];
       spinQuestions.forEach((q,i)=>{
@@ -4477,6 +4526,7 @@ function renderStation(sitId){
           placeholder:'Antwort aus dem Gespräch ...',
           oninput:()=>{
             data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
+            data.fv['antwortenSpinSig']=ki21SpinQuestionSignature(spinQuestions);
             LS.set(KEY,data);
           }
         });
@@ -4864,7 +4914,9 @@ function renderStation(sitId){
           if(spinIdx>=0){
             const nextKEY2='ki21_st_'+state.activeId+'_1';
             const nextData2=LS.get(nextKEY2,{fv:{},result:''});
-            nextData2.fv['spin']=lines2.slice(spinIdx).join('\n').trim();
+            const newSpin2=lines2.slice(spinIdx).join('\n').trim();
+            ki21ClearAnswersOnNewSpin(nextData2,newSpin2);
+            nextData2.fv['spin']=newSpin2;
             LS.set(nextKEY2,nextData2);
           }
           weiter2Row.style.display='none';
@@ -5879,7 +5931,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.168';
+const KI21_VERSION='v4.169';
 
 
 function runKi21VersionMigration(){
@@ -5903,7 +5955,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.168',
+        protectedSchema:'v4.169',
         migratedAt:Date.now()
       });
     }
