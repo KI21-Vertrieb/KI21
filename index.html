@@ -2417,6 +2417,37 @@ function getOfferNumbers(){
 }
 // v4.171: Angebotsperioden hart trennen. Ein Start-/Compact-/Einstiegsangebot darf nicht
 // als monatliche Investition umgedeutet werden; laufende App-/Usergebühren separat ausweisen.
+
+// v4.184: Money-Role Guard. Budget-/Schadensbeträge dürfen niemals als Preis pro Nutzer/Monat
+// interpretiert oder mit Userzahlen multipliziert werden. Nur Beträge mit direktem Preis-/Gebühren-
+// Kontext UND eindeutiger Perioden-/Userrolle dürfen laufende Gebühren sein.
+function hasBudgetOrPainRoleNear(seg){
+  return /budget|budgetrahmen|budgettopf|investitionsrahmen|freigegeben|verfügbar|schaden|jahresschaden|verlust|opportunitätsschaden|problemschaden|umsatzschaden|kosten des problems|nacharbeit|nachbearbeitung/i.test(String(seg||''));
+}
+function hasOfferPriceRoleNear(seg){
+  return /angebotspreis|preis|paketpreis|startangebot|angebot|lizenz|lizenzpreis|subscription|gebühr|fee|app|nutzung|user|nutzer|anwender|pro\s*user|pro\s*nutzer|je\s*user|je\s*nutzer/i.test(String(seg||''));
+}
+function hasDirectMonthlyUserPrice(seg){
+  const st=String(seg||'');
+  const hasMonthly=/monat|monthly|\/\s*monat/i.test(st);
+  const hasUser=/user|nutzer|anwender|lizenz/i.test(st);
+  const hasPer=/(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)|(?:user|nutzer|anwender|lizenz)\s*\/\s*(?:monat|month)|(?:pro|je|per)\s*(?:monat|month).{0,50}(?:pro|je|per)\s*(?:user|nutzer|anwender|lizenz)/i.test(st);
+  return hasMonthly&&hasUser&&hasPer;
+}
+function sanitizeImpossibleMoneyRoleLine(accId,line){
+  let x=String(line||'');
+  const ctx=extractOfferPricingPeriodContext(accId);
+  if(!ctx.startAmount)return x;
+  const safe=buildSafeOfferEconomicsText(accId);
+  if(/startangebot/i.test(x)&&/(danach|anschlie(?:ß|ss)end|später)/i.test(x)&&/monat/i.test(x))return safe;
+  if(/monat/i.test(x)&&/(user|nutzer|anwender|lizenz)/i.test(x)&&ctx.recurringAmount&&ctx.userCount){
+    const nums=extractEuroNumbers(x).map(n=>n.value).filter(Boolean);
+    const expected=ctx.recurringPerUser?ctx.recurringAmount*ctx.userCount:ctx.recurringAmount;
+    const hasOtherMonthly=nums.some(n=>Math.abs(n-expected)>1 && Math.abs(n-ctx.startAmount)>1 && n>expected*3);
+    if(hasOtherMonthly)return safe;
+  }
+  return x;
+}
 function extractOfferPricingPeriodContext(accId){
   const raw=String(getExplicitOfferPricingContextText(accId)||'');
   const amounts=extractEuroNumbers(raw).filter(a=>a.value>=1&&a.value<=10000000);
@@ -2431,18 +2462,13 @@ function extractOfferPricingPeriodContext(accId){
   };
   amounts.forEach(a=>{
     const seg=win(a.index,190);
-    const near=win(a.index,90);
-    // v4.183: Wiederkehrende Gebühren nur im direkten Kontext des Betrags erkennen.
-    // Ein Startbetrag mit "inklusive 6 Monate" darf nicht wegen später erwähnter User-/Monatsgebühren
-    // selbst als monatliche Gebühr klassifiziert und mit der Userzahl multipliziert werden.
-    const local=win(a.index,55);
-    const hasDirectRecurring=/(?:pro|je|per)\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|user\s*\/\s*monat|nutzer\s*\/\s*monat|monatlich|jährlich/i.test(local);
+    const near=win(a.index,100);
+    const local=win(a.index,70);
+    const roleBlocked=hasBudgetOrPainRoleNear(local)||(/budget|schaden|verlust|opportunität|nacharbeit|verfügbar/i.test(near)&&!/angebotspreis|startangebot|paketpreis|lizenz|gebühr|fee|app|user|nutzer/i.test(local));
     const hasStartNear=/(startangebot|einstieg|compact|kompakt|starter|einmalig|einmalpreis|inklusive|inkl\.?|erste[nr]?\s+\d+\s+monate|app\s+f[üu]r\s+die\s+ersten)/i.test(local);
-    const isRecurring=hasDirectRecurring&&!hasStartNear;
-    const directScore=roleScore(near);
-    const broadScore=roleScore(seg);
-    // v4.175: Startbetrag nur bei direktem Rollen-Kontext oder bei kleinem Betrag mit eindeutiger Compact-/Start-Konfiguration.
-    // So wird ein Problemschaden wie 80.000 € nicht zum Angebotspreis, nur weil im selben generierten Text irgendwo „Startangebot“ steht.
+    const isRecurring=hasDirectMonthlyUserPrice(near)&&hasOfferPriceRoleNear(local)&&!hasStartNear&&!roleBlocked;
+    const directScore=roleBlocked?0:roleScore(near);
+    const broadScore=roleBlocked?0:roleScore(seg);
     const startScore=directScore>=2?directScore:((a.value<=10000&&broadScore>=3)?broadScore:0);
     if(isRecurring){
       if(!recurring||a.value<recurring.amount)recurring={amount:a.value,segment:seg,index:a.index};
@@ -2462,7 +2488,7 @@ function extractOfferPricingPeriodContext(accId){
   return {
     startAmount:start?start.amount:null,
     recurringAmount:recurring?recurring.amount:null,
-    recurringPerUser:!!(recurring&&/(pro\s*(?:user|nutzer|anwender)|\/\s*(?:user|nutzer)|je\s*(?:user|nutzer|anwender)|user\/monat|nutzer\/monat)/i.test(recurring.segment)),
+    recurringPerUser:!!(recurring&&hasDirectMonthlyUserPrice(recurring.segment)),
     recurringMonthly:!!(recurring&&/(monat|month)/i.test(recurring.segment)),
     userCount:users,
     includedMonths:includedMonths,
@@ -2475,7 +2501,8 @@ function isUnsafeRoiCalculationText(text){
   return /business\s*case\s+plausibel/i.test(s)
     || /\b(?:roi|business\s*case|wirtschaftlich(?:e|er|keit)?|investition).{0,160}(?:vs\.|gegenüber|amortisation|break[-\s]?even|rendite|faktor|rechnet\s*sich|monatliche\s+investition)/i.test(s)
     || /\d[\d\.\s,]*\s*(?:€|eur|euro|k€).{0,120}(?:vs\.|gegenüber).{0,120}\d[\d\.\s,]*\s*(?:€|eur|euro|k€)/i.test(s)
-    || /\d[\d\.\s,]*\s*(?:€|eur|euro).{0,60}startangebot.{0,80}\d[\d\.\s,]*\s*(?:€|eur|euro).{0,40}monatlich/i.test(s);
+    || /\d[\d\.\s,]*\s*(?:€|eur|euro).{0,60}startangebot.{0,80}\d[\d\.\s,]*\s*(?:€|eur|euro).{0,40}monatlich/i.test(s)
+    || /investition.{0,120}danach.{0,80}\d[\d\.\s,]*\s*(?:€|eur|euro).{0,40}monat/i.test(s);
 }
 function buildSafeOfferEconomicsText(accId){
   const ctx=extractOfferPricingPeriodContext(accId);
@@ -2532,6 +2559,7 @@ function sanitizeOfferPricingPeriodText(accId,text){
   if(ctx.startAmount){
     x=x.replace(new RegExp(formatEuroDE(ctx.startAmount).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*(?:monatliche|monatlich|pro\\s*monat|/\\s*monat)','i'),formatEuroDE(ctx.startAmount)+' Startangebot');
   }
+  x=sanitizeImpossibleMoneyRoleLine(accId,x);
   return x;
 }
 function hasExplicitEntryOfferRole(){
@@ -6324,7 +6352,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.183';
+const KI21_VERSION='v4.184';
 
 
 function runKi21VersionMigration(){
@@ -6333,7 +6361,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.183: stabile Klickbasis v4.182; fachliche Guards nur generisch nach Rollen (Authority/Preis/ROI), keine UI-Event-Änderungen.
+    // v4.184: stabile Klickbasis v4.182; fachliche Guards nur generisch nach Rollen (Authority/Preis/ROI), keine UI-Event-Änderungen.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6348,7 +6376,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.183',
+        protectedSchema:'v4.184',
         migratedAt:Date.now()
       });
     }
