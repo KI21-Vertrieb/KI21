@@ -2107,8 +2107,27 @@ function getCurrentUserKnowledgeText(accId){
   }
   return parts.join('\n');
 }
+function getOpportunityAllText(accId){
+  const parts=[getCurrentUserKnowledgeText(accId)];
+  try{
+    const acc=(LS.get('ki21_acc',[])||[]).find(a=>a&&a.id===accId)||{};
+    parts.push(JSON.stringify(acc));
+  }catch(e){}
+  try{
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d){
+        if(d.result)parts.push(String(d.result));
+        if(d.result2)parts.push(String(d.result2));
+        if(d.fv)parts.push(JSON.stringify(d.fv));
+      }
+    }
+  }catch(e){}
+  try{const h=LS.get('ki21_health_'+accId,null);if(h)parts.push(JSON.stringify(h));}catch(e){}
+  return parts.filter(Boolean).join('\n');
+}
 function hasConfirmedFullDecisionAuthority(accId){
-  const raw=getCurrentUserKnowledgeText(accId);
+  const raw=getOpportunityAllText(accId);
   if(!raw.trim())return false;
 
   // Gegenbelege in aktuellen Nutzer-Ergänzungen verhindern den Fix.
@@ -2141,7 +2160,7 @@ function sanitizeDecisionMakerName(name){
   return n;
 }
 function getConfirmedDecisionMakerName(accId){
-  const raw=getCurrentUserKnowledgeText(accId);
+  const raw=getOpportunityAllText(accId);
   // v4.163: Entscheider-Namen robust, aber generisch extrahieren. Keine Kategorien wie "Dimension".
   const cleanPerson=(val)=>{
     let n=String(val||'').trim();
@@ -2386,7 +2405,9 @@ function sanitizeInventedPrecisionText(accId,text,kind){
   const rawCtx=String(getCurrentUserKnowledgeText(accId)||'');
   const explicitPctFromCustomer=/(?:kunde|entscheider|marius|customer|client).{0,80}\d{1,3}\s*%.{0,80}(?:vermeidungsquote|vermeidbar|vermeidbarkeit)|(?:vermeidungsquote|vermeidbar|vermeidbarkeit).{0,80}\d{1,3}\s*%.{0,80}(?:bestätigt|genannt|sagt|schätzt|kundenangabe)/i.test(rawCtx);
   if(!explicitPctFromCustomer){
-    x=x.replace(/(?:ROI[-\s]?Annahme\s*)?\(?\d{1,3}\s*%\)?\s*(?:angenommene?|unterstellte?|geschätzte?)?\s*(?:Vermeidungsquote|Vermeidbarkeit)(?:\s+angenommen)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+    x=x.replace(/ROI[-\s]?(?:Berechnung|Annahme)[^.;\n]{0,120}\d{1,3}\s*%\s*[-–—]?\s*(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+    x=x.replace(/(?:ROI[-\s]?Annahme\s*)?\(?\d{1,3}\s*%\)?\s*[-–—]?\s*(?:angenommene?|unterstellte?|geschätzte?)?\s*(?:Vermeidungsquote|Vermeidbarkeit)(?:\s+angenommen)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+    x=x.replace(/(?:ROI[-\s]?Annahme\s*)?(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]{0,80}?\d{1,3}\s*%[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
     x=x.replace(/(?:Vermeidungsquote|Vermeidbarkeit)\s*\(?\d{1,3}\s*%\)?\s*(?:angenommen|unterstellt|geschätzt)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   }
   // v4.157: keine erfundene Teilnehmerzahl im nächsten Schritt. Wenn keine konkrete Anzahl
@@ -2740,8 +2761,9 @@ function hasVermeidungsquoteBusinessCase(accId,health){
 }
 function normalizeRoiHebelText(text){
   let x=String(text||'').trim();
-  // v4.163: keine erfundene konkrete Vermeidungsquote im Cockpit.
-  x=x.replace(/(?:ROI[-\s]?Annahme\s*)?\(?\d{1,3}\s*%\)?\s*(?:angenommene?|unterstellte?|geschätzte?)?\s*(?:Vermeidungsquote|Vermeidbarkeit)(?:\s+angenommen)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+  // v4.165: deterministische Sperre gegen erfundene konkrete Vermeidungsquoten im Cockpit.
+  x=x.replace(/ROI[-\s]?(?:Berechnung|Annahme)[^.;\n]{0,120}\d{1,3}\s*%\s*[-–—]?\s*(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+  x=x.replace(/(?:ROI[-\s]?Annahme\s*)?\(?\d{1,3}\s*%\)?\s*[-–—]?\s*(?:angenommene?|unterstellte?|geschätzte?)?\s*(?:Vermeidungsquote|Vermeidbarkeit)(?:\s+angenommen)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/(?:ROI[-\s]?Annahme\s*)?(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]{0,80}?\d{1,3}\s*%[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/(?:Vermeidungsquote|Vermeidbarkeit)\s*\(?\d{1,3}\s*%\)?\s*(?:angenommen|unterstellt|geschätzt)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/Konkrete\s+Pilot[-\s]?Deals\s+und\s+Messmetrik\s+offen/gi,'Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen');
@@ -2770,6 +2792,9 @@ function sanitizeBadExtractionArtifacts(accId,text,kind){
   if(/^Entscheider\s+allein\s+entscheidungsbefugt$/i.test(x)||/^Entscheider\s+identifiziert/i.test(x)){
     if(name&&name!=='der bestätigte Entscheider')return name+' allein entscheidungsbefugt';
   }
+  // Keine nackten Geldlabels aus KI-Texten anzeigen. Sie werden später durch geprüfte Geldrollen ersetzt.
+  if(/^(?:vorhanden|bestätigt):?\s*\d[\d.\s,]*\s*(?:€|eur|euro)(?:\s+verfügbar)?$/i.test(x))return '';
+  if(/^verzögert oder gestoppt$/i.test(x))return 'Entscheidung verzögert oder gestoppt';
   return x;
 }
 function hasAuthoritySignalInHealth(health){
@@ -2793,9 +2818,11 @@ function extractKnownBusinessFacts(accId){
   const raw=(getCurrentUserKnowledgeText(accId)||'').replace(/\s+/g,' ');
   const facts={pain:null,budget:null,authority:null};
   const pain=getEuroAmountsByRole(raw,'pain')[0];
-  const budget=getEuroAmountsByRole(raw,'budget')[0];
+  const budgetRoles=getEuroAmountsByRole(raw,'budget');
+  const budgetValues=[...new Set(budgetRoles.map(b=>b.value))];
   if(pain)facts.pain=describePainAmount(pain);
-  if(budget)facts.budget=describeBudgetAmount(budget);
+  if(budgetValues.length===1)facts.budget=describeBudgetAmount(budgetRoles[0]);
+  else if(budgetValues.length>1)facts.budget='Budgetrahmen vorhanden';
   const name=getConfirmedDecisionMakerName(accId);
   if(hasConfirmedFullDecisionAuthority(accId)||/(entscheidungsbefugnis|entscheidungsbefugt|entscheider).{0,80}(bestätigt|klar|vorhanden)|(?:allein|eigenständig|selbstständig).{0,100}(entscheiden|budget|beauftragen|freigeben)/i.test(raw)){
     facts.authority=(name&&name!=='der bestätigte Entscheider')?name+' allein entscheidungsbefugt':'Entscheider allein entscheidungsbefugt';
@@ -2817,8 +2844,8 @@ function preferConcreteCockpitFacts(accId,positives){
     }
   };
   replaceOrAdd(/schmerz konkret benannt|schmerz quantifiziert|umsatzschaden|jahresschaden|wirtschaftlicher schaden|verlust/i,facts.pain,1);
-  replaceOrAdd(/budgetrahmen vorhanden|budget bestätigt|budget.{0,80}verfügbar|budget/i,facts.budget,2);
-  replaceOrAdd(/entscheidungsbefugnis bestätigt|entscheider.*entscheid|entscheidungsbefugt|allein entscheidungsbefugt/i,facts.authority,0);
+  replaceOrAdd(/budgetrahmen vorhanden|budget bestätigt|budget.{0,80}verfügbar|budget|^(?:vorhanden|bestätigt):?\s*\d[\d.\s,]*\s*(?:€|eur|euro)/i,facts.budget,2);
+  replaceOrAdd(/entscheidungsbefugnis bestätigt|entscheider.*entscheid|entscheidungsbefugt|allein entscheidungsbefugt|kaufentscheidung.*entscheidungsbefugt|dimension.*entscheidungsbefugt/i,facts.authority,0);
   return shortUniqueList(list,4);
 }
 function sanitizeCockpitTextFinal(accId,text,kind,opts){
@@ -2858,6 +2885,51 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
   }
   return x;
 }
+
+function applyProtectedCockpitSnapshot(accId,health,positive,risks,open){
+  const hasVQ=hasVermeidungsquoteBusinessCase(accId,health);
+  const facts=extractKnownBusinessFacts(accId);
+  let p=[...(positive||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'positive',{})).filter(Boolean);
+  let r=[...(risks||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'warning',{})).map(normalizeRoiHebelText).filter(Boolean);
+  let o=[...(open||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'open',{})).map(normalizeRoiHebelText).filter(Boolean);
+
+  // Harte Cockpit-Fakten werden aus geprüften Feldern neu zusammengesetzt, nicht frei aus KI-Texten.
+  if(facts.authority){
+    p=p.filter(t=>!/entscheidungsbefug|entscheider|kaufentscheidung|dimension/i.test(String(t||'')));
+    p.unshift(facts.authority);
+  }
+  if(facts.pain){
+    p=p.filter(t=>!/schmerz|umsatzschaden|jahresschaden|wirtschaftlicher schaden|verlust|problemkosten/i.test(String(t||'')));
+    p.splice(Math.min(1,p.length),0,facts.pain);
+  }
+  if(facts.budget){
+    p=p.filter(t=>!/budget|^(?:vorhanden|bestätigt):/i.test(String(t||'')));
+    p.splice(Math.min(2,p.length),0,facts.budget);
+  }
+
+  // Vermeidungsquote: immer als offene Annahme ohne Prozentzahl, sobald dieser Business Case vorliegt.
+  if(hasVQ){
+    r=r.filter(t=>!/(\d{1,3}\s*%|roi[-\s]?berechnung|roi[-\s]?annahme).{0,80}(vermeidungsquote|vermeidbarkeit)|vermeidungsquote.{0,80}\d{1,3}\s*%|vermeidbarkeit.{0,80}\d{1,3}\s*%/i.test(String(t||'')));
+    if(!hasTextInList(r,/vermeidungsquote|vermeidbar/i)){
+      const idx=r.length&&/entscheidung|gestoppt|verzögert|beauftragung|startentscheidung/i.test(String(r[0]||''))?1:0;
+      r.splice(idx,0,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
+    }
+    o=o.filter(t=>!/quote[-\s]?validierung|pilot[-\s]?erfolgskriterien|einstiegsumfang|starttermin|deal[-\s]?liste|messlogik/i.test(String(t||'')));
+    o.unshift('Konkrete Pilot-Deals und Messkriterien zur Vermeidungsquote offen');
+  }
+
+  // Nackte oder widersprüchliche Geldfragmente nie anzeigen.
+  const moneyFragment=/^(?:vorhanden|bestätigt):?\s*\d[\d.\s,]*\s*(?:€|eur|euro)(?:\s+verfügbar)?$/i;
+  p=p.filter(t=>!moneyFragment.test(String(t||'')));
+  r=r.map(t=>/^verzögert oder gestoppt$/i.test(String(t||''))?'Entscheidung verzögert oder gestoppt':t);
+
+  return {
+    positive:shortUniqueList(p,4),
+    risks:shortUniqueList(r,4),
+    open:shortUniqueList(o,4)
+  };
+}
+
 function buildCockpitMatrixData(accId,health){
   const raw=getCurrentUserKnowledgeText(accId).toLowerCase();
   const authorityContext=hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(health);
@@ -2952,11 +3024,11 @@ function buildCockpitMatrixData(accId,health){
     finalOpen=finalOpen.filter(t=>!/vertragsprozess|vertrag|bestellprozess|einkauf|procurement|paper/i.test(String(t||'')));
     finalRisks=finalRisks.filter(t=>!/vertragsprozess|vertrag|bestellprozess|einkauf|procurement|paper/i.test(String(t||'')));
   }
-  return {
-    positive:shortUniqueList(finalPositive.map(normalizeRoiHebelText),4),
-    risks:shortUniqueList(finalRisks.map(normalizeRoiHebelText),4),
-    open:shortUniqueList(finalOpen.map(normalizeRoiHebelText),4)
-  };
+  const protectedMatrix=applyProtectedCockpitSnapshot(accId,health,
+    shortUniqueList(finalPositive.map(normalizeRoiHebelText),4),
+    shortUniqueList(finalRisks.map(normalizeRoiHebelText),4),
+    shortUniqueList(finalOpen.map(normalizeRoiHebelText),4));
+  return protectedMatrix;
 }
 
 function extractBulletsAfterHeader3(text,headerKeyword,maxItems){
@@ -5754,7 +5826,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.164';
+const KI21_VERSION='v4.165';
 
 
 function runKi21VersionMigration(){
