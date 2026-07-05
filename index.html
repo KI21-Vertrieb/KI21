@@ -3635,6 +3635,76 @@ function sanitizeNoRoiCertaintyText(text){
   return x;
 }
 
+
+
+// v4.185: Output-Integrity-Guard. Allgemein gültig, nicht case-spezifisch.
+// Ziel: keine Ersatz-/Next-Step-Sätze mitten in fachlichen Abschnitten, keine Scheingenauigkeit,
+// keine Pflichtinstanz aus Stakeholderrollen, keine Prozentstaffeln aus unvalidierten Annahmen.
+function sanitizeOutputIntegrityText(accId,text,kind){
+  if(!text)return text;
+  let x=String(text);
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  const decName=(accId&&getConfirmedDecisionMakerName(accId))||'der bestätigte Entscheider';
+  const inv=accId?buildPhaseInvestmentLine(accId).replace(/^Investition:\s*/,'').replace(/\.$/,''):'';
+
+  // 1) Keine generischen Ersatz-Aktionssätze mitten in Bewertungs-/Nutzen-/Argumentationsabschnitten.
+  const actionLine=/^(?:Mit\s+[^\n]{1,80}\s+)?(?:Pilot[-\s]?Deals|Top[-\s]?\d+[-\s]?Deals)[^\n]{0,180}(?:Wirkungsmessung|Erfolgskriterien|Vermeidungsquote|Messkriterien)[^\n]*\.?$/i;
+  let section='';
+  const allowedActionSection=()=>/(DIE EINE SACHE|NÄCHSTER SCHRITT|WENN DU MORGEN|OFFENE PUNKTE|RÜCKFRAGEN|NÄCHSTE AKTION|GESPRÄCHSSTRATEGIE)/i.test(section);
+  x=x.split('\n').filter(line=>{
+    const t=line.trim();
+    if(/^(?:[⚠️🎯💰⚡🔥🤝]?\s*)?(EINSCHÄTZUNG|DIE 5 PUNKTE|ROI[-\s]?WIRKSAME|WIRTSCHAFTLICHER NUTZEN|DIE EINE SACHE|NÄCHSTER SCHRITT|WENN DU MORGEN|KAUFARGUMENTE|EINWÄNDE|OFFENE PUNKTE|ERÖFFNUNGSSATZ|DER EINE ABSCHLUSSSATZ|BENCHMARK|IHR BUSINESS CASE|LAUFENDER NUTZEN|INVESTITION|ROI\s*\/\s*ENTSCHEIDUNGSLOGIK|OFFENE RÜCKFRAGEN|GESPRÄCHSSTRATEGIE)/i.test(t)) section=t;
+    if(actionLine.test(t)&&!allowedActionSection())return false;
+    return true;
+  }).join('\n');
+
+  // 2) Prozentstaffeln/konkrete Prozentoptionen bei Vermeidungs-/Wirkungsquote nur zulassen, wenn als Kundenangabe belegt.
+  const rawCtx=accId?String(getCurrentUserKnowledgeText(accId)||''):'';
+  const explicitPct=/(?:kunde|entscheider|kontakt|ansprechpartner).{0,80}\d{1,3}\s*%.{0,80}(?:vermeidungsquote|vermeidbar|wirkung|quote)|(vermeidungsquote|vermeidbar|wirkung|quote).{0,80}\d{1,3}\s*%.{0,80}(?:bestätigt|genannt|sagt|kundenangabe)/i.test(rawCtx);
+  if(!explicitPct){
+    x=x.replace(/\b(?:\d{1,3}\s*%\s*,\s*){1,4}\d{1,3}\s*%\??/gi,'welcher Anteil?');
+    x=x.replace(/\b(?:\d{1,3}\s*%\s*\/\s*){1,4}\d{1,3}\s*%\??/gi,'welcher Anteil?');
+    x=x.replace(/\b(?:20|25|30|40|50|60|70|75)\s*[–-]\s*(?:30|40|50|60|70|75|80)\s*%[^\n]*(?:€|EUR|Nutzen|ROI|Jahr|Monat|Payback|Amortisation)[^\n]*/gi,'Branchenhypothese nur als Orientierung; keine Nutzen-/ROI-Rechnung daraus ableiten. Wirkung mit echten Deals messen.');
+    x=x.replace(/(?:Wenn|Falls)\s+\d{1,3}\s*%[^\n]*(?:=|ergibt|läge|entsteht|entspricht)[^\n]*(?:€|EUR|Nutzen|ROI)[^\n]*/gi,'Wenn eine Wirkung messbar ist, muss sie mit echten Deals validiert werden; keine Prozentrechnung ohne Kundenbeleg.');
+    x=x.replace(/\b(?:30|50|70|75|25)\s*%\??(?=[\s).,;]|$)/gi,'welcher Anteil?');
+  }
+
+  // 3) Kundenhypothesen sauber kennzeichnen: genannte grobe Schadensgrößen sind nicht automatisch validierte Wirkung.
+  x=x.replace(/(geschätz(?:ter|te|tes|t)?[^\n]{0,80}\d[\d\.\s,]*\s*(?:€|EUR)[^\n]{0,80})(?:\(\s*BESTÄTIGT\s*(?:von[^)]*)?\)|–\s*bereits\s+validiert|bereits\s+validiert)/gi,'$1 (von Kunden genannt; Zusammensetzung und Vermeidbarkeit zu validieren)');
+  x=x.replace(/\b(BESTÄTIGT\s+von\s+[^\n]{1,40})\b(?=[^\n]*(geschätzt|Schätzung|grob|Hypothese|Annahme))/gi,'von Kunden genannt; zu validieren');
+
+  // 4) Stakeholder-/GF-Pflicht allgemein blockieren, wenn Entscheidungsbefugnis bestätigt ist.
+  if(authority){
+    x=x.replace(/ohne\s+wirtschaftliche\s+Dimensionierung\s+durch\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'Ohne Validierung mit echten Deals bleibt die wirtschaftliche Wirkung ungesichert.');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?Status\s+bestätigen[^\n]*/gi,'Formale Beauftragung und Startzuständigkeit klären.');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+nach\s+wirtschaftlicher\s+Zielgröße[^\n.]*/gi,'Wirtschaftliche Zielgröße mit '+decName+' anhand echter Deals validieren');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung).{0,80}(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Bestätigung|Zusage|Commitment)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+decName+' anhand echter Deals validieren.');
+    x=x.replace(/Geschäftsführer(?:in)?\s+involviert:\s*/gi,'Management-Sicht: ');
+    x=x.replace(/Geschäftsführung\s+involviert:\s*/gi,'Management-Sicht: ');
+  }
+
+  // 5) Abschluss-/ROI-Ton entschärfen.
+  x=x.replace(/\bSchneller\s+ROI\b/gi,'Schnelle Validierung');
+  x=x.replace(/\bzahlender\s+Sponsor\b/gi,'entscheidungsbefugter Ansprechpartner');
+  x=x.replace(/\bROI[-\s]?Logik\s+plausibel\b/gi,'wirtschaftlicher Hebel plausibel');
+  x=x.replace(/rechtfertigt\s+(?:bereits|schon)?[^\n.]{0,140}(?:Startangebot|Angebot)[^\n.]*(?:\.|$)/gi,'wird mit echten Deals geprüft.');
+  x=x.replace(/dreht\s+sich\s+die\s+Diskussion\s+von\s+["„]Wollen\s+wir\?["“]\s+zu\s+["„]Wie\s+schnell\s+skalieren\s+wir\?["“][^\n.]*(?:\.|$)/gi,'entsteht eine belastbare Grundlage für die nächste Entscheidung.');
+  x=x.replace(/\bROI\s+positiv\b/gi,'ROI noch zu validieren');
+  x=x.replace(/\bzahlt\s+sich\s+(?:das\s+)?(?:Angebot|Startangebot)?[^\n.]*aus/gi,'muss mit echten Deals validiert werden');
+
+  // 6) Preiszeilen vollständig, aber ohne neue Rechnung aus unsicheren Rollen.
+  if(inv){
+    x=x.replace(/Angebotslogik\s+geklärt:\s*2\.900\s*€\s*Startangebot(?![^\n]*(?:inkl|danach))/gi,'Angebotslogik geklärt: '+inv);
+    x=x.replace(/Angebotspreis\s+geklärt:\s*2\.900\s*€\s*Startangebot(?![^\n]*(?:inkl|danach))/gi,'Angebotspreis geklärt: '+inv);
+  }
+
+  // 7) Doppelte oder verdrehte Negationen bereinigen.
+  x=x.replace(/keine\s+Validierung\s+mit\s+([^\n]{1,60})\s+anhand\s+echter\s+Deals\s+erforderlich/gi,'keine zusätzliche Freigabe erforderlich; Wirkung mit echten Deals validieren');
+  x=x.replace(/keine\s+Keine/gi,'keine');
+  x=x.replace(/\n{3,}/g,'\n\n');
+  return x.trim();
+}
+
 function sanitizePhase4NoRoiMath(text,accId){
   if(!text)return text;
   let x=String(text);
@@ -3677,6 +3747,7 @@ function sanitizePhase4NoRoiMath(text,accId){
   x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|Feld[-\s]?Setup|manuelle Checkliste)/i.test(line)).join('\n');
   x=sanitizeNoRoiCertaintyText(x);
   x=sanitizeAuthorityRequirementText(accId,x);
+  x=sanitizeOutputIntegrityText(accId,x,'phase4');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 function sanitizePhase5OfferOutput(text,accId){
@@ -3697,6 +3768,7 @@ function sanitizePhase5OfferOutput(text,accId){
   x=x.replace(/rechnet sich schon,?\s+wenn[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
   x=sanitizeNoRoiCertaintyText(x);
   x=sanitizeAuthorityRequirementText(accId,x);
+  x=sanitizeOutputIntegrityText(accId,x,'phase5');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -6352,7 +6424,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.184';
+const KI21_VERSION='v4.185';
 
 
 function runKi21VersionMigration(){
@@ -6361,7 +6433,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.184: stabile Klickbasis v4.182; fachliche Guards nur generisch nach Rollen (Authority/Preis/ROI), keine UI-Event-Änderungen.
+    // v4.185: stabile Klickbasis beibehalten; Output-Integrity-Guards generisch nach Rollen/Evidenzstatus, keine Case-Hardcodierung und keine UI-Event-Änderungen.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6376,7 +6448,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.184',
+        protectedSchema:'v4.185',
         migratedAt:Date.now()
       });
     }
