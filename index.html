@@ -2662,7 +2662,7 @@ function rewriteSalesQuestionText(s){
 function normalizeQuestionText(q,forPreview){
   let s=String(q||'').trim();
   // v4.150: UI-Artefakte/Bullets konsequent entfernen, damit Cockpit-Fragen sauber wirken.
-  s=s.replace(/^[•\-\s⚪️⚪○◦▪▫–—]*/u,'').replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim();
+  s=s.replace(/^[•\-\s⚪️⚪○◦▪▫–—🟡🟢🔴✅⚠️⚠❓❔❗⭐★]+/u,'').replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim();
   s=s.replace(/\s+/g,' ');
   s=rewriteSalesQuestionText(s);
   if(!s)return '';
@@ -2740,6 +2740,16 @@ function extractQuestionsFromText(text){
   }
   return [...new Set(out)];
 }
+
+function cleanCockpitQuestionPreviewText(q){
+  // Vorschau darf visuelle Marker entfernen, aber nie eine andere Fragequelle verwenden.
+  return String(q||'')
+    .replace(/^[\s•\-–—🟡🟢🔴⚪️⚪○◦▪▫✅⚠️⚠❓❔❗⭐★]+/u,'')
+    .replace(/^[SPIN]\s*[:\-–]\s*/i,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
 function getDashboardQuestions(accId,maxItems,forPreview){
   const sources=[];
   const p2=LS.get('ki21_st_'+accId+'_1',{});
@@ -2749,18 +2759,32 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   if(p1&&p1.result2)sources.push(p1.result2);
   if(p1&&p1.result)sources.push(p1.result);
   let qs=[];
-  // v4.150: Alle verfügbaren Quellen zusammenführen. Nicht nach der ersten Quelle abbrechen,
-  // sonst können stärkere I-/N-Fragen durch technische oder ältere Fragen verdrängt werden.
-  for(const src of sources){
-    qs=qs.concat(extractQuestionsFromText(src));
-  }
-  qs=qs.map(q=>normalizeQuestionText(q,!!forPreview)).filter(Boolean);
+  for(const src of sources){ qs=qs.concat(extractQuestionsFromText(src)); }
+  // v4.170: Eine einzige finale Fragenliste als Quelle für Cockpit-Vorschau UND Bottom Sheet.
+  // Die Vorschau darf nur Marker entfernen, aber nicht aus anderen/alten Listen oder Zusatzfragen stammen.
+  qs=qs.map(q=>normalizeQuestionText(q,false)).map(cleanCockpitQuestionPreviewText).filter(Boolean);
   qs=[...new Set(qs)];
   qs=prioritizeCockpitQuestions(qs);
   return qs.slice(0,maxItems||3);
 }
 
 
+
+function ki21RunBasicRegressionGuards(accId){
+  try{
+    const health=getOpportunityHealth(accId);
+    const matrix=buildCockpitMatrixData(accId,health||{});
+    const flat=[...(matrix.positive||[]),...(matrix.risks||[]),...(matrix.open||[])].join('\n');
+    const qsPreview=getDashboardQuestions(accId,2,true);
+    const qsDetail=getDashboardQuestions(accId,12,false);
+    const issues=[];
+    if(/\b75\s*%/.test(flat)&&/vermeidungsquote|vermeidbarkeit/i.test(flat))issues.push('invented_vq_percent');
+    if(/\b(?:GF|CFO|Geschäftsführer)/i.test(flat)&&/allein entscheidungsbefugt|Marius/i.test(flat))issues.push('gf_fallback_with_authority');
+    if(/\b(?:vorhanden|bestätigt|geklärt|verfügbar)\b\s*$/im.test(flat))issues.push('fragment_finding');
+    qsPreview.forEach(q=>{ if(!qsDetail.includes(q))issues.push('question_preview_not_in_detail'); });
+    return {ok:issues.length===0,issues,matrix,qsPreview,qsDetail};
+  }catch(e){ return {ok:false,issues:['regression_exception'],error:String(e&&e.message||e)}; }
+}
 
 // v4.137 Cockpit-Matrix-Auffüllung: Dashboard darf nicht leer wirken.
 // Wenn Score < 70, aber keine formalen Risiken vorhanden sind, werden die sichtbaren Bremsfaktoren
@@ -2771,6 +2795,7 @@ function shortUniqueList(items,maxItems){
   (items||[]).forEach(item=>{
     const text=String(item&&item.text?item.text:item||'').replace(/→ Strategie:.*/,'').trim();
     if(!text)return;
+    if(isTrivialFragmentFinding(text))return;
     const key=text.toLowerCase().replace(/[.,;:!?]/g,'');
     if(seen.has(key))return;
     seen.add(key);
@@ -2816,9 +2841,25 @@ function normalizeRoiHebelText(text){
   x=x.replace(/(\d[\d.\s,]*)\s*€/g,(m,n)=>String(n).trim()+' €');
   return x;
 }
+
+function isTrivialFragmentFinding(text){
+  const x=String(text||'').trim().replace(/[.!;:]+$/,'').trim();
+  if(!x)return true;
+  // Ein-Wort-/Statusfragmente ohne Subjekt oder wirtschaftliche Aussage nie als Erkenntnis anzeigen.
+  if(/^(?:vorhanden|bestätigt|geklärt|verfügbar|klar|offen|unklar|validiert|unvalidiert|bekannt|unbekannt)$/i.test(x))return true;
+  // Nackte Geld-/Statusfragmente ohne Rollenbezug nie anzeigen; geprüfte Geldrollen werden separat aufgebaut.
+  if(/^(?:vorhanden|bestätigt|geklärt|verfügbar|klar|offen|unklar)\s*:?\s*\d[\d.\s,]*\s*(?:€|eur|euro)(?:\s+(?:verfügbar|bestätigt|freigegeben))?$/i.test(x))return true;
+  if(/^\d[\d.\s,]*\s*(?:€|eur|euro)(?:\s+(?:vorhanden|bestätigt|verfügbar|freigegeben))?$/i.test(x))return true;
+  // Sehr kurze Nichtssagende Fragmente ohne Verb/Zahl/Person/Businessbezug filtern.
+  const words=x.split(/\s+/).filter(Boolean);
+  if(words.length<=2 && !/[0-9€?]/.test(x) && !/(marius|entscheider|budget|schmerz|verlust|schaden|angebot|start|pilot|deal|forecast|pipeline|vermeidungsquote|wettbewerb)/i.test(x))return true;
+  return false;
+}
+
 function sanitizeBadExtractionArtifacts(accId,text,kind){
   let x=String(text||'').trim();
   if(!x)return x;
+  if(isTrivialFragmentFinding(x))return '';
   const name=sanitizeDecisionMakerName(getConfirmedDecisionMakerName(accId));
   const authorityText=name&&name!=='der bestätigte Entscheider'?name+' allein entscheidungsbefugt':'Entscheider allein entscheidungsbefugt';
   // Keine abstrakten Begriffe als Entscheider ausgeben. Eine Person/Rolle ist entscheidungsbefugt, nicht die Entscheidung selbst.
@@ -4089,6 +4130,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 // v4.169: Schutz gegen veraltete Antworten nach neu generierten SPIN-/Leitfragen.
+// v4.170: Stabilisierungs-Fix – Fragmentfilter und konsistente Fragen-Vorschau/Drilldown.
 // Wenn Leitfragen aktualisiert werden, dürfen alte Antworten nicht nummerisch unter neuen Fragen stehen.
 function ki21SpinQuestionSignature(questions){
   return (questions||[])
@@ -5931,7 +5973,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.169';
+const KI21_VERSION='v4.170';
 
 
 function runKi21VersionMigration(){
@@ -5955,7 +5997,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.169',
+        protectedSchema:'v4.170',
         migratedAt:Date.now()
       });
     }
