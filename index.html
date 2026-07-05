@@ -640,44 +640,43 @@ const LS={
 // Manche Browser (z.B. Brave) blockieren navigator.clipboard / execCommand lautlos, ohne Fehler oder Berechtigungsabfrage.
 // Fallback: öffnet ein vorselektiertes Textfeld, damit der Nutzer per Long-Press → Kopieren manuell kopieren kann (funktioniert immer).
 function universalCopy(text, onSuccess){
-  let succeeded=false;
-  const markSuccess=()=>{succeeded=true; if(onSuccess)onSuccess();};
-  const tryExecCommand=()=>{
+  text=String(text||'').trim();
+  if(!text){alert('Kein Text zum Kopieren vorhanden.');return;}
+  const markSuccess=()=>{try{if(onSuccess)onSuccess();}catch(e){}};
+  const fallback=()=>{
+    try{
+      const overlay=document.createElement('div');
+      overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:999999;display:flex;flex-direction:column;padding:20px;box-sizing:border-box;';
+      overlay.appendChild(h('div',{style:{color:'#ff6b00',fontWeight:'700',marginBottom:'10px',fontSize:'13px'}},
+        '📋 Tippe lange auf den Text unten und wähle „Alles auswählen“ → „Kopieren“.'));
+      const ta=h('textarea',{readonly:true,style:{flex:'1',width:'100%',background:'#1c2333',border:'1px solid #30363d',borderRadius:'6px',padding:'12px',fontSize:'13px',color:'#e6edf3',outline:'none',resize:'none',lineHeight:'1.7',boxSizing:'border-box'}});
+      ta.value=text;
+      overlay.appendChild(ta);
+      const closeBtn=h('button',{className:'btn-o',style:{marginTop:'12px'},onclick:(e)=>{e.preventDefault();e.stopPropagation();overlay.remove();}},'Schließen');
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+      setTimeout(()=>{try{ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);}catch(e){}},80);
+    }catch(e){alert(text);}
+  };
+  const execCopy=()=>{
     try{
       const ta=document.createElement('textarea');
-      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';ta.style.top='0';
-      document.body.appendChild(ta);ta.focus();ta.select();
+      ta.value=text;
+      ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
       const ok=document.execCommand('copy');
       document.body.removeChild(ta);
-      return ok;
+      return !!ok;
     }catch(e){return false;}
   };
-  const showManualFallback=()=>{
-    const overlay=document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:1000;display:flex;flex-direction:column;padding:20px;';
-    overlay.appendChild(h('div',{style:{color:'#ff6b00',fontWeight:'700',marginBottom:'10px',fontSize:'13px'}},
-      '📋 Automatisches Kopieren wird von diesem Browser blockiert. Tippe lange auf den Text unten und wähle "Alles auswählen" → "Kopieren".'));
-    const ta=h('textarea',{readonly:true,style:{flex:'1',width:'100%',background:'#1c2333',
-      border:'1px solid #30363d',borderRadius:'6px',padding:'12px',fontSize:'13px',
-      color:'#e6edf3',outline:'none',resize:'none',lineHeight:'1.7'}});
-    ta.value=text;
-    overlay.appendChild(ta);
-    const closeBtn=h('button',{className:'btn-o',style:{marginTop:'12px'},onclick:()=>overlay.remove()},'Schließen');
-    overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
-    setTimeout(()=>{ta.focus();ta.select();},100);
-  };
+  // Erst synchroner Weg, weil iOS/Brave die User-Geste sonst verlieren kann.
+  if(execCopy()){markSuccess();return;}
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>{
-      // Manche Browser (Brave) lösen .then() aus, OHNE wirklich zu kopieren - daher zusätzlich execCommand als Bestätigung versuchen
-      if(tryExecCommand()){markSuccess();}else{markSuccess();} // clipboard.then() galt als Erfolg, vertrauen
-    }).catch(()=>{
-      if(tryExecCommand()){markSuccess();}else{showManualFallback();}
-    });
-  } else if(tryExecCommand()){
-    markSuccess();
-  } else {
-    showManualFallback();
+    navigator.clipboard.writeText(text).then(markSuccess).catch(fallback);
+  }else{
+    fallback();
   }
 }
 
@@ -3735,6 +3734,56 @@ function sanitizeOutputIntegrityText(accId,text,kind){
   return x.trim();
 }
 
+
+function sanitizeGeneratedOutputFinal(accId,text,kind){
+  if(!text)return text;
+  let x=String(text);
+  const inv=buildPhaseInvestmentLine(accId||'').replace(/^Investition:\s*/,'').replace(/\.$/,'');
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'der bestätigte Entscheider';
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId)));
+  // Keine Ersatz-/Next-Step-Sätze mitten in fachlichen Abschnitten als einzelne Fremdkörper.
+  x=x.split('\n').filter(line=>{
+    const l=String(line||'').trim();
+    if(!l)return true;
+    if(/^Mit\s+[^\n]{0,80}Pilot-Deals,\s*Erfolgskriterien\s+und\s+Wirkungsmessung\s+festlegen\.?$/i.test(l))return false;
+    if(/^Angebotslogik geklärt:\s*2\.900\s*€\s*Startangebot\.?$/i.test(l))return false;
+    return true;
+  }).join('\n');
+  // Perioden-/Durchschnittsrechnungen aus gemischten Einheiten nicht zulassen.
+  x=x.replace(/\b\d+\s*Deals?\/Monat\s*[×x]\s*geschätzt\s*\d[\d\.\s,]*\s*€\s*jährlich\s*=\s*[^\n]*/gi,'Monatliche Häufigkeit und jährliche Schadensgröße getrennt validieren; keine Durchschnittsrechnung ohne belastbare Kundendaten.');
+  x=x.replace(/\b\d+\s*(?:Deals?|Fälle)\/Monat\s*[=×x][^\n]*(?:€|EUR|Euro)[^\n]*/gi,'Monatliche Häufigkeit und wirtschaftliche Wirkung getrennt validieren; keine Rechnung ohne belastbare Kundendaten.');
+  x=x.replace(/\bdurchschnittlich\s*~?\d[\d\.\s,]*\s*€\s*Schaden\s+pro\s+(?:schlechtem\s+)?Deal[^\n.]*/gi,'Schaden pro Deal ist noch nicht belastbar beziffert');
+  // Prozentstaffeln und Nutzenranges aus unvalidierter Vermeidungsquote entfernen.
+  x=x.replace(/\((?:\s*(?:Annahme|realistisch|konservativ)[^)]*)?(?:\d{1,3}\s*%\s*[,;–\-/oderund\s]*){2,}[^)]*\)/gi,'(Vermeidungsquote offen; mit echten Deals messen)');
+  x=x.replace(/(?:\d{1,3}\s*%\s*[,;–\-/oderund\s]*){2,}(?:\?|[^\n.]*)/gi,'Vermeidungsquote offen; mit echten Deals messen');
+  x=x.replace(/\b\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\s*\/\s*(?:Jahr|Monat)[^\n]*/gi,'Nutzenhöhe noch zu validieren – keine €-Range aus unvalidierter Annahme ableiten.');
+  x=x.replace(/\b(?:\d{1,3}\s*[–-]\s*\d{1,3}\s*%|\d{1,3}\s*%)\s+der\s+[^\n]*(?:Deals|Schäden|Vermeidungsquote)[^\n]*/gi,'Vermeidungsquote offen; Wirkung mit echten Deals messen.');
+  // 80.000 € nicht gleichzeitig final bestätigt und unvalidiert darstellen.
+  x=x.replace(/(80\.000\s*€[^\n]{0,80})(?:BESTÄTIGT|bestätigt|bereits\s+validiert)([^\n]*)/gi,'$1von Kunden genannt; Zusammensetzung und Vermeidbarkeit noch zu validieren$2');
+  x=x.replace(/Schmerz\s+ist\s+real,\s+aber\s+unquantifiziert/gi,'Schmerz ist real, die wirtschaftliche Wirkung ist noch zu validieren');
+  // GF/Geschäftsführung nicht als Pflichtinstanz bei bestätigter Entscheidungsbefugnis.
+  if(authority){
+    x=x.replace(/ohne\s+wirtschaftliche\s+Dimensionierung\s+durch\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'Ohne Validierung mit echten Deals bleibt die wirtschaftliche Wirkung ungesichert.');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,100}(?:durchsprechen|anschauen|validieren|fragen|klären|bestätigen)[^\n.]*(?:\.|$)/gi,'Wirtschaftliche Wirkung mit '+dec+' anhand echter Deals validieren.');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?Status\s+bestätigen[^\n.]*/gi,'Formale Beauftragung und Startzuständigkeit klären');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Zusage)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.');
+    x=x.replace(/Marius\s+müssen\s+gemeinsam/gi,'Marius sollte');
+  }
+  // Preis-/Angebotslogik vollständig ausgeben, wenn erkannt.
+  if(inv&&!/noch\s+zu\s+klären/i.test(inv)){
+    x=x.replace(/•\s*Investition:[^\n]*/gi,'• Investition: '+inv+'.');
+    x=x.replace(/Konkrete\s+Angebotskonfiguration[^\n]*/gi,'Angebotskonfiguration: '+inv+'.');
+    x=x.replace(/Angebotspreis\s+für\s+[^\n]*(?:intern\s+)?klären[^\n]*/gi,'Angebotskonfiguration verwenden: '+inv+'.');
+  }
+  // Tonalität: keine Scheinsicherheit.
+  x=x.replace(/\bSchneller\s+ROI\b/gi,'Messbare Validierung');
+  x=x.replace(/selbst\s+geringe\s+Vermeidungsquoten\s+rechtfertigen\s+den\s+Einsatz/gi,'die Wirkung muss mit echten Deals validiert werden');
+  x=x.replace(/rechtfertigt\s+(?:bereits|schon)?[^\n.]{0,140}(?:Startangebot|Angebot|Einsatz)[^\n.]*(?:\.|$)/gi,'wird mit echten Deals geprüft.');
+  x=x.replace(/zahlt\s+sich\s+von\s+selbst\s+aus/gi,'muss mit echten Deals validiert werden');
+  x=x.replace(/\n{3,}/g,'\n\n');
+  return x.trim();
+}
+
 function sanitizePhase4NoRoiMath(text,accId){
   if(!text)return text;
   let x=String(text);
@@ -3778,6 +3827,7 @@ function sanitizePhase4NoRoiMath(text,accId){
   x=sanitizeNoRoiCertaintyText(x);
   x=sanitizeAuthorityRequirementText(accId,x);
   x=sanitizeOutputIntegrityText(accId,x,'phase4');
+  x=sanitizeGeneratedOutputFinal(accId,x,'phase4');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 function sanitizePhase5OfferOutput(text,accId){
@@ -3799,6 +3849,7 @@ function sanitizePhase5OfferOutput(text,accId){
   x=sanitizeNoRoiCertaintyText(x);
   x=sanitizeAuthorityRequirementText(accId,x);
   x=sanitizeOutputIntegrityText(accId,x,'phase5');
+  x=sanitizeGeneratedOutputFinal(accId,x,'phase5');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -5256,7 +5307,8 @@ function renderStation(sitId){
   }
   const resultBtns=h('div',{className:'result-btns'});
   let detailsExpanded=false;
-  const copyBtn=h('button',{className:'btn',onclick:()=>{
+  const copyBtn=h('button',{className:'btn',onclick:(e)=>{
+    if(e){e.preventDefault();e.stopPropagation();}
     const {main:mainTxt,details:detailsTxt}=splitDetailsFromResult(data.result||'');
     const txt=detailsExpanded&&detailsTxt?(mainTxt+'\n\n'+detailsTxt):mainTxt;
     universalCopy(txt,()=>{copyBtn.textContent='✓';setTimeout(()=>copyBtn.textContent='Kopieren',2000);});
@@ -5364,7 +5416,8 @@ function renderStation(sitId){
       const result2Label=h('span',{className:'result-label'},'🏁 Qualifizierung · Abschluss');
       const result2Btns=h('div',{className:'result-btns'});
       let details2Expanded=false;
-      const copy2Btn=h('button',{className:'btn',onclick:()=>{
+      const copy2Btn=h('button',{className:'btn',onclick:(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
         const {main:main2Txt,details:details2Txt}=splitDetailsFromResult(data.result2||'');
         const txt=details2Expanded&&details2Txt?(main2Txt+'\n\n'+details2Txt):main2Txt;
         universalCopy(txt,()=>{copy2Btn.textContent='✓';setTimeout(()=>copy2Btn.textContent='Kopieren',2000);});
@@ -6454,7 +6507,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.186';
+const KI21_VERSION='v4.187';
 
 
 function runKi21VersionMigration(){
