@@ -1697,6 +1697,15 @@ function getAllPhaseAdditions(accId){
   return out.trim();
 }
 
+function hasExplicitCompetitorActiveSignal(accId){
+  // v4.175: Wettbewerber nur als aktives Risiko anzeigen, wenn eine konkrete Wettbewerbs-/Mitbewerber-Situation
+  // in Nutzer-/Ergänzungsdaten steht. Generierte Phasentexte allein reichen nicht, sonst verstärkt KI21 alte Spekulationen.
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+getAllPhaseAdditions(accId)).toLowerCase();
+  if(!raw.trim())return false;
+  return /(wettbewerber|mitbewerber|konkurrent|konkurrenz|alternative|andere lösung).{0,100}(aktiv|workshop|demo|pilot|poc|angebot|präsentation|shortlist|favorisiert|bevorzugt|gesetzt|im haus)/i.test(raw)
+    || /(workshop|demo|pilot|poc|angebot|präsentation|shortlist).{0,100}(wettbewerber|mitbewerber|konkurrent|konkurrenz|alternative|andere lösung)/i.test(raw);
+}
+
 function getAdditionRiskSignals(accId,allResults){
   const resultsText=(allResults||[]).map(r=>r.text||'').join('\n');
   const raw=(getCurrentUserKnowledgeText(accId)+'\n'+resultsText);
@@ -1732,7 +1741,7 @@ function getAdditionRiskSignals(accId,allResults){
   if(new RegExp(leaderWords+'.{0,120}'+rejectionWords,'i').test(raw)){
     addWarn('Entscheider lehnt unsere Lösung ab',35,30);
   }
-  if(new RegExp(competitorWords+'.{0,100}(workshop|demo|pilot|proof|poc|test|präsentation|angebot)','i').test(raw)){
+  if(hasExplicitCompetitorActiveSignal(accId)&&new RegExp(competitorWords+'.{0,100}(workshop|demo|pilot|proof|poc|test|präsentation|angebot)','i').test(raw)){
     addWarn('Wettbewerber bereits aktiv',25,35);
   }
   if(new RegExp('(budget).{0,80}(nicht|kein|fehlt|gestrichen|unklar|abgelehnt)','i').test(raw)){
@@ -2233,6 +2242,25 @@ function getBudgetOfferContextText(accId){
   }
   return parts.join('\n');
 }
+// v4.175: Für Angebots-/Preislogik nie generierte Phasenergebnisse als Quelle nutzen.
+// Sonst entsteht ein Feedback-Loop: alte ROI-/Dossier-Texte können Budget, Schaden oder
+// Pipeline-Werte als Startangebot zurück in Cockpit/Phasen schreiben. Erlaubt sind nur
+// explizite Konfiguration, Kundennotizen und Eingabefelder der Angebotsphase.
+function getExplicitOfferPricingContextText(accId){
+  const parts=[];
+  try{parts.push(JSON.stringify(LS.get('ki21_mu',{})));}catch(e){}
+  try{parts.push(String(getCurrentUserKnowledgeText(accId)||''));}catch(e){}
+  try{
+    const d=LS.get('ki21_st_'+accId+'_4',null);
+    if(d&&d.fv){
+      parts.push('ANGEBOTSPHASE EINGABEN:');
+      if(d.fv.paket)parts.push('Angebotspaket: '+String(d.fv.paket));
+      if(d.fv.budget)parts.push('Angebotspreis: '+String(d.fv.budget));
+      if(d.fv.minimum)parts.push('Mindestpreis / Untergrenze: '+String(d.fv.minimum));
+    }
+  }catch(e){}
+  return parts.join('\n');
+}
 function getCompanyOfferText(){
   try{
     const mu=LS.get('ki21_mu',{});
@@ -2359,7 +2387,7 @@ function getOfferNumbers(){
 // v4.171: Angebotsperioden hart trennen. Ein Start-/Compact-/Einstiegsangebot darf nicht
 // als monatliche Investition umgedeutet werden; laufende App-/Usergebühren separat ausweisen.
 function extractOfferPricingPeriodContext(accId){
-  const raw=String(getBudgetOfferContextText(accId)||'');
+  const raw=String(getExplicitOfferPricingContextText(accId)||'');
   const amounts=extractEuroNumbers(raw).filter(a=>a.value>=1&&a.value<=10000000);
   const win=(idx,range=190)=>raw.slice(Math.max(0,idx-range),Math.min(raw.length,idx+range));
   let start=null, recurring=null;
@@ -2372,15 +2400,17 @@ function extractOfferPricingPeriodContext(accId){
   };
   amounts.forEach(a=>{
     const seg=win(a.index,190);
-    const isRecurring=/(pro\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|je\s*(?:user|nutzer|anwender|monat|jahr)|monatlich|jährlich|per\s*(?:user|month|monat|jahr|year)|user\/monat|nutzer\/monat)/i.test(seg);
-    const sc=roleScore(seg);
-    // v4.172: Kein Betrag wird mehr nur wegen seiner Größe als Startangebot interpretiert.
-    // Start-/Compact-/Einmalbetrag nur bei explizitem Rollen-Kontext. Sonst bleiben große Zahlen
-    // Problem-, Budget-, Pipeline- oder Vertragswerte und dürfen nicht als Angebotspreis gerechnet werden.
+    const near=win(a.index,90);
+    const isRecurring=/(pro\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|je\s*(?:user|nutzer|anwender|monat|jahr)|monatlich|jährlich|per\s*(?:user|month|monat|jahr|year)|user\/monat|nutzer\/monat)/i.test(near)||/(pro\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|je\s*(?:user|nutzer|anwender|monat|jahr)|monatlich|jährlich|per\s*(?:user|month|monat|jahr|year)|user\/monat|nutzer\/monat)/i.test(seg);
+    const directScore=roleScore(near);
+    const broadScore=roleScore(seg);
+    // v4.175: Startbetrag nur bei direktem Rollen-Kontext oder bei kleinem Betrag mit eindeutiger Compact-/Start-Konfiguration.
+    // So wird ein Problemschaden wie 80.000 € nicht zum Angebotspreis, nur weil im selben generierten Text irgendwo „Startangebot“ steht.
+    const startScore=directScore>=2?directScore:((a.value<=10000&&broadScore>=3)?broadScore:0);
     if(isRecurring){
       if(!recurring||a.value<recurring.amount)recurring={amount:a.value,segment:seg,index:a.index};
-    }else if(sc>=3){
-      if(!start||sc>start.score||(sc===start.score&&a.value<start.amount))start={amount:a.value,segment:seg,index:a.index,score:sc};
+    }else if(startScore>=3){
+      if(!start||startScore>start.score||(startScore===start.score&&a.value<start.amount))start={amount:a.value,segment:seg,index:a.index,score:startScore};
     }
   });
   const monthsMatch=raw.match(/(?:inklusive|inkl\.?|enthalten|erste[nr]?|f[üu]r\s+die\s+ersten).{0,60}?(\d{1,2})\s*monate/i);
@@ -2437,6 +2467,11 @@ function buildOfferPricingBusinessCaseText(accId){
 function sanitizeOfferPricingPeriodText(accId,text){
   let x=String(text||'').trim();
   if(!x)return '';
+  // v4.175: Nie einen kompletten generierten Phasentext durch eine einzelne Preiszeile ersetzen.
+  // Preis-/ROI-Sanitizer nur zeilenweise anwenden, damit Phase 4/5 nicht nach Generate auf 1–2 Zeilen schrumpfen.
+  if(x.includes('\n')){
+    return x.split('\n').map(line=>sanitizeOfferPricingPeriodText(accId,line)).filter(line=>line!==null&&line!==undefined).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
   const ctx=extractOfferPricingPeriodContext(accId);
   // v4.172: Rechen-/ROI-Sätze im Cockpit/Bottom-Sheet nicht anzeigen. KI21 soll keine scheinexakten
   // Business-Case-Berechnungen aus gemischten Zahlen erzeugen. Phasen dürfen später qualitativ validieren.
@@ -2614,6 +2649,9 @@ function sanitizeDashboardTextForDecisionAuthority(accId,text,kind){
   text=sanitizeInventedPrecisionText(accId,text,kind);
   const budgetClean=sanitizeBudgetPriceText(accId,text,kind==='missing'?'missing':kind);
   if(budgetClean!==text)return budgetClean;
+  if(kind==='nextStep' && /5\s*[–-]\s*10|schwach qualifizierte Deals aus den letzten|Erfolgskriterien definieren|Nachbearbeitung pro Deal|fr[üu]he Disqualifikation/i.test(text)){
+    return 'Mit Marius Pilot-Deals und Erfolgskriterien für KI21 Compact festlegen.';
+  }
   if(!hasConfirmedFullDecisionAuthority(accId))return text;
   if(isObsoleteGfCfoText(text)){
     const name=getConfirmedDecisionMakerName(accId);
@@ -3055,10 +3093,18 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
   }
   x=sanitizeInventedPrecisionText(accId,x,kind);
   x=normalizeRoiHebelText(x);
+  const priceCtx=extractOfferPricingPeriodContext(accId);
+  if(priceCtx.startAmount && /(KI21[-\s]?Preis|Preis|Startformat|Compact|Kompakt|Angebotspreis).{0,120}(noch nicht|unklar|offen|klären|nicht geklärt)/i.test(x)){
+    if(kind==='warning'||kind==='risk')return '';
+    return buildOfferPricingBusinessCaseText(accId)||'Startangebot und laufende Gebühren sind geklärt';
+  }
   x=sanitizeOfferPricingPeriodText(accId,x);
   if(isUnsafeRoiCalculationText(x))return '';
   if(/^Wirtschaftliche Plausibilität separat validieren:/i.test(x)&&kind==='positive')return '';
   if(/keine\s+konkurrenzanalyse|wettbewerbslage\s+unbekannt|wettbewerb\s+unklar/i.test(x)){x='Wettbewerbslage im Auge behalten; kein Wettbewerber bekannt';}
+  if(/wettbewerber bereits aktiv/i.test(x) && !hasExplicitCompetitorActiveSignal(accId)){
+    x='Wettbewerbslage im Auge behalten; kein konkreter Wettbewerber bekannt';
+  }
   x=sanitizeBudgetPriceText(accId,x,kind);
   // Nach der Budget-Säuberung nochmals prüfen: alte Budget-Fit-Fragen dürfen im Cockpit nicht sichtbar bleiben,
   // sobald ein passender Angebotsbaustein oder ein belastbares Budgetsignal vorhanden ist.
@@ -3083,6 +3129,7 @@ function applyProtectedCockpitSnapshot(accId,health,positive,risks,open){
   const facts=extractKnownBusinessFacts(accId);
   let p=[...(positive||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'positive',{})).filter(Boolean);
   let r=[...(risks||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'warning',{})).map(normalizeRoiHebelText).filter(Boolean);
+  if(!hasExplicitCompetitorActiveSignal(accId))r=r.filter(t=>!/wettbewerber bereits aktiv/i.test(String(t||'')));
   let o=[...(open||[])].map(t=>sanitizeCockpitTextFinal(accId,t,'open',{})).map(normalizeRoiHebelText).filter(Boolean);
 
   // Harte Cockpit-Fakten werden aus geprüften Feldern neu zusammengesetzt, nicht frei aus KI-Texten.
@@ -3480,6 +3527,7 @@ function sanitizePhase4NoRoiMath(text,accId){
   x=x.replace(/Nutzen\s+übersteigt[^\n.]*?(?:\.|$)/gi,'ROI noch nicht belastbar – Vermeidungswirkung muss mit echten Deals gemessen werden.');
   x=x.replace(/geschätzt\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/?Jahr[^\n.]*/gi,'noch zu validieren');
   x=x.replace(/konkreter\s+KI21[-\s]?Preis\s+noch\s+zu\s+klären/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
+  x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
   // Kundenbudget nicht als Investition/Preis ausgeben.
   x=x.replace(/Marius\s+hat\s+Budget\s+von\s+\d[\d\.\s,]*\s*€\s+zur\s+Verfügung\s+und\s+darf\s+ohne\s+Geschäftsführungs[-\s]?Freigabe\s+entscheiden\.?/gi,'Budgetrahmen ist vorhanden; KI21 Compact ist als Startangebot separat zu bewerten.');
   // Bei bestätigtem Entscheider keine GF-Rückfälle.
@@ -3499,6 +3547,8 @@ function sanitizePhase5OfferOutput(text,accId){
   let x=sanitizePhase5CloseTone(text);
   const inv=buildPhaseInvestmentLine(accId||'');
   x=x.replace(/2\s*[–-]\s*3\s*k\s*€\s+monatliche\s+Investition/gi,'2.900 € Startangebot');
+  x=x.replace(/Angebotslogik geklärt:[^\n]*(?:80\.000|5\.500\.000|11\.025|1\.333)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
+  x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||'Startangebot und laufende Gebühren sind geklärt');
   x=x.replace(/•\s*Investition:[^\n]*/gi,'• '+inv);
   x=x.split('\n').filter(line=>!/(HubSpot[-\s]?Feld|HubSpot\s*[–-]|CRM[-\s]?Feld|manuelle Checkliste|Quality Checks)/i.test(line)).join('\n');
   x=x.replace(/Starten Sie mit Ihren besten 3 Account Managern[^\n.]*/gi,'Starten Sie mit ausgewählten Account Managern und echten Pilot-Deals');
@@ -6158,7 +6208,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.174';
+const KI21_VERSION='v4.175';
 
 
 function runKi21VersionMigration(){
@@ -6167,7 +6217,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.174: Stabilisierte ROI-Logik mit Branchenhypothesen nur als unvalidierte Orientierung; keine ROI-Rechnung daraus.
+    // v4.175: Phase-output-safe pricing guard; keine Volltext-Ersetzung durch Preis-Sanitizer; Angebotszahlen nur aus expliziten Angebotsfeldern.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6182,7 +6232,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.174',
+        protectedSchema:'v4.175',
         migratedAt:Date.now()
       });
     }
