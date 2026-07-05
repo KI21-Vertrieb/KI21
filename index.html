@@ -2159,14 +2159,45 @@ function getOpportunitySourceTextWithoutHealth(accId){
   return parts.filter(Boolean).join('\n');
 }
 
+function getValidatedBusinessInputText(accId){
+  // v4.176: Für harte Cockpit-Fakten (Schaden, Budget, Angebot, Entscheider) keine generierten
+  // Phasentexte/Dossiers als Quelle verwenden. Sonst schreiben alte Outputs falsche Zahlen zurück.
+  const parts=[getCurrentUserKnowledgeText(accId)];
+  try{
+    const acc=(LS.get('ki21_acc',[])||[]).find(a=>a&&a.id===accId)||{};
+    parts.push(JSON.stringify(acc));
+  }catch(e){}
+  try{
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d&&d.fv)parts.push(JSON.stringify(d.fv));
+    }
+  }catch(e){}
+  try{parts.push(JSON.stringify(LS.get('ki21_mu',{})));}catch(e){}
+  return parts.filter(Boolean).join('\n');
+}
+
+function hasExplicitAuthorityText(accId){
+  const raw=getOpportunityAllText(accId);
+  return /(marius|entscheider|ansprechpartner|kontakt).{0,160}(allein|eigenständig|selbstständig|vollständig).{0,160}(entscheidungsbefugt|entscheiden|beauftragen|freigeben|budget|pilotstart)/i.test(raw)
+    || /(allein|eigenständig|selbstständig|vollständig).{0,160}(entscheidungsbefugt|entscheiden|beauftragen|freigeben|budget|pilotstart).{0,160}(marius|entscheider|ansprechpartner|kontakt)/i.test(raw)
+    || /keine.{0,80}(gf|geschäftsführer|geschäftsführung|cfo|ceo).{0,80}(freigabe|zustimmung|validierung|bestätigung).{0,80}(erforderlich|notwendig|nötig)/i.test(raw)
+    || /(gf|geschäftsführer|geschäftsführung|cfo|ceo).{0,80}(freigabe|zustimmung|validierung|bestätigung).{0,80}(nicht erforderlich|nicht notwendig|nicht nötig|entfällt)/i.test(raw);
+}
+
 function hasConfirmedFullDecisionAuthority(accId){
   const raw=getOpportunityAllText(accId);
   if(!raw.trim())return false;
 
+  // v4.176: explizite aktuelle/bestätigte Entscheidungsbefugnis schlägt ältere Phasentexte,
+  // die noch GF-Validierung fordern. Alte Outputs dürfen keinen GF-Rückfall erzeugen.
+  if(hasExplicitAuthorityText(accId))return true;
+
   // Gegenbelege in aktuellen Nutzer-Ergänzungen verhindern den Fix.
   // Wichtig: "keine GF-Freigabe erforderlich" darf NICHT als Gegenbeleg zählen.
-  const explicitNeedForApproval=/(gf|cfo|geschäftsführer|ceo|geschäftsleitung).{0,80}(muss|müssen|soll|sollen|müsste|müssten).{0,80}(freigeben|bestätigen|validieren|zustimmen|entscheiden)/i.test(raw)
-    || /(freigabe|zustimmung|entscheidung).{0,80}(durch|vom|von).{0,30}(gf|cfo|geschäftsführer|ceo|geschäftsleitung).{0,40}(offen|fehlt|ausstehend)/i.test(raw);
+  const currentOnly=getCurrentUserKnowledgeText(accId);
+  const explicitNeedForApproval=/(gf|cfo|geschäftsführer|ceo|geschäftsleitung).{0,80}(muss|müssen|soll|sollen|müsste|müssten).{0,80}(freigeben|bestätigen|validieren|zustimmen|entscheiden)/i.test(currentOnly)
+    || /(freigabe|zustimmung|entscheidung).{0,80}(durch|vom|von).{0,30}(gf|cfo|geschäftsführer|ceo|geschäftsleitung).{0,40}(offen|fehlt|ausstehend)/i.test(currentOnly);
 
   const explicitNoExtraApproval=/keine.{0,70}(zusätzliche|weitere)?.{0,30}(geschäftsführer|gf|cfo|ceo|geschäftsleitung).{0,50}(freigabe|zustimmung|validierung|bestätigung).{0,60}(erforderlich|notwendig|nötig)?/i.test(raw)
     || /(geschäftsführer|gf|cfo|ceo|geschäftsleitung).{0,50}(freigabe|zustimmung|validierung|bestätigung).{0,60}(nicht erforderlich|nicht notwendig|nicht nötig|entfällt)/i.test(raw)
@@ -2179,7 +2210,7 @@ function hasConfirmedFullDecisionAuthority(accId){
     || /(budget|pilotstart|beauftragung).{0,100}(eigenständig|allein|selbstständig|selbst).{0,100}(freigeben|entscheiden|beauftragen)/i.test(raw)
     || /(kann|darf).{0,80}(budget|pilotstart|beauftragung).{0,80}(freigeben|entscheiden|beauftragen)/i.test(raw);
 
-  const namedDecisionAuthority=/\b[A-ZÄÖÜ][a-zäöüß]{2,}\b.{0,220}(vollständig|eigenständig|allein|selbstständig|wirtschaftlich|fachlich|darf|kann).{0,220}(entscheider|freigeben|beauftragen|budget|pilotstart|beauftragung)/.test(raw);
+  const namedDecisionAuthority=/[A-ZÄÖÜ][a-zäöüß]{2,}.{0,220}(vollständig|eigenständig|allein|selbstständig|wirtschaftlich|fachlich|darf|kann).{0,220}(entscheider|freigeben|beauftragen|budget|pilotstart|beauftragung)/.test(raw);
 
   return ((explicitNoExtraApproval&&fullAuthority)||namedDecisionAuthority)&&!explicitNeedForApproval;
 }
@@ -2649,14 +2680,16 @@ function sanitizeDashboardTextForDecisionAuthority(accId,text,kind){
   text=sanitizeInventedPrecisionText(accId,text,kind);
   const budgetClean=sanitizeBudgetPriceText(accId,text,kind==='missing'?'missing':kind);
   if(budgetClean!==text)return budgetClean;
-  if(kind==='nextStep' && /5\s*[–-]\s*10|schwach qualifizierte Deals aus den letzten|Erfolgskriterien definieren|Nachbearbeitung pro Deal|fr[üu]he Disqualifikation/i.test(text)){
-    return 'Mit Marius Pilot-Deals und Erfolgskriterien für KI21 Compact festlegen.';
+  const authority=hasConfirmedFullDecisionAuthority(accId)||hasExplicitAuthorityText(accId);
+  const hasVQ=hasVermeidungsquoteBusinessCase(accId,getOpportunityHealth(accId)||{});
+  const name=getConfirmedDecisionMakerName(accId)||'Marius';
+  if(kind==='nextStep' && (hasVQ||/5\s*[–-]\s*10|schwach qualifizierte Deals aus den letzten|Erfolgskriterien definieren|Nachbearbeitung pro Deal|fr[üu]he Disqualifikation|Geschäftsführer|GF/i.test(text))){
+    return 'Mit '+name+' Pilot-Deals, Erfolgskriterien und KI21-Compact-Start festlegen.';
   }
-  if(!hasConfirmedFullDecisionAuthority(accId))return text;
+  if(!authority)return text;
   if(isObsoleteGfCfoText(text)){
-    const name=getConfirmedDecisionMakerName(accId);
-    if(kind==='nextStep')return 'Mit '+name+' wirtschaftlichen Nutzen, Vermeidungsquote und Pilotstart validieren.';
-    if(kind==='missing')return 'Wirtschaftlichen Nutzen und Vermeidungsquote mit '+name+' validieren.';
+    if(kind==='nextStep')return 'Mit '+name+' Pilot-Deals, Erfolgskriterien und KI21-Compact-Start festlegen.';
+    if(kind==='missing')return 'Pilot-Deals und Messkriterien zur Vermeidungsquote mit '+name+' festlegen.';
     return '';
   }
   return text;
@@ -3042,20 +3075,38 @@ function hasBudgetSignalInHealth(health){
 }
 
 function extractKnownBusinessFacts(accId){
-  const raw=(getOpportunitySourceTextWithoutHealth(accId)||'').replace(/\s+/g,' ');
+  // v4.176: harte Fakten nur aus Nutzereingaben/Profil/Feldern, nicht aus generierten Outputs.
+  const raw=(getValidatedBusinessInputText(accId)||'').replace(/\s+/g,' ');
   const facts={pain:null,budget:null,authority:null};
-  const pain=getEuroAmountsByRole(raw,'pain')[0];
-  const budgetRoles=getEuroAmountsByRole(raw,'budget');
+
+  const allAmounts=classifyEuroAmounts(raw);
+  const badPainContext=/(budget|budgetrahmen|freigegeben|verfügbar|angebotspreis|startangebot|preis|lizenz|user|nutzer|monatlich|pro user|pro nutzer|app)/i;
+  const painCandidates=allAmounts
+    .filter(a=>a.role==='pain'&&!badPainContext.test(String(a.segment||'')))
+    .map(a=>{
+      const seg=String(a.segment||'').toLowerCase();
+      let score=a.confidence||0;
+      if(/jährlich|jahr|jahres|pro jahr/.test(seg))score+=80;
+      if(/schaden|verlust|verloren|opportunit|opportunity/.test(seg))score+=60;
+      if(/deals?\/monat|pro monat|schwach qualifizierte deals|schlecht qualifizierte deals|4\s+deals/.test(seg))score+=50;
+      return {...a,score};
+    })
+    .sort((a,b)=>(b.score-a.score)||(b.value-a.value));
+  if(painCandidates.length)facts.pain=describePainAmount(painCandidates[0]);
+
+  const budgetRoles=getEuroAmountsByRole(raw,'budget').filter(b=>!/schaden|verlust|opportunit|deal/i.test(String(b.segment||'')));
   const budgetValues=[...new Set(budgetRoles.map(b=>b.value))];
-  if(pain)facts.pain=describePainAmount(pain);
   if(budgetValues.length===1)facts.budget=describeBudgetAmount(budgetRoles[0]);
   else if(budgetValues.length>1)facts.budget='Budgetrahmen vorhanden';
+  else if(/budgetrahmen|budget\s+(?:vorhanden|bestätigt|verfügbar|freigegeben)/i.test(raw))facts.budget='Budgetrahmen vorhanden';
+
   const name=getConfirmedDecisionMakerName(accId);
-  if(hasConfirmedFullDecisionAuthority(accId)||/(entscheidungsbefugnis|entscheidungsbefugt|entscheider).{0,80}(bestätigt|klar|vorhanden)|(?:allein|eigenständig|selbstständig).{0,100}(entscheiden|budget|beauftragen|freigeben)/i.test(raw)){
+  if(hasConfirmedFullDecisionAuthority(accId)||hasExplicitAuthorityText(accId)||/(entscheidungsbefugnis|entscheidungsbefugt|entscheider).{0,80}(bestätigt|klar|vorhanden)|(?:allein|eigenständig|selbstständig).{0,100}(entscheiden|budget|beauftragen|freigeben)/i.test(raw)){
     facts.authority=(name&&name!=='der bestätigte Entscheider')?name+' allein entscheidungsbefugt':'Entscheider allein entscheidungsbefugt';
   }
   return facts;
 }
+
 function hasExplicitContractProcessSignal(accId,health){
   const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
   return /(vertragsprozess|vertrag|bestellprozess|bestellung|einkauf|procurement|legal|rechtsabteilung|papierprozess|formal(?:e|er|itäten)|purchase order|po).{0,80}(offen|klären|unklar|blockiert|notwendig|ausstehend|zuständig|prozess)|(?:offen|klären|unklar|blockiert|notwendig|ausstehend|zuständig|prozess).{0,80}(vertragsprozess|vertrag|bestellprozess|bestellung|einkauf|procurement|legal|rechtsabteilung|papierprozess|formal(?:e|er|itäten)|purchase order|po)/i.test(raw);
@@ -3527,16 +3578,23 @@ function sanitizePhase4NoRoiMath(text,accId){
   x=x.replace(/Nutzen\s+übersteigt[^\n.]*?(?:\.|$)/gi,'ROI noch nicht belastbar – Vermeidungswirkung muss mit echten Deals gemessen werden.');
   x=x.replace(/geschätzt\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/?Jahr[^\n.]*/gi,'noch zu validieren');
   x=x.replace(/konkreter\s+KI21[-\s]?Preis\s+noch\s+zu\s+klären/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
+  x=x.replace(/konkreter\s+Angebotspreis\s+noch\s+zu\s+klären/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
+  x=x.replace(/KI21[-\s]?Preismodell\s+in\s+die\s+ROI[-\s]?Rechnung\s+einarbeiten[^\n]*/gi,'Angebotslogik sauber trennen: '+inv.replace(/^Investition:\s*/,'').replace(/\.$/,'')+'.');
   x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
   // Kundenbudget nicht als Investition/Preis ausgeben.
   x=x.replace(/Marius\s+hat\s+Budget\s+von\s+\d[\d\.\s,]*\s*€\s+zur\s+Verfügung\s+und\s+darf\s+ohne\s+Geschäftsführungs[-\s]?Freigabe\s+entscheiden\.?/gi,'Budgetrahmen ist vorhanden; KI21 Compact ist als Startangebot separat zu bewerten.');
-  // Bei bestätigtem Entscheider keine GF-Rückfälle.
+  // Bei bestätigtem Entscheider keine GF-Rückfälle. Wirtschaftliche Validierung läuft mit dem bestätigten Entscheider.
   if(authority){
+    x=x.replace(/Marius\s+und\s+(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)/gi,name);
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+und\s+Marius/gi,name);
     x=x.replace(/Geschäftsführer(?:in)?\s+muss/gi,name+' muss');
     x=x.replace(/Geschäftsführung\s+muss/gi,name+' muss');
-    x=x.replace(/Mit\s+dem\s+Geschäftsführer[^\n]*\n?/gi,'');
+    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+(?:sollte|sollten|müsste|müssen|muss)/gi,name+' sollte');
+    x=x.replace(/(?:Geschäftsführer[-\s]?Termin|GF[-\s]?Termin|Termin\s+mit\s+(?:dem\s+)?Geschäftsführer)[^\n]*/gi,'Mit '+name+' Pilot-Deals, Erfolgskriterien und Vermeidungsquote anhand echter Deals validieren.');
+    x=x.replace(/Mit\s+dem\s+Geschäftsführer[^\n]*\n?/gi,'Mit '+name+' Pilot-Deals, Erfolgskriterien und Vermeidungsquote anhand echter Deals validieren.\n');
     x=x.replace(/\d+\.\s*Geschäftsführer\s+isoliert[^\n]*/gi,'2. Mit '+name+' Erfolgskriterien und Messlogik für die ersten echten Deals festlegen.');
     x=x.replace(/ohne\s+Marius/gi,'mit Marius');
+    x=x.replace(/nur\s+mit\s+ihm\s+lässt\s+sich[^\n]*/gi,'mit '+name+' lässt sich die wirtschaftliche Wirkung anhand echter Deals validieren.');
   }
   // Nicht unnötig HubSpot/System als Baustelle öffnen.
   x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|Feld[-\s]?Setup|manuelle Checkliste)/i.test(line)).join('\n');
@@ -3553,6 +3611,8 @@ function sanitizePhase5OfferOutput(text,accId){
   x=x.split('\n').filter(line=>!/(HubSpot[-\s]?Feld|HubSpot\s*[–-]|CRM[-\s]?Feld|manuelle Checkliste|Quality Checks)/i.test(line)).join('\n');
   x=x.replace(/Starten Sie mit Ihren besten 3 Account Managern[^\n.]*/gi,'Starten Sie mit ausgewählten Account Managern und echten Pilot-Deals');
   x=x.replace(/die ersten\s+20\s*[–-]\s*30\s+schwach qualifizierten Deals/gi,'die ersten echten schwach qualifizierten Deals');
+  x=x.replace(/Das Startangebot rechnet sich schon[^\n.]*(?:\.|$)/gi,'Das Startangebot ist ein überschaubarer Weg, um mit echten Deals zu prüfen, ob strukturierte Discovery messbar wirkt.');
+  x=x.replace(/rechnet sich schon,?\s+wenn[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -6208,7 +6268,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.175';
+const KI21_VERSION='v4.176';
 
 
 function runKi21VersionMigration(){
@@ -6217,7 +6277,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.175: Phase-output-safe pricing guard; keine Volltext-Ersetzung durch Preis-Sanitizer; Angebotszahlen nur aus expliziten Angebotsfeldern.
+    // v4.176: Authority-/Preis-/Schadens-Konsistenz; keine GF-Rückfälle bei bestätigtem Entscheider; keine Budget-Schaden-Verwechslung.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6232,7 +6292,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.175',
+        protectedSchema:'v4.176',
         migratedAt:Date.now()
       });
     }
