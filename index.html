@@ -4078,10 +4078,72 @@ function installStableHomeEventLayer(){
   },true);
 }
 
+
+
+// v4.181: Robuster Document-Click-Router.
+// Grund: Der Home-Screen muss auch dann klickbar bleiben, wenn einzelne Kacheln/Buttons
+// durch Render-Reihenfolge, nested Elemente oder alte Inline-Handler nicht sauber feuern.
+// Dieser Router sitzt auf document-capture, erkennt nur explizite Home-Aktionen und lässt
+// Bottom-Sheets/Modal-Inhalte bewusst in Ruhe.
+function installSolidHomeClickRouter(){
+  const root=document.documentElement;
+  if(root.dataset.ki21SolidClickRouter==='v4.181')return;
+  root.dataset.ki21SolidClickRouter='v4.181';
+  document.addEventListener('click',function(e){
+    try{
+      // Bottom-Sheet und Modals müssen ihre eigenen Row-/Close-Handler behalten.
+      if(e.target&&e.target.closest&&e.target.closest('.bs-panel,.modal,.modal-bg'))return;
+      const app=document.getElementById('app');
+      if(!app||!app.contains(e.target))return;
+      let el=e.target.closest('[data-ki21-action]');
+
+      // Fallback: wenn data-Attribute verloren gehen oder ein Child das Target verschluckt,
+      // die Home-Kachel über Klassen/Label ableiten. Keine fachliche Logik hier.
+      if(!el){
+        const tile=e.target.closest('.cockpit-tile');
+        if(tile){
+          const label=(tile.querySelector('.cockpit-tile-label')?.textContent||'').toLowerCase();
+          let action='';
+          if(label.includes('erkennt'))action='open-positive';
+          else if(label.includes('risiken')||label.includes('brems'))action='open-risks';
+          else if(label.includes('eine sache'))action='open-open';
+          else if(label.includes('fragen'))action='open-questions';
+          if(action){tile.setAttribute('data-ki21-action',action);el=tile;}
+        }
+      }
+      if(!el){
+        if(e.target.closest('#health-badge-nav,#health-badge-station')){
+          const aid=state.activeId||LS.get('ki21_aid',null);
+          if(aid){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation&&e.stopImmediatePropagation();showOpportunityHealthDetail(aid);}
+          return;
+        }
+        const nameEl=e.target.closest('.cockpit-opp-name,.cockpit-opp-placeholder,.nav-station-customer');
+        if(nameEl){
+          e.preventDefault();e.stopPropagation();e.stopImmediatePropagation&&e.stopImmediatePropagation();showKunde();return;
+        }
+        return;
+      }
+      const action=el.getAttribute('data-ki21-action');
+      if(!action)return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation&&e.stopImmediatePropagation();
+      const aid=state.activeId||LS.get('ki21_aid',null);
+      if(action==='open-customers'){showKunde();return;}
+      if(action==='open-health'){if(aid)showOpportunityHealthDetail(aid);return;}
+      if(action==='open-positive'){openCockpitSheet('positive',aid);return;}
+      if(action==='open-risks'){openCockpitSheet('risks',aid);return;}
+      if(action==='open-open'){openCockpitSheet('open',aid);return;}
+      if(action==='open-questions'){openCockpitSheet('questions',aid);return;}
+    }catch(err){console.error('KI21 click router failed',err);}
+  },true);
+}
+
 function renderHome(){
   const cust=getActiveCust();
   const aid=state.activeId;
   const app=document.getElementById('app');
+  installSolidHomeClickRouter();
   installStableHomeEventLayer();
   app.innerHTML='';
 
@@ -6406,7 +6468,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.180';
+const KI21_VERSION='v4.181';
 
 
 function runKi21VersionMigration(){
@@ -6430,7 +6492,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.180',
+        protectedSchema:'v4.181',
         migratedAt:Date.now()
       });
     }
