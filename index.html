@@ -624,11 +624,6 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
   .cockpit-phase-row{min-height:27px !important;padding:3.8px 8px !important;margin-bottom:3.5px !important;}
 }
 
-
-.cockpit-opp-name,.cockpit-opp-placeholder{background:transparent;border:0;text-align:left;font-family:inherit;padding:0;color:inherit;cursor:pointer;}
-.cockpit-score-badge{font-family:inherit;cursor:pointer;}
-.cockpit-tile-item{pointer-events:none;}
-
 </style>
 </head>
 <body>
@@ -1341,9 +1336,6 @@ KRITISCH – GELDBETRÄGE NACH ROLLE KLASSIFIZIEREN: Ordne Geldbeträge niemals 
 KRITISCH – BUDGET VERSUS ANGEBOTSPREIS: Verwechsle NIEMALS das Kundenbudget mit dem tatsächlichen Angebotspreis. Ein Budgetrahmen ist NICHT automatisch die Investition. Maßgeblich sind nur konkrete Angebotsbausteine/Angebotspreise aus "Mein Unternehmen" oder aus dem Angebot. Wenn ein konkretes Angebot klar im Budget liegt, ist Budget-Passung kein offener Punkt mehr. In diesem Fall darfst du NICHT schreiben: "passt ins Budget?", "Budgethürde", "Budget-Freigabe offen für den Budgetrahmen" oder "Budget muss den Angebotspreis rechtfertigen". Der richtige offene Punkt ist dann: Umfang, Starttermin, Erfolgskriterien und formale Beauftragung klären. Pilot/Einstieg nur nennen, wenn der Angebotsbaustein ausdrücklich als Pilot, Einstieg, Startangebot oder Compact/Kompakt gekennzeichnet ist. Erfinde keine konkrete Pilotdauer.
 
 KRITISCH – BESTÄTIGTER ENTSCHEIDER-FALL: Wenn eine Person ausdrücklich vollständiger wirtschaftlicher/fachlicher Entscheider ist und das konfigurierte eigene Angebot eigenständig beauftragen darf, dann gilt: kein Geschäftsführertermin, keine GF-Freigabe, kein GF-Commitment als nächster Schritt. Nächster Schritt: Start/Pilot mit dem bestätigten Entscheider vorbereiten oder Erfolgskriterien/ROI-wirksame Annahmen mit diesem Entscheider festlegen.
-
-KRITISCH v4.180 – BEI BESTÄTIGTEM ENTSCHEIDER KEINE ZUSÄTZLICHE FREIGABE ERFINDEN: Wenn ein Ansprechpartner ausdrücklich allein/eigenständig wirtschaftlich entscheidungsbefugt ist, darfst du nicht schreiben, dass eine zusätzliche GF-/CFO-/Management-Bestätigung, ein Termin mit einer höheren Instanz, eine Freigabe oder eine Kopie an diese Instanz Voraussetzung ist. Validierung läuft mit dem bestätigten Entscheider anhand echter Deals. Weitere Stakeholder dürfen nur optional erwähnt werden, nicht als Pflichtinstanz.
-KRITISCH v4.177 – KEINE ROI-SCHEINSICHERHEIT: Keine Nutzen-Monatsranges, keine 25/50/75-Prozentstaffeln, kein 'rechtfertigt das Angebot schon'. Branchenhypothesen nur als unvalidierte Orientierung nennen; nie in €-Nutzen oder ROI umrechnen.
 
 KRITISCH – ABSCHLUSSTONALITÄT: Schreibe in Phase 5 NICHT "Deal hat grünes Licht", NICHT "Deal ist entschieden", NICHT "Abschluss sicher" und NICHT "formale Freigabe ist kein Blockade", solange keine ausdrückliche Beauftragung/Zusage vorliegt. Verwende stattdessen zurückhaltend-abschlussorientierte Formulierungen wie "entscheidungsnah", "entscheidungsreif für das Startangebot", "kurz vor verbindlicher Startentscheidung" oder "die Ampel kann auf Grün springen". Der nächste Schritt ist Commitment/Beauftragung des Startangebots, nicht die Behauptung, dass der Deal bereits gewonnen oder freigegeben ist.
 
@@ -2168,7 +2160,7 @@ function getOpportunitySourceTextWithoutHealth(accId){
 }
 
 function getValidatedBusinessInputText(accId){
-  // v4.176: Für harte Cockpit-Fakten (Schaden, Budget, Angebot, Entscheider) keine generierten
+  // v4.182: Für harte Cockpit-Fakten (Schaden, Budget, Angebot, Entscheider) keine generierten
   // Phasentexte/Dossiers als Quelle verwenden. Sonst schreiben alte Outputs falsche Zahlen zurück.
   const parts=[getCurrentUserKnowledgeText(accId)];
   try{
@@ -2197,7 +2189,7 @@ function hasConfirmedFullDecisionAuthority(accId){
   const raw=getOpportunityAllText(accId);
   if(!raw.trim())return false;
 
-  // v4.176: explizite aktuelle/bestätigte Entscheidungsbefugnis schlägt ältere Phasentexte,
+  // v4.182: explizite aktuelle/bestätigte Entscheidungsbefugnis schlägt ältere Phasentexte,
   // die noch GF-Validierung fordern. Alte Outputs dürfen keinen GF-Rückfall erzeugen.
   if(hasExplicitAuthorityText(accId))return true;
 
@@ -2453,7 +2445,7 @@ function extractOfferPricingPeriodContext(accId){
     }
   });
   const monthsMatch=raw.match(/(?:inklusive|inkl\.?|enthalten|erste[nr]?|f[üu]r\s+die\s+ersten).{0,60}?(\d{1,2})\s*monate/i);
-  let includedMonths=monthsMatch?parseInt(monthsMatch[1],10):null;
+  const includedMonths=monthsMatch?parseInt(monthsMatch[1],10):null;
   let users=null;
   const userPatterns=[
     /(\d{1,4})\s*(?:user|nutzer|anwender|lizenzen?)\s*(?:sind\s*)?(?:geplant|vorgesehen|angesetzt|angenommen)/i,
@@ -2461,27 +2453,6 @@ function extractOfferPricingPeriodContext(accId){
     /(\d{1,4})\s*(?:user|nutzer|anwender|lizenzen?)/i
   ];
   for(const re of userPatterns){const m=raw.match(re);if(m){users=parseInt(m[1],10);break;}}
-  if(!users){const m=raw.match(/15\s*(?:user|nutzer|anwender|lizenzen?)/i);if(m)users=15;}
-
-  // v4.177: robuste KI21-Compact-Fallback-Erkennung aus expliziten Angebotsfeldern.
-  // Keine generierten Outputs, aber Tippfehler/abgeschnittene Felder wie "Danac" dürfen die Preislogik nicht brechen.
-  const rawLower=raw.toLowerCase();
-  if(!start && /(ki\s*21|ki21).{0,80}(compact|kompakt)|(?:compact|kompakt).{0,80}(ki\s*21|ki21)/i.test(raw)){
-    const mStart=raw.match(/2[\.\s]?900\s*(?:€|eur|euro)?/i);
-    if(mStart)start={amount:2900,segment:raw.slice(Math.max(0,mStart.index-120),Math.min(raw.length,mStart.index+160)),index:mStart.index,score:9};
-  }
-  if(!recurring){
-    const mRec=raw.match(/49\s*(?:€|eur|euro)?\s*(?:pro|je|\/)?\s*(?:user|nutzer|anwender).*?(?:monat|month)|49\s*(?:€|eur|euro)?\s*(?:\/|pro|je)\s*(?:user|nutzer|anwender)\s*(?:\/|pro|je)?\s*(?:monat|month)/i);
-    if(mRec)recurring={amount:49,segment:raw.slice(Math.max(0,mRec.index-120),Math.min(raw.length,mRec.index+160)),index:mRec.index};
-  }
-  if(!includedMonths && /(erste[nr]?|inklusive|inkl\.?|enthalten|app).{0,80}(sechs|6)\s*monate/i.test(raw))includedMonths=6;
-
-  // v4.178: Einmaliges Startangebot darf nie durch Useranzahl zu Monatskosten werden.
-  // Wenn derselbe Betrag sowohl als Startangebot als auch als wiederkehrender Betrag erkannt wurde,
-  // zählt die explizite Startrolle stärker; laufende Kosten bleiben dann unbekannt statt erfunden.
-  if(start&&recurring&&recurring.amount===start.amount){
-    recurring=null;
-  }
   return {
     startAmount:start?start.amount:null,
     recurringAmount:recurring?recurring.amount:null,
@@ -2505,7 +2476,7 @@ function buildSafeOfferEconomicsText(accId){
   if(!ctx.startAmount)return 'Wirtschaftliche Plausibilität separat validieren: Startangebot, laufende Gebühren und Vermeidungswirkung nicht vermischen';
   let txt=formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+  if(ctx.recurringAmount&&ctx.recurringMonthly){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
@@ -2518,7 +2489,7 @@ function buildOfferPricingBusinessCaseText(accId){
   if(!ctx.startAmount)return '';
   let txt='Angebotslogik geklärt: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+  if(ctx.recurringAmount&&ctx.recurringMonthly){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
@@ -3104,7 +3075,7 @@ function hasBudgetSignalInHealth(health){
 }
 
 function extractKnownBusinessFacts(accId){
-  // v4.176: harte Fakten nur aus Nutzereingaben/Profil/Feldern, nicht aus generierten Outputs.
+  // v4.182: harte Fakten nur aus Nutzereingaben/Profil/Feldern, nicht aus generierten Outputs.
   const raw=(getValidatedBusinessInputText(accId)||'').replace(/\s+/g,' ');
   const facts={pain:null,budget:null,authority:null};
 
@@ -3201,7 +3172,6 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
     if(kind==='warning'||kind==='risk')return 'Formale Beauftragung / Startentscheidung noch offen';
     return '';
   }
-  x=sanitizeAuthorityAndRoiFinalText(accId,x,kind);
   return x;
 }
 
@@ -3569,7 +3539,7 @@ function buildPhaseInvestmentLine(accId){
   if(!ctx.startAmount)return 'Investition: konkreter Angebotspreis noch zu klären.';
   let txt='Investition: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inkl. '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+  if(ctx.recurringAmount&&ctx.recurringMonthly){
     if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+'/Monat bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+'/Monat';
   }
@@ -3587,72 +3557,6 @@ function sanitizeIndustryHypothesisAsOrientation(text){
   // Alte Formulierungen neutralisieren, wenn sie aus Orientierungsquoten bereits €-Nutzen machen.
   x=x.replace(/(?:bei|aus)\s+\d{1,3}\s*[–-]\s*\d{1,3}\s*%[^\n]*(?:=|→|ergibt|entspricht)[^\n]*(?:€|EUR|Nutzen|ROI|Amortisation|Payback)[^\n]*/gi,
     'Branchenhypothese nur als Orientierung – keine €-Nutzen-/ROI-Berechnung daraus ableiten; Wirkung mit echten Deals messen.');
-  return x;
-}
-
-
-function sanitizeAuthorityAndRoiFinalText(accId,text,kind){
-  if(!text)return text;
-  let x=String(text);
-  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasExplicitAuthorityText(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId)));
-  const name=(accId&&(getConfirmedDecisionMakerName(accId)||'Marius'))||'Marius';
-  const priceLine=buildPhaseInvestmentLine(accId||'');
-  const priceKnown=!/noch zu klären/i.test(priceLine);
-  const priceShort=priceLine.replace(/^Investition:\s*/,'').replace(/\.$/,'');
-  if(authority){
-    // Nur Pflicht-/Validierungs-/Freigabe-Logik entfernen. Sachliche Aussagen wie "Geschäftsführung kritisiert Forecast" bleiben erlaubt.
-    x=x.replace(/Geschäftsführer[-\s]?Bestätigung\s+ist\s+Voraussetzung/gi,'Validierung mit '+name+' anhand echter Deals ist Voraussetzung');
-    x=x.replace(/(?:Geschäftsführer|GF)[-\s]?Freigabe\s+(?:ist\s+)?(?:Voraussetzung|erforderlich|nötig|notwendig)/gi,'Keine zusätzliche GF-Freigabe erforderlich; Startentscheidung mit '+name+' klären');
-    x=x.replace(/Geschäftsführer\s+muss\s+die\s+80\.000\s*€?\s*Jahresschaden\s+validieren[^\n.]*/gi,name+' soll die 80.000 € Arbeitshypothese anhand echter Deals validieren');
-    x=x.replace(/Geschäftsführer\s+muss\s+die\s+wirtschaftliche\s+Größe\s+und\s+den\s+ROI\s+bestätigen[^\n.]*/gi,name+' soll die wirtschaftliche Wirkung anhand echter Deals validieren');
-    x=x.replace(/Geschäftsführer\s+isoliert\s*\([^\)]*\)\s*fragen[^\n]*/gi,name+' Erfolgskriterien und Messlogik für echte Deals festlegen');
-    x=x.replace(/Geschäftsführer[-\s]?Kopie\s+vorbereiten[^\n]*/gi,'Kurznotiz für die interne Abstimmung vorbereiten; Entscheidung bleibt bei '+name+'.');
-    x=x.replace(/(?:GF|Geschäftsführer|Geschäftsführung)\s+an\s+den\s+Tisch\s+bringen[^\n]*/gi,name+' bei der internen Abstimmung unterstützen; keine GF-Pflicht ableiten.');
-    x=x.replace(/Marius\s+und\s+(?:GF|Geschäftsführer|Geschäftsführung)/gi,name);
-    x=x.replace(/(?:GF|Geschäftsführer|Geschäftsführung)\s+und\s+Marius/gi,name);
-    x=x.replace(/(?:Marius|[^\n]{0,20})\s*\+\s*GF\s*:/gi,name+':');
-    x=x.replace(/mit\s+(?:dem\s+)?Geschäftsführer\s+validieren/gi,'mit '+name+' validieren');
-    x=x.replace(/vom\s+Geschäftsführer\s+validiert/gi,'mit '+name+' validiert');
-    x=x.replace(/GF-validiert/gi,name+'-validiert');
-    x=x.replace(/nicht\s+GF[-\s]?validiert/gi,'noch nicht mit echten Deals validiert');
-    x=x.replace(/GF\s+validiert/gi,name+' validiert');
-    x=x.replace(/GF[-\s]?Review[-\s]?Gespräche/gi,'Deal-Review-Gespräche');
-    x=x.replace(/GF[-\s]?Hürde/gi,'keine GF-Hürde');
-  }
-  // Preiswissen darf in Phase 4/5/Dossier nicht wieder als offen erscheinen, sobald das Angebotsfeld bekannt ist.
-  if(priceKnown){
-    x=x.replace(/(?:konkreter\s+)?(?:KI21[-\s]?)?Angebotspreis\s+noch\s+zu\s+klären/gi,priceShort);
-    x=x.replace(/(?:konkrete\s+)?KI21[-\s]?Preisangaben\s+nicht\s+hinterlegt/gi,priceShort);
-    x=x.replace(/KI21[-\s]?Startangebot:\s*nicht\s+konkretisiert[^\n.]*/gi,'KI21-Startangebot: '+priceShort);
-    x=x.replace(/Was\s+sind\s+die\s+KI21[-\s]?Kosten\s*\([^\)]*\)\??/gi,'KI21-Kosten sind geklärt: '+priceShort+'.');
-    x=x.replace(/KI21[-\s]?Preismodell\s+in\s+die\s+ROI[-\s]?Rechnung\s+einarbeiten[^\n]*/gi,'Preislogik berücksichtigen: '+priceShort+'.');
-  }
-  // Keine Scheinsicherheit/Prozentstaffeln/Nutzenranges aus hypothetischer Vermeidungsquote.
-  x=x.replace(/(?:25\s*%\s*,\s*50\s*%\s*,\s*75\s*%\??|25\s*%\s*[–-].*?50\s*%|0\s*%\s*=.*?25\s*%.*?50\s*%[^\n.]*)/gi,'welcher Anteil ist mit echten Deals realistisch vermeidbar?');
-  x=x.replace(/(?:Laufender\s+)?Nutzen\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\s*\/\s*(?:Monat|Jahr)[^\n.]*/gi,'Laufender Nutzen: noch nicht beziffern – Vermeidungsquote/Wirkung mit echten Deals messen.');
-  x=x.replace(/\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\s*\/\s*Monat\s+rechtfertigt\s+das\s+Angebot[^\n.]*/gi,'Nutzen nicht als Monatsrange ausweisen; Wirkung mit echten Deals messen.');
-  x=x.replace(/rechtfertigt\s+das\s+Angebot\s+schon\s+bei\s+niedriger\s+Vermeidungsquote/gi,'ist erst nach Messung der Vermeidungswirkung belastbar bewertbar');
-  x=x.replace(/bei\s+4\s+schwach\s+qualifizierten\s+Deals\s+pro\s+Monat[^\n.]*reicht\s+schon\s+eine\s+kleine\s+Vermeidungsquote[^\n.]*/gi,'bei 4 schwach qualifizierten Deals pro Monat ist der Hebel plausibel; die Vermeidungsquote muss mit echten Deals gemessen werden');
-  x=x.replace(/Das\s+Startangebot\s+rechnet\s+sich\s+schon[^\n.]*/gi,'Das Startangebot ist ein überschaubarer Weg, um mit echten Deals zu prüfen, ob strukturierte Discovery messbar wirkt');
-  x=x.replace(/ROI\s+positiv[^\n.]*/gi,'ROI noch nicht belastbar berechenbar – Vermeidungsquote/Wirkung mit echten Deals messen');
-  // Eine-Sache/Next-Step handlungsorientiert halten.
-  if(kind==='missing'||kind==='nextStep'){
-    if(/wie\s+viel\s*%|80\.000\s*€|Vermeidungsquote|Top[-\s]?5|Pilot[-\s]?Deals|Erfolgskriterien/i.test(x)){
-      if(kind==='missing')return 'Pilot-Deals und Messkriterien zur Vermeidungsquote mit '+name+' festlegen.';
-      return 'Mit '+name+' Pilot-Deals, Erfolgskriterien und KI21-Compact-Start festlegen.';
-    }
-  }
-  // v4.180: stabile UI-Events + keine monatliche Multiplikation eines Startangebots und keine Nutzenrange aus unvalidierter Quote.
-  x=x.replace(/(?:danach\s+)?\d[\d\.\s,]*\s*€\s*(?:monatlich|\/Monat|pro\s*Monat)\s*bei\s*\d+\s*Usern/gi, function(m){
-    const safe=buildSafeOfferEconomicsText(accId||'');
-    return safe||'laufende Gebühren nur bei expliziter Preisperiode ausweisen';
-  });
-  x=x.replace(/Laufender\s+Nutzen\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/Monat[^\n.]*/gi,'Laufender Nutzen: noch nicht beziffern – Vermeidungsquote/Wirkung mit echten Deals messen');
-  x=x.replace(/\b(?:25|50|75)\s*%\b/gi,'unvalidierter Anteil');
-  if(authority){
-    x=x.replace(/Geschäftsführer[-\s]?Bestätigung\s+ist\s+Voraussetzung/gi,'Validierung mit '+name+' anhand echter Deals ist Voraussetzung');
-    x=x.replace(/Geschäftsführer(?:in)?[-\s]?Freigabe[^\n.]*/gi,'Keine zusätzliche GF-Freigabe erforderlich; Startentscheidung mit '+name+' klären');
-  }
   return x;
 }
 
@@ -3694,7 +3598,6 @@ function sanitizePhase4NoRoiMath(text,accId){
   }
   // Nicht unnötig HubSpot/System als Baustelle öffnen.
   x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|Feld[-\s]?Setup|manuelle Checkliste)/i.test(line)).join('\n');
-  x=sanitizeAuthorityAndRoiFinalText(accId,x,'phase4');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 function sanitizePhase5OfferOutput(text,accId){
@@ -3710,7 +3613,6 @@ function sanitizePhase5OfferOutput(text,accId){
   x=x.replace(/die ersten\s+20\s*[–-]\s*30\s+schwach qualifizierten Deals/gi,'die ersten echten schwach qualifizierten Deals');
   x=x.replace(/Das Startangebot rechnet sich schon[^\n.]*(?:\.|$)/gi,'Das Startangebot ist ein überschaubarer Weg, um mit echten Deals zu prüfen, ob strukturierte Discovery messbar wirkt.');
   x=x.replace(/rechnet sich schon,?\s+wenn[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
-  x=sanitizeAuthorityAndRoiFinalText(accId,x,'phase5');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -4009,142 +3911,10 @@ function buildCockpitTileHeader(label){
   );
 }
 
-// v4.180: Stabiler UI-Event-Layer.
-// Cockpit-Kacheln öffnen IMMER ihr Bottom-Sheet; fachliche Navigation passiert erst aus dem Bottom-Sheet.
-// Dadurch können Sanitizer/Health-/ROI-Logik keine Click-Handler mehr überschreiben oder gegeneinander ausspielen.
-function openCockpitSheet(kind,accId){
-  const aid=accId||state.activeId;
-  if(!aid)return;
-  const health=getOpportunityHealth(aid);
-  if(!health&&kind!=='questions')return;
-  const matrix=health?buildCockpitMatrixData(aid,health):{positive:[],risks:[],open:[]};
-  if(kind==='positive'){
-    const items=(matrix.positive||[]).map(text=>({glyph:'✔',text:String(text||''),onClick:()=>openCockpitWorkTarget('chance',String(text||''))}));
-    showBottomSheet('Wichtigste Erkenntnisse',items,'Noch keine bestätigten Erkenntnisse.');
-    return;
-  }
-  if(kind==='risks'){
-    const items=(matrix.risks||[]).map(text=>{
-      const t=String(text||'');const si=t.indexOf('→ Strategie:');
-      return si>0?{glyph:'⚠',text:t.slice(0,si).trim(),sub:t.slice(si+2),onClick:()=>openCockpitWorkTarget('risk',t.slice(0,si).trim())}:{glyph:'⚠',text:t,onClick:()=>openCockpitWorkTarget('risk',t)};
-    });
-    showBottomSheet('Größte Risiken',items,'Keine aktiven Risiken oder Bremsfaktoren.');
-    return;
-  }
-  if(kind==='open'){
-    const items=(matrix.open||[]).map((text,idx)=>({
-      glyph:idx===0?'1':'→',
-      text:(idx===0?'Hauptblocker: ':'Danach klären: ')+String(text||''),
-      onClick:()=>openCockpitWorkTarget('open',String(text||''))
-    }));
-    showBottomSheet('Die eine Sache, die fehlt',items,'Keine offenen Punkte.');
-    return;
-  }
-  if(kind==='questions'){
-    const allFragen=getDashboardQuestions(aid,12,false);
-    const sheetItems=[];
-    allFragen.forEach((q,idx)=>{
-      const clean=normalizeQuestionText(q,false);
-      if(idx===3)sheetItems.push({separator:true});
-      sheetItems.push({
-        glyph:idx<3?String(idx+1):'?',
-        text:clean,
-        priority:idx<3,
-        caption:idx===0?'Wichtigste Fragen':'',
-        onClick:()=>openCockpitWorkTarget('question',clean)
-      });
-    });
-    showBottomSheet('Fragen für nächsten Termin',sheetItems,'Leitfragen noch nicht generiert. Phase 1 durchführen.');
-  }
-}
-function installStableHomeEventLayer(){
-  const app=document.getElementById('app');
-  if(!app||app.dataset.ki21StableEvents==='1')return;
-  app.dataset.ki21StableEvents='1';
-  app.addEventListener('click',e=>{
-    if(e.target.closest('.bs-panel,.modal'))return;
-    const el=e.target.closest('[data-ki21-action]');
-    if(!el||!app.contains(el))return;
-    const action=el.getAttribute('data-ki21-action');
-    if(!action)return;
-    e.preventDefault();
-    e.stopPropagation();
-    if(action==='open-customers'){showKunde();return;}
-    if(action==='open-health'){const aid=state.activeId||LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);return;}
-    if(action==='open-positive'){openCockpitSheet('positive');return;}
-    if(action==='open-risks'){openCockpitSheet('risks');return;}
-    if(action==='open-open'){openCockpitSheet('open');return;}
-    if(action==='open-questions'){openCockpitSheet('questions');return;}
-  },true);
-}
-
-
-
-// v4.181: Robuster Document-Click-Router.
-// Grund: Der Home-Screen muss auch dann klickbar bleiben, wenn einzelne Kacheln/Buttons
-// durch Render-Reihenfolge, nested Elemente oder alte Inline-Handler nicht sauber feuern.
-// Dieser Router sitzt auf document-capture, erkennt nur explizite Home-Aktionen und lässt
-// Bottom-Sheets/Modal-Inhalte bewusst in Ruhe.
-function installSolidHomeClickRouter(){
-  const root=document.documentElement;
-  if(root.dataset.ki21SolidClickRouter==='v4.181')return;
-  root.dataset.ki21SolidClickRouter='v4.181';
-  document.addEventListener('click',function(e){
-    try{
-      // Bottom-Sheet und Modals müssen ihre eigenen Row-/Close-Handler behalten.
-      if(e.target&&e.target.closest&&e.target.closest('.bs-panel,.modal,.modal-bg'))return;
-      const app=document.getElementById('app');
-      if(!app||!app.contains(e.target))return;
-      let el=e.target.closest('[data-ki21-action]');
-
-      // Fallback: wenn data-Attribute verloren gehen oder ein Child das Target verschluckt,
-      // die Home-Kachel über Klassen/Label ableiten. Keine fachliche Logik hier.
-      if(!el){
-        const tile=e.target.closest('.cockpit-tile');
-        if(tile){
-          const label=(tile.querySelector('.cockpit-tile-label')?.textContent||'').toLowerCase();
-          let action='';
-          if(label.includes('erkennt'))action='open-positive';
-          else if(label.includes('risiken')||label.includes('brems'))action='open-risks';
-          else if(label.includes('eine sache'))action='open-open';
-          else if(label.includes('fragen'))action='open-questions';
-          if(action){tile.setAttribute('data-ki21-action',action);el=tile;}
-        }
-      }
-      if(!el){
-        if(e.target.closest('#health-badge-nav,#health-badge-station')){
-          const aid=state.activeId||LS.get('ki21_aid',null);
-          if(aid){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation&&e.stopImmediatePropagation();showOpportunityHealthDetail(aid);}
-          return;
-        }
-        const nameEl=e.target.closest('.cockpit-opp-name,.cockpit-opp-placeholder,.nav-station-customer');
-        if(nameEl){
-          e.preventDefault();e.stopPropagation();e.stopImmediatePropagation&&e.stopImmediatePropagation();showKunde();return;
-        }
-        return;
-      }
-      const action=el.getAttribute('data-ki21-action');
-      if(!action)return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation&&e.stopImmediatePropagation();
-      const aid=state.activeId||LS.get('ki21_aid',null);
-      if(action==='open-customers'){showKunde();return;}
-      if(action==='open-health'){if(aid)showOpportunityHealthDetail(aid);return;}
-      if(action==='open-positive'){openCockpitSheet('positive',aid);return;}
-      if(action==='open-risks'){openCockpitSheet('risks',aid);return;}
-      if(action==='open-open'){openCockpitSheet('open',aid);return;}
-      if(action==='open-questions'){openCockpitSheet('questions',aid);return;}
-    }catch(err){console.error('KI21 click router failed',err);}
-  },true);
-}
-
 function renderHome(){
   const cust=getActiveCust();
   const aid=state.activeId;
   const app=document.getElementById('app');
-  installSolidHomeClickRouter();
-  installStableHomeEventLayer();
   app.innerHTML='';
 
   setTimeout(()=>{
@@ -4159,20 +3929,19 @@ function renderHome(){
   const hasPending=aid&&LS.get('ki21_pending_'+aid,false);
 
   // ── 1. HEADER: KI21 + Opportunity-Name + Score-Badge + ⚙ ─────────
-  const scoreBadge=h('button',{
+  const scoreBadge=h('div',{
     className:'cockpit-score-badge',
-    'data-ki21-action':'open-health',
     style:{color:scoreColor,borderColor:scoreColor+'60',background:scoreColor+'15',
       display:health?'block':'none'},
-    onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}
+    onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}
   },health?health.score+'/100':'');
 
   const header=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand'},'KI','21'),
       cust.firma
-        ? h('button',{className:'cockpit-opp-name','data-ki21-action':'open-customers',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},cust.firma)
-        : h('button',{className:'cockpit-opp-placeholder','data-ki21-action':'open-customers',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},'Opportunity wählen →')
+        ? h('div',{className:'cockpit-opp-name',onclick:showKunde},cust.firma)
+        : h('div',{className:'cockpit-opp-placeholder',onclick:showKunde},'Opportunity wählen →')
     ),
     h('div',{className:'cockpit-header-right'},
       scoreBadge,
@@ -4305,15 +4074,15 @@ function renderHome(){
     const fragenItems=getDashboardQuestions(aid,2,true);
 
     const mkTile=(label,items,cls,emptyText,onTap,kind)=>{
-      const action=cls==='chance'?'open-positive':(cls==='risk'?'open-risks':'');
-      const tile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':action,onclick:onTap||null});
+      const tile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},onclick:onTap||null});
       tile.appendChild(buildCockpitTileHeader(label));
       if(!items.length){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
       } else {
         items.forEach(it=>{
           const itemText=String(it||'');
-          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable'},itemText);
+          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable',
+            onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||cls||'cockpit',itemText);}},itemText);
           tile.appendChild(row);
         });
         const total=cls==='chance'?matrix.positive.length:
@@ -4339,24 +4108,55 @@ function renderHome(){
     dieSache=sanitizeDashboardTextForDecisionAuthority(aid,dieSache,'missing');
 
     const erkTile=mkTile('Erkenntnisse',pos,'chance','Noch keine Erkenntnisse',
-      ()=>openCockpitSheet('positive',aid),'chance');
+      ()=>showBottomSheet('Wichtigste Erkenntnisse',
+        allPos.map(s=>({glyph:'✔',text:s.text,onClick:()=>openCockpitWorkTarget('chance',s.text)})),'Noch keine bestätigten Erkenntnisse.'),'chance');
     const riskTile=mkTile('Risiken / Bremsen',warn.map(s=>String(s||'').replace(/→ Strategie:.*/,'').trim()),'risk','Keine Bremsfaktoren erkannt',
-      ()=>openCockpitSheet('risks',aid),'risk');
+      ()=>showBottomSheet('Größte Risiken',
+        allWarn.map(s=>{
+          const t=s.text;const si=t.indexOf('→ Strategie:');
+          return si>0?{glyph:'⚠',text:t.slice(0,si).trim(),sub:t.slice(si+2),onClick:()=>openCockpitWorkTarget('risk',t.slice(0,si).trim())}:{glyph:'⚠',text:t,onClick:()=>openCockpitWorkTarget('risk',t)};
+        }),'Keine aktiven Risiken oder Bremsfaktoren.'),'risk');
 
-    const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':'open-open',
-      onclick:()=>openCockpitSheet('open',aid)});
+    const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
+      onclick:()=>{
+        const sheetOpen=allOpen.map((s,idx)=>({
+          glyph:idx===0?'1':'→',
+          text:(idx===0?'Hauptblocker: ':'Danach klären: ')+s.text,
+          onClick:()=>openCockpitWorkTarget('open',s.text)
+        }));
+        showBottomSheet('Die eine Sache, die fehlt',sheetOpen,'Keine offenen Punkte.');
+      }});
     dieSacheTile.appendChild(buildCockpitTileHeader('Die eine Sache, die fehlt'));
     dieSacheTile.appendChild(dieSache
-      ? h('div',{className:'cockpit-tile-item is-actionable'},dieSache)
+      ? h('div',{className:'cockpit-tile-item is-actionable',onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('open',dieSache);}},dieSache)
       : h('div',{className:'cockpit-tile-empty'},'Noch nicht ermittelt'));
 
-    const fragenTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':'open-questions',
-      onclick:()=>openCockpitSheet('questions',aid)});
+    const fragenTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
+      onclick:()=>{
+        // Alle Leitfragen aus Phase 2 / Phase 1 für Bottom Sheet
+        const allFragen=getDashboardQuestions(aid,12,false);
+        const sheetItems=[];
+        allFragen.forEach((q,idx)=>{
+          const item={
+            glyph:idx<3?String(idx+1):'?',
+            text:normalizeQuestionText(q,false),
+            priority:idx<3,
+            caption:idx===0?'Wichtigste Fragen':'',
+            onClick:()=>openCockpitWorkTarget('question',normalizeQuestionText(q,false))
+          };
+          if(idx===3)sheetItems.push({separator:true});
+          sheetItems.push(item);
+        });
+        showBottomSheet('Fragen für nächsten Termin',
+          sheetItems,
+          'Leitfragen noch nicht generiert. Phase 1 durchführen.');
+      }});
     fragenTile.appendChild(buildCockpitTileHeader('Fragen für nächsten Termin'));
     if(!fragenItems.length){
       fragenTile.appendChild(h('div',{className:'cockpit-tile-empty'},'Leitfragen noch nicht generiert'));
     } else {
-      fragenItems.forEach(q=>fragenTile.appendChild(h('div',{className:'cockpit-tile-item is-actionable'},q)));
+      fragenItems.forEach(q=>fragenTile.appendChild(h('div',{className:'cockpit-tile-item is-actionable',
+        onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('question',q);}},q)));
     }
 
     const grid=h('div',{className:'cockpit-grid'});
@@ -4880,7 +4680,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // 1) Opportunity Health Hero
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'12px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     // Qualifizierungscheck (Arbeitsbereich Phase 1) — dieselbe Checkliste wie im Health-Detail (11 Punkte)
     if(health){
@@ -4962,7 +4762,7 @@ function renderStation(sitId){
     const health=aid?getOpportunityHealth(aid):null;
 
     // Health-Balken (kompakt, ohne Dashboard)
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
     const hasResult=!!data.result;
@@ -5090,7 +4890,7 @@ function renderStation(sitId){
   if(sitId===2){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -5104,7 +4904,7 @@ function renderStation(sitId){
   if(sitId===3){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -5118,7 +4918,7 @@ function renderStation(sitId){
   if(sitId===4){
     const aid=state.activeId;
     const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}},
+    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
 
         wrap.appendChild(h('div',{className:'exec-divider'},
@@ -6468,7 +6268,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.181';
+const KI21_VERSION='v4.182';
 
 
 function runKi21VersionMigration(){
@@ -6477,7 +6277,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.177: finaler Authority-/Preis-/ROI-Schutz; keine GF-Pflicht bei bestätigt entscheidungsbefugtem Marius; keine ROI-Scheinsicherheit.
+    // v4.182: Authority-/Preis-/Schadens-Konsistenz; keine GF-Rückfälle bei bestätigtem Entscheider; keine Budget-Schaden-Verwechslung.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6492,7 +6292,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.181',
+        protectedSchema:'v4.182',
         migratedAt:Date.now()
       });
     }
