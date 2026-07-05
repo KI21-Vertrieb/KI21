@@ -624,6 +624,11 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
   .cockpit-phase-row{min-height:27px !important;padding:3.8px 8px !important;margin-bottom:3.5px !important;}
 }
 
+
+.cockpit-opp-name,.cockpit-opp-placeholder{background:transparent;border:0;text-align:left;font-family:inherit;padding:0;color:inherit;cursor:pointer;}
+.cockpit-score-badge{font-family:inherit;cursor:pointer;}
+.cockpit-tile-item{pointer-events:none;}
+
 </style>
 </head>
 <body>
@@ -1337,7 +1342,7 @@ KRITISCH – BUDGET VERSUS ANGEBOTSPREIS: Verwechsle NIEMALS das Kundenbudget mi
 
 KRITISCH – BESTÄTIGTER ENTSCHEIDER-FALL: Wenn eine Person ausdrücklich vollständiger wirtschaftlicher/fachlicher Entscheider ist und das konfigurierte eigene Angebot eigenständig beauftragen darf, dann gilt: kein Geschäftsführertermin, keine GF-Freigabe, kein GF-Commitment als nächster Schritt. Nächster Schritt: Start/Pilot mit dem bestätigten Entscheider vorbereiten oder Erfolgskriterien/ROI-wirksame Annahmen mit diesem Entscheider festlegen.
 
-KRITISCH v4.177 – BEI BESTÄTIGTEM ENTSCHEIDER KEINE GF-PFLICHT: Wenn Marius oder der Ansprechpartner ausdrücklich allein/eigenständig entscheidungsbefugt ist, darfst du nicht schreiben, dass Geschäftsführer-Bestätigung, GF-Termin, GF-Freigabe oder GF-Kopie Voraussetzung ist. Validierung läuft mit dem bestätigten Entscheider anhand echter Deals. Geschäftsführer darf nur als optionaler Stakeholder/Forecast-Kritiker erwähnt werden, nicht als Pflichtinstanz.
+KRITISCH v4.180 – BEI BESTÄTIGTEM ENTSCHEIDER KEINE ZUSÄTZLICHE FREIGABE ERFINDEN: Wenn ein Ansprechpartner ausdrücklich allein/eigenständig wirtschaftlich entscheidungsbefugt ist, darfst du nicht schreiben, dass eine zusätzliche GF-/CFO-/Management-Bestätigung, ein Termin mit einer höheren Instanz, eine Freigabe oder eine Kopie an diese Instanz Voraussetzung ist. Validierung läuft mit dem bestätigten Entscheider anhand echter Deals. Weitere Stakeholder dürfen nur optional erwähnt werden, nicht als Pflichtinstanz.
 KRITISCH v4.177 – KEINE ROI-SCHEINSICHERHEIT: Keine Nutzen-Monatsranges, keine 25/50/75-Prozentstaffeln, kein 'rechtfertigt das Angebot schon'. Branchenhypothesen nur als unvalidierte Orientierung nennen; nie in €-Nutzen oder ROI umrechnen.
 
 KRITISCH – ABSCHLUSSTONALITÄT: Schreibe in Phase 5 NICHT "Deal hat grünes Licht", NICHT "Deal ist entschieden", NICHT "Abschluss sicher" und NICHT "formale Freigabe ist kein Blockade", solange keine ausdrückliche Beauftragung/Zusage vorliegt. Verwende stattdessen zurückhaltend-abschlussorientierte Formulierungen wie "entscheidungsnah", "entscheidungsreif für das Startangebot", "kurz vor verbindlicher Startentscheidung" oder "die Ampel kann auf Grün springen". Der nächste Schritt ist Commitment/Beauftragung des Startangebots, nicht die Behauptung, dass der Deal bereits gewonnen oder freigegeben ist.
@@ -3637,7 +3642,7 @@ function sanitizeAuthorityAndRoiFinalText(accId,text,kind){
       return 'Mit '+name+' Pilot-Deals, Erfolgskriterien und KI21-Compact-Start festlegen.';
     }
   }
-  // v4.178: keine monatliche Multiplikation eines Startangebots und keine Nutzenrange aus unvalidierter Quote.
+  // v4.180: stabile UI-Events + keine monatliche Multiplikation eines Startangebots und keine Nutzenrange aus unvalidierter Quote.
   x=x.replace(/(?:danach\s+)?\d[\d\.\s,]*\s*€\s*(?:monatlich|\/Monat|pro\s*Monat)\s*bei\s*\d+\s*Usern/gi, function(m){
     const safe=buildSafeOfferEconomicsText(accId||'');
     return safe||'laufende Gebühren nur bei expliziter Preisperiode ausweisen';
@@ -4004,10 +4009,80 @@ function buildCockpitTileHeader(label){
   );
 }
 
+// v4.180: Stabiler UI-Event-Layer.
+// Cockpit-Kacheln öffnen IMMER ihr Bottom-Sheet; fachliche Navigation passiert erst aus dem Bottom-Sheet.
+// Dadurch können Sanitizer/Health-/ROI-Logik keine Click-Handler mehr überschreiben oder gegeneinander ausspielen.
+function openCockpitSheet(kind,accId){
+  const aid=accId||state.activeId;
+  if(!aid)return;
+  const health=getOpportunityHealth(aid);
+  if(!health&&kind!=='questions')return;
+  const matrix=health?buildCockpitMatrixData(aid,health):{positive:[],risks:[],open:[]};
+  if(kind==='positive'){
+    const items=(matrix.positive||[]).map(text=>({glyph:'✔',text:String(text||''),onClick:()=>openCockpitWorkTarget('chance',String(text||''))}));
+    showBottomSheet('Wichtigste Erkenntnisse',items,'Noch keine bestätigten Erkenntnisse.');
+    return;
+  }
+  if(kind==='risks'){
+    const items=(matrix.risks||[]).map(text=>{
+      const t=String(text||'');const si=t.indexOf('→ Strategie:');
+      return si>0?{glyph:'⚠',text:t.slice(0,si).trim(),sub:t.slice(si+2),onClick:()=>openCockpitWorkTarget('risk',t.slice(0,si).trim())}:{glyph:'⚠',text:t,onClick:()=>openCockpitWorkTarget('risk',t)};
+    });
+    showBottomSheet('Größte Risiken',items,'Keine aktiven Risiken oder Bremsfaktoren.');
+    return;
+  }
+  if(kind==='open'){
+    const items=(matrix.open||[]).map((text,idx)=>({
+      glyph:idx===0?'1':'→',
+      text:(idx===0?'Hauptblocker: ':'Danach klären: ')+String(text||''),
+      onClick:()=>openCockpitWorkTarget('open',String(text||''))
+    }));
+    showBottomSheet('Die eine Sache, die fehlt',items,'Keine offenen Punkte.');
+    return;
+  }
+  if(kind==='questions'){
+    const allFragen=getDashboardQuestions(aid,12,false);
+    const sheetItems=[];
+    allFragen.forEach((q,idx)=>{
+      const clean=normalizeQuestionText(q,false);
+      if(idx===3)sheetItems.push({separator:true});
+      sheetItems.push({
+        glyph:idx<3?String(idx+1):'?',
+        text:clean,
+        priority:idx<3,
+        caption:idx===0?'Wichtigste Fragen':'',
+        onClick:()=>openCockpitWorkTarget('question',clean)
+      });
+    });
+    showBottomSheet('Fragen für nächsten Termin',sheetItems,'Leitfragen noch nicht generiert. Phase 1 durchführen.');
+  }
+}
+function installStableHomeEventLayer(){
+  const app=document.getElementById('app');
+  if(!app||app.dataset.ki21StableEvents==='1')return;
+  app.dataset.ki21StableEvents='1';
+  app.addEventListener('click',e=>{
+    if(e.target.closest('.bs-panel,.modal'))return;
+    const el=e.target.closest('[data-ki21-action]');
+    if(!el||!app.contains(el))return;
+    const action=el.getAttribute('data-ki21-action');
+    if(!action)return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(action==='open-customers'){showKunde();return;}
+    if(action==='open-health'){const aid=state.activeId||LS.get('ki21_aid',null);if(aid)showOpportunityHealthDetail(aid);return;}
+    if(action==='open-positive'){openCockpitSheet('positive');return;}
+    if(action==='open-risks'){openCockpitSheet('risks');return;}
+    if(action==='open-open'){openCockpitSheet('open');return;}
+    if(action==='open-questions'){openCockpitSheet('questions');return;}
+  },true);
+}
+
 function renderHome(){
   const cust=getActiveCust();
   const aid=state.activeId;
   const app=document.getElementById('app');
+  installStableHomeEventLayer();
   app.innerHTML='';
 
   setTimeout(()=>{
@@ -4022,8 +4097,9 @@ function renderHome(){
   const hasPending=aid&&LS.get('ki21_pending_'+aid,false);
 
   // ── 1. HEADER: KI21 + Opportunity-Name + Score-Badge + ⚙ ─────────
-  const scoreBadge=h('div',{
+  const scoreBadge=h('button',{
     className:'cockpit-score-badge',
+    'data-ki21-action':'open-health',
     style:{color:scoreColor,borderColor:scoreColor+'60',background:scoreColor+'15',
       display:health?'block':'none'},
     onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();if(aid)showOpportunityHealthDetail(aid);}
@@ -4033,8 +4109,8 @@ function renderHome(){
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand'},'KI','21'),
       cust.firma
-        ? h('div',{className:'cockpit-opp-name',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},cust.firma)
-        : h('div',{className:'cockpit-opp-placeholder',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},'Opportunity wählen →')
+        ? h('button',{className:'cockpit-opp-name','data-ki21-action':'open-customers',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},cust.firma)
+        : h('button',{className:'cockpit-opp-placeholder','data-ki21-action':'open-customers',onclick:(e)=>{e&&e.stopPropagation&&e.stopPropagation();showKunde();}},'Opportunity wählen →')
     ),
     h('div',{className:'cockpit-header-right'},
       scoreBadge,
@@ -4167,15 +4243,15 @@ function renderHome(){
     const fragenItems=getDashboardQuestions(aid,2,true);
 
     const mkTile=(label,items,cls,emptyText,onTap,kind)=>{
-      const tile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},onclick:onTap||null});
+      const action=cls==='chance'?'open-positive':(cls==='risk'?'open-risks':'');
+      const tile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':action,onclick:onTap||null});
       tile.appendChild(buildCockpitTileHeader(label));
       if(!items.length){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
       } else {
         items.forEach(it=>{
           const itemText=String(it||'');
-          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable',
-            onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||cls||'cockpit',itemText);}},itemText);
+          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable'},itemText);
           tile.appendChild(row);
         });
         const total=cls==='chance'?matrix.positive.length:
@@ -4201,55 +4277,24 @@ function renderHome(){
     dieSache=sanitizeDashboardTextForDecisionAuthority(aid,dieSache,'missing');
 
     const erkTile=mkTile('Erkenntnisse',pos,'chance','Noch keine Erkenntnisse',
-      ()=>showBottomSheet('Wichtigste Erkenntnisse',
-        allPos.map(s=>({glyph:'✔',text:s.text,onClick:()=>openCockpitWorkTarget('chance',s.text)})),'Noch keine bestätigten Erkenntnisse.'),'chance');
+      ()=>openCockpitSheet('positive',aid),'chance');
     const riskTile=mkTile('Risiken / Bremsen',warn.map(s=>String(s||'').replace(/→ Strategie:.*/,'').trim()),'risk','Keine Bremsfaktoren erkannt',
-      ()=>showBottomSheet('Größte Risiken',
-        allWarn.map(s=>{
-          const t=s.text;const si=t.indexOf('→ Strategie:');
-          return si>0?{glyph:'⚠',text:t.slice(0,si).trim(),sub:t.slice(si+2),onClick:()=>openCockpitWorkTarget('risk',t.slice(0,si).trim())}:{glyph:'⚠',text:t,onClick:()=>openCockpitWorkTarget('risk',t)};
-        }),'Keine aktiven Risiken oder Bremsfaktoren.'),'risk');
+      ()=>openCockpitSheet('risks',aid),'risk');
 
-    const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
-      onclick:()=>{
-        const sheetOpen=allOpen.map((s,idx)=>({
-          glyph:idx===0?'1':'→',
-          text:(idx===0?'Hauptblocker: ':'Danach klären: ')+s.text,
-          onClick:()=>openCockpitWorkTarget('open',s.text)
-        }));
-        showBottomSheet('Die eine Sache, die fehlt',sheetOpen,'Keine offenen Punkte.');
-      }});
+    const dieSacheTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':'open-open',
+      onclick:()=>openCockpitSheet('open',aid)});
     dieSacheTile.appendChild(buildCockpitTileHeader('Die eine Sache, die fehlt'));
     dieSacheTile.appendChild(dieSache
-      ? h('div',{className:'cockpit-tile-item is-actionable',onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('open',dieSache);}},dieSache)
+      ? h('div',{className:'cockpit-tile-item is-actionable'},dieSache)
       : h('div',{className:'cockpit-tile-empty'},'Noch nicht ermittelt'));
 
-    const fragenTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},
-      onclick:()=>{
-        // Alle Leitfragen aus Phase 2 / Phase 1 für Bottom Sheet
-        const allFragen=getDashboardQuestions(aid,12,false);
-        const sheetItems=[];
-        allFragen.forEach((q,idx)=>{
-          const item={
-            glyph:idx<3?String(idx+1):'?',
-            text:normalizeQuestionText(q,false),
-            priority:idx<3,
-            caption:idx===0?'Wichtigste Fragen':'',
-            onClick:()=>openCockpitWorkTarget('question',normalizeQuestionText(q,false))
-          };
-          if(idx===3)sheetItems.push({separator:true});
-          sheetItems.push(item);
-        });
-        showBottomSheet('Fragen für nächsten Termin',
-          sheetItems,
-          'Leitfragen noch nicht generiert. Phase 1 durchführen.');
-      }});
+    const fragenTile=h('div',{className:'cockpit-tile',style:{cursor:'pointer'},'data-ki21-action':'open-questions',
+      onclick:()=>openCockpitSheet('questions',aid)});
     fragenTile.appendChild(buildCockpitTileHeader('Fragen für nächsten Termin'));
     if(!fragenItems.length){
       fragenTile.appendChild(h('div',{className:'cockpit-tile-empty'},'Leitfragen noch nicht generiert'));
     } else {
-      fragenItems.forEach(q=>fragenTile.appendChild(h('div',{className:'cockpit-tile-item is-actionable',
-        onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('question',q);}},q)));
+      fragenItems.forEach(q=>fragenTile.appendChild(h('div',{className:'cockpit-tile-item is-actionable'},q)));
     }
 
     const grid=h('div',{className:'cockpit-grid'});
@@ -6361,7 +6406,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.178';
+const KI21_VERSION='v4.180';
 
 
 function runKi21VersionMigration(){
@@ -6385,7 +6430,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.178',
+        protectedSchema:'v4.180',
         migratedAt:Date.now()
       });
     }
