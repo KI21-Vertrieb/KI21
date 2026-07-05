@@ -2432,7 +2432,13 @@ function extractOfferPricingPeriodContext(accId){
   amounts.forEach(a=>{
     const seg=win(a.index,190);
     const near=win(a.index,90);
-    const isRecurring=/(pro\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|je\s*(?:user|nutzer|anwender|monat|jahr)|monatlich|jährlich|per\s*(?:user|month|monat|jahr|year)|user\/monat|nutzer\/monat)/i.test(near)||/(pro\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|je\s*(?:user|nutzer|anwender|monat|jahr)|monatlich|jährlich|per\s*(?:user|month|monat|jahr|year)|user\/monat|nutzer\/monat)/i.test(seg);
+    // v4.183: Wiederkehrende Gebühren nur im direkten Kontext des Betrags erkennen.
+    // Ein Startbetrag mit "inklusive 6 Monate" darf nicht wegen später erwähnter User-/Monatsgebühren
+    // selbst als monatliche Gebühr klassifiziert und mit der Userzahl multipliziert werden.
+    const local=win(a.index,55);
+    const hasDirectRecurring=/(?:pro|je|per)\s*(?:user|nutzer|anwender|monat|jahr)|\/\s*(?:user|nutzer|monat|jahr)|user\s*\/\s*monat|nutzer\s*\/\s*monat|monatlich|jährlich/i.test(local);
+    const hasStartNear=/(startangebot|einstieg|compact|kompakt|starter|einmalig|einmalpreis|inklusive|inkl\.?|erste[nr]?\s+\d+\s+monate|app\s+f[üu]r\s+die\s+ersten)/i.test(local);
+    const isRecurring=hasDirectRecurring&&!hasStartNear;
     const directScore=roleScore(near);
     const broadScore=roleScore(seg);
     // v4.175: Startbetrag nur bei direktem Rollen-Kontext oder bei kleinem Betrag mit eindeutiger Compact-/Start-Konfiguration.
@@ -2476,8 +2482,8 @@ function buildSafeOfferEconomicsText(accId){
   if(!ctx.startAmount)return 'Wirtschaftliche Plausibilität separat validieren: Startangebot, laufende Gebühren und Vermeidungswirkung nicht vermischen';
   let txt=formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
-    if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+    if(ctx.recurringPerUser&&ctx.userCount&&ctx.recurringAmount!==ctx.startAmount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
   return txt;
@@ -2489,8 +2495,8 @@ function buildOfferPricingBusinessCaseText(accId){
   if(!ctx.startAmount)return '';
   let txt='Angebotslogik geklärt: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inklusive '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
-    if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+    if(ctx.recurringPerUser&&ctx.userCount&&ctx.recurringAmount!==ctx.startAmount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+' monatlich bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+' monatlich';
   }
   return txt;
@@ -3539,8 +3545,8 @@ function buildPhaseInvestmentLine(accId){
   if(!ctx.startAmount)return 'Investition: konkreter Angebotspreis noch zu klären.';
   let txt='Investition: '+formatEuroDE(ctx.startAmount)+' Startangebot';
   if(ctx.includedMonths)txt+=' inkl. '+ctx.includedMonths+' Monate App';
-  if(ctx.recurringAmount&&ctx.recurringMonthly){
-    if(ctx.recurringPerUser&&ctx.userCount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+'/Monat bei '+ctx.userCount+' Usern';
+  if(ctx.recurringAmount&&ctx.recurringMonthly&&ctx.recurringAmount!==ctx.startAmount){
+    if(ctx.recurringPerUser&&ctx.userCount&&ctx.recurringAmount!==ctx.startAmount)txt+='; danach '+formatEuroDE(ctx.recurringAmount*ctx.userCount)+'/Monat bei '+ctx.userCount+' Usern';
     else txt+='; danach '+formatEuroDE(ctx.recurringAmount)+'/Monat';
   }
   return txt+'.';
@@ -3560,6 +3566,47 @@ function sanitizeIndustryHypothesisAsOrientation(text){
   return x;
 }
 
+
+function sanitizeAuthorityRequirementText(accId,text){
+  if(!text)return text;
+  let x=String(text);
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId)));
+  if(!authority)return x.replace(/\bkeine\s+Keine\b/gi,'keine');
+  const name=(getConfirmedDecisionMakerName(accId)||'der bestätigte Entscheider');
+  // Keine zusätzliche Freigabe-/Bestätigungslogik erfinden, wenn Entscheidungsbefugnis bestätigt ist.
+  x=x.replace(/Geschäftsführer[-\s]?Bestätigung\s+ist\s+Voraussetzung/gi,'wirtschaftliche Annahme mit '+name+' anhand echter Deals validieren');
+  x=x.replace(/ohne\s+(?:diese\s+)?(?:Zahl|Bestätigung)[^\n.]{0,120}Geschäftsführer[^\n.]*(?:\.|$)/gi,'Ohne Validierung mit echten Deals bleibt die wirtschaftliche Wirkung ungesichert.');
+  x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?(?:Freigabe|Bestätigung|Zustimmung|Commitment)\s+(?:ist\s+)?(?:Voraussetzung|erforderlich|nötig|notwendig)/gi,'Validierung mit '+name+' anhand echter Deals erforderlich');
+  x=x.replace(/(?:Termin|Gespräch)\s+mit\s+(?:dem\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]*/gi,'Termin mit '+name+' zur Validierung echter Pilot-Deals und Messkriterien');
+  x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?Kopie\s+vorbereiten[^\n]*/gi,'Validierungsnotiz für '+name+' vorbereiten: Pilot-Deals, Erfolgskriterien, Wirkungsmessung.');
+  x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+an\s+den\s+Tisch\s+bringen[^\n.]*(?:\.|$)/gi,'wirtschaftliche Wirkung mit '+name+' anhand echter Deals validieren.');
+  x=x.replace(/Marius\s+und\s+(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)/gi,name);
+  x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+und\s+Marius/gi,name);
+  x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+muss\s+(?:die\s+)?(?:\d[\d\.\s,]*\s*€\s*)?(?:Jahres)?(?:schaden|Kosten|Zahl|Wirkung|Vermeidungsquote)[^\n.]*(?:\.|$)/gi,name+' validiert die wirtschaftliche Annahme anhand echter Deals.');
+  x=x.replace(/Forecast[-\s]?Vorhersagen\s+des\s+Geschäftsführers/gi,'Forecast-Prognosen');
+  x=x.split('\n').map(line=>{
+    const l=String(line);
+    if(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)/i.test(l)&&/(Freigabe|Bestätigung|Zustimmung|Commitment|Kopie|Termin|an den Tisch|isoliert|Voraussetzung|muss)/i.test(l)&&!/(kritisiert|Kritik|Forecast-Qualität|Schmerzpunkt)/i.test(l)){
+      return l.replace(/^\s*(?:\d+\.\s*)?/,'').replace(/.*/,'Mit '+name+' Pilot-Deals, Erfolgskriterien und Wirkungsmessung festlegen.');
+    }
+    return l;
+  }).join('\n');
+  return x.replace(/\bkeine\s+Keine\b/gi,'keine');
+}
+function sanitizeNoRoiCertaintyText(text){
+  if(!text)return text;
+  let x=String(text);
+  x=x.replace(/\b(?:25|30|50|75)\s*%\s*,\s*(?:25|30|50|75)\s*%\s*,\s*(?:25|30|50|75)\s*%\??/gi,'welcher Anteil?');
+  x=x.replace(/\b(?:25|30|50|75)\s*%\s*\/\s*(?:25|30|50|75)\s*%\s*\/\s*(?:25|30|50|75)\s*%\??/gi,'welcher Anteil?');
+  x=x.replace(/\b(?:2\.000|2000)\s*[–-]\s*(?:3\.333|3333)\s*€\s*\/\s*Monat[^\n.]*/gi,'Nutzen/Wirkung noch nicht belastbar bezifferbar');
+  x=x.replace(/Laufender\s+Nutzen\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\s*\/\s*Monat[^\n.]*/gi,'Laufender Nutzen: noch zu validieren – Wirkung mit echten Deals messen');
+  x=x.replace(/rechtfertigt\s+(?:das\s+)?Angebot\s+schon[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
+  x=x.replace(/ROI\s+durch\s+[^\n.]*gesichert/gi,'wirtschaftliche Wirkung wird durch echte Deals validiert');
+  x=x.replace(/zahlt\s+sich\s+[^\n.]*von\s+selbst\s+aus/gi,'lässt sich mit echten Deals belastbar prüfen');
+  x=x.replace(/eine\s+schwach\s+qualifizierte\s+Opportunity\s+kostet\s+Euch\s+erfahrungsgemäß\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€[^\n.]*(?:\.|$)/gi,'die wirtschaftliche Wirkung muss mit echten Opportunities gemessen werden.');
+  return x;
+}
+
 function sanitizePhase4NoRoiMath(text,accId){
   if(!text)return text;
   let x=String(text);
@@ -3570,6 +3617,8 @@ function sanitizePhase4NoRoiMath(text,accId){
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId)));
   // Branchenhypothesen sind als Orientierung erlaubt, aber dürfen nicht in ROI/Nutzen umgerechnet werden.
   x=sanitizeIndustryHypothesisAsOrientation(x);
+  x=sanitizeNoRoiCertaintyText(x);
+  x=sanitizeAuthorityRequirementText(accId,x);
   x=x.replace(/•\s*Laufender Nutzen:[^\n]*(?:\n(?!•|\d\.|[A-ZÄÖÜ][A-ZÄÖÜ\s\-/&]+:).*)?/gi,'• Laufender Nutzen: noch zu validieren – Vermeidungsquote/Wirkung mit echten Deals messen; Branchenhypothese höchstens als Orientierung.');
   x=x.replace(/•\s*Investition:[^\n]*/gi,'• '+inv);
   x=x.replace(/•\s*ROI:[^\n]*/gi,'• ROI: 🔴 noch nicht belastbar berechenbar – es fehlt die validierte Vermeidungsquote/Wirkung.');
@@ -3598,21 +3647,28 @@ function sanitizePhase4NoRoiMath(text,accId){
   }
   // Nicht unnötig HubSpot/System als Baustelle öffnen.
   x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|Feld[-\s]?Setup|manuelle Checkliste)/i.test(line)).join('\n');
+  x=sanitizeNoRoiCertaintyText(x);
+  x=sanitizeAuthorityRequirementText(accId,x);
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 function sanitizePhase5OfferOutput(text,accId){
   if(!text)return text;
   let x=sanitizePhase5CloseTone(text);
+  x=sanitizeIndustryHypothesisAsOrientation(x);
+  x=sanitizeNoRoiCertaintyText(x);
+  x=sanitizeAuthorityRequirementText(accId,x);
   const inv=buildPhaseInvestmentLine(accId||'');
   x=x.replace(/2\s*[–-]\s*3\s*k\s*€\s+monatliche\s+Investition/gi,'2.900 € Startangebot');
   x=x.replace(/Angebotslogik geklärt:[^\n]*(?:80\.000|5\.500\.000|11\.025|1\.333)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
   x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||'Startangebot und laufende Gebühren sind geklärt');
   x=x.replace(/•\s*Investition:[^\n]*/gi,'• '+inv);
-  x=x.split('\n').filter(line=>!/(HubSpot[-\s]?Feld|HubSpot\s*[–-]|CRM[-\s]?Feld|manuelle Checkliste|Quality Checks)/i.test(line)).join('\n');
+  x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|CRM\s*(?:integrier|Integration)|manuelle Checkliste|Quality Checks)/i.test(line)).join('\n');
   x=x.replace(/Starten Sie mit Ihren besten 3 Account Managern[^\n.]*/gi,'Starten Sie mit ausgewählten Account Managern und echten Pilot-Deals');
   x=x.replace(/die ersten\s+20\s*[–-]\s*30\s+schwach qualifizierten Deals/gi,'die ersten echten schwach qualifizierten Deals');
   x=x.replace(/Das Startangebot rechnet sich schon[^\n.]*(?:\.|$)/gi,'Das Startangebot ist ein überschaubarer Weg, um mit echten Deals zu prüfen, ob strukturierte Discovery messbar wirkt.');
   x=x.replace(/rechnet sich schon,?\s+wenn[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
+  x=sanitizeNoRoiCertaintyText(x);
+  x=sanitizeAuthorityRequirementText(accId,x);
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -6268,7 +6324,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.182';
+const KI21_VERSION='v4.183';
 
 
 function runKi21VersionMigration(){
@@ -6277,7 +6333,7 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // v4.182: Authority-/Preis-/Schadens-Konsistenz; keine GF-Rückfälle bei bestätigtem Entscheider; keine Budget-Schaden-Verwechslung.
+    // v4.183: stabile Klickbasis v4.182; fachliche Guards nur generisch nach Rollen (Authority/Preis/ROI), keine UI-Event-Änderungen.
     // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
     // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
     const h=LS.get('ki21_health_'+acc.id,null);
@@ -6292,7 +6348,7 @@ function runKi21VersionMigration(){
         positive:cleanArr(h.positive,'positive'),
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
-        protectedSchema:'v4.182',
+        protectedSchema:'v4.183',
         migratedAt:Date.now()
       });
     }
