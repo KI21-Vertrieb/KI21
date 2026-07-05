@@ -2004,6 +2004,7 @@ async function refreshOpportunityHealth(accId){
       warning:Array.isArray(json.warning)?json.warning:[],
       open:json.open||[],
       checklist:json.checklist||null,
+      protectedSchemaVersion:KI21_HEALTH_SCHEMA_VERSION,
       ts:Date.now()
     });
     LS.set('ki21_health_lastError_'+accId,null);
@@ -2038,6 +2039,13 @@ function isKoSignalText(text){ return getKoSeverity(text)!==null; }
 
 function _getOpportunityHealthBase(accId){
   const auto=LS.get('ki21_health_'+accId,null);
+  // v4.167: alte Health-Snapshots nicht weiterverwenden. Sie können noch freie KI-Texte
+  // aus früheren Versionen enthalten (z.B. erfundene Prozentquoten, GF-Rückfälle oder
+  // falsch zugeordnete Geldbeträge). Neue Versionen bauen den Snapshot frisch auf.
+  if(auto && auto.protectedSchemaVersion!==KI21_HEALTH_SCHEMA_VERSION){
+    LS.set('ki21_health_'+accId,null);
+    return null;
+  }
   const allResults=[];
   SITS.forEach((sit,i)=>{
     const d=LS.get('ki21_st_'+accId+'_'+i,null);
@@ -2193,7 +2201,7 @@ function isObsoleteGfCfoText(txt){
   const s=String(txt||'').toLowerCase();
   if(!s)return false;
   const mentionsGf=/(geschäftsführer|geschäftsführung|geschäftsleitung|gf|cfo|ceo)/i.test(s);
-  const obsolete=/(freigabe|validier|bestätig|kennt|klären|gespräch|einbindung|eingebunden|einbinden|einbezogen|beteiligt|aktiv|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt|quote|verbesserung|rechtfertigt|schaden|jahresschaden|umsatzverlust|budget)/i.test(s);
+  const obsolete=/(freigabe|validier|validiert|formal|bestätig|kennt|klären|gespräch|einbindung|eingebunden|einbinden|einbezogen|beteiligt|aktiv|muss|offen|ausstehend|gesehen|zusage|abschlusszusage|schriftlich|commitment|roi|zielgröße|erfolgsmessung|erfolgskriterien|wirtschaftliche ziel|geld freigibt|quote|verbesserung|rechtfertigt|schaden|schadenshöhe|jahresschaden|umsatzverlust|budget)/i.test(s);
   // Auch Formulierungen wie "Wirtschaftlicher Entscheider (GF) noch nicht aktiv eingebunden" sind überholt, sobald ein anderer Entscheider bestätigt ist.
   if(mentionsGf&&/(entscheider|economic buyer|wirtschaftlich).{0,80}(nicht|noch nicht|offen|fehlt|ausstehend|eingebunden|einbezogen|aktiv)/i.test(s))return true;
   return mentionsGf&&obsolete;
@@ -2761,7 +2769,7 @@ function hasVermeidungsquoteBusinessCase(accId,health){
 }
 function normalizeRoiHebelText(text){
   let x=String(text||'').trim();
-  // v4.165: deterministische Sperre gegen erfundene konkrete Vermeidungsquoten im Cockpit.
+  // v4.166: deterministische Sperre gegen erfundene konkrete Vermeidungsquoten im Cockpit.
   x=x.replace(/ROI[-\s]?(?:Berechnung|Annahme)[^.;\n]{0,120}\d{1,3}\s*%\s*[-–—]?\s*(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/(?:ROI[-\s]?Annahme\s*)?\(?\d{1,3}\s*%\)?\s*[-–—]?\s*(?:angenommene?|unterstellte?|geschätzte?)?\s*(?:Vermeidungsquote|Vermeidbarkeit)(?:\s+angenommen)?[^.\n;]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/(?:ROI[-\s]?Annahme\s*)?(?:Vermeidungsquote|Vermeidbarkeit)[^.;\n]{0,80}?\d{1,3}\s*%[^.;\n]*/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
@@ -2777,6 +2785,8 @@ function normalizeRoiHebelText(text){
   x=x.replace(/Pilot[-\s]?Erfolgskriterien\s+noch\s+nicht\s+konkret\s+definiert/gi,'Pilot-Erfolgskriterien und Messkriterien noch nicht konkret definiert');
   x=x.replace(/ROI[-\s]?Validierung\s+erst\s+nach\s+Pilot\s+planbar,?\s+aktuell\s+hypothetisch/gi,'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert');
   x=x.replace(/ROI[-\s]?Annahme\s+aktuell\s+hypothetisch/gi,'ROI-Annahme noch nicht belastbar validiert');
+  x=x.replace(/Wirtschaftlichen\s+Entscheider\s+validieren/gi,'Wirtschaftlichen Nutzen mit Entscheider validieren');
+  x=x.replace(/(\d[\d.\s,]*)\s*€/g,(m,n)=>String(n).trim()+' €');
   return x;
 }
 function sanitizeBadExtractionArtifacts(accId,text,kind){
@@ -2921,7 +2931,19 @@ function applyProtectedCockpitSnapshot(accId,health,positive,risks,open){
   // Nackte oder widersprüchliche Geldfragmente nie anzeigen.
   const moneyFragment=/^(?:vorhanden|bestätigt):?\s*\d[\d.\s,]*\s*(?:€|eur|euro)(?:\s+verfügbar)?$/i;
   p=p.filter(t=>!moneyFragment.test(String(t||'')));
-  r=r.map(t=>/^verzögert oder gestoppt$/i.test(String(t||''))?'Entscheidung verzögert oder gestoppt':t);
+  const authorityConfirmed=!!facts.authority||hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(health);
+  // v4.166: dieselbe Schutzschicht gilt auch für Bottom-Sheets/Health-Detail.
+  // Sobald ein Entscheider bestätigt ist, dürfen GF/CFO-Validierungsrückfälle nicht mehr durchrutschen.
+  r=r.map(t=>/^verzögert oder gestoppt$/i.test(String(t||''))?'Entscheidung verzögert oder gestoppt':t)
+     .map(normalizeRoiHebelText)
+     .filter(t=>!(authorityConfirmed&&isObsoleteGfCfoText(t)))
+     .filter(t=>!isTechnicalIntegrationDetail(t))
+     .filter(t=>!moneyFragment.test(String(t||'')));
+  o=o.map(normalizeRoiHebelText)
+     .filter(t=>!(authorityConfirmed&&isObsoleteGfCfoText(t)))
+     .filter(t=>!isTechnicalIntegrationDetail(t))
+     .filter(t=>!moneyFragment.test(String(t||'')));
+  p=p.map(normalizeRoiHebelText);
 
   return {
     positive:shortUniqueList(p,4),
@@ -3155,9 +3177,13 @@ function showOpportunityHealthDetail(accId){
         body.appendChild(row);
       });
     }
-    section('Chancen',health.positive,'✔');
-    section('Risiken',health.warning,'⚠');
-    section('Noch offene Punkte',health.open,'•');
+    const protectedDetail=buildCockpitMatrixData(accId,health);
+    const detailPos=protectedDetail.positive.map(t=>({text:t,origin:'AUTO',type:'positive'}));
+    const detailRisk=protectedDetail.risks.map(t=>({text:t,origin:'AUTO',type:'warning'}));
+    const detailOpen=protectedDetail.open.map(t=>({text:t,origin:'AUTO',type:'open'}));
+    section('Chancen',detailPos,'✔');
+    section('Risiken',detailRisk,'⚠');
+    section('Noch offene Punkte',detailOpen,'•');
 
     {
       const CHECKLIST_LABELS=[
@@ -5826,7 +5852,8 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.165';
+const KI21_VERSION='v4.167';
+const KI21_HEALTH_SCHEMA_VERSION=4167;
 
 
 function runKi21VersionMigration(){
@@ -5836,13 +5863,17 @@ function runKi21VersionMigration(){
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
     // Neue Code-Versionen dürfen keine alten Health-/Dashboard-Ableitungen weiterverwenden.
-    // Phasentexte bleiben erhalten; nur der schnelle Health-Cache wird ungültig gemacht.
+    // Phasentexte und Kundeneingaben bleiben erhalten; nur abgeleitete Health-/Cockpit-Caches
+    // werden ungültig gemacht und danach neu berechnet.
     LS.set('ki21_health_'+acc.id,null);
     LS.set('ki21_health_lastError_'+acc.id,null);
+    // v4.167: auch manuelle Health-Overrides aus alten Testläufen können veraltete freie Texte tragen.
+    // Sie werden nur für die Migration verworfen, nicht die Opportunity-Daten selbst.
+    LS.set('ki21_health_manual_'+acc.id,{added:[],removedAutoTexts:[]});
   });
+  LS.set('ki21_health_schema_version',KI21_HEALTH_SCHEMA_VERSION);
   LS.set('ki21_applied_code_version',KI21_VERSION);
 }
-
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
   let binary='';
