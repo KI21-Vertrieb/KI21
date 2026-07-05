@@ -1339,6 +1339,8 @@ KRITISCH – ABSCHLUSS-/KICKOFF-FORMULIERUNG: Wenn keine konkrete Zahl von Teiln
 KRITISCH – KEINE QUOTEN ERFINDEN: In Risiken, Einwänden und offenen Punkten keine konkrete Vermeidungsquote nennen, außer sie wurde vom Kunden genannt. Statt „ROI-Annahme 75% Vermeidbarkeit“ schreibe „Vermeidungsquote schwach qualifizierter Deals noch nicht validiert“.
 KRITISCH – VERMEIDUNGSQUOTE BLEIBT SICHTBAR: Wenn schwach qualifizierte Deals, späte Disqualifikation oder Discovery-Qualität der wirtschaftliche Hebel sind, darf die Vermeidungsquote nicht komplett verschwinden. Sie ist dann ein Top-Risiko bzw. offener Punkt – aber ohne Prozentzahl.
 KRITISCH – SYSTEM-/INTEGRATIONSDISKUSSIONEN NUR KONTEXTGERECHT: Mache vorhandene Kundensysteme (CRM, ERP, BI, HubSpot, Salesforce, Dynamics, SAP usw.) nicht automatisch zur Baustelle. Aktive Integrationsfragen nur nennen, wenn das eigene Produkt Integration als Kernnutzen verkauft, der Kunde Integration ausdrücklich als Voraussetzung nennt, ohne Integration kein sinnvoller Start möglich ist oder Integration ein bestätigter Entscheidungsfaktor ist. Sonst keine Diskussion öffnen, die das eigene Angebot relativiert oder in eine Ersatzlösung verschiebt. Falls relevant, höchstens nachrangig unter Risiken/Details: „Ausweichdiskussion über vorhandene Systeme vermeiden; Nutzen des eigenen Angebots zuerst validieren.“ Nicht als Top-Risiko, nicht als „Die eine Sache“, nicht als nächster Schritt.
+KRITISCH – BESTÄTIGTE FAKTEN NICHT ZU STARK VERDICHTEN: Wenn konkrete Zahlen, Namen oder Beträge bekannt sind, müssen sie im Cockpit sichtbar bleiben. Nicht aus „80.000 € jährlicher Umsatzschaden“ nur „Schmerz konkret benannt“ machen. Nicht aus „Budgetrahmen 60.000 € verfügbar“ nur „Budgetrahmen vorhanden“ machen. Nicht aus „Marius darf allein entscheiden“ nur „Entscheidungsbefugnis bestätigt“ machen, wenn genug Platz ist. Verdichte nur, wenn die konkrete Information nicht bekannt ist.
+KRITISCH – PROZESS-/VERTRAGSFRAGEN NUR BEI ECHTEM ANHALTSPUNKT: Vertragsprozess, Einkauf, Procurement oder Bestellformalitäten nicht automatisch als offener Punkt ergänzen, nur weil der Score unter 70 liegt. Diese Punkte nur nennen, wenn sie ausdrücklich im Case erwähnt werden oder unmittelbar kaufentscheidend sind. Sonst Fokus auf Entscheidung, Start, Pilot-Deals, Messkriterien und Nutzenvalidierung.
 
 KRITISCH – ROI-WIRKSAME POSITION IN PHASE 5: Argumentiere nicht mit einer scheinexakten ROI-Rechnung. Benenne die wichtigste ROI-wirksame Position, die bekannte Größenordnung und die unsichere Annahme. Typische Formulierung: "Die zentrale Frage ist nicht der exakte ROI vor Start, sondern welche Vermeidungsquote schwach qualifizierter Deals realistisch ist." Forecast-Genauigkeit darfst du NUR als eigenen Nutzenhebel aufführen, wenn Mein Unternehmen KI21 ist, das eigene Angebot Forecast/Opportunity Health/Pipeline-/CRM-/Sales-Qualifizierung/Discovery/Vertriebssteuerung adressiert oder der Kunde explizit Forecast-Probleme nennt. Sonst keine KI21-Logik auf fremde Angebote übertragen.
 
@@ -2245,7 +2247,7 @@ function isObsoleteBudgetPriceConfusion(txt){
     || /(preisstruktur|preismodell|kosten|investition|angebotspreis|lizenzkosten|lizenzgebühr).{0,150}(budget|50|60|k€|000|validiert|offen|unklar|klären|passt|machbar|rechtfertig)/i.test(s)
     || /(budget|budgetrahmen|budgetgrenze).{0,150}(offen|unklar|hürde|kritisch|passt nicht|machbar\?|validiert|preismodell|preisstruktur)/i.test(s)
     || moneyBudget
-    || /(budgethürde|budget hürde|budget kritisch|passt nicht ins budget|ins budget\?)/i.test(s);
+    || /(budgethürde|budget hürde|budget kritisch|budget[-\s]?fit|konkretpreise|konkrepreise|passt nicht ins budget|ins budget\?)/i.test(s);
 }
 function isInventedPilotDurationText(accId,txt){
   const s=String(txt||'');
@@ -2435,8 +2437,8 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
   const copy={...health};
   if(copy.isKo)return copy;
 
-  const authority=hasConfirmedFullDecisionAuthority(accId);
-  const budget=hasConfirmedBudgetSignal(accId,copy);
+  const authority=hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(copy);
+  const budget=hasConfirmedBudgetSignal(accId,copy)||hasBudgetSignalInHealth(copy);
   const offerUnderBudget=hasKnownOfferUnderBudget(accId);
   const quantifiedPain=hasQuantifiedPainSignal(accId,copy);
   const concretePain=hasConcretePainSignal(accId,copy);
@@ -2448,13 +2450,13 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
   // Wenn die Kernkriterien positiv sind und nur normale Bremsen offen sind,
   // darf der Score nicht wie eine schwache Opportunity wirken.
   if(!hardRisk&&authority&&budget&&concretePain)floor=Math.max(floor,65);
-  if(!hardRisk&&authority&&budget&&quantifiedPain)floor=Math.max(floor,65);
+  if(!hardRisk&&authority&&budget&&quantifiedPain)floor=Math.max(floor,68);
   if(!hardRisk&&authority&&budget&&concretePain&&offerUnderBudget)floor=Math.max(floor,68);
   if(!hardRisk&&authority&&budget&&quantifiedPain&&offerUnderBudget)floor=Math.max(floor,70);
 
   // Rückwärtskompatibilität mit alter Angebotsregel.
   if(!hardRisk&&authority&&offerUnderBudget)floor=Math.max(floor,60);
-  if(!hardRisk&&authority&&offerUnderBudget&&quantifiedPain)floor=Math.max(floor,65);
+  if(!hardRisk&&authority&&offerUnderBudget&&quantifiedPain)floor=Math.max(floor,68);
 
   if(floor&&Number(copy.score||0)<floor){
     copy.score=floor;
@@ -2656,6 +2658,45 @@ function hasBudgetSignalInHealth(health){
     .map(x=>String(x&&x.text?x.text:x||''));
   return all.some(t=>/(operatives budget|budgetrahmen|budget).{0,60}(vorhanden|bestätigt|verfügbar|klar)/i.test(t));
 }
+
+function extractKnownBusinessFacts(accId){
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+getBudgetOfferContextText(accId)).replace(/\s+/g,' ');
+  const facts={pain:null,budget:null,authority:null};
+  if(/(80\.?000|80000).{0,120}(umsatzschaden|jahresschaden|schaden|verlust|wirkung)|(?:umsatzschaden|jahresschaden|schaden|verlust|wirkung).{0,120}(80\.?000|80000)/i.test(raw)){
+    facts.pain='Schmerz quantifiziert: 80.000 € jährlicher Umsatzschaden';
+  }
+  const b=getCustomerBudgetNumbers(accId);
+  if(b.length){
+    const max=Math.max(...b);
+    if(max>=1000){
+      const formatted=max.toLocaleString('de-DE');
+      facts.budget='Budgetrahmen vorhanden: '+formatted+' € verfügbar';
+    }
+  }
+  if(/marius/i.test(raw)&&/(allein|eigenständig|selbstständig|darf|kann|entscheidungsbefugt|entscheider).{0,120}(entscheiden|budget|beauftragen|freigeben)|(?:entscheiden|budget|beauftragen|freigeben).{0,120}(allein|eigenständig|selbstständig|marius)/i.test(raw)){
+    facts.authority='Marius allein entscheidungsbefugt';
+  }
+  return facts;
+}
+function hasExplicitContractProcessSignal(accId,health){
+  const raw=(getCurrentUserKnowledgeText(accId)+'\n'+JSON.stringify(health||{})).toLowerCase();
+  return /(vertragsprozess|vertrag|bestellprozess|bestellung|einkauf|procurement|legal|rechtsabteilung|papierprozess|formal(?:e|er|itäten)|purchase order|po).{0,80}(offen|klären|unklar|blockiert|notwendig|ausstehend|zuständig|prozess)|(?:offen|klären|unklar|blockiert|notwendig|ausstehend|zuständig|prozess).{0,80}(vertragsprozess|vertrag|bestellprozess|bestellung|einkauf|procurement|legal|rechtsabteilung|papierprozess|formal(?:e|er|itäten)|purchase order|po)/i.test(raw);
+}
+function preferConcreteCockpitFacts(accId,positives){
+  let list=[...(positives||[])];
+  const facts=extractKnownBusinessFacts(accId);
+  const replaceOrAdd=(pattern,text,preferredIndex)=>{
+    if(!text)return;
+    list=list.filter(t=>!pattern.test(String(t||'')));
+    if(!list.some(t=>String(t||'').toLowerCase()===text.toLowerCase())){
+      list.splice(Math.min(preferredIndex,list.length),0,text);
+    }
+  };
+  replaceOrAdd(/schmerz konkret benannt|schmerz quantifiziert|80\.?000|80000|umsatzschaden|jahresschaden/i,facts.pain,1);
+  replaceOrAdd(/budgetrahmen vorhanden|budget bestätigt|budget.{0,40}verfügbar|60\.?000|60000/i,facts.budget,2);
+  replaceOrAdd(/entscheidungsbefugnis bestätigt|entscheider.*marius|marius.*entscheid/i,facts.authority,0);
+  return shortUniqueList(list,4);
+}
 function sanitizeCockpitTextFinal(accId,text,kind,opts){
   let x=String(text||'').trim();
   if(!x)return '';
@@ -2695,6 +2736,7 @@ function buildCockpitMatrixData(accId,health){
   const authorityContext=hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(health);
   const budgetSignalContext=hasBudgetSignalInHealth(health)||/budget|freigabe|pilotstart|beauftragung/.test(raw);
   const lowPilotUnderBudget=hasLowKi21PilotUnderBudget(accId);
+  const explicitContractSignal=hasExplicitContractProcessSignal(accId,health);
   const positives=shortUniqueList((health.positive||[]).filter(s=>!s.disabled).map(s=>sanitizeCockpitTextFinal(accId,s.text,'positive',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
   const risks=shortUniqueList((health.warning||[]).filter(s=>!s.disabled).map(s=>sanitizeCockpitTextFinal(accId,s.text,'warning',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
   const open=shortUniqueList((health.open||[]).map(s=>sanitizeCockpitTextFinal(accId,s.text,'open',{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})),4);
@@ -2721,7 +2763,7 @@ function buildCockpitMatrixData(accId,health){
     if(!hasTextInList(open,/pilot|start|zeitplan/i)){
       risks.push('Pilotstart noch nicht verbindlich');
     }
-    if(!hasTextInList(open,/vertrag|beschaffung|einkauf|paper/i)){
+    if(explicitContractSignal&&!hasTextInList(open,/vertrag|beschaffung|einkauf|paper|bestell/i)){
       risks.push('Vertragsprozess noch offen');
     }
   }
@@ -2733,7 +2775,7 @@ function buildCockpitMatrixData(accId,health){
       : 'Wirtschaftlichen Entscheider validieren');
   }
   if((health.score||0)<70 && !hasTextInList(open,/pilot|start/i))open.push('Pilotstart konkretisieren');
-  if((health.score||0)<70 && !hasTextInList(open,/vertrag|beschaffung|einkauf|paper/i))open.push('Vertragsprozess klären');
+  if((health.score||0)<70 && explicitContractSignal && !hasTextInList(open,/vertrag|beschaffung|einkauf|paper|bestell/i))open.push('Vertragsprozess klären');
 
   // Finale Cockpit-Säuberung: Budget-/Preisverwechslungen und überholte GF-Punkte dürfen nicht sichtbar bleiben.
   const cleanFinal=(list,kind)=>shortUniqueList((list||[]).map(t=>sanitizeCockpitTextFinal(accId,t,kind,{authority:authorityContext,budgetFit:lowPilotUnderBudget,budgetSignal:budgetSignalContext})).filter(Boolean),4);
@@ -2769,6 +2811,11 @@ function buildCockpitMatrixData(accId,health){
   if(lowPilotUnderBudget&&!hasTextInList(finalPositive,/angebot|startangebot|budgetrahmen|budget/i))finalPositive.push('Startangebot liegt klar im Budgetrahmen');
   if((health.score||0)<70&&finalRisks.length===0)finalRisks.push(hasVQCase?'Vermeidungsquote schwach qualifizierter Deals noch nicht validiert':'ROI-Annahme / Vermeidungsquote noch nicht gemessen');
   if(!finalOpen.length)finalOpen.push(authorityContext?'Wirtschaftlichen Nutzen mit Entscheider validieren':'Wirtschaftlichen Entscheider validieren');
+  finalPositive=preferConcreteCockpitFacts(accId,finalPositive);
+  if(!explicitContractSignal){
+    finalOpen=finalOpen.filter(t=>!/vertragsprozess|vertrag|bestellprozess|einkauf|procurement|paper/i.test(String(t||'')));
+    finalRisks=finalRisks.filter(t=>!/vertragsprozess|vertrag|bestellprozess|einkauf|procurement|paper/i.test(String(t||'')));
+  }
   return {
     positive:shortUniqueList(finalPositive.map(normalizeRoiHebelText),4),
     risks:shortUniqueList(finalRisks.map(normalizeRoiHebelText),4),
@@ -2973,7 +3020,7 @@ function splitDetailsFromResult(text){
   return {main:text.slice(0,idx).trim(),details:text.slice(idx+m[0].length).trim()};
 }
 
-// v4.158: ROI-Hebel sichtbar halten und unnötige System-/Integrationsdiskussionen nachrangig behandeln.
+// v4.159: konkrete Fakten sichtbar halten, Score konsistent anheben und Nebenbaustellen nachrangig halten.
 // Ziel: abschlussorientiert, aber nicht überzogen. Kein "grünes Licht", solange keine
 // ausdrückliche Beauftragung/Zusage vorliegt. Gilt zusätzlich zum Prompt als harte Leitplanke.
 function sanitizePhase5CloseTone(text){
@@ -5571,7 +5618,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.158';
+const KI21_VERSION='v4.159';
 
 
 function runKi21VersionMigration(){
