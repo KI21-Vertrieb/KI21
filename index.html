@@ -2004,7 +2004,6 @@ async function refreshOpportunityHealth(accId){
       warning:Array.isArray(json.warning)?json.warning:[],
       open:json.open||[],
       checklist:json.checklist||null,
-      protectedSchemaVersion:KI21_HEALTH_SCHEMA_VERSION,
       ts:Date.now()
     });
     LS.set('ki21_health_lastError_'+accId,null);
@@ -2039,13 +2038,6 @@ function isKoSignalText(text){ return getKoSeverity(text)!==null; }
 
 function _getOpportunityHealthBase(accId){
   const auto=LS.get('ki21_health_'+accId,null);
-  // v4.167: alte Health-Snapshots nicht weiterverwenden. Sie können noch freie KI-Texte
-  // aus früheren Versionen enthalten (z.B. erfundene Prozentquoten, GF-Rückfälle oder
-  // falsch zugeordnete Geldbeträge). Neue Versionen bauen den Snapshot frisch auf.
-  if(auto && auto.protectedSchemaVersion!==KI21_HEALTH_SCHEMA_VERSION){
-    LS.set('ki21_health_'+accId,null);
-    return null;
-  }
   const allResults=[];
   SITS.forEach((sit,i)=>{
     const d=LS.get('ki21_st_'+accId+'_'+i,null);
@@ -2134,6 +2126,25 @@ function getOpportunityAllText(accId){
   try{const h=LS.get('ki21_health_'+accId,null);if(h)parts.push(JSON.stringify(h));}catch(e){}
   return parts.filter(Boolean).join('\n');
 }
+function getOpportunitySourceTextWithoutHealth(accId){
+  const parts=[getCurrentUserKnowledgeText(accId)];
+  try{
+    const acc=(LS.get('ki21_acc',[])||[]).find(a=>a&&a.id===accId)||{};
+    parts.push(JSON.stringify(acc));
+  }catch(e){}
+  try{
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d){
+        if(d.result)parts.push(String(d.result));
+        if(d.result2)parts.push(String(d.result2));
+        if(d.fv)parts.push(JSON.stringify(d.fv));
+      }
+    }
+  }catch(e){}
+  return parts.filter(Boolean).join('\n');
+}
+
 function hasConfirmedFullDecisionAuthority(accId){
   const raw=getOpportunityAllText(accId);
   if(!raw.trim())return false;
@@ -2596,8 +2607,24 @@ function applyScoreMatrixConsistencyPostProcessing(accId,health){
   }
   return copy;
 }
+function signalObjectsFromProtectedTexts(texts,type){
+  return (texts||[]).map(t=>({text:String(t||''),origin:'SNAPSHOT',type,disabled:false}));
+}
+function applyProtectedHealthSnapshotToHealth(accId,health){
+  if(!health)return health;
+  const pos=(health.positive||[]).filter(x=>!x.disabled).map(x=>String(x&&x.text?x.text:x||''));
+  const warn=(health.warning||[]).filter(x=>!x.disabled).map(x=>String(x&&x.text?x.text:x||''));
+  const open=(health.open||[]).filter(x=>!x.disabled).map(x=>String(x&&x.text?x.text:x||''));
+  const snap=applyProtectedCockpitSnapshot(accId,health,pos,warn,open);
+  return {...health,
+    positive:signalObjectsFromProtectedTexts(snap.positive,'positive'),
+    warning:signalObjectsFromProtectedTexts(snap.risks,'warning'),
+    open:signalObjectsFromProtectedTexts(snap.open,'open')
+  };
+}
 function getOpportunityHealth(accId){
-  return applyScoreMatrixConsistencyPostProcessing(accId,applySystemIntegrationDiversionPostProcessing(accId,applyBudgetOfferPostProcessing(accId,applyDecisionAuthorityPostProcessing(accId,_getOpportunityHealthBase(accId)))));
+  const base=applyScoreMatrixConsistencyPostProcessing(accId,applySystemIntegrationDiversionPostProcessing(accId,applyBudgetOfferPostProcessing(accId,applyDecisionAuthorityPostProcessing(accId,_getOpportunityHealthBase(accId)))));
+  return applyScoreMatrixConsistencyPostProcessing(accId,applyProtectedHealthSnapshotToHealth(accId,base));
 }
 
 function rewriteSalesQuestionText(s){
@@ -2825,7 +2852,7 @@ function hasBudgetSignalInHealth(health){
 }
 
 function extractKnownBusinessFacts(accId){
-  const raw=(getCurrentUserKnowledgeText(accId)||'').replace(/\s+/g,' ');
+  const raw=(getOpportunitySourceTextWithoutHealth(accId)||'').replace(/\s+/g,' ');
   const facts={pain:null,budget:null,authority:null};
   const pain=getEuroAmountsByRole(raw,'pain')[0];
   const budgetRoles=getEuroAmountsByRole(raw,'budget');
@@ -5852,8 +5879,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.167';
-const KI21_HEALTH_SCHEMA_VERSION=4167;
+const KI21_VERSION='v4.168';
 
 
 function runKi21VersionMigration(){
@@ -5862,18 +5888,31 @@ function runKi21VersionMigration(){
   const accs=LS.get('ki21_acc',[]);
   accs.forEach(acc=>{
     if(!acc||!acc.id)return;
-    // Neue Code-Versionen dürfen keine alten Health-/Dashboard-Ableitungen weiterverwenden.
-    // Phasentexte und Kundeneingaben bleiben erhalten; nur abgeleitete Health-/Cockpit-Caches
-    // werden ungültig gemacht und danach neu berechnet.
-    LS.set('ki21_health_'+acc.id,null);
+    // v4.168: Allgemeingültige, gezielte Bereinigung für ALLE Opportunities.
+    // Keine komplette Health-Löschung mehr: Gute bestätigte Fakten bleiben erhalten.
+    // Nur bekannte Fehlerklassen werden bereinigt und die Runtime-Schutzschicht baut Cockpit/Bottom-Sheets daraus neu.
+    const h=LS.get('ki21_health_'+acc.id,null);
+    if(h){
+      const cleanArr=(arr,kind)=>(arr||[]).map(x=>{
+        const text=String(x&&x.text?x.text:x||'');
+        const cleaned=sanitizeCockpitTextFinal(acc.id,text,kind,{});
+        if(!cleaned)return null;
+        return (x&&x.text)?{...x,text:cleaned}: {text:cleaned,origin:'MIGRATION',type:kind,disabled:false};
+      }).filter(Boolean);
+      LS.set('ki21_health_'+acc.id,{...h,
+        positive:cleanArr(h.positive,'positive'),
+        warning:cleanArr(h.warning,'warning'),
+        open:cleanArr(h.open,'open'),
+        protectedSchema:'v4.168',
+        migratedAt:Date.now()
+      });
+    }
+    // alte Fehlermeldung stehen lassen wäre verwirrend, Health selbst bleibt erhalten.
     LS.set('ki21_health_lastError_'+acc.id,null);
-    // v4.167: auch manuelle Health-Overrides aus alten Testläufen können veraltete freie Texte tragen.
-    // Sie werden nur für die Migration verworfen, nicht die Opportunity-Daten selbst.
-    LS.set('ki21_health_manual_'+acc.id,{added:[],removedAutoTexts:[]});
   });
-  LS.set('ki21_health_schema_version',KI21_HEALTH_SCHEMA_VERSION);
   LS.set('ki21_applied_code_version',KI21_VERSION);
 }
+
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
   let binary='';
