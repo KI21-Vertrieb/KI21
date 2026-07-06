@@ -2898,6 +2898,7 @@ function normalizeQuestionText(q,forPreview){
   s=s.replace(/\s+/g,' ');
   s=rewriteSalesQuestionText(s);
   if(!s)return '';
+  if(isBadLegacyQuestionV4190(s,state&&state.activeId))return '';
   if(forPreview){
     const low=s.toLowerCase();
     // v4.150: Für die Cockpit-Kachel zählen vertriebliche Wirkung und Discovery-Relevanz – Technikfragen werden nicht priorisiert.
@@ -2983,6 +2984,7 @@ function cleanCockpitQuestionPreviewText(q){
 }
 
 function getDashboardQuestions(accId,maxItems,forPreview){
+  const canonical=buildCanonicalDashboardQuestionsV4190(accId);
   const sources=[];
   const p2=LS.get('ki21_st_'+accId+'_1',{});
   if(p2&&p2.fv&&p2.fv.spin)sources.push(p2.fv.spin);
@@ -2992,9 +2994,11 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   if(p1&&p1.result)sources.push(p1.result);
   let qs=[];
   for(const src of sources){ qs=qs.concat(extractQuestionsFromText(src)); }
-  // v4.170: Eine einzige finale Fragenliste als Quelle für Cockpit-Vorschau UND Bottom Sheet.
-  // Die Vorschau darf nur Marker entfernen, aber nicht aus anderen/alten Listen oder Zusatzfragen stammen.
   qs=qs.map(q=>normalizeQuestionText(q,false)).map(cleanCockpitQuestionPreviewText).filter(Boolean);
+  qs=qs.filter(q=>!isBadLegacyQuestionV4190(q,accId));
+  // v4.190: Kanonische, rollenbasierte Fragen stehen vorn; alte SPIN-Fragen dürfen ergänzen,
+  // aber keine Prozent-/GF-/Management-Artefakte mehr in Cockpit oder Bottom Sheet ziehen.
+  qs=[...canonical,...qs];
   qs=[...new Set(qs)];
   qs=prioritizeCockpitQuestions(qs);
   return qs.slice(0,maxItems||3);
@@ -4000,6 +4004,100 @@ function buildStructuredPhase5OutputV4189(accId){
   lines.push('DER EINE ABSCHLUSSSATZ');
   lines.push('Der nächste Schritt ist ein begrenzter Start mit echten Pilot-Deals und klarer Wirkungsmessung.');
   return lines.join('\n');
+}
+
+
+// v4.190: Phase 2 und Cockpit-Fragen ebenfalls strukturiert aus Rollen/Evidenz bauen.
+// Ziel: keine alten freien LLM-Artefakte mehr in Bedarfsanalyse, Fragenbox oder Dossier.
+function buildStructuredPhase2OutputV4190(accId){
+  const facts=extractKnownBusinessFacts(accId||'');
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
+  const freq=extractDealFrequencyTextV4189(accId);
+  const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
+  const hasForecast=/forecast|pipeline|prognose|vorschau/i.test(raw);
+  const hasCrm=/hubspot|crm|salesforce|pipedrive|dynamics/i.test(raw);
+  const hasRamp=/neue\s+(?:AM|Account Manager|Verkäufer)|ramp|onboarding|jüngeren|nachholbedarf|einarbeitung/i.test(raw);
+  const pain=facts.pain?normalizeSafeMoneyTextV4189(facts.pain):'';
+  const budget=facts.budget?normalizeSafeMoneyTextV4189(facts.budget):'Budgetrahmen noch zu klären';
+  const authority=facts.authority?normalizeSafeMoneyTextV4189(facts.authority):(dec&&dec!=='dem bestätigten Entscheider'?dec+' als Entscheider klären':'Entscheiderrolle klären');
+  const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
+  const lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Der operative Discovery-Schmerz ist konkret genug für die nächste Gesprächsführung. Wirtschaftliche Wirkung und Vermeidbarkeit bleiben offen und werden mit echten Deals validiert.');
+  lines.push('');
+  lines.push('🔥 SCHMERZ');
+  if(freq)lines.push('• Problemhäufigkeit: '+freq+'.');
+  else lines.push('• Discovery-Qualität ist als operativer Schmerz benannt.');
+  if(pain)lines.push('• Wirtschaftliche Größenordnung: '+pain+'; Zusammensetzung und Vermeidbarkeit noch validieren.');
+  lines.push('• Uneinheitliche Fragen und unterschiedliche Gesprächsqualität führen zu Nacharbeit und unsicheren Opportunity-Bewertungen.');
+  if(hasForecast)lines.push('• Forecast-/Pipeline-Sichtbarkeit ist betroffen; konkrete Wirkung nicht als Zielversprechen rechnen, sondern anhand echter Deals prüfen.');
+  if(hasRamp)lines.push('• Unterschiedliche Erfahrung im Team macht strukturierte Leitfragen besonders relevant.');
+  lines.push('');
+  lines.push('🎬 ZEIGEN');
+  lines.push('• An einem echten Opportunity-Beispiel zeigen, welche kritischen Fragen vor dem nächsten Schritt fehlen.');
+  lines.push('• Sichtbar machen, wie strukturierte SPIN-/Discovery-Fragen Nacharbeit und zu optimistische Qualifizierung reduzieren können.');
+  if(hasCrm)lines.push('• CRM-/Dokumentationskontext nur als Arbeitsumgebung behandeln, nicht als eigenes Integrationsprojekt eröffnen.');
+  lines.push('');
+  lines.push('❓ KLÄREN');
+  lines.push('• Welche 3–5 konkreten Deals zeigen das Discovery-Problem am besten?');
+  lines.push('• Was kostet ein schlecht qualifizierter Deal konkret an Zeit, Umsatz oder Nacharbeit?');
+  lines.push('• Welche Fälle wären durch bessere Discovery früher erkannt, gerettet oder sauber disqualifiziert worden?');
+  lines.push('• Welche Messkriterien zeigen nach dem Startprojekt, dass die Discovery-Qualität besser wird?');
+  lines.push('');
+  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
+  lines.push('Konkrete Pilot-Deals und Messkriterien für die Vermeidungsquote festlegen.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+nextName+' 3–5 echte Deals auswählen und daran prüfen, wo Discovery scheitert, welche Information früher gefehlt hat und wie Erfolg gemessen wird.');
+  lines.push('');
+  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+  lines.push('1. Pilot-Deals auswählen: Welche konkreten Fälle zeigen das Discovery-Problem am besten?');
+  lines.push('2. Messkriterien festlegen: weniger Nacharbeit, frühere Disqualifikation oder bessere Opportunity-Bewertung.');
+  return lines.join('\n');
+}
+function isBadLegacyQuestionV4190(q,accId){
+  const s=String(q||'');
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  if(/\d{1,3}\s*%\s*(?:→|->|auf|bis|zu)\s*\d{1,3}\s*%/i.test(s))return true;
+  if(/(?:Management|Geschäftsführer|Geschäftsführung|GF).{0,80}(Nutzenversprechen|validiert|selbst validiert|Kaufbereitschaft|Termin koordinieren)/i.test(s))return true;
+  if(authority && /(?:Geschäftsführer|Geschäftsführung|\bGF\b|CEO|CFO).{0,100}(validieren|bestätigen|Freigabe|Kaufbereitschaft|Zusage|Commitment|Termin)/i.test(s))return true;
+  if(/BranchenBRANCHENHYPOTHESE|welcher Anteil\?|30\s*[–-]\s*welcher|50\s*[–-]\s*welcher/i.test(s))return true;
+  if(/Forecast-Genauigkeit\s*\d{1,3}\s*%/i.test(s))return true;
+  return false;
+}
+function buildCanonicalDashboardQuestionsV4190(accId){
+  const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
+  const hasForecast=/forecast|pipeline|prognose|vorschau/i.test(raw);
+  const qs=[
+    'Welche 3–5 konkreten Deals zeigen am besten, wo Discovery heute scheitert?',
+    'Was kostet ein schlecht qualifizierter Deal konkret an Zeit, Umsatz oder Nacharbeit?',
+    'Welche Fälle wären durch bessere Discovery früher erkannt, gerettet oder sauber disqualifiziert worden?',
+    'Welche Messkriterien zeigen nach dem Startprojekt, dass die Discovery-Qualität besser wird?'
+  ];
+  if(hasForecast)qs.push('Wie wirkt sich bessere Discovery konkret auf Forecast-Qualität und Pipeline-Sicherheit aus?');
+  qs.push('Welche Account Manager und welche Opportunities eignen sich für den Start?');
+  return qs;
+}
+function sanitizeDossierEarlyPhaseV4190(text,accId){
+  if(!text)return text;
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  const out=[];
+  let seenValidation=false;
+  for(let rawLine of String(text).split('\n')){
+    let line=rawLine;
+    const t=line.trim();
+    if(!t){out.push(line);continue;}
+    if(/Wirtschaftliche Wirkung und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i.test(t)){
+      if(seenValidation)continue;
+      seenValidation=true;
+      line=line.replace(/Wirtschaftliche Wirkung und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i,'Konkrete Pilot-Deals und Messkriterien für die Wirkungsmessung festlegen.');
+    }
+    if(authority && /(?:Geschäftsführer|Geschäftsführung|\bGF\b|CEO|CFO).{0,100}(Kaufbereitschaft|Freigabe|Zusage|Commitment|validieren|bestätigen|muss|müssen|erforderlich|ausstehend|Termin)/i.test(t))continue;
+    if(/\d{1,3}\s*%\s*(?:→|->|auf|bis|zu)\s*\d{1,3}\s*%/i.test(t))continue;
+    if(/BranchenBRANCHENHYPOTHESE|welcher Anteil\?|30\s*[–-]\s*welcher|50\s*[–-]\s*welcher/i.test(t))continue;
+    out.push(line);
+  }
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
 function sanitizePhase4NoRoiMath(text,accId){
@@ -5717,7 +5815,7 @@ function renderStation(sitId){
         fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
       });
       if(result){
-        const finalResult=(sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result);
+        const finalResult=(sitId===1)?buildStructuredPhase2OutputV4190(state.activeId):((sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result));
         data.result=finalResult;
         data.prompt=prompt;
         resultBody.innerHTML='';resultBody.appendChild(renderResultText(finalResult));
@@ -6303,9 +6401,10 @@ function generateKundePDF(aid, cust){
     const data=LS.get(key,{});
     let result=data.result||'';
     if(result){
-      if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
+      if(i===1)result=buildStructuredPhase2OutputV4190(aid);
+      else if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
       else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
-      else result=sanitizeFinalOutputV4188(aid,result,'dossier');
+      else result=sanitizeDossierEarlyPhaseV4190(sanitizeFinalOutputV4188(aid,result,'dossier'),aid);
     }
     html+=`<div class="phase">
       <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
@@ -6672,7 +6771,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.189';
+const KI21_VERSION='v4.190';
 
 
 function runKi21VersionMigration(){
