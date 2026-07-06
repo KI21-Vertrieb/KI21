@@ -5053,6 +5053,49 @@ function ki21ClearAnswersOnNewSpin(stData,newSpin){
   }
 }
 
+
+// v4.195: SPIN-Transfer hart begrenzen. Phase 2 darf nur echte S/P/I/N-Fragen übernehmen,
+// keine Aktionslisten, Qualifizierungsfragen, TODOs oder alte Ergebnisblöcke.
+function extractSpinQuestions(resultText){
+  const text=String(resultText||'');
+  if(!text.trim())return [];
+
+  const headingRe=/SPIN-FRAGEN\s+F(?:Ü|U)R(?:\s+DIE)?\s+BEDARFSANALYSE|SPIN-FRAGEN\s+F(?:Ü|U)R\s+BEDARFSANALYSE|SPIN-FRAGEN/i;
+  const headingMatch=headingRe.exec(text);
+  let scope=headingMatch?text.slice(headingMatch.index+headingMatch[0].length):text;
+
+  const stopRe=/^(?:#{1,6}\s*)?(?:###DETAILS###|EINSCHÄTZUNG|BESTÄTIGT|KI-BEWERTUNG|ZU VALIDIEREN|ZU KLÄREN|NÄCHSTER SCHRITT|🎯\s*WENN DU MORGEN|WENN DU MORGEN|DIE 5 WICHTIGSTEN|VERTRIEBSNOTIZEN|DEMO|PILOT|ROI|FOLLOW-UP|KAUFARGUMENTE|EINWÄNDE)\b/i;
+  const spinLineRe=/^(?:[•\-–—]\s*)?([SPIN])\s*[:\-–]\s*(.+)$/i;
+  const out=[];
+  const seen=new Set();
+  const lines=scope.split('\n');
+
+  for(const raw of lines){
+    let line=String(raw||'').trim();
+    if(!line)continue;
+    if(stopRe.test(line))break;
+
+    const m=line.match(spinLineRe);
+    if(!m)continue;
+
+    const letter=m[1].toUpperCase();
+    let q=(letter+': '+m[2].trim())
+      .replace(/\s+/g,' ')
+      .replace(/\s*\|\s*Antwort\s*:\s*_{2,}\s*$/i,'')
+      .trim();
+
+    // Nur echte Fragen übernehmen; strategische Listen ohne Fragezeichen bleiben draußen.
+    if(!q.includes('?'))continue;
+
+    const key=q.toLowerCase().replace(/[„“"'’]/g,'').replace(/\s+/g,' ').trim();
+    if(!seen.has(key)){
+      seen.add(key);
+      out.push(q);
+    }
+  }
+  return out;
+}
+
 function transferAndGo(fromId, toId, result){
   // Direct transfer - output is already compact
   const nextKEY='ki21_st_'+state.activeId+'_'+toId;
@@ -5389,43 +5432,14 @@ function renderStation(sitId){
       LS.set(KEY,data);
     }
 
-    // Bereinige Rohtext: entferne alle Marker-Zeilen, Details-Blöcke, Überschriften
-    const STRIP_PATTERNS=[
-      /###DETAILS###[\s\S]*/gi,
-      /VERTRIEBSNOTIZEN[\s\S]{0,300}/gi,
-      /SPIN-FRAGEN[^\n]*/gi,
-      /BEDARFSANALYSE-FRAGEN[^\n]*/gi,
-      /LEITFRAGEN[^\n]*/gi,
-      /^[A-ZÄÖÜ\s]{5,}:?\s*$/gm,  // Caps-only Überschriften
-    ];
-    let spinClean=spinRaw;
-    STRIP_PATTERNS.forEach(p=>spinClean=spinClean.replace(p,''));
-
-    // Extrahiere Fragen: Zeilen mit S: / P: / I: / N: oder • S: / Nummer.
-    // Mehrzeilige Fragen (Fortsetzung ohne neuen Marker) werden zusammengeführt.
-    const spinQuestions=[];
-    const spinLetters=[];
-    const SPIN_LINE=/^(?:•\s*)?([SPIN])\s*[:\-–]\s*(.+)/i;
-    const NUM_LINE=/^(?:•\s*)?(\d+)[.\)]\s*(.+)/;
-
-    let curLetter='';let curQ='';
-    spinClean.split('\n').forEach(rawLine=>{
-      const line=rawLine.trim();
-      if(!line)return;
-      const mSpin=line.match(SPIN_LINE);
-      const mNum=line.match(NUM_LINE);
-      if(mSpin){
-        if(curQ)spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
-        curLetter=mSpin[1].toUpperCase();curQ=mSpin[2];
-      } else if(mNum&&!curQ){
-        if(curQ)spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
-        curLetter=String(mNum[1]);curQ=mNum[2];
-      } else if(curQ){
-        // Fortsetzungszeile — nur anhängen wenn keine neue Überschrift
-        if(!/^[A-ZÄÖÜ\s]{4,}:?\s*$/.test(line))curQ+=' '+line;
-      }
+    // v4.195: SPIN-Fragen ausschließlich über den zentralen, harten Parser übernehmen.
+    // Keine nummerierten Aktionslisten oder Qualifizierungsfragen als Leitfragen anzeigen.
+    const extractedSpin=extractSpinQuestions(spinRaw);
+    const spinQuestions=extractedSpin.map(l=>l.replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim());
+    const spinLetters=extractedSpin.map(l=>{
+      const m=String(l||'').match(/^([SPIN])\s*[:\-–]/i);
+      return m?m[1].toUpperCase():'';
     });
-    if(curQ.trim())spinQuestions.push(curQ.trim()),spinLetters.push(curLetter);
 
     // Parse bestehende Antworten (Format "1. Frage: Antwort\n2. ...")
     const antwortenParsed={};
@@ -5483,7 +5497,9 @@ function renderStation(sitId){
     } else {
       // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
-        'Leitfragen werden automatisch aus Phase 1 übertragen. Führen Sie zunächst die Qualifizierung durch.'));
+        spinRaw&&String(spinRaw).trim()
+          ?'Keine sauber erkannten SPIN-Fragen gefunden. Bitte Phase 1 neu generieren.'
+          :'Leitfragen werden automatisch aus Phase 1 übertragen. Führe zunächst die Qualifizierung durch.'));
     }
   }
   // ── Ende Bedarfsanalyse & Demo Dashboard ──
@@ -6882,7 +6898,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.194';
+const KI21_VERSION='v4.195';
 
 
 function runKi21VersionMigration(){
