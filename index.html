@@ -3469,7 +3469,7 @@ function buildCockpitMatrixData(accId,health){
     shortUniqueList(finalPositive.map(normalizeRoiHebelText),4),
     shortUniqueList(finalRisks.map(normalizeRoiHebelText),4),
     shortUniqueList(finalOpen.map(normalizeRoiHebelText),4));
-  return protectedMatrix;
+  return applyEarlyPhaseCockpitMatrixClean(accId,protectedMatrix);
 }
 
 function extractBulletsAfterHeader3(text,headerKeyword,maxItems){
@@ -4097,7 +4097,7 @@ function buildStructuredPhase5OutputV4189(accId){
 // v4.190: Phase 2 und Cockpit-Fragen ebenfalls strukturiert aus Rollen/Evidenz bauen.
 // Ziel: keine alten freien LLM-Artefakte mehr in Bedarfsanalyse, Fragenbox oder Dossier.
 
-// v4.197: Phase-2-Output deterministisch bereinigen, damit Bedarfsanalyse & Demo
+// v4.198: Phase-2-Output deterministisch bereinigen, damit Bedarfsanalyse & Demo
 // nicht durch ROI-/Pilot-Sprache aus späteren Phasen verunreinigt wird.
 function cleanPhase2Output(text){
   if(!text)return text;
@@ -4177,6 +4177,78 @@ function cleanPhase2Output(text){
   }
   x=out.join('\n');
   return x.replace(/\n{3,}/g,'\n\n').trim();
+}
+
+
+// v4.198: Cockpit frühphasig bereinigen. Wenn die zuletzt bearbeitete/generierte Phase
+// noch Qualifizierung oder Discovery ist, darf das Cockpit keine Startangebot-/Pilot-/ROI-Sprache anzeigen.
+function getLatestGeneratedPhaseId(accId){
+  if(!accId)return -1;
+  let bestId=-1,bestTs=0;
+  for(let i=0;i<5;i++){
+    const snap=LS.get('ki21_phase_snap_'+accId+'_'+i,null);
+    if(snap&&snap.ts&&snap.ts>bestTs){bestTs=snap.ts;bestId=i;}
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    const t=d&&(d.generatedAt||d.ts||d.updatedAt||0);
+    if(t&&t>bestTs){bestTs=t;bestId=i;}
+  }
+  if(bestId>=0)return bestId;
+  for(let i=4;i>=0;i--){
+    const d=LS.get('ki21_st_'+accId+'_'+i,null);
+    if(d&&d.result&&String(d.result).trim())return i;
+  }
+  return -1;
+}
+function isEarlyPhaseCockpitMode(accId){
+  const latest=getLatestGeneratedPhaseId(accId);
+  return latest>=0 && latest<=2;
+}
+function cleanEarlyPhaseCockpitText(accId,text,kind){
+  let x=String(text||'').trim();
+  if(!x)return '';
+  if(!isEarlyPhaseCockpitMode(accId))return x;
+  const dec=(getConfirmedDecisionMakerName(accId)||'Marius');
+  const discoveryNext='Mit '+dec+' 3–5 echte Beispiel-Deals auswählen und prüfen, wo Discovery scheiterte.';
+
+  const hasLateLanguage=/(startangebot|angebot\s+durchgehen|pilot[-\s]?deals?|pilot\b|messkriterien|vermeidungsquote|rettungsquote|roi|business\s*case|startprojekt)/i.test(x);
+  if((kind==='nextStep'||kind==='missing'||kind==='open')&&hasLateLanguage){
+    if(kind==='nextStep')return discoveryNext;
+    return 'Konkrete Beispiel-Deals und Nacharbeit sauber klären';
+  }
+
+  x=x.replace(/Messkriterien\s+für\s+die\s+Vermeidungsquote/gi,'konkrete Fälle und Nacharbeit')
+     .replace(/Messkriterien\s+für\s+die\s+Wirkungsmessung/gi,'konkrete Fälle und Nacharbeit')
+     .replace(/Vermeidungsquote|Vermeidbarkeit|Rettungsquote/gi,'wirtschaftliche Wirkung')
+     .replace(/Pilot-Deals/gi,'Beispiel-Deals')
+     .replace(/Pilot-Deal/gi,'Beispiel-Deal')
+     .replace(/Pilot-Setup/gi,'nächster Discovery-Schritt')
+     .replace(/Startprojekt/gi,'nächste Discovery')
+     .replace(/Startangebot\s+durchgehen/gi,'Beispiel-Deals prüfen')
+     .replace(/\bPilot\b/gi,'Beispiel');
+
+  // Cockpit-Erkenntnisse kurz halten und doppelte Zahlen vermeiden.
+  x=x.replace(/Operativer\s+Schmerz\s+konkret\s+quantifiziert:\s*/gi,'');
+  x=x.replace(/~?\s*4\s+schwach\s+qualifizierte\s+Deals\s+pro\s+Monat\s*;\s*ca\.\s*5[\.\s]?000\s*€\s+pro\s+Fall(?:;\s*Rolle\s+noch\s+klären)?/i,
+    '4 schwach qualifizierte Deals/Monat; 5.000 € Rolle offen');
+  x=x.replace(/~?\s*4\s+schwach\s+qualifizierte\s+Deals\s+pro\s+Monat/i,'4 schwach qualifizierte Deals/Monat');
+  x=x.replace(/ca\.\s*5[\.\s]?000\s*€\s+pro\s+Fall(?:;\s*Rolle\s+noch\s+klären)?/i,'5.000 € pro Fall; Rolle offen');
+
+  if(/^(Business Case|ROI|Startangebot|Pilot)/i.test(x))return '';
+  return x.trim();
+}
+function cleanEarlyPhaseCockpitList(accId,list,kind){
+  return shortUniqueList((list||[]).map(t=>cleanEarlyPhaseCockpitText(accId,t,kind)).filter(Boolean),4);
+}
+function applyEarlyPhaseCockpitMatrixClean(accId,matrix){
+  if(!matrix||!isEarlyPhaseCockpitMode(accId))return matrix;
+  let positive=cleanEarlyPhaseCockpitList(accId,matrix.positive,'positive');
+  let risks=cleanEarlyPhaseCockpitList(accId,matrix.risks,'risk');
+  let open=cleanEarlyPhaseCockpitList(accId,matrix.open,'open');
+  // Wenn frühe Phase: keine künstlichen Pilot-/Startangebot-Risiken erzwingen.
+  risks=risks.filter(t=>!/(startangebot|pilot|roi|business\s*case|vermeidungsquote)/i.test(String(t||'')));
+  open=open.filter(t=>!/(startangebot|pilot|roi|business\s*case|vermeidungsquote)/i.test(String(t||'')));
+  if(!open.length)open.push('Konkrete Beispiel-Deals und Nacharbeit sauber klären');
+  return {positive,risks,open};
 }
 
 function buildStructuredPhase2OutputV4190(accId){
@@ -4641,6 +4713,7 @@ function renderHome(){
     return null;
   })();
   naechsterSchrittText=sanitizeDashboardTextForDecisionAuthority(aid,naechsterSchrittText,'nextStep');
+  naechsterSchrittText=cleanEarlyPhaseCockpitText(aid,naechsterSchrittText,'nextStep');
 
   const nextCard=h('div',{className:'cockpit-next-card'});
   nextCard.appendChild(h('div',{className:'cockpit-next-eyebrow'},'Nächster Schritt'));
@@ -4677,7 +4750,7 @@ function renderHome(){
           try{
             updateBtn.textContent='⏳ Qualifizierung...';
             const result=await callClaude(SITS[0].build(fv,cust,mu2,kk2,''),null);
-            if(result){d.result=result;LS.set(KEY,d);}
+            if(result){d.result=result;d.generatedAt=Date.now();LS.set(KEY,d);}
             await savePhaseSnapshot(aid,0);
           }catch(e){}
         }
@@ -4700,7 +4773,7 @@ function renderHome(){
           const fv=d.fv||{};const mu2=LS.get('ki21_mu',{});const kk2=buildKkForSitId(aid,i);
           try{
             const result=await callClaude(SITS[i].build(fv,cust,mu2,kk2,''),null);
-            if(result){d.result=result;LS.set(KEY,d);}
+            if(result){d.result=result;d.generatedAt=Date.now();LS.set(KEY,d);}
             await savePhaseSnapshot(aid,i);
           }catch(e){}
         }));
@@ -4769,6 +4842,7 @@ function renderHome(){
       return null;
     })();
     dieSache=sanitizeDashboardTextForDecisionAuthority(aid,dieSache,'missing');
+    dieSache=cleanEarlyPhaseCockpitText(aid,dieSache,'missing');
 
     const erkTile=mkTile('Erkenntnisse',pos,'chance','Noch keine Erkenntnisse',
       ()=>showBottomSheet('Wichtigste Erkenntnisse',
@@ -5134,7 +5208,7 @@ function ki21ClearAnswersOnNewSpin(stData,newSpin){
 }
 
 
-// v4.197: SPIN-Transfer hart begrenzen. Phase 2 darf nur echte S/P/I/N-Fragen übernehmen,
+// v4.198: SPIN-Transfer hart begrenzen. Phase 2 darf nur echte S/P/I/N-Fragen übernehmen,
 // keine Aktionslisten, Qualifizierungsfragen, TODOs oder alte Ergebnisblöcke.
 function extractSpinQuestions(resultText){
   const text=String(resultText||'');
@@ -5512,7 +5586,7 @@ function renderStation(sitId){
       LS.set(KEY,data);
     }
 
-    // v4.197: SPIN-Fragen ausschließlich über den zentralen, harten Parser übernehmen.
+    // v4.198: SPIN-Fragen ausschließlich über den zentralen, harten Parser übernehmen.
     // Keine nummerierten Aktionslisten oder Qualifizierungsfragen als Leitfragen anzeigen.
     const extractedSpin=extractSpinQuestions(spinRaw);
     const spinQuestions=extractedSpin.map(l=>l.replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim());
@@ -6024,6 +6098,7 @@ function renderStation(sitId){
         const finalResult=(sitId===1)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):((sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result));
         data.result=finalResult;
         data.prompt=prompt;
+        data.generatedAt=Date.now();
         resultBody.innerHTML='';resultBody.appendChild(renderResultText(finalResult));
         // Phase 1: auto-fill fragen field
         if(sitId===0){
@@ -6978,7 +7053,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.197';
+const KI21_VERSION='v4.198';
 
 
 function runKi21VersionMigration(){
