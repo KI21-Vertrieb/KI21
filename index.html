@@ -1341,6 +1341,9 @@ KRITISCH – ABSCHLUSSTONALITÄT: Schreibe in Phase 5 NICHT "Deal hat grünes Li
 KRITISCH – ROI VOR STARTANGEBOT: Der finale ROI muss vor Beauftragung eines kleinen Startangebots nicht vollständig bewiesen werden. Wenn ein plausibler Jahresschaden und ein klar kleiner Einstiegspreis vorliegen, argumentiere konservativ: Schon eine geringe Vermeidungswirkung kann das Startangebot rechtfertigen; die tatsächliche Wirkung wird im Startangebot anhand echter Deals/Messkriterien validiert. Keine konkrete Dauer oder Deal-Anzahl erfinden, außer sie wurde ausdrücklich genannt.
 KRITISCH – STARTANGEBOT VS. LAUFENDE GEBÜHR: Wenn das Angebot aus einem einmaligen Start-/Compact-Angebot und späteren laufenden Gebühren besteht, darfst du diese Beträge nicht vermischen. Nenne die Angebotslogik getrennt: "2.900 € Startangebot inklusive 6 Monate App; danach 735 € monatlich bei 15 Usern." Schreibe niemals "2–3k€ monatliche Investition", wenn 2.900 € als Startangebot genannt sind.
 KRITISCH – KEIN SCHEINEXAKTER ROI-RECHNER: KI21 soll nicht ernsthaft rechnen, sondern validieren. Keine automatisch konstruierten Business-Case-Sätze wie "80.000 € Schaden vs. 5.500.000 € Startangebot" oder erfundene Monatsraten. Stelle stattdessen bekannte Beträge, Nutzenhebel und offene Messannahmen getrennt dar.
+KRITISCH – KEINE PROZENTSTAFFELN: Keine 25/50/75 %, keine 30/50/70 %, keine Nutzenrange aus Annahmen. Nur: Wirkung/Vermeidungsquote mit echten Deals validieren.
+KRITISCH – KEINE GF-PFLICHT BEI BESTÄTIGTEM ENTSCHEIDER: Wenn eine Person entscheidungsbefugt ist, keine zusätzliche Geschäftsführungs-/GF-/CFO-Validierung als Bedingung formulieren.
+KRITISCH – SAUBERE ABSCHNITTE: Aktionssätze gehören nur in Nächster Schritt/Wenn du morgen/Die eine Sache, nie mitten in Kaufargumente oder ROI.
 KRITISCH – ABSCHLUSS-/KICKOFF-FORMULIERUNG: Wenn keine konkrete Zahl von Teilnehmern genannt wurde, erfinde keine Teilnehmerzahl. Schreibe generisch: „[Entscheider] einen Kickoff mit ausgewählten relevanten Anwendern/Account Managern vorschlagen.“ Wenn keine genaue Dauer genannt wurde, keine konkrete Dauer erfinden.
 KRITISCH – KEINE QUOTEN ERFINDEN: In Risiken, Einwänden und offenen Punkten keine konkrete Vermeidungsquote nennen, außer sie wurde vom Kunden genannt. Statt einer konkreten Prozentannahme schreibe „Vermeidungsquote schwach qualifizierter Deals noch nicht validiert“.
 KRITISCH – VERMEIDUNGSQUOTE BLEIBT SICHTBAR: Wenn schwach qualifizierte Deals, späte Disqualifikation oder Discovery-Qualität der wirtschaftliche Hebel sind, darf die Vermeidungsquote nicht komplett verschwinden. Sie ist dann ein Top-Risiko bzw. offener Punkt – aber ohne Prozentzahl.
@@ -3784,6 +3787,100 @@ function sanitizeGeneratedOutputFinal(accId,text,kind){
   return x.trim();
 }
 
+
+// v4.188: Finaler Output-Cleaner ohne aggressive Inline-Wortersetzungen.
+// Prinzip: kaputte oder unsichere Sätze als ganze Zeilen entfernen/neutralisieren,
+// nicht mitten im Satz einzelne Tokens austauschen. Allgemeingültig über Rollen/Evidenz.
+function sanitizeFinalOutputV4188(accId,text,kind){
+  if(!text)return text;
+  let x=String(text);
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'der bestätigte Entscheider';
+  const inv=accId?buildPhaseInvestmentLine(accId).replace(/^Investition:\s*/,'').replace(/\.$/,''):'';
+  const rawCtx=accId?String(getCurrentUserKnowledgeText(accId)||''):'';
+  const explicitPct=/(?:vermeidungsquote|wirkung|rettungsquote|anteil).{0,80}\d{1,3}\s*%.{0,80}(?:bestätigt|genannt|kundenangabe|sagt|validiert)|(?:kunde|entscheider|kontakt|ansprechpartner).{0,80}\d{1,3}\s*%.{0,80}(?:vermeidungsquote|wirkung|rettungsquote|anteil)/i.test(rawCtx);
+
+  // Kaputte Artefakte aus älteren Sanitizern vollständig entfernen.
+  x=x.replace(/BranchenBRANCHENHYPOTHESE\s*:\s*/gi,'Branchenhypothese: ');
+  x=x.replace(/\b(?:30|25|20)\s*[–-]\s*welcher Anteil\?/gi,'welcher Anteil?');
+  x=x.replace(/\bwelcher Anteil\?\s*(?:–|-)\s*welcher Anteil\?/gi,'welcher Anteil?');
+  x=x.replace(/\bwelcher Anteil\?\s*oder\s*welcher Anteil\?/gi,'welcher Anteil?');
+
+  // Harte unsichere Rechenlogik vor dem Zeilenfilter neutralisieren.
+  x=x.replace(/\b\d+\s*(?:Deals?|Fälle)\s*(?:\/|pro\s*)Monat\s*[×x*]\s*[^\n]*(?:€|EUR|Euro)[^\n]*/gi,
+    'Monatliche Häufigkeit und wirtschaftliche Wirkung getrennt validieren; keine Rechnung ohne belastbare Kundendaten.');
+  x=x.replace(/\b(?:durchschnittlich|im Schnitt|pro Deal|pro schlechtem Deal)[^\n]{0,100}\d[\d.\s,]*\s*(?:€|EUR|Euro)[^\n]*/gi,
+    'Schaden pro Deal noch nicht belastbar beziffert; mit echten Deals validieren.');
+
+  const safeLines=[];
+  let section='';
+  for(const rawLine of x.split('\n')){
+    let line=rawLine;
+    const t=line.trim();
+    if(/^#{0,3}\s*(?:[⚠️🎯💰⚡🔥🤝]?\s*)?(EINSCHÄTZUNG|DIE 5 PUNKTE|ROI[-\s]?WIRKSAME|WIRTSCHAFTLICHER NUTZEN|DIE EINE SACHE|NÄCHSTER SCHRITT|WENN DU MORGEN|KAUFARGUMENTE|EINWÄNDE|OFFENE PUNKTE|ERÖFFNUNGSSATZ|DER EINE ABSCHLUSSSATZ|BENCHMARK|IHR BUSINESS CASE|LAUFENDER NUTZEN|INVESTITION|ROI\s*\/\s*ENTSCHEIDUNGSLOGIK|OFFENE RÜCKFRAGEN|GESPRÄCHSSTRATEGIE)/i.test(t)) section=t;
+
+    // Keine kaputten Ersetzungszeilen ausgeben.
+    if(/BranchenBRANCHENHYPOTHESE|30\s*[–-]\s*welcher Anteil|welcher Anteil\?\s*\)/i.test(t)) continue;
+
+    // Prozentstaffeln/Quoten ohne Kundenbeleg: ganze Zeile neutralisieren oder entfernen.
+    if(!explicitPct && /(?:\b\d{1,3}\s*%\b|\d{1,3}\s*[–-]\s*\d{1,3}\s*%)/.test(t) && /(Vermeidungsquote|Quote|Anteil|retten|gerettet|vermeid|Wirkung|Nutzen|ROI|Branchenhypothese|Benchmark)/i.test(t)){
+      if(/^(?:•|-)?\s*(Unsichere Annahme|Validierungsfrage|Wichtigster Hebel|Laufender Nutzen|BENCHMARK|Benchmark|Branchenhypothese)/i.test(t)){
+        line=line.replace(/:.*/,': Vermeidungsquote/Wirkung ist offen und muss mit echten Deals validiert werden.');
+      }else{
+        continue;
+      }
+    }
+
+    // GF/CEO/CFO darf bei bestätigtem Entscheider Schmerz-/Stakeholderkontext sein, aber keine Pflicht-/Freigabe-/Validierungsinstanz.
+    if(authority && /(?:GF|Geschäftsführer(?:in)?|Geschäftsführung|CEO|CFO)/i.test(t)){
+      const allowed=/(kritisiert|Kritik|Forecast|Pipeline|Sichtbarkeit|Management-Sicht|Stakeholder|informieren|optional)/i.test(t)
+        && !/(muss|müssen|soll|sollte|Termin|Freigabe|Bestätigung|Zustimmung|Commitment|Voraussetzung|erforderlich|nötig|validieren|durchsprechen|anschauen|fragen|Kopie|Status)/i.test(t);
+      if(!allowed){
+        if(/^(?:•|-)?\s*(?:Die 5 Punkte|KAUFARGUMENTE|Schmerz|BESTÄTIGT)/i.test(section+t)){
+          line=line.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung|CEO|CFO)/gi,'Management');
+        }else{
+          line='Wirtschaftliche Wirkung und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.';
+        }
+      }
+    }
+
+    // Keine Next-Step-Ersatzsätze mitten in Analyseabschnitten.
+    if(/^(?:Mit\s+[^\n]{0,80}\s+)?(?:Pilot[-\s]?Deals|Top[-\s]?\d+[-\s]?Deals)[^\n]{0,160}(?:Wirkungsmessung|Erfolgskriterien|Messkriterien|Vermeidungsquote)[^\n]*\.?$/i.test(t)
+       && !/(DIE EINE SACHE|NÄCHSTER SCHRITT|WENN DU MORGEN|OFFENE PUNKTE)/i.test(section)){
+      continue;
+    }
+
+    // Angebot/Investition: wenn bekannt, zentral und vollständig ausgeben, aber nicht als ROI beweisen.
+    if(inv && /^\s*•?\s*Investition\s*:/i.test(t)) line=line.replace(/^\s*•?\s*Investition\s*:.*/i,'• Investition: '+inv+'.');
+    if(inv && /konkreter\s+Angebotspreis\s+noch\s+zu\s+klären|Angebotspreis\s+noch\s+nicht\s+hinterlegt|Preis\s+liegt\s+vermutlich|KI21\s*Compact\s+oder\s+Sprint/i.test(t)){
+      line='• Investition: '+inv+'.';
+    }
+
+    // Falscher Sicherheits-/Abschluss-Ton.
+    line=line.replace(/\bSchneller ROI\b/gi,'Validierung mit echten Deals');
+    line=line.replace(/\bROI-Logik plausibel\b/gi,'wirtschaftlicher Hebel plausibel, Wirkung noch zu validieren');
+    line=line.replace(/\bzahlender Sponsor\b/gi,'entscheidungsbefugter Ansprechpartner');
+    line=line.replace(/selbst geringe Vermeidungsquoten rechtfertigen den Einsatz/gi,'die Wirkung muss mit echten Deals validiert werden');
+    line=line.replace(/ROI[^\n.]{0,80}rechtfertigt[^\n.]*/gi,'ROI noch nicht belastbar berechenbar – Wirkung mit echten Deals validieren.');
+
+    // Kundenangaben als Größenordnung, nicht gleichzeitig final bestätigt und ROI-validiert.
+    line=line.replace(/geschätzte[nrms]?\s+Schaden\s+([\d.]+\s*€[^\n]{0,60})\s*[-–]?\s*bereits\s+validiert/gi,'geschätzter Schaden $1 – als Größenordnung genannt; Vermeidbarkeit noch zu validieren');
+    line=line.replace(/\(BESTÄTIGT\s+von\s+[^)]*\)/gi,'(von Kunden genannt; Zusammensetzung und Vermeidbarkeit zu validieren)');
+    line=line.replace(/\bbestätigt\s+und\s+wirtschaftlich\s+dimensioniert\b/gi,'als Größenordnung genannt; wirtschaftliche Wirkung noch zu validieren');
+
+    if(line.trim()) safeLines.push(line);
+    else safeLines.push(line);
+  }
+  x=safeLines.join('\n');
+
+  // Nachbereinigung: doppelte identische Standardzeilen reduzieren.
+  x=x.replace(/(?:Wirtschaftliche Wirkung und Erfolgskriterien mit [^\n]+ anhand echter Deals validieren\.\s*\n){2,}/gi, m=>m.split('\n')[0]+'\n');
+  x=x.replace(/(?:Vermeidungsquote\/Wirkung ist offen und muss mit echten Deals validiert werden\.\s*\n){2,}/gi,'Vermeidungsquote/Wirkung ist offen und muss mit echten Deals validiert werden.\n');
+  x=x.replace(/\bkeine\s+Keine\b/gi,'keine');
+  x=x.replace(/\n{3,}/g,'\n\n');
+  return x.trim();
+}
+
 function sanitizePhase4NoRoiMath(text,accId){
   if(!text)return text;
   let x=String(text);
@@ -3828,6 +3925,7 @@ function sanitizePhase4NoRoiMath(text,accId){
   x=sanitizeAuthorityRequirementText(accId,x);
   x=sanitizeOutputIntegrityText(accId,x,'phase4');
   x=sanitizeGeneratedOutputFinal(accId,x,'phase4');
+  x=sanitizeFinalOutputV4188(accId,x,'phase4');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 function sanitizePhase5OfferOutput(text,accId){
@@ -3850,6 +3948,7 @@ function sanitizePhase5OfferOutput(text,accId){
   x=sanitizeAuthorityRequirementText(accId,x);
   x=sanitizeOutputIntegrityText(accId,x,'phase5');
   x=sanitizeGeneratedOutputFinal(accId,x,'phase5');
+  x=sanitizeFinalOutputV4188(accId,x,'phase5');
   return x.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -6141,7 +6240,12 @@ function generateKundePDF(aid, cust){
   for(let i=0;i<5;i++){
     const key='ki21_st_'+aid+'_'+i;
     const data=LS.get(key,{});
-    const result=data.result||'';
+    let result=data.result||'';
+    if(result){
+      if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
+      else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
+      else result=sanitizeFinalOutputV4188(aid,result,'dossier');
+    }
     html+=`<div class="phase">
       <div class="phase-title">Phase ${i+1}: ${SITS_LABELS[i]}</div>
       ${result?`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(result)}</div>`:'<div class="empty">Noch nicht bearbeitet</div>'}
@@ -6507,7 +6611,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.187';
+const KI21_VERSION='v4.188';
 
 
 function runKi21VersionMigration(){
