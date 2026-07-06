@@ -4991,7 +4991,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 // v4.169: Schutz gegen veraltete Antworten nach neu generierten SPIN-/Leitfragen.
 // v4.170: Stabilisierungs-Fix – Fragmentfilter und konsistente Fragen-Vorschau/Drilldown.
-// Wenn Leitfragen aktualisiert werden, dürfen alte Antworten nicht nummerisch unter neuen Fragen stehen.
+// v4.192: Antworten auf Leitfragen bleiben immer sichtbar/editierbar. Bei geänderten Leitfragen wird nur ein Prüfhinweis gesetzt.
 function ki21SpinQuestionSignature(questions){
   return (questions||[])
     .map(q=>String(q||'').toLowerCase().replace(/\s+/g,' ').replace(/[„“"'’]/g,'').trim())
@@ -5003,26 +5003,35 @@ function ki21InvalidateAnswersIfSpinChanged(stData, spinQuestions){
   stData.fv=stData.fv||{};
   const sig=ki21SpinQuestionSignature(spinQuestions);
   if(!sig) return {cleared:false,sig:''};
+
   const oldSig=stData.fv.antwortenSpinSig||'';
   const hasAnswers=!!(stData.fv.antworten&&String(stData.fv.antworten).trim());
-  let cleared=false;
-  if(hasAnswers && oldSig!==sig){
+
+  // KI21 darf Gesprächsantworten nie automatisch aus dem sichtbaren Eingabefeld entfernen.
+  // Wenn sich Leitfragen ändern, bleibt der Text editierbar sichtbar; KI21 warnt nur vor möglicher Nichtübereinstimmung.
+  if(hasAnswers && oldSig && oldSig!==sig){
     stData.fv.antwortenArchiv=String(stData.fv.antworten||'');
-    stData.fv.antwortenArchivHinweis='Archiviert, weil sich die Leitfragen geändert haben und die alten Antworten nicht mehr sicher zuordenbar waren.';
-    stData.fv.antworten='';
-    cleared=true;
+    stData.fv.antwortenArchivHinweis='Leitfragen wurden aktualisiert. Bitte prüfen, ob die vorhandenen Antworten noch zu den neuen Fragen passen.';
+    stData.fv.antwortenReviewNeeded=true;
   }
+
   stData.fv.antwortenSpinSig=sig;
-  return {cleared,sig};
+  return {cleared:false,sig};
 }
 function ki21ClearAnswersOnNewSpin(stData,newSpin){
   if(!stData) return;
   stData.fv=stData.fv||{};
-  if(stData.fv['spin']!==newSpin && stData.fv['antworten']&&String(stData.fv['antworten']).trim()){
+
+  const oldSpin=String(stData.fv['spin']||'').trim();
+  const incomingSpin=String(newSpin||'').trim();
+  const hasAnswers=!!(stData.fv['antworten']&&String(stData.fv['antworten']).trim());
+
+  // Neue Leitfragen dürfen vorhandene Gesprächsnotizen nicht unsichtbar machen.
+  // Optional wird eine Sicherheitskopie behalten, aber das sichtbare Antwortfeld bleibt gefüllt.
+  if(oldSpin!==incomingSpin && hasAnswers){
     stData.fv['antwortenArchiv']=String(stData.fv['antworten']);
-    stData.fv['antwortenArchivHinweis']='Archiviert, weil neue Leitfragen erzeugt wurden.';
-    stData.fv['antworten']='';
-    stData.fv['antwortenSpinSig']='';
+    stData.fv['antwortenArchivHinweis']='Leitfragen wurden aktualisiert. Bitte prüfen, ob die vorhandenen Antworten noch zu den neuen Fragen passen.';
+    stData.fv['antwortenReviewNeeded']=true;
   }
 }
 
@@ -5346,7 +5355,17 @@ function renderStation(sitId){
     // und zeigt jede Frage als eigene Karte mit großem Textarea.
     // Antworten werden in data.fv.antworten gespeichert (kompatibel mit bestehendem Prompt).
     const spinRaw=data.fv&&data.fv['spin']?data.fv['spin']:'';
-    const antwortenRaw=data.fv&&data.fv['antworten']?data.fv['antworten']:'';
+    let antwortenRaw=data.fv&&data.fv['antworten']?data.fv['antworten']:'';
+
+    // v4.192: Falls eine ältere Version Antworten bereits archiviert und das sichtbare Feld geleert hat,
+    // stelle sie automatisch wieder her. Gesprächsantworten müssen sichtbar und editierbar bleiben.
+    if(!antwortenRaw && data.fv && data.fv['antwortenArchiv'] && String(data.fv['antwortenArchiv']).trim()){
+      data.fv['antworten']=String(data.fv['antwortenArchiv']);
+      data.fv['antwortenReviewNeeded']=true;
+      data.fv['antwortenArchivHinweis']='Archivierte Antworten wurden wieder sichtbar gemacht. Bitte prüfen, ob sie zu den aktuellen Leitfragen passen.';
+      antwortenRaw=data.fv['antworten'];
+      LS.set(KEY,data);
+    }
 
     // Bereinige Rohtext: entferne alle Marker-Zeilen, Details-Blöcke, Überschriften
     const STRIP_PATTERNS=[
@@ -5398,12 +5417,10 @@ function renderStation(sitId){
 
     if(spinQuestions.length){
       const spinGuard=ki21InvalidateAnswersIfSpinChanged(data, spinQuestions);
-      if(spinGuard.cleared){
-        LS.set(KEY,data);
-        wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
-          'Die Leitfragen wurden aktualisiert. Alte Antworten wurden archiviert und die Antwortfelder geleert, damit keine Antwort zur falschen Frage steht.'));
-      } else {
-        LS.set(KEY,data);
+      LS.set(KEY,data);
+      if(data.fv&&data.fv.antwortenReviewNeeded){
+        wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px',border:'1px solid rgba(255,107,0,.35)',borderRadius:'8px',padding:'8px 10px',color:'#ff8a2a'}},
+          data.fv.antwortenArchivHinweis||'Leitfragen wurden aktualisiert. Bitte prüfe, ob deine vorhandenen Antworten noch zu den aktuellen Fragen passen.'));
       }
       wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'10px'}},'Leitfragen & Antworten'));
       const taRefs=[];
@@ -5429,6 +5446,7 @@ function renderStation(sitId){
           oninput:()=>{
             data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
             data.fv['antwortenSpinSig']=ki21SpinQuestionSignature(spinQuestions);
+            data.fv['antwortenReviewNeeded']=false;
             LS.set(KEY,data);
           }
         });
@@ -6842,7 +6860,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.191';
+const KI21_VERSION='v4.192';
 
 
 function runKi21VersionMigration(){
