@@ -4096,51 +4096,128 @@ function buildStructuredPhase5OutputV4189(accId){
 
 // v4.190: Phase 2 und Cockpit-Fragen ebenfalls strukturiert aus Rollen/Evidenz bauen.
 // Ziel: keine alten freien LLM-Artefakte mehr in Bedarfsanalyse, Fragenbox oder Dossier.
+
+// v4.197: Phase-2-Output deterministisch bereinigen, damit Bedarfsanalyse & Demo
+// nicht durch ROI-/Pilot-Sprache aus späteren Phasen verunreinigt wird.
+function cleanPhase2Output(text){
+  if(!text)return text;
+  let x=String(text);
+  const replacements=[
+    [/Messkriterien\s+für\s+die\s+Vermeidungsquote/gi,'konkrete Fälle und Nacharbeit'],
+    [/Messkriterien\s+für\s+die\s+Wirkungsmessung/gi,'konkrete Fälle und Nacharbeit'],
+    [/Vermeidungsquote/gi,'wirtschaftliche Wirkung'],
+    [/Vermeidbarkeit/gi,'wirtschaftliche Wirkung'],
+    [/Rettungsquote/gi,'wirtschaftliche Wirkung'],
+    [/Pilot-Deals/gi,'Beispiel-Deals'],
+    [/Pilot-Deal/gi,'Beispiel-Deal'],
+    [/Pilot Setup/gi,'nächster Discovery-Schritt'],
+    [/Pilot-Setup/gi,'nächster Discovery-Schritt'],
+    [/Startprojekt/gi,'nächste Discovery'],
+    [/\bPilot\b/gi,'Beispiel']
+  ];
+  replacements.forEach(([re,to])=>{x=x.replace(re,to);});
+
+  const sectionHeads=['EINSCHÄTZUNG','🔥 SCHMERZ','🎬 ZEIGEN','❓ KLÄREN','⚠️ DIE EINE SACHE DIE FEHLT','NÄCHSTER SCHRITT DIESE WOCHE','🎯 WENN DU MORGEN NUR 30 MINUTEN HAST','###DETAILS###'];
+  const isHead=(line)=>sectionHeads.some(h=>line.trim().toUpperCase().startsWith(h.toUpperCase())) || /^(EINSCHÄTZUNG|SCHMERZ|ZEIGEN|KLÄREN|DIE EINE SACHE|NÄCHSTER SCHRITT|WENN DU MORGEN)/i.test(line.trim());
+
+  function limitBulletsInSection(src,heading,max){
+    const lines=src.split('\n');
+    const out=[];
+    let inSec=false, count=0;
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i];
+      const t=line.trim();
+      if(t.toUpperCase().startsWith(heading.toUpperCase())){inSec=true;count=0;out.push(line);continue;}
+      if(inSec && t && isHead(t) && !t.toUpperCase().startsWith(heading.toUpperCase())){inSec=false;out.push(line);continue;}
+      if(inSec && /^•\s*/.test(t)){
+        count++;
+        if(count<=max)out.push(line);
+        continue;
+      }
+      out.push(line);
+    }
+    return out.join('\n');
+  }
+  x=limitBulletsInSection(x,'🔥 SCHMERZ',3);
+  x=limitBulletsInSection(x,'❓ KLÄREN',3);
+
+  const lines=x.split('\n');
+  const out=[];
+  let mode=null;
+  let thirtyCount=0;
+  for(let i=0;i<lines.length;i++){
+    let line=lines[i];
+    const t=line.trim();
+    if(/^⚠️\s*DIE EINE SACHE DIE FEHLT/i.test(t)){mode='one';out.push(line);continue;}
+    if(/^NÄCHSTER SCHRITT DIESE WOCHE/i.test(t)){mode='next';out.push(line);continue;}
+    if(/^🎯\s*WENN DU MORGEN NUR 30 MINUTEN HAST/i.test(t)){mode='thirty';thirtyCount=0;out.push(line);continue;}
+    if(t && isHead(t)){mode=null;out.push(line);continue;}
+    if(mode==='one' && t){
+      if(/wirtschaftliche Wirkung|Beispiel-Deals|konkrete Fälle|Nacharbeit|Messkriterien/i.test(t)){
+        out.push('Konkrete Beispiel-Deals und Nacharbeit sauber klären.');
+      }else out.push(line);
+      mode=null;
+      continue;
+    }
+    if(mode==='next' && t){
+      if(/Beispiel|wirtschaftliche Wirkung|Start|Messkriterien|Deals|Discovery/i.test(t)){
+        out.push('Mit Marius 3–5 echte Beispiel-Deals auswählen und prüfen, wo Discovery scheiterte.');
+      }else out.push(line);
+      mode=null;
+      continue;
+    }
+    if(mode==='thirty' && /^\d+\./.test(t)){
+      thirtyCount++;
+      if(thirtyCount===1)out.push('1. Drei Beispiel-Deals auswählen.');
+      else if(thirtyCount===2)out.push('2. Fehlende Discovery-Fragen markieren.');
+      else if(thirtyCount===3)out.push('3. Nacharbeit und späte Disqualifikation festhalten.');
+      continue;
+    }
+    out.push(line);
+  }
+  x=out.join('\n');
+  return x.replace(/\n{3,}/g,'\n\n').trim();
+}
+
 function buildStructuredPhase2OutputV4190(accId){
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const freq=extractDealFrequencyTextV4189(accId);
   const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
-  const hasForecast=/forecast|pipeline|prognose|vorschau/i.test(raw);
   const hasCrm=/hubspot|crm|salesforce|pipedrive|dynamics/i.test(raw);
-  const hasRamp=/neue\s+(?:AM|Account Manager|Verkäufer)|ramp|onboarding|jüngeren|nachholbedarf|einarbeitung/i.test(raw);
   const pain=facts.pain?normalizeSafeMoneyTextV4189(facts.pain):'';
-  const budget=facts.budget?normalizeSafeMoneyTextV4189(facts.budget):'Budgetrahmen noch zu klären';
-  const authority=facts.authority?normalizeSafeMoneyTextV4189(facts.authority):(dec&&dec!=='dem bestätigten Entscheider'?dec+' als Entscheider klären':'Entscheiderrolle klären');
   const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
   const lines=[];
   lines.push('EINSCHÄTZUNG');
-  lines.push('Der operative Discovery-Schmerz ist konkret genug für die nächste Gesprächsführung. Wirtschaftliche Wirkung und Vermeidbarkeit bleiben offen und werden mit echten Deals validiert.');
+  lines.push('Der Discovery-Schmerz ist konkret genug für die nächste Gesprächsführung. Die wirtschaftliche Wirkung muss mit echten Deals geklärt werden.');
   lines.push('');
   lines.push('🔥 SCHMERZ');
-  if(freq)lines.push('• Problemhäufigkeit: '+freq+'.');
+  if(freq)lines.push('• '+freq+'.');
   else lines.push('• Discovery-Qualität ist als operativer Schmerz benannt.');
-  if(pain)lines.push('• Wirtschaftliche Größenordnung: '+pain+'; Zusammensetzung und Vermeidbarkeit noch validieren.');
-  lines.push('• Uneinheitliche Fragen und unterschiedliche Gesprächsqualität führen zu Nacharbeit und unsicheren Opportunity-Bewertungen.');
-  if(hasForecast)lines.push('• Forecast-/Pipeline-Sichtbarkeit ist betroffen; konkrete Wirkung nicht als Zielversprechen rechnen, sondern anhand echter Deals prüfen.');
-  if(hasRamp)lines.push('• Unterschiedliche Erfahrung im Team macht strukturierte Leitfragen besonders relevant.');
+  if(pain)lines.push('• '+pain+'; Rolle noch klären.');
+  lines.push('• Uneinheitliche Discovery erzeugt Nacharbeit und unsichere Forecasts.');
   lines.push('');
   lines.push('🎬 ZEIGEN');
-  lines.push('• An einem echten Opportunity-Beispiel zeigen, welche kritischen Fragen vor dem nächsten Schritt fehlen.');
-  lines.push('• Sichtbar machen, wie strukturierte SPIN-/Discovery-Fragen Nacharbeit und zu optimistische Qualifizierung reduzieren können.');
-  if(hasCrm)lines.push('• CRM-/Dokumentationskontext nur als Arbeitsumgebung behandeln, nicht als eigenes Integrationsprojekt eröffnen.');
+  lines.push('• An einem echten Opportunity-Beispiel zeigen, welche Fragen vor dem nächsten Schritt fehlen.');
+  lines.push('• Sichtbar machen, wie strukturierte Discovery Nacharbeit reduziert.');
+  if(hasCrm)lines.push('• HubSpot/CRM nur als Arbeitsumgebung behandeln.');
   lines.push('');
   lines.push('❓ KLÄREN');
-  lines.push('• Welche 3–5 konkreten Deals zeigen das Discovery-Problem am besten?');
-  lines.push('• Was kostet ein schlecht qualifizierter Deal konkret an Zeit, Umsatz oder Nacharbeit?');
-  lines.push('• Welche Fälle wären durch bessere Discovery früher erkannt, gerettet oder sauber disqualifiziert worden?');
-  lines.push('• Welche Messkriterien zeigen nach dem Startprojekt, dass die Discovery-Qualität besser wird?');
+  lines.push('• Welche 3–5 konkreten Deals zeigen das Problem am besten?');
+  lines.push('• Was kostet ein schlechter Deal konkret an Zeit oder Nacharbeit?');
+  lines.push('• Welche Fälle wären früher erkannt oder sauber disqualifiziert worden?');
   lines.push('');
   lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
-  lines.push('Konkrete Pilot-Deals und Messkriterien für die Vermeidungsquote festlegen.');
+  lines.push('Konkrete Beispiel-Deals und Nacharbeit sauber klären.');
   lines.push('');
   lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
-  lines.push('Mit '+nextName+' 3–5 echte Deals auswählen und daran prüfen, wo Discovery scheitert, welche Information früher gefehlt hat und wie Erfolg gemessen wird.');
+  lines.push('Mit '+nextName+' 3–5 echte Beispiel-Deals auswählen und prüfen, wo Discovery scheiterte.');
   lines.push('');
   lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
-  lines.push('1. Pilot-Deals auswählen: Welche konkreten Fälle zeigen das Discovery-Problem am besten?');
-  lines.push('2. Messkriterien festlegen: weniger Nacharbeit, frühere Disqualifikation oder bessere Opportunity-Bewertung.');
-  return lines.join('\n');
+  lines.push('1. Drei Beispiel-Deals auswählen.');
+  lines.push('2. Fehlende Discovery-Fragen markieren.');
+  lines.push('3. Nacharbeit und späte Disqualifikation festhalten.');
+  return cleanPhase2Output(lines.join('\n'));
 }
 function isBadLegacyQuestionV4190(q,accId){
   const s=String(q||'');
@@ -5057,7 +5134,7 @@ function ki21ClearAnswersOnNewSpin(stData,newSpin){
 }
 
 
-// v4.196: SPIN-Transfer hart begrenzen. Phase 2 darf nur echte S/P/I/N-Fragen übernehmen,
+// v4.197: SPIN-Transfer hart begrenzen. Phase 2 darf nur echte S/P/I/N-Fragen übernehmen,
 // keine Aktionslisten, Qualifizierungsfragen, TODOs oder alte Ergebnisblöcke.
 function extractSpinQuestions(resultText){
   const text=String(resultText||'');
@@ -5435,7 +5512,7 @@ function renderStation(sitId){
       LS.set(KEY,data);
     }
 
-    // v4.196: SPIN-Fragen ausschließlich über den zentralen, harten Parser übernehmen.
+    // v4.197: SPIN-Fragen ausschließlich über den zentralen, harten Parser übernehmen.
     // Keine nummerierten Aktionslisten oder Qualifizierungsfragen als Leitfragen anzeigen.
     const extractedSpin=extractSpinQuestions(spinRaw);
     const spinQuestions=extractedSpin.map(l=>l.replace(/^[SPIN]\s*[:\-–]\s*/i,'').trim());
@@ -5944,7 +6021,7 @@ function renderStation(sitId){
         fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
       });
       if(result){
-        const finalResult=(sitId===1)?buildStructuredPhase2OutputV4190(state.activeId):((sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result));
+        const finalResult=(sitId===1)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):((sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result));
         data.result=finalResult;
         data.prompt=prompt;
         resultBody.innerHTML='';resultBody.appendChild(renderResultText(finalResult));
@@ -6531,7 +6608,7 @@ function generateKundePDF(aid, cust){
     let result=data.result||'';
     if(result){
       if(i===0)result=buildStructuredPhase1DossierV4191(aid);
-      else if(i===1)result=buildStructuredPhase2OutputV4190(aid);
+      else if(i===1)result=cleanPhase2Output(buildStructuredPhase2OutputV4190(aid));
       else if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
       else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
       else result=sanitizeDossierEarlyPhaseV4190(sanitizeFinalOutputV4188(aid,result,'dossier'),aid);
@@ -6901,7 +6978,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.196';
+const KI21_VERSION='v4.197';
 
 
 function runKi21VersionMigration(){
