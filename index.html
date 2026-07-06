@@ -2996,12 +2996,11 @@ function getDashboardQuestions(accId,maxItems,forPreview){
   for(const src of sources){ qs=qs.concat(extractQuestionsFromText(src)); }
   qs=qs.map(q=>normalizeQuestionText(q,false)).map(cleanCockpitQuestionPreviewText).filter(Boolean);
   qs=qs.filter(q=>!isBadLegacyQuestionV4190(q,accId));
-  // v4.190: Kanonische, rollenbasierte Fragen stehen vorn; alte SPIN-Fragen dürfen ergänzen,
-  // aber keine Prozent-/GF-/Management-Artefakte mehr in Cockpit oder Bottom Sheet ziehen.
-  qs=[...canonical,...qs];
-  qs=[...new Set(qs)];
-  qs=prioritizeCockpitQuestions(qs);
-  return qs.slice(0,maxItems||3);
+  // v4.191: Kanonische Fragen bleiben wirklich vorne. Alte SPIN-/Phase-Fragen ergänzen nur dahinter.
+  // Dadurch verdrängen abstrakte Forecast-/Management-Fragen nicht mehr Pilot-Deals, Schaden pro Fall und Messkriterien.
+  const canonicalClean=[...new Set(canonical.map(cleanCockpitQuestionPreviewText).filter(Boolean))];
+  const extras=prioritizeCockpitQuestions([...new Set(qs.filter(q=>!canonicalClean.includes(q)))]);
+  return [...canonicalClean,...extras].slice(0,maxItems||3);
 }
 
 
@@ -3128,10 +3127,75 @@ function hasBudgetSignalInHealth(health){
   return all.some(t=>/(operatives budget|budgetrahmen|budget).{0,60}(vorhanden|bestätigt|verfügbar|klar)/i.test(t));
 }
 
+
+// v4.191: Problemgröße sauber trennen: Häufigkeit, Schaden pro Fall und expliziter Jahreswert.
+// Keine automatische Jahresrechnung aus Monat × Betrag. Nur ausdrücklich genannte Perioden anzeigen.
+function extractPainStructureV4191(accId){
+  const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'').replace(/\\u20ac/g,'€');
+  const norm=raw.replace(/\s+/g,' ');
+  const freq=extractDealFrequencyTextV4189(accId);
+  const classified=classifyEuroAmounts(norm).filter(a=>a.role==='pain'||a.role==='ambiguous');
+  const badCtx=/(budget|budgetrahmen|angebot|startangebot|preis|lizenz|user|nutzer|monatlich|pro user|pro nutzer|app|mindestpreis)/i;
+  const perCase=classified.filter(a=>{
+    const seg=String(a.segment||'');
+    if(badCtx.test(seg))return false;
+    if(/jährlich|jahr|jahres|pro jahr|p\.a\./i.test(seg))return false;
+    return /(pro\s*(deal|opportunity|fall)|je\s*(deal|opportunity|fall)|durchschnitt|schnitt|schlecht|schwach|qualifizier|nacharbeit|nachbearbeitung|verloren|verlust|umsatz)/i.test(seg);
+  }).sort((a,b)=>(b.confidence-a.confidence)||(b.value-a.value))[0]||null;
+  const annual=classified.filter(a=>{
+    const seg=String(a.segment||'');
+    if(badCtx.test(seg))return false;
+    return /(jährlich|jahr|jahres|pro jahr|p\.a\.)/i.test(seg)&&/(schaden|verlust|umsatz|opportunit|deal|qualifizier)/i.test(seg);
+  }).sort((a,b)=>(b.confidence-a.confidence)||(b.value-a.value))[0]||null;
+  return {freq,perCase,annual};
+}
+function buildPainProblemSummaryV4191(accId,opts){
+  const ps=extractPainStructureV4191(accId);
+  const parts=[];
+  if(ps.freq)parts.push(ps.freq.replace(/^~/,'ca. '));
+  if(ps.perCase)parts.push('ca. '+formatEuroDE(ps.perCase.value)+' pro Fall');
+  if(ps.annual)parts.push('genannte Jahresgröße '+formatEuroDE(ps.annual.value));
+  if(!parts.length)return '';
+  let text=parts.join('; ');
+  if(opts&&opts.short)text=text.replace(/^ca\. /,'~');
+  return text;
+}
+function buildStructuredPhase1DossierV4191(accId){
+  const facts=extractKnownBusinessFacts(accId||'');
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
+  const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
+  const pain=buildPainProblemSummaryV4191(accId)||'Discovery-Schmerz konkret benannt; wirtschaftliche Wirkung noch zu validieren';
+  const budget=facts.budget||'Budgetrahmen noch zu klären';
+  const authority=facts.authority||'Entscheiderrolle noch zu klären';
+  const qs=buildCanonicalDashboardQuestionsV4191(accId).slice(0,5);
+  let lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Die Opportunity ist für die weitere Discovery qualifiziert. Schmerz, Budgetrahmen und Entscheiderrolle sind ausreichend sichtbar; die wirtschaftliche Wirkung muss mit konkreten Pilot-Deals validiert werden.');
+  lines.push('');
+  lines.push('BESTÄTIGT');
+  lines.push('• '+authority+'.');
+  lines.push('• Operativer Schmerz: '+pain+'.');
+  lines.push('• '+budget+'.');
+  lines.push('');
+  lines.push('ZU VALIDIEREN');
+  lines.push('• Welche konkreten Deals zeigen das Discovery-Problem am besten?');
+  lines.push('• Was kostet ein schlecht qualifizierter Deal konkret an Zeit, Umsatz oder Nacharbeit?');
+  lines.push('• Welche Messkriterien zeigen nach dem Startprojekt, dass die Discovery-Qualität besser wird?');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+nextName+' 3–5 Pilot-Deals auswählen und Messkriterien für die Wirkungsmessung festlegen.');
+  lines.push('');
+  lines.push('DIE 5 WICHTIGSTEN QUALIFIZIERUNGSFRAGEN');
+  qs.forEach((q,i)=>lines.push((i+1)+'. '+q));
+  return lines.join('\n');
+}
+
 function extractKnownBusinessFacts(accId){
   // v4.182: harte Fakten nur aus Nutzereingaben/Profil/Feldern, nicht aus generierten Outputs.
   const raw=(getValidatedBusinessInputText(accId)||'').replace(/\s+/g,' ');
   const facts={pain:null,budget:null,authority:null};
+  const painSummaryV4191=buildPainProblemSummaryV4191(accId,{short:true});
+  if(painSummaryV4191)facts.pain='Operativer Schmerz konkret quantifiziert: '+painSummaryV4191;
 
   const allAmounts=classifyEuroAmounts(raw);
   const badPainContext=/(budget|budgetrahmen|freigegeben|verfügbar|angebotspreis|startangebot|preis|lizenz|user|nutzer|monatlich|pro user|pro nutzer|app)/i;
@@ -3146,7 +3210,7 @@ function extractKnownBusinessFacts(accId){
       return {...a,score};
     })
     .sort((a,b)=>(b.score-a.score)||(b.value-a.value));
-  if(painCandidates.length)facts.pain=describePainAmount(painCandidates[0]);
+  if(!facts.pain && painCandidates.length)facts.pain=describePainAmount(painCandidates[0]);
 
   const budgetRoles=getEuroAmountsByRole(raw,'budget').filter(b=>!/schaden|verlust|opportunit|deal/i.test(String(b.segment||'')));
   const budgetValues=[...new Set(budgetRoles.map(b=>b.value))];
@@ -3918,10 +3982,11 @@ function buildStructuredPhase4OutputV4189(accId){
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
   const freq=extractDealFrequencyTextV4189(accId);
   const pain=normalizeSafeMoneyTextV4189(facts.pain||'wirtschaftliche Größenordnung noch zu validieren');
+  const problemSummaryV4191=buildPainProblemSummaryV4191(accId);
   const budget=normalizeSafeMoneyTextV4189(facts.budget||'Budgetrahmen noch zu klären');
   const inv=cleanInvestmentLineV4189(accId);
   const authorityLine=authority ? ((facts.authority&&normalizeSafeMoneyTextV4189(facts.authority)) || ('Entscheidungsbefugnis bei '+dec+' bestätigt')) : 'Entscheidungsprozess noch zu klären';
-  const problemLine=freq ? (freq+(facts.pain?' – '+pain:' – wirtschaftliche Wirkung noch zu validieren')) : pain;
+  const problemLine=problemSummaryV4191 || (freq ? (freq+' – wirtschaftliche Wirkung noch zu validieren') : pain);
   const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
   let lines=[];
   lines.push('EINSCHÄTZUNG');
@@ -3963,6 +4028,7 @@ function buildStructuredPhase5OutputV4189(accId){
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
   const freq=extractDealFrequencyTextV4189(accId);
   const pain=normalizeSafeMoneyTextV4189(facts.pain||'wirtschaftliche Wirkung noch zu validieren');
+  const problemSummaryV4191=buildPainProblemSummaryV4191(accId);
   const budget=normalizeSafeMoneyTextV4189(facts.budget||'Budgetrahmen noch zu klären');
   const inv=cleanInvestmentLineV4189(accId);
   const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
@@ -3972,7 +4038,7 @@ function buildStructuredPhase5OutputV4189(accId){
   lines.push('');
   lines.push('KAUFARGUMENTE');
   lines.push('• Strukturierte Discovery macht schwach qualifizierte Deals früher sichtbar und reduziert späte Überraschungen.');
-  if(freq)lines.push('• Der operative Schmerz ist konkret benannt: '+freq+(facts.pain?' bei einer wirtschaftlichen Größenordnung von '+pain:'')+'.');
+  if(problemSummaryV4191)lines.push('• Der operative Schmerz ist konkret benannt: '+problemSummaryV4191+'.');
   else lines.push('• Der operative Schmerz ist konkret genug für ein Startprojekt; die wirtschaftliche Wirkung wird im Pilot validiert.');
   if(inv)lines.push('• Das Startangebot ist klar vom laufenden Nutzungsmodell getrennt: '+inv+'.');
   lines.push('• '+budget+'.');
@@ -4065,7 +4131,7 @@ function isBadLegacyQuestionV4190(q,accId){
   if(/Forecast-Genauigkeit\s*\d{1,3}\s*%/i.test(s))return true;
   return false;
 }
-function buildCanonicalDashboardQuestionsV4190(accId){
+function buildCanonicalDashboardQuestionsV4191(accId){
   const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
   const hasForecast=/forecast|pipeline|prognose|vorschau/i.test(raw);
   const qs=[
@@ -4078,6 +4144,10 @@ function buildCanonicalDashboardQuestionsV4190(accId){
   qs.push('Welche Account Manager und welche Opportunities eignen sich für den Start?');
   return qs;
 }
+function buildCanonicalDashboardQuestionsV4190(accId){
+  return buildCanonicalDashboardQuestionsV4191(accId);
+}
+
 function sanitizeDossierEarlyPhaseV4190(text,accId){
   if(!text)return text;
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -6401,7 +6471,8 @@ function generateKundePDF(aid, cust){
     const data=LS.get(key,{});
     let result=data.result||'';
     if(result){
-      if(i===1)result=buildStructuredPhase2OutputV4190(aid);
+      if(i===0)result=buildStructuredPhase1DossierV4191(aid);
+      else if(i===1)result=buildStructuredPhase2OutputV4190(aid);
       else if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
       else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
       else result=sanitizeDossierEarlyPhaseV4190(sanitizeFinalOutputV4188(aid,result,'dossier'),aid);
@@ -6771,7 +6842,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.190';
+const KI21_VERSION='v4.191';
 
 
 function runKi21VersionMigration(){
