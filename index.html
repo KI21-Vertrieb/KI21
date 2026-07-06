@@ -3788,7 +3788,7 @@ function sanitizeGeneratedOutputFinal(accId,text,kind){
 }
 
 
-// v4.188: Finaler Output-Cleaner ohne aggressive Inline-Wortersetzungen.
+// v4.189: Finaler Output-Cleaner ohne aggressive Inline-Wortersetzungen.
 // Prinzip: kaputte oder unsichere Sätze als ganze Zeilen entfernen/neutralisieren,
 // nicht mitten im Satz einzelne Tokens austauschen. Allgemeingültig über Rollen/Evidenz.
 function sanitizeFinalOutputV4188(accId,text,kind){
@@ -3881,75 +3881,136 @@ function sanitizeFinalOutputV4188(accId,text,kind){
   return x.trim();
 }
 
+
+
+// v4.189: Stabiler strukturierter Output für Phase 4/5.
+// Allgemeingültig: keine nachträglichen Satz-Operationen als Hauptmechanik, sondern
+// saubere Sektionen aus semantischen Rollen: Entscheider, Budget, Schaden/Problemgröße,
+// Startangebot, laufende Gebühr, unvalidierte Wirkung, Validierungsmetrik.
+function normalizeSafeMoneyTextV4189(t){
+  return String(t||'')
+    .replace(/(\d)\s*k€/gi,'$1.000 €')
+    .replace(/80k€/gi,'80.000 €')
+    .replace(/60k€/gi,'60.000 €')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function extractDealFrequencyTextV4189(accId){
+  const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
+  const m=raw.match(/(?:~|ca\.?|circa)?\s*(\d{1,3})\s*(?:schwach|schlecht)?\s*qualifizierte\s*Deals?\s*(?:pro|\/)\s*Monat/i)
+    || raw.match(/(?:~|ca\.?|circa)?\s*(\d{1,3})\s*Deals?\s*(?:pro|\/)\s*Monat/i);
+  if(m)return '~'+m[1]+' schwach qualifizierte Deals pro Monat';
+  return '';
+}
+function cleanInvestmentLineV4189(accId){
+  let inv=buildPhaseInvestmentLine(accId||'');
+  inv=inv.replace(/^Investition:\s*/,'').replace(/\.$/,'').trim();
+  if(!inv || /konkreter Angebotspreis noch zu klären/i.test(inv))return '';
+  return inv;
+}
+function buildStructuredPhase4OutputV4189(accId){
+  const facts=extractKnownBusinessFacts(accId||'');
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  const freq=extractDealFrequencyTextV4189(accId);
+  const pain=normalizeSafeMoneyTextV4189(facts.pain||'wirtschaftliche Größenordnung noch zu validieren');
+  const budget=normalizeSafeMoneyTextV4189(facts.budget||'Budgetrahmen noch zu klären');
+  const inv=cleanInvestmentLineV4189(accId);
+  const authorityLine=authority ? ((facts.authority&&normalizeSafeMoneyTextV4189(facts.authority)) || ('Entscheidungsbefugnis bei '+dec+' bestätigt')) : 'Entscheidungsprozess noch zu klären';
+  const problemLine=freq ? (freq+(facts.pain?' – '+pain:' – wirtschaftliche Wirkung noch zu validieren')) : pain;
+  const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
+  let lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Der wirtschaftliche Nutzen ist plausibel, aber noch nicht belastbar berechenbar. Entscheidend ist, welche konkreten Fälle durch bessere Discovery früher erkannt, gerettet oder disqualifiziert worden wären.');
+  lines.push('');
+  lines.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN');
+  lines.push('• Problemgröße: '+problemLine+'.');
+  lines.push('• '+budget+'.');
+  lines.push('• '+authorityLine+'.');
+  lines.push('• Die Angebots- und Budgetlogik wird getrennt von Schaden und Nutzen bewertet'+(inv?': '+inv+'.':'.'));
+  lines.push('• Die Vermeidungsquote ist offen und muss mit echten Deals validiert werden.');
+  lines.push('');
+  lines.push('🎯 ROI-WIRKSAME POSITIONEN');
+  lines.push('• Wichtigster Hebel: Vermeidungsquote schwach qualifizierter Deals durch bessere Discovery.');
+  lines.push('• Bekannte Größenordnung: '+problemLine+'.');
+  lines.push('• Unsichere Annahme: tatsächliche Wirkung von KI21 auf frühe Erkennung, Rettung oder klare Disqualifikation.');
+  lines.push('• Validierungsfrage: Welche konkreten Deals wären mit strukturierter Discovery früher erkannt, gerettet oder sauber disqualifiziert worden?');
+  lines.push('');
+  lines.push('💰 WIRTSCHAFTLICHER NUTZEN');
+  lines.push('• Laufender Nutzen: noch zu validieren – Wirkung mit echten Deals messen; Branchenhypothese höchstens als Orientierung.');
+  if(inv)lines.push('• Investition: '+inv+'.');
+  else lines.push('• Investition: Angebotspreis und laufende Kosten separat klären.');
+  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlt die validierte Vermeidungsquote/Wirkung.');
+  lines.push('');
+  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
+  lines.push('Mit '+nextName+' konkrete Pilot-Deals und Erfolgskriterien für die Wirkungsmessung festlegen.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+nextName+' 3–5 echte Deals auswählen, Discovery-Fehler nachvollziehen und die Messkriterien für das Startprojekt festlegen.');
+  lines.push('');
+  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+  lines.push('1. Pilot-Deals auswählen: Welche konkreten Fälle zeigen das Discovery-Problem am besten?');
+  lines.push('2. Messkriterien festlegen: Woran erkennt '+nextName+', dass die Discovery-Qualität messbar besser wird?');
+  return lines.join('\n');
+}
+function buildStructuredPhase5OutputV4189(accId){
+  const facts=extractKnownBusinessFacts(accId||'');
+  const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
+  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
+  const freq=extractDealFrequencyTextV4189(accId);
+  const pain=normalizeSafeMoneyTextV4189(facts.pain||'wirtschaftliche Wirkung noch zu validieren');
+  const budget=normalizeSafeMoneyTextV4189(facts.budget||'Budgetrahmen noch zu klären');
+  const inv=cleanInvestmentLineV4189(accId);
+  const nextName=(dec==='dem bestätigten Entscheider')?'dem bestätigten Entscheider':dec;
+  let lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Der Deal ist für ein Startangebot vorbereitet, wenn Pilot-Deals, Erfolgskriterien und Starttermin mit '+nextName+' geklärt sind. Die wirtschaftliche Wirkung bleibt bis zur Messung mit echten Deals offen.');
+  lines.push('');
+  lines.push('KAUFARGUMENTE');
+  lines.push('• Strukturierte Discovery macht schwach qualifizierte Deals früher sichtbar und reduziert späte Überraschungen.');
+  if(freq)lines.push('• Der operative Schmerz ist konkret benannt: '+freq+(facts.pain?' bei einer wirtschaftlichen Größenordnung von '+pain:'')+'.');
+  else lines.push('• Der operative Schmerz ist konkret genug für ein Startprojekt; die wirtschaftliche Wirkung wird im Pilot validiert.');
+  if(inv)lines.push('• Das Startangebot ist klar vom laufenden Nutzungsmodell getrennt: '+inv+'.');
+  lines.push('• '+budget+'.');
+  if(authority)lines.push('• '+nextName+' kann den nächsten Schritt als bestätigter Entscheider direkt konkretisieren.');
+  lines.push('');
+  lines.push('EINWÄNDE');
+  lines.push('• „Wir kennen den ROI noch nicht.“ → Genau deshalb wird nicht theoretisch gerechnet, sondern mit echten Deals validiert.');
+  lines.push('• „Wird das Team es nutzen?“ → Der Pilot startet mit konkreten Opportunities und klaren Messkriterien, nicht mit abstraktem Tool-Training.');
+  lines.push('• „Reicht bestehende Dokumentation?“ → Entscheidend ist nicht Dokumentation allein, sondern ob kritische Discovery-Fragen früh und einheitlich gestellt werden.');
+  lines.push('');
+  lines.push('OFFENE PUNKTE');
+  lines.push('• Starttermin und Pilotumfang festlegen.');
+  lines.push('• 3–5 konkrete Pilot-Deals auswählen.');
+  lines.push('• Erfolgskriterien für die Wirkungsmessung definieren.');
+  lines.push('');
+  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
+  lines.push('Pilot-Deals, Erfolgskriterien und Starttermin mit '+nextName+' festlegen.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Kickoff mit '+nextName+' vereinbaren: Startangebot durchgehen, Pilot-Deals auswählen und Messkriterien festlegen.');
+  lines.push('');
+  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+  lines.push('1. '+nextName+' nach 3–5 geeigneten Pilot-Deals fragen.');
+  lines.push('2. Erfolgskriterien definieren: bessere frühe Qualifizierung, weniger Nachbearbeitung oder klarere Disqualifikation.');
+  lines.push('');
+  lines.push('ERÖFFNUNGSSATZ');
+  lines.push('Wir rechnen den ROI nicht schön, sondern validieren mit echten Deals, ob strukturierte Discovery messbar wirkt.');
+  lines.push('');
+  lines.push('DER EINE ABSCHLUSSSATZ');
+  lines.push('Der nächste Schritt ist ein begrenzter Start mit echten Pilot-Deals und klarer Wirkungsmessung.');
+  return lines.join('\n');
+}
+
 function sanitizePhase4NoRoiMath(text,accId){
-  if(!text)return text;
-  let x=String(text);
-  x=sanitizeInventedPrecisionText(accId||'',x,'phase4');
-  if(accId)x=sanitizeOfferPricingPeriodText(accId,x);
-  const inv=buildPhaseInvestmentLine(accId||'');
-  const name=(accId&&getConfirmedDecisionMakerName(accId))||'Marius';
-  const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId)));
-  // Branchenhypothesen sind als Orientierung erlaubt, aber dürfen nicht in ROI/Nutzen umgerechnet werden.
-  x=sanitizeIndustryHypothesisAsOrientation(x);
-  x=sanitizeNoRoiCertaintyText(x);
-  x=sanitizeAuthorityRequirementText(accId,x);
-  x=x.replace(/•\s*Laufender Nutzen:[^\n]*(?:\n(?!•|\d\.|[A-ZÄÖÜ][A-ZÄÖÜ\s\-/&]+:).*)?/gi,'• Laufender Nutzen: noch zu validieren – Vermeidungsquote/Wirkung mit echten Deals messen; Branchenhypothese höchstens als Orientierung.');
-  x=x.replace(/•\s*Investition:[^\n]*/gi,'• '+inv);
-  x=x.replace(/•\s*ROI:[^\n]*/gi,'• ROI: 🔴 noch nicht belastbar berechenbar – es fehlt die validierte Vermeidungsquote/Wirkung.');
-  x=x.replace(/Geschätzter?\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/Jahr\s+bei\s+\d{1,3}\s*[–-]\s*\d{1,3}\s*%[^\n]*/gi,'Noch zu validieren – keine €-Nutzenrange aus Branchenhypothese ableiten; Wirkung mit echten Deals messen.');
-  x=x.replace(/Mindestlogik:\s*Wenn[^\n]*(?:ROI|Nutzen|Startkosten|Compact)[^\n]*/gi,'Mindestlogik: wirtschaftlicher Hebel plausibel, aber ROI nicht belastbar berechenbar, bis die Vermeidungs-/Wirkungsquote mit echten Deals validiert ist.');
-  x=x.replace(/Nutzen\s+übersteigt[^\n.]*?(?:\.|$)/gi,'ROI noch nicht belastbar – Vermeidungswirkung muss mit echten Deals gemessen werden.');
-  x=x.replace(/geschätzt\s+\d[\d\.\s,]*\s*[–-]\s*\d[\d\.\s,]*\s*€\/?Jahr[^\n.]*/gi,'noch zu validieren');
-  x=x.replace(/konkreter\s+KI21[-\s]?Preis\s+noch\s+zu\s+klären/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
-  x=x.replace(/konkreter\s+Angebotspreis\s+noch\s+zu\s+klären/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
-  x=x.replace(/KI21[-\s]?Preismodell\s+in\s+die\s+ROI[-\s]?Rechnung\s+einarbeiten[^\n]*/gi,'Angebotslogik sauber trennen: '+inv.replace(/^Investition:\s*/,'').replace(/\.$/,'')+'.');
-  x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi,inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
-  // Kundenbudget nicht als Investition/Preis ausgeben.
-  x=x.replace(/Marius\s+hat\s+Budget\s+von\s+\d[\d\.\s,]*\s*€\s+zur\s+Verfügung\s+und\s+darf\s+ohne\s+Geschäftsführungs[-\s]?Freigabe\s+entscheiden\.?/gi,'Budgetrahmen ist vorhanden; KI21 Compact ist als Startangebot separat zu bewerten.');
-  // Bei bestätigtem Entscheider keine GF-Rückfälle. Wirtschaftliche Validierung läuft mit dem bestätigten Entscheider.
-  if(authority){
-    x=x.replace(/Marius\s+und\s+(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)/gi,name);
-    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+und\s+Marius/gi,name);
-    x=x.replace(/Geschäftsführer(?:in)?\s+muss/gi,name+' muss');
-    x=x.replace(/Geschäftsführung\s+muss/gi,name+' muss');
-    x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)\s+(?:sollte|sollten|müsste|müssen|muss)/gi,name+' sollte');
-    x=x.replace(/(?:Geschäftsführer[-\s]?Termin|GF[-\s]?Termin|Termin\s+mit\s+(?:dem\s+)?Geschäftsführer)[^\n]*/gi,'Mit '+name+' Pilot-Deals, Erfolgskriterien und Vermeidungsquote anhand echter Deals validieren.');
-    x=x.replace(/Mit\s+dem\s+Geschäftsführer[^\n]*\n?/gi,'Mit '+name+' Pilot-Deals, Erfolgskriterien und Vermeidungsquote anhand echter Deals validieren.\n');
-    x=x.replace(/\d+\.\s*Geschäftsführer\s+isoliert[^\n]*/gi,'2. Mit '+name+' Erfolgskriterien und Messlogik für die ersten echten Deals festlegen.');
-    x=x.replace(/ohne\s+Marius/gi,'mit Marius');
-    x=x.replace(/nur\s+mit\s+ihm\s+lässt\s+sich[^\n]*/gi,'mit '+name+' lässt sich die wirtschaftliche Wirkung anhand echter Deals validieren.');
-  }
-  // Nicht unnötig HubSpot/System als Baustelle öffnen.
-  x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|Feld[-\s]?Setup|manuelle Checkliste)/i.test(line)).join('\n');
-  x=sanitizeNoRoiCertaintyText(x);
-  x=sanitizeAuthorityRequirementText(accId,x);
-  x=sanitizeOutputIntegrityText(accId,x,'phase4');
-  x=sanitizeGeneratedOutputFinal(accId,x,'phase4');
-  x=sanitizeFinalOutputV4188(accId,x,'phase4');
-  return x.replace(/\n{3,}/g,'\n\n').trim();
+  // v4.189: Phase 4 wird strukturiert aus Rollen/Evidenz neu aufgebaut.
+  // Dadurch keine kaputten Inline-Ersetzungen, keine Prozent-/Perioden-Rechnung, keine GF-Pflicht.
+  return buildStructuredPhase4OutputV4189(accId||'');
 }
 function sanitizePhase5OfferOutput(text,accId){
-  if(!text)return text;
-  let x=sanitizePhase5CloseTone(text);
-  x=sanitizeIndustryHypothesisAsOrientation(x);
-  x=sanitizeNoRoiCertaintyText(x);
-  x=sanitizeAuthorityRequirementText(accId,x);
-  const inv=buildPhaseInvestmentLine(accId||'');
-  x=x.replace(/2\s*[–-]\s*3\s*k\s*€\s+monatliche\s+Investition/gi,'2.900 € Startangebot');
-  x=x.replace(/Angebotslogik geklärt:[^\n]*(?:80\.000|5\.500\.000|11\.025|1\.333)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||inv.replace(/^Investition:\s*/,'').replace(/\.$/,''));
-  x=x.replace(/KI21[-\s]?Preis & Startformat[^\n]*(?:offen|nicht geklärt|klären)[^\n]*/gi, buildOfferPricingBusinessCaseText(accId)||'Startangebot und laufende Gebühren sind geklärt');
-  x=x.replace(/•\s*Investition:[^\n]*/gi,'• '+inv);
-  x=x.split('\n').filter(line=>!/(HubSpot|CRM[-\s]?Feld|CRM\s*(?:integrier|Integration)|manuelle Checkliste|Quality Checks)/i.test(line)).join('\n');
-  x=x.replace(/Starten Sie mit Ihren besten 3 Account Managern[^\n.]*/gi,'Starten Sie mit ausgewählten Account Managern und echten Pilot-Deals');
-  x=x.replace(/die ersten\s+20\s*[–-]\s*30\s+schwach qualifizierten Deals/gi,'die ersten echten schwach qualifizierten Deals');
-  x=x.replace(/Das Startangebot rechnet sich schon[^\n.]*(?:\.|$)/gi,'Das Startangebot ist ein überschaubarer Weg, um mit echten Deals zu prüfen, ob strukturierte Discovery messbar wirkt.');
-  x=x.replace(/rechnet sich schon,?\s+wenn[^\n.]*(?:\.|$)/gi,'muss mit echten Deals messbar geprüft werden.');
-  x=sanitizeNoRoiCertaintyText(x);
-  x=sanitizeAuthorityRequirementText(accId,x);
-  x=sanitizeOutputIntegrityText(accId,x,'phase5');
-  x=sanitizeGeneratedOutputFinal(accId,x,'phase5');
-  x=sanitizeFinalOutputV4188(accId,x,'phase5');
-  return x.replace(/\n{3,}/g,'\n\n').trim();
+  // v4.189: Phase 5 wird strukturiert aus Rollen/Evidenz neu aufgebaut.
+  // Ziel: ruhige Abschlusslogik ohne ROI-Versprechen und ohne fragile Textsanitizer.
+  return buildStructuredPhase5OutputV4189(accId||'');
 }
 
 // v4.161: Geldbeträge generisch nach Rollen klassifizieren und harte Fallzahlen vermeiden.
@@ -6611,7 +6672,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.188';
+const KI21_VERSION='v4.189';
 
 
 function runKi21VersionMigration(){
