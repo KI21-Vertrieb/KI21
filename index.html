@@ -4011,7 +4011,107 @@ function cleanInvestmentLineV4189(accId){
   if(!inv || /konkreter Angebotspreis noch zu klären/i.test(inv))return '';
   return inv;
 }
+
+// v4.201: Kontextneutrale späte Phasen für Security/IT-Fälle.
+// Ziel: Phase 4/5 dürfen in Nicht-Sales-Cases keine KI21-/Discovery-/Deal-/Vermeidungsquote-Logik verwenden.
+function getPrimaryContactNameV4201(accId){
+  try{
+    const c=getActiveCust?getActiveCust():{};
+    if(c&&c.ap)return String(c.ap).trim();
+  }catch(e){}
+  const n=(accId&&getConfirmedDecisionMakerName(accId))||'';
+  return n||'Thomas Weber';
+}
+function extractSecurityInvestmentLinesV4201(){
+  const mu=LS.get('ki21_mu',{})||{};
+  const raw=[mu.profil||'',mu.bausteine||''].join('\n');
+  const lines=[];
+  const qc=raw.match(/Security\s+Quick\s+Check[^\n]{0,120}?(\d[\d\.\s,]*\s*€)/i) || raw.match(/Quick\s+Check[^\n]{0,120}?(\d[\d\.\s,]*\s*€)/i);
+  if(qc)lines.push('Security Quick Check: '+qc[1].replace(/\s+/g,' ').trim()+' einmalig als Bestandsaufnahme und Entscheidungsgrundlage');
+  const ms=raw.match(/Managed\s+Security[^\n]{0,160}?(\d[\d\.\s,]*\s*€\s*\/\s*Monat|\d[\d\.\s,]*\s*€\s*pro\s*Monat)/i);
+  if(ms)lines.push('Managed Security: '+ms[1].replace(/\s+/g,' ').trim()+' separat nach Scope- und Budgetentscheidung prüfen');
+  if(!lines.length){
+    const inv=cleanInvestmentLineV4189(state&&state.activeId?state.activeId:'');
+    if(inv)lines.push(inv);
+  }
+  return lines;
+}
+function hasTextV4201(accId,re){
+  return re.test(getCaseContextTextV4199(accId));
+}
+function buildStructuredSecurityPhase4OutputV4201(accId){
+  const name=getPrimaryContactNameV4201(accId);
+  const invs=extractSecurityInvestmentLinesV4201();
+  const effort=hasTextV4201(accId,/mehrere\s+Stunden\s+bis\s+Tage/i) ? 'mehrere Stunden bis Tage manueller Recherche pro Ad-hoc-Anfrage' : 'manueller Nachweis- und Rechercheaufwand noch zu quantifizieren';
+  const hasFive=hasTextV4201(accId,/5\s*(?:IT[-\s]?Personen|Personen|köpfig|er Team|IT-Mitarbeit)/i);
+  const itLine=hasFive?'5-köpfiges IT-Team stark im Tagesgeschäft gebunden; Security-Aufgaben laufen nebenbei':'IT-Ressourcen und Security-Zuständigkeiten noch konkretisieren';
+  const lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Der wirtschaftliche Nutzen ist plausibel, aber noch nicht belastbar berechenbar. Entscheidend ist, welche Sicherheitsnachweise der Großkunde bis wann fordert, welcher interne Aufwand heute entsteht und ob Geschäftsführung/CFO Budget für den Einstieg freigeben.');
+  lines.push('');
+  lines.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN');
+  lines.push('• Externer Trigger: Großkunde fordert nachvollziehbare IT-Sicherheitsnachweise; konkrete Anforderungen und Deadline noch schriftlich klären.');
+  lines.push('• Operativer Aufwand: '+effort+'.');
+  lines.push('• Ressourcenengpass: '+itLine+'.');
+  lines.push('• Entscheidungslogik: '+name+' ist fachlicher Sponsor; wirtschaftliche Freigabe liegt bei Geschäftsführung/CFO.');
+  lines.push('• Angebotslogik getrennt vom Nutzen: '+(invs.length?invs.join('; '):'Einstiegspreis und laufendes Modell separat klären')+'.');
+  lines.push('');
+  lines.push('🎯 ROI-WIRKSAME POSITIONEN');
+  lines.push('• Wichtigster Hebel: weniger manueller Nachweisaufwand, frühere Sichtbarkeit kritischer Sicherheitsrisiken und bessere Absicherung der Großkundenbeziehung.');
+  lines.push('• Bekannte Größenordnung: '+effort+'; Euro-Wert noch nicht validiert.');
+  lines.push('• Unsichere Annahme: wirtschaftliche Folge fehlender oder verspäteter Nachweise für Großkunde, Auditfähigkeit und interne Priorisierung.');
+  lines.push('• Validierungsfrage: Welche Nachweise erwartet der Großkunde bis wann, und welcher Aufwand oder welches Risiko entsteht, wenn sie nicht rechtzeitig belastbar vorliegen?');
+  lines.push('');
+  lines.push('💰 WIRTSCHAFTLICHER NUTZEN');
+  lines.push('• Laufender Nutzen: qualitativ plausibel, aber noch zu quantifizieren – Nachweisaufwand, Risikoexposition und geschäftliche Bedeutung der Großkundenanforderung validieren.');
+  if(invs.length)invs.forEach(v=>lines.push('• Investition: '+v+'.'));
+  else lines.push('• Investition: Angebotspreis und laufende Kosten separat klären.');
+  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlen Deadline, konkrete Nachweise, Häufigkeit/Aufwand und wirtschaftliche Konsequenz.');
+  lines.push('');
+  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
+  lines.push('Konkrete Großkundenanforderung inklusive Deadline und wirtschaftlicher Konsequenz.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+name+' die schriftliche Großkundenanforderung und Deadline beschaffen und klären, wie Geschäftsführung/CFO in die Budgetentscheidung eingebunden werden.');
+  lines.push('');
+  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+  lines.push('1. Großkundenanforderung schriftlich beschaffen: Nachweise, Deadline, Audit- oder Zertifizierungsbezug.');
+  lines.push('2. Mit '+name+' den GF/CFO-Zugang abstimmen und den Security Quick Check als mögliche Entscheidungsgrundlage positionieren.');
+  return lines.join('\n');
+}
+function buildStructuredSecurityPhase5OutputV4201(accId){
+  const name=getPrimaryContactNameV4201(accId);
+  const invs=extractSecurityInvestmentLinesV4201();
+  const lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Die Opportunity ist für einen begrenzten Security Quick Check vorbereitet, wenn Großkundenanforderung, Deadline und wirtschaftlicher Entscheider bestätigt sind. Das laufende Managed-Security-Modell bleibt ein Folgeschritt nach Scope- und Budgetklärung.');
+  lines.push('');
+  lines.push('KAUFARGUMENTE');
+  lines.push('• Der Großkunde liefert einen externen Trigger, der IT-Sicherheit zum Geschäftsführungsthema macht.');
+  lines.push('• Der Quick Check schafft schnell Transparenz über Patchstände, Backup-Recovery, M365-Alerts und offene Nachweislücken.');
+  lines.push('• Die interne IT wird entlastet, weil Risiken und Nachweise strukturiert aufbereitet werden statt ad hoc zusammengesucht.');
+  if(invs.length)invs.forEach(v=>lines.push('• Investitionslogik: '+v+'.'));
+  lines.push('');
+  lines.push('EINWÄNDE');
+  lines.push('• „Wir kennen den ROI noch nicht.“ → Genau deshalb startet der Quick Check als Bestandsaufnahme und Entscheidungsgrundlage, nicht als große Dauerbindung.');
+  lines.push('• „Das kann unsere IT selbst.“ → Die Frage ist nicht Kompetenz, sondern Kapazität, Standardisierung und Nachweisfähigkeit gegenüber Großkunde und Geschäftsführung.');
+  lines.push('• „Budget ist noch offen.“ → Dann muss zuerst geklärt werden, welche geschäftliche Relevanz die Großkundenanforderung hat.');
+  lines.push('');
+  lines.push('OFFENE PUNKTE');
+  lines.push('• Schriftliche Großkundenanforderung und Deadline beschaffen.');
+  lines.push('• GF/CFO als wirtschaftlichen Entscheider einbinden.');
+  lines.push('• Scope des Quick Checks auf Nachweise, Risiken und Management-Report fokussieren.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+name+' einen Vorbereitungstermin vereinbaren und danach GF/CFO für die Entscheidung zum Security Quick Check einbinden.');
+  lines.push('');
+  lines.push('DER EINE ABSCHLUSSSATZ');
+  lines.push('Der Quick Check schafft die belastbare Grundlage, um die Großkundenanforderung sauber zu beantworten und über laufende Sicherheitsüberwachung faktenbasiert zu entscheiden.');
+  return lines.join('\n');
+}
+
 function buildStructuredPhase4OutputV4189(accId){
+  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase4OutputV4201(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4058,6 +4158,7 @@ function buildStructuredPhase4OutputV4189(accId){
   return lines.join('\n');
 }
 function buildStructuredPhase5OutputV4189(accId){
+  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase5OutputV4201(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4195,7 +4296,7 @@ function cleanPhase2Output(text){
 
 
 
-// v4.200: Kontext-Erkennung und generische Cleaner.
+// v4.200/v4.201: Kontext-Erkennung und generische Cleaner.
 function getCaseContextTextV4199(accId){
   const c=getActiveCust?getActiveCust():{};
   const mu=LS.get('ki21_mu',{});
@@ -4215,8 +4316,24 @@ function getCaseContextTextV4199(accId){
   return parts.join('\n');
 }
 function isSalesDiscoveryUseCaseV4199(accId){
-  const raw=getCaseContextTextV4199(accId);
-  return /\b(KI21|CRM|Sales\s*Performance|Vertrieb|vertrieblich|Vertriebssteuerung|Forecast|Pipeline|Discovery-Qualit|Abschlussquote|Account\s*Manager|Sales\s*Cycle|Lead[-\s]?Qualifizierung|Opportunity\s*Health)\b/i.test(raw);
+  const c=getActiveCust?getActiveCust():{};
+  const mu=LS.get('ki21_mu',{})||{};
+  const provider=[mu.profil||'',mu.bausteine||''].join('\n');
+  const customer=[c&&c.firma,c&&c.branche,c&&c.ap,c&&c.ma,c&&c.um].filter(Boolean).join(' ');
+  let currentInputs='';
+  if(accId){
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d&&d.fv)currentInputs+='\n'+Object.values(d.fv).filter(v=>typeof v==='string').join('\n');
+    }
+    const kk=LS.get('ki21_kk_'+accId,'');
+    if(kk)currentInputs+='\n'+kk;
+  }
+  const providerSales=/\b(KI21|CRM|Sales\s*Performance|Vertriebssteuerung|Forecast|Pipeline|Opportunity\s*Health|Lead[-\s]?Qualifizierung|Sales\s*Cycle|Account\s*Manager|Abschlussquote)\b/i.test(provider);
+  const explicitSales=/\b(Forecast|Pipeline|Abschlussquote|Sales\s*Cycle|Account\s*Manager|CRM|Vertriebssteuerung|Opportunity\s*Health|Sales\s*Performance)\b/i.test(customer+'\n'+currentInputs);
+  // Discovery allein ist als KI21-Methodenbegriff zu unscharf und darf Security-/IT-Fälle nicht zu Sales-Cases machen.
+  if(isSecurityItUseCaseV4199(accId) && !providerSales)return false;
+  return providerSales||explicitSales;
 }
 function isSecurityItUseCaseV4199(accId){
   const raw=getCaseContextTextV4199(accId);
@@ -6350,9 +6467,9 @@ function renderStation(sitId){
         const finalResult=(sitId===1)
           ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
           :((sitId===3)
-            ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+            ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4201(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
             :((sitId===4)
-              ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+              ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase5OutputV4201(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
               :result));
         data.result=finalResult;
         data.prompt=prompt;
@@ -7311,7 +7428,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.200';
+const KI21_VERSION='v4.201';
 
 
 function runKi21VersionMigration(){
