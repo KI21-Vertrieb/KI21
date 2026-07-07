@@ -440,7 +440,7 @@ select option{background:var(--bg3);}
 .cockpit-phase-row:active .cockpit-phase-chevron{color:#ff6b00;opacity:1;}
 .phase-nav .btn{touch-action:manipulation;}
 
-/* v4.203: Mobile-Klickschutz – unsichtbare Sheets dürfen keine Klicks blockieren */
+/* v4.204: Mobile-Klickschutz – keine globalen Touch-Handler, native Klicks haben Vorrang */
 button,.btn,.btn-o,.cockpit-phase-row,.cockpit-tile,.cockpit-tile-item,.cockpit-next-card,.cockpit-opp-name,.cockpit-score-badge{touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,107,0,.18);}
 .bs-overlay:not(.visible),.bs-panel:not(.visible){pointer-events:none !important;}
 .ki21-action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;margin-top:2px;}
@@ -793,7 +793,7 @@ function goHomeV4200(e){return goHomeV4202(e);}
 
 
 function cleanupBlockingOverlaysV4203(force){
-  // v4.203: Sicherheitsnetz gegen hängende Overlays/Bottom-Sheets, die auf iPhone/Brave Klicks abfangen können.
+  // v4.204: Sicherheitsnetz gegen hängende Overlays/Bottom-Sheets, die auf iPhone/Brave Klicks abfangen können.
   try{
     document.querySelectorAll('.bs-overlay,.bs-panel').forEach(el=>{
       if(force || !el.classList.contains('visible')) el.remove();
@@ -1635,9 +1635,11 @@ function getScoreLabel(){
 }
 
 function attachScoreLongPress(el,begruendung){
-  if(!begruendung)return;
+  if(!begruendung||!el)return;
+  // v4.204: Touch-Interaktionen NICHT mehr global abfangen.
+  // Die alte Long-Press-Logik hatte capture-touchstart mit preventDefault/stopPropagation
+  // und konnte auf iPhone/Brave normale Button-Taps blockieren.
   let pressTimer=null;
-  let fired=false;
   const showTooltip=()=>{
     const existing=document.getElementById('score-tooltip');
     if(existing)existing.remove();
@@ -1656,31 +1658,11 @@ function attachScoreLongPress(el,begruendung){
     tip.appendChild(hintEl);
     tip.addEventListener('click',e=>{e.stopPropagation();tip.remove();});
     document.body.appendChild(tip);
-    setTimeout(()=>{
-      const dismissOnAnyClick=(e)=>{
-        const t=document.getElementById('score-tooltip');
-        if(t){
-          e.preventDefault();
-          e.stopPropagation();
-          if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-          t.remove();
-        }
-        document.removeEventListener('click',dismissOnAnyClick,true);
-        document.removeEventListener('touchstart',dismissOnAnyClick,true);
-      };
-      document.addEventListener('click',dismissOnAnyClick,true);
-      document.addEventListener('touchstart',dismissOnAnyClick,true);
-    },100);
   };
-  const start=(e)=>{
-    fired=false;
-    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
-  };
-  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
+  const start=()=>{pressTimer=setTimeout(showTooltip,600);};
+  const cancel=()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}};
   el.style.cursor='pointer';
-  el.addEventListener('touchstart',start,{passive:true});
-  el.addEventListener('touchend',cancel);
-  el.addEventListener('touchmove',cancel);
+  // Nur Desktop-Maus; auf Touch-Geräten bleibt der normale Klick vollständig unberührt.
   el.addEventListener('mousedown',start);
   el.addEventListener('mouseup',cancel);
   el.addEventListener('mouseleave',cancel);
@@ -4829,12 +4811,7 @@ function showBottomSheet(title, items, emptyText){
   };
   overlay.addEventListener('click',close);
 
-  // Swipe-down to dismiss
-  let startY=0;
-  panel.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;},{passive:true});
-  panel.addEventListener('touchend',e=>{
-    if(e.changedTouches[0].clientY-startY>60)close();
-  },{passive:true});
+  // v4.204: Kein Touch-Swipe-Handler mehr; native Button-Klicks haben Vorrang.
 
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
@@ -7458,7 +7435,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.203';
+const KI21_VERSION='v4.204';
 
 
 function runKi21VersionMigration(){
