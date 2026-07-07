@@ -4941,6 +4941,20 @@ function renderHomeLiteV4211(){
     phaseList.appendChild(row);
   });
   wrap.appendChild(phaseList);
+
+  // v4.215 Stable Candidate: sichtbarer Cockpit-Zugang außerhalb der kompakten Top-Card.
+  // Die Top-Card blendet sekundäre Buttons auf Mobile aus; deshalb steht der bewusste
+  // Cockpit-Start als eigener Button unter der Phasenliste. Keine automatische Berechnung.
+  wrap.appendChild(h('button',{
+    type:'button',
+    className:'btn',
+    style:{width:'100%',margin:'10px 0 0',justifyContent:'center'},
+    onclick:()=>{
+      try{renderHome();}
+      catch(e){alert('Cockpit konnte nicht geöffnet werden: '+(e&&e.message?e.message:e));renderHomeLiteV4211();}
+    }
+  },'Cockpit öffnen / aktualisieren'));
+
   wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(header);
   app.appendChild(wrap);
