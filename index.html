@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.214 RC: Release-candidate consolidation based on stable v4.213. No new features; no touch/navigation changes. -->
+<!-- v4.215 Stable Candidate: konsolidierter stabiler Arbeitsstand; lazy Cockpit, keine Touch-Sonderlogik. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -759,11 +759,10 @@ function buildSimplePdfHtml(title,text,cust){
 }
 
 // ── STATE ──────────────────────────────────────────────────
-// v4.210: Safe-Start lädt KEINE Opportunity-Daten beim Start.
-// Grund: Ein großer/defekter localStorage-Zustand kann Mobile-Browser blockieren.
-// Erst der Button "App vollständig laden" hydratisiert den State.
+// v4.215 Stable Candidate: Start lädt nur den minimal nötigen Opportunity-State.
+// Cockpit/Health werden lazy und nie automatisch beim Navigieren berechnet.
 const state={
-  view:'safe',
+  view:'home-lite',
   accounts:[],
   activeId:null,
   modal:null,
@@ -4918,11 +4917,11 @@ function renderHomeLiteV4211(){
 
   const wrap=h('div',{className:'wrap'});
   wrap.appendChild(h('div',{className:'cockpit-next-card'},
-    h('div',{className:'cockpit-next-eyebrow'},'Stabiler Arbeitsmodus'),
-    h('div',{className:'cockpit-next-text'},'Cockpit/Health werden hier nicht automatisch berechnet. Dadurch bleibt die Navigation schnell. Öffne Phasen direkt oder lade das Cockpit bewusst.'),
+    h('div',{className:'cockpit-next-eyebrow'},'Opportunity-Übersicht'),
+    h('div',{className:'cockpit-next-text'},'Öffne die Phasen direkt. Das Cockpit wird erst aktualisiert, wenn du es bewusst öffnest – so bleibt die App schnell.'),
     h('div',{className:'cockpit-btn-row'},
       h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung'),
-      h('button',{className:'cockpit-btn-secondary',onclick:()=>{setTimeout(()=>{try{renderHome();}catch(e){alert('Cockpit konnte nicht geöffnet werden: '+e.message);renderHomeLiteV4211();}},0);}},'Cockpit bewusst öffnen')
+      h('button',{className:'cockpit-btn-secondary',onclick:()=>{setTimeout(()=>{try{renderHome();}catch(e){alert('Cockpit konnte nicht geöffnet werden: '+e.message);renderHomeLiteV4211();}},0);}},'Cockpit öffnen / aktualisieren')
     )
   ));
 
@@ -4942,7 +4941,6 @@ function renderHomeLiteV4211(){
     phaseList.appendChild(row);
   });
   wrap.appendChild(phaseList);
-  wrap.appendChild(h('button',{className:'btn',style:{width:'100%',marginTop:'12px'},onclick:()=>renderKi21SafeStart()},'Diagnose / Safe Start öffnen'));
   wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(header);
   app.appendChild(wrap);
@@ -7495,7 +7493,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.214 RC';
+const KI21_VERSION='v4.215 Stable Candidate';
 
 
 function runKi21VersionMigration(){
@@ -7987,7 +7985,7 @@ function showImport(){
 
 // ── v4.210 DIAGNOSE / STANDALONE SAFE START ────────────────────────────
 // Ziel: erst beweisen, dass Native-Clicks funktionieren. Danach Daten gezielt laden.
-const KI21_SAFE_START=true;
+const KI21_SAFE_START=false; // Diagnosemodus nur noch als Fallback
 let ki21SafeClickCounter=0;
 
 function ki21SafeRemoveBlockingUi(){
@@ -8087,7 +8085,7 @@ function renderKi21SafeStart(){
   wrap.className='wrap';
   wrap.style.paddingTop='18px';
   wrap.innerHTML=`
-    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.214 RC</div>
+    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.215 Stable Candidate</div>
     <div style="font-family:'DM Serif Display',serif;font-size:25px;line-height:1.12;margin-bottom:10px;">Safe Start</div>
     <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:14px;">
       Diese Version lädt beim Start keine Opportunity-Daten, keine Migration und kein Cockpit. Erst testen wir, ob Klicks nativ funktionieren.
@@ -8130,8 +8128,21 @@ try{
   if(savedTheme==='light')document.body.classList.add('light');
 }catch(e){}
 
-// v4.211: keine Migration beim Start. Full Load öffnet zuerst stabilen Arbeitsmodus, nicht das schwere Cockpit.
-renderKi21SafeStart();
+// v4.215 Stable Candidate: normaler Start in die leichte Opportunity-Übersicht.
+// Keine automatische Cockpit-/Health-Berechnung beim Start oder Rücksprung.
+try{
+  ki21SafeRemoveBlockingUi();
+  ki21HydrateStateFromStorage();
+  state.view='home-lite';
+  LS.set('ki21_view','home-lite');
+  renderHomeLiteV4211();
+}catch(e){
+  // Fallback nur im Fehlerfall, nicht als normaler Start.
+  try{renderKi21SafeStart();}catch(e2){
+    const app=document.getElementById('app');
+    if(app)app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht starten</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+String((e&&e.message)||e)+'</div></div>';
+  }
+}
 (function(){
   const v=document.createElement('div');
   v.textContent=KI21_VERSION;
