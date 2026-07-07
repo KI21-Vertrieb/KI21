@@ -766,19 +766,22 @@ const state={
 const savedAid = LS.get('ki21_aid',null);
 if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 
-function goHomeV4200(e){
+function goHomeV4202(e){
+  // v4.202: Navigation ohne Touch-/Click-Doppeltrigger.
+  // Kein globales stopPropagation/preventDefault mehr, weil das auf iOS/Brave gelegentlich Folgeklicks verschluckt.
   try{
-    if(e){e.preventDefault();e.stopPropagation();}
+    if(e && typeof e.preventDefault==='function')e.preventDefault();
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     state.view='home';
     LS.set('ki21_view','home');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
-    setTimeout(()=>renderHome(),0);
+    renderHome();
   }catch(err){
     try{renderHome();}catch(e2){}
   }
 }
+function goHomeV4200(e){return goHomeV4202(e);}
 
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk,currentSitId){
@@ -5807,10 +5810,10 @@ function renderStation(sitId){
   const nav=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand',style:{display:'flex',alignItems:'center',gap:'6px'}},
-        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
-        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
+        h('button',{onclick:goHomeV4202,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
+        h('button',{onclick:goHomeV4202,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
       ),
-      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200,ontouchend:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
+      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4202},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
     ),
     h('div',{className:'cockpit-header-right'},
       health2?h('div',{
@@ -7428,7 +7431,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.201';
+const KI21_VERSION='v4.202';
 
 
 function runKi21VersionMigration(){
