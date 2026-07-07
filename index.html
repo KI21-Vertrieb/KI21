@@ -440,13 +440,6 @@ select option{background:var(--bg3);}
 .cockpit-phase-row:active .cockpit-phase-chevron{color:#ff6b00;opacity:1;}
 .phase-nav .btn{touch-action:manipulation;}
 
-/* v4.204: Mobile-Klickschutz – keine globalen Touch-Handler, native Klicks haben Vorrang */
-button,.btn,.btn-o,.cockpit-phase-row,.cockpit-tile,.cockpit-tile-item,.cockpit-next-card,.cockpit-opp-name,.cockpit-score-badge{touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,107,0,.18);}
-.bs-overlay:not(.visible),.bs-panel:not(.visible){pointer-events:none !important;}
-.ki21-action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;margin-top:2px;}
-.ki21-action-row .btn-o,.ki21-action-row .btn{flex:0 0 auto;}
-
-
 
 
 /* v4.142: Executive Dashboard Visual Polish - Mockup-Richtung ohne neue Funktionen */
@@ -773,35 +766,18 @@ const state={
 const savedAid = LS.get('ki21_aid',null);
 if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 
-function goHomeV4202(e){
-  // v4.202: Navigation ohne Touch-/Click-Doppeltrigger.
-  // Kein globales stopPropagation/preventDefault mehr, weil das auf iOS/Brave gelegentlich Folgeklicks verschluckt.
+function goHomeV4200(e){
   try{
-    if(e && typeof e.preventDefault==='function')e.preventDefault();
+    if(e){e.preventDefault();e.stopPropagation();}
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     state.view='home';
     LS.set('ki21_view','home');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
-    cleanupBlockingOverlaysV4203(true);
-    renderHome();
+    setTimeout(()=>renderHome(),0);
   }catch(err){
     try{renderHome();}catch(e2){}
   }
-}
-function goHomeV4200(e){return goHomeV4202(e);}
-
-
-function cleanupBlockingOverlaysV4203(force){
-  // v4.204: Sicherheitsnetz gegen hängende Overlays/Bottom-Sheets, die auf iPhone/Brave Klicks abfangen können.
-  try{
-    document.querySelectorAll('.bs-overlay,.bs-panel').forEach(el=>{
-      if(force || !el.classList.contains('visible')) el.remove();
-    });
-    // Alte Tooltip-Capture-Handler lassen sich nicht direkt entfernen; der sichtbare Tooltip selbst aber schon.
-    const tip=document.getElementById('score-tooltip');
-    if(tip)tip.remove();
-  }catch(e){}
 }
 
 // ── BUILD CONTEXT ───────────────────────────────────────────
@@ -1546,7 +1522,7 @@ function h(tag,attrs,...children){
 function modal(title,content,onClose){
   const bg=h('div',{className:'modal-bg'});
   bg.addEventListener('click',e=>{if(e.target===bg){bg.remove();if(onClose)onClose();}});
-  const box=h('div',{className:'modal-box',onclick:(e)=>e.stopPropagation()},
+  const box=h('div',{className:'modal-box'},
     h('div',{className:'modal-handle'}),
     h('div',{className:'modal-title'},title),
     content
@@ -1635,11 +1611,9 @@ function getScoreLabel(){
 }
 
 function attachScoreLongPress(el,begruendung){
-  if(!begruendung||!el)return;
-  // v4.204: Touch-Interaktionen NICHT mehr global abfangen.
-  // Die alte Long-Press-Logik hatte capture-touchstart mit preventDefault/stopPropagation
-  // und konnte auf iPhone/Brave normale Button-Taps blockieren.
+  if(!begruendung)return;
   let pressTimer=null;
+  let fired=false;
   const showTooltip=()=>{
     const existing=document.getElementById('score-tooltip');
     if(existing)existing.remove();
@@ -1658,11 +1632,31 @@ function attachScoreLongPress(el,begruendung){
     tip.appendChild(hintEl);
     tip.addEventListener('click',e=>{e.stopPropagation();tip.remove();});
     document.body.appendChild(tip);
+    setTimeout(()=>{
+      const dismissOnAnyClick=(e)=>{
+        const t=document.getElementById('score-tooltip');
+        if(t){
+          e.preventDefault();
+          e.stopPropagation();
+          if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+          t.remove();
+        }
+        document.removeEventListener('click',dismissOnAnyClick,true);
+        document.removeEventListener('touchstart',dismissOnAnyClick,true);
+      };
+      document.addEventListener('click',dismissOnAnyClick,true);
+      document.addEventListener('touchstart',dismissOnAnyClick,true);
+    },100);
   };
-  const start=()=>{pressTimer=setTimeout(showTooltip,600);};
-  const cancel=()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}};
+  const start=(e)=>{
+    fired=false;
+    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
+  };
+  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
   el.style.cursor='pointer';
-  // Nur Desktop-Maus; auf Touch-Geräten bleibt der normale Klick vollständig unberührt.
+  el.addEventListener('touchstart',start,{passive:true});
+  el.addEventListener('touchend',cancel);
+  el.addEventListener('touchmove',cancel);
   el.addEventListener('mousedown',start);
   el.addEventListener('mouseup',cancel);
   el.addEventListener('mouseleave',cancel);
@@ -4017,7 +4011,6 @@ function cleanInvestmentLineV4189(accId){
   if(!inv || /konkreter Angebotspreis noch zu klären/i.test(inv))return '';
   return inv;
 }
-
 // v4.201: Kontextneutrale späte Phasen für Security/IT-Fälle.
 // Ziel: Phase 4/5 dürfen in Nicht-Sales-Cases keine KI21-/Discovery-/Deal-/Vermeidungsquote-Logik verwenden.
 function getPrimaryContactNameV4201(accId){
@@ -4302,7 +4295,7 @@ function cleanPhase2Output(text){
 
 
 
-// v4.200/v4.201: Kontext-Erkennung und generische Cleaner.
+// v4.205: Kontext-Erkennung und generische Cleaner.
 function getCaseContextTextV4199(accId){
   const c=getActiveCust?getActiveCust():{};
   const mu=LS.get('ki21_mu',{});
@@ -4322,24 +4315,8 @@ function getCaseContextTextV4199(accId){
   return parts.join('\n');
 }
 function isSalesDiscoveryUseCaseV4199(accId){
-  const c=getActiveCust?getActiveCust():{};
-  const mu=LS.get('ki21_mu',{})||{};
-  const provider=[mu.profil||'',mu.bausteine||''].join('\n');
-  const customer=[c&&c.firma,c&&c.branche,c&&c.ap,c&&c.ma,c&&c.um].filter(Boolean).join(' ');
-  let currentInputs='';
-  if(accId){
-    for(let i=0;i<5;i++){
-      const d=LS.get('ki21_st_'+accId+'_'+i,null);
-      if(d&&d.fv)currentInputs+='\n'+Object.values(d.fv).filter(v=>typeof v==='string').join('\n');
-    }
-    const kk=LS.get('ki21_kk_'+accId,'');
-    if(kk)currentInputs+='\n'+kk;
-  }
-  const providerSales=/\b(KI21|CRM|Sales\s*Performance|Vertriebssteuerung|Forecast|Pipeline|Opportunity\s*Health|Lead[-\s]?Qualifizierung|Sales\s*Cycle|Account\s*Manager|Abschlussquote)\b/i.test(provider);
-  const explicitSales=/\b(Forecast|Pipeline|Abschlussquote|Sales\s*Cycle|Account\s*Manager|CRM|Vertriebssteuerung|Opportunity\s*Health|Sales\s*Performance)\b/i.test(customer+'\n'+currentInputs);
-  // Discovery allein ist als KI21-Methodenbegriff zu unscharf und darf Security-/IT-Fälle nicht zu Sales-Cases machen.
-  if(isSecurityItUseCaseV4199(accId) && !providerSales)return false;
-  return providerSales||explicitSales;
+  const raw=getCaseContextTextV4199(accId);
+  return /\b(KI21|CRM|Sales\s*Performance|Vertrieb|vertrieblich|Vertriebssteuerung|Forecast|Pipeline|Discovery-Qualit|Abschlussquote|Account\s*Manager|Sales\s*Cycle|Lead[-\s]?Qualifizierung|Opportunity\s*Health)\b/i.test(raw);
 }
 function isSecurityItUseCaseV4199(accId){
   const raw=getCaseContextTextV4199(accId);
@@ -4803,15 +4780,18 @@ function showBottomSheet(title, items, emptyText){
   panel.appendChild(body);
 
   const close=()=>{
-    overlay.style.pointerEvents='none';
-    panel.style.pointerEvents='none';
     overlay.classList.remove('visible');
     panel.classList.remove('visible');
-    setTimeout(()=>{overlay.remove();panel.remove();},80);
+    setTimeout(()=>{overlay.remove();panel.remove();},280);
   };
   overlay.addEventListener('click',close);
 
-  // v4.204: Kein Touch-Swipe-Handler mehr; native Button-Klicks haben Vorrang.
+  // Swipe-down to dismiss
+  let startY=0;
+  panel.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;},{passive:true});
+  panel.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY-startY>60)close();
+  },{passive:true});
 
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
@@ -4882,7 +4862,6 @@ function buildCockpitTileHeader(label){
 }
 
 function renderHome(){
-  cleanupBlockingOverlaysV4203(false);
   const cust=getActiveCust();
   const aid=state.activeId;
   const app=document.getElementById('app');
@@ -5761,7 +5740,6 @@ function showSpinBulkPasteModalV4199({spinQuestions,spinLetters,taRefs,data,KEY,
 }
 
 function renderStation(sitId){
-  cleanupBlockingOverlaysV4203(false);
   state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
@@ -5812,10 +5790,10 @@ function renderStation(sitId){
   const nav=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand',style:{display:'flex',alignItems:'center',gap:'6px'}},
-        h('button',{onclick:goHomeV4202,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
-        h('button',{onclick:goHomeV4202,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
+        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
+        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
       ),
-      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4202},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
+      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200,ontouchend:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
     ),
     h('div',{className:'cockpit-header-right'},
       health2?h('div',{
@@ -6176,7 +6154,7 @@ function renderStation(sitId){
   // Generate button
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}generate();}},genLabels[sitId]||'⚡ KI21 generieren');
-  const genRow=h('div',{className:'gen-row ki21-action-row'});
+  const genRow=h('div',{className:'gen-row'});
   const addPhaseBtn=h('button',{className:'btn',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}showStkModal(sitId,sit.title);}},'＋ Ergänzung');
   genRow.appendChild(genBtn);
   genRow.appendChild(addPhaseBtn);
@@ -7435,7 +7413,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.204';
+const KI21_VERSION='v4.205';
 
 
 function runKi21VersionMigration(){
