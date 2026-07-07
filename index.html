@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.212: Stable shell retained. Security/IT phase-4/5 logic and context-specific cockpit questions restored without touching navigation/touch code. -->
+<!-- v4.213: Stable shell retained. Phase 4 opens lighter; Security/IT benefit extraction now uses phase additions and preserves validated quantities. No touch/navigation changes. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -3995,9 +3995,31 @@ function getPrimaryContactNameV4212(accId){
   return n||'dem fachlichen Sponsor';
 }
 function getSecurityCaseTextV4212(accId){
-  try{return getCaseContextTextV4199(accId||'');}catch(e){}
-  const mu=LS.get('ki21_mu',{})||{};
-  return [mu.profil||'',mu.bausteine||'',getCurrentUserKnowledgeText?getCurrentUserKnowledgeText(accId||''):'' ].join('\n');
+  // v4.213: Nutzen-/Security-Fakten müssen auch phasenspezifische Ergänzungen
+  // ("Neue Erkenntnisse") berücksichtigen. Diese liegen nicht immer in fv/result,
+  // sondern zusätzlich unter ki21_kk_{accId}_{phase}.
+  const parts=[];
+  try{parts.push(getCaseContextTextV4199(accId||''));}catch(e){}
+  try{
+    const mu=LS.get('ki21_mu',{})||{};
+    parts.push(mu.profil||'',mu.bausteine||'');
+  }catch(e){}
+  try{
+    if(accId){
+      const globalKk=LS.get('ki21_kk_'+accId,'');
+      if(globalKk)parts.push(globalKk);
+      for(let i=0;i<5;i++){
+        const kkPhase=LS.get('ki21_kk_'+accId+'_'+i,'');
+        if(kkPhase)parts.push(kkPhase);
+        const d=LS.get('ki21_st_'+accId+'_'+i,null);
+        if(d&&d.fv)parts.push(Object.values(d.fv).filter(v=>typeof v==='string').join('\n'));
+        if(d&&d.result)parts.push(d.result);
+        if(d&&d.result2)parts.push(d.result2);
+      }
+    }
+  }catch(e){}
+  try{if(getCurrentUserKnowledgeText)parts.push(getCurrentUserKnowledgeText(accId||''));}catch(e){}
+  return parts.filter(Boolean).join('\n');
 }
 function extractSecurityInvestmentLinesV4212(accId){
   const mu=LS.get('ki21_mu',{})||{};
@@ -4019,11 +4041,11 @@ function extractSecurityFactsV4212(accId){
   const deadline=(raw.match(/bis\s+Ende\s+Q[1-4]/i)||raw.match(/Ende\s+Q[1-4]/i)||raw.match(/bis\s+(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[^\.\n,;]*/i)||[''])[0];
   const hasCustomerShare=/\b\d{1,2}\s*%\s*(?:des\s+)?(?:Jahresumsatz|Umsatz|Revenue|Kundenbeziehung)/i.test(raw);
   const customerShare=(raw.match(/\b\d{1,2}\s*%\s*(?:des\s+)?(?:Jahresumsatz|Umsatz|Revenue)[^\.\n;]*/i)||[''])[0];
-  const hasThreeRequests=/(?:drei|3)\s+(?:größere\s+)?(?:Rückfragen|Anfragen|Nachfragen)/i.test(raw);
-  const requests=hasThreeRequests?'3 größere Rückfragen in den letzten Monaten':'Häufigkeit der Anfragen noch quantifizieren';
-  const effort12=/1\s*[–\-]\s*2\s*Personen[^\.\n]{0,80}1\s*[–\-]\s*2\s*Tage/i.test(raw)||/1\s*bis\s*2\s*Personen[^\.\n]{0,80}1\s*bis\s*2\s*Tage/i.test(raw);
+  const hasThreeRequests=/(?:in\s+den\s+letzten\s+Monaten[^\n.]{0,120})?(?:drei|3)\s+(?:größere\s+)?(?:Rückfragen|Anfragen|Nachfragen)/i.test(raw);
+  const requests=hasThreeRequests?'3 größere Rückfragen in den letzten Monaten':'langfristige Häufigkeit der Anfragen noch quantifizieren';
+  const effort12=/1\s*[–\-]\s*2\s*Personen[^\.\n]{0,140}(?:jeweils\s*)?1\s*[–\-]\s*2\s*Tage/i.test(raw)||/1\s*bis\s*2\s*Personen[^\.\n]{0,140}(?:jeweils\s*)?1\s*bis\s*2\s*Tage/i.test(raw);
   const effortSeveral=/mehrere\s+Stunden\s+bis\s+Tage/i.test(raw);
-  const effort=effort12?'1–2 Personen für jeweils 1–2 Tage pro größerer Anfrage':(effortSeveral?'mehrere Stunden bis Tage manueller Recherche pro Ad-hoc-Anfrage':'manueller Nachweis- und Rechercheaufwand noch zu quantifizieren');
+  const effort=effort12?'je Anfrage 1–2 Personen für 1–2 Tage manueller Recherche':(effortSeveral?'mehrere Stunden bis Tage manueller Recherche pro Ad-hoc-Anfrage':'manueller Nachweis- und Rechercheaufwand noch zu quantifizieren');
   const cfoQuick=/CFO[^\.\n]{0,160}(?:Quick\s+Check|4\.900|4900)[^\.\n]{0,120}(?:kurzfristig|entscheidbar|freigeben|Freigabe)/i.test(raw)||/(?:Quick\s+Check|4\.900|4900)[^\.\n]{0,160}CFO[^\.\n]{0,120}(?:kurzfristig|entscheidbar|freigeben|Freigabe)/i.test(raw);
   const managedOpen=/(Managed\s+Security|2\.800|2800)[^\.\n]{0,180}(?:noch\s+keine\s+Freigabe|nach\s+dem\s+Quick\s+Check|Folge|abhängig|separat)/i.test(raw);
   const noIso=/nicht\s+um\s+eine\s+formale\s+ISO|keine\s+ISO|nicht\s+formal(?:e)?\s+Zertifizierung/i.test(raw);
@@ -4056,7 +4078,7 @@ function buildStructuredSecurityPhase4OutputV4212(accId){
   lines.push('');
   lines.push('🎯 WIRTSCHAFTLICH RELEVANTE POSITIONEN');
   lines.push('• Wichtigster Hebel: weniger manueller Nachweisaufwand, frühere Sichtbarkeit kritischer Sicherheitsrisiken und belastbarere Großkunden-/Auditkommunikation.');
-  lines.push('• Bekannte Größenordnung: '+f.effort+'; '+(f.requests||'Häufigkeit offen')+'.');
+  lines.push('• Bekannte Größenordnung: '+(f.requests||'Häufigkeit offen')+'; '+f.effort+'. Euro-Wert und langfristige Häufigkeit noch zu validieren.');
   lines.push('• Geschäftsrisiko: '+riskLine+(f.supplierReview?'; zusätzlich Lieferantenprüfung/Auditfragen relevant':'')+'.');
   lines.push('• Validierungsfrage: Wie häufig entstehen solche Nachweise, welche Personen sind beteiligt und welche Konsequenz hätte eine negative Bewertung im Lieferantenreview?');
   lines.push('');
@@ -4064,7 +4086,7 @@ function buildStructuredSecurityPhase4OutputV4212(accId){
   lines.push('• Laufender Nutzen: qualitativ stark plausibel; quantifizierbar über eingesparte Recherchezeit, weniger Ad-hoc-Aufwand, bessere Auditfähigkeit und geringeres Eskalationsrisiko.');
   if(invs.length)invs.forEach(v=>lines.push('• Investition: '+v+'.'));
   else lines.push('• Investition: Angebotspreis und laufende Kosten separat klären.');
-  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlen Euro-Wert der internen Aufwände, Häufigkeit über längeren Zeitraum und validierte wirtschaftliche Konsequenz.');
+  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlen Euro-Wert der internen Aufwände, langfristige Häufigkeit und validierte wirtschaftliche Konsequenz.');
   lines.push('');
   lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
   lines.push(f.cfoQuick?'Formale Freigabe des Security Quick Checks durch Geschäftsführung/CFO.':'Konkrete Freigabe- und Budgetentscheidung für den Security Quick Check.');
@@ -5810,6 +5832,10 @@ function renderStation(sitId){
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
   let loading=false;
+  // v4.213: Phase 4/5 dürfen beim reinen Öffnen nicht durch Health/Cockpit-
+  // Aufbereitung blockieren. Schwere Berechnung erst beim bewussten Cockpit-Öffnen
+  // oder beim aktiven Generieren. Keine Touch-/Navigationsänderung.
+  const latePhaseLightOpenV4213=(sitId===3||sitId===4);
 
   // v4.140: robustes Löschen von KI-Ergebnissen in Phasen.
   // Wichtig: immer frisch aus localStorage lesen, damit kein alter Closure-Stand zurückgeschrieben wird.
@@ -5849,7 +5875,7 @@ function renderStation(sitId){
   const kk=LS.get('ki21_kk_'+state.activeId,'');
   const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
 
-  const health2=state.activeId?getOpportunityHealth(state.activeId):null;
+  const health2=(state.activeId&&!latePhaseLightOpenV4213)?getOpportunityHealth(state.activeId):null;
   const scoreColor2=health2?getHealthColor(health2.score):'var(--text3)';
 
   const nav=h('div',{className:'cockpit-header'},
@@ -5873,7 +5899,7 @@ function renderStation(sitId){
   const infoRow=h('div',{style:{display:'none'}});
 
   const wrap=h('div',{className:'station-wrap'});
-  const cockpitFocus=getCockpitFocusForPhase(state.activeId,sitId);
+  const cockpitFocus=latePhaseLightOpenV4213?null:getCockpitFocusForPhase(state.activeId,sitId);
   if(cockpitFocus)wrap.appendChild(buildCockpitFocusBanner(cockpitFocus));
 
   // ── Lead-qualifizieren Dashboard (Decision first, Evidence second) ──
@@ -6094,11 +6120,7 @@ function renderStation(sitId){
   // Kernfrage: Ist der Business Case wirtschaftlich tragfähig? → zeigt direkt die ROI-Ampel-
   // Zeile aus dem Ergebnis (🟢/🟡/🔴) statt einer allgemeinen Einschätzung. Kein neuer Score.
   if(sitId===3){
-    const aid=state.activeId;
-    const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
-      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
-
+    // v4.213: keine Health-Berechnung beim Öffnen der Nutzenphase.
         wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
   }
@@ -6108,11 +6130,7 @@ function renderStation(sitId){
   // Kernfrage: Was erhöht oder gefährdet die Abschlusswahrscheinlichkeit? → zeigt "DIE EINE
   // SACHE DIE FEHLT" (das größte Risiko) statt einer allgemeinen Einschätzung. Kein neuer Score.
   if(sitId===4){
-    const aid=state.activeId;
-    const health=aid?getOpportunityHealth(aid):null;
-    wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
-      buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
-
+    // v4.213: keine Health-Berechnung beim Öffnen der Angebotsphase.
         wrap.appendChild(h('div',{className:'exec-divider'},
       h('div',{className:'exec-divider-line'}),h('div',{className:'exec-divider-label'},'Arbeitsbereich'),h('div',{className:'exec-divider-line'})));
   }
@@ -6588,7 +6606,8 @@ function renderStation(sitId){
         }
 
         // For Nutzen-Kosten-Analyse (sitId===3): nur noch Case-Annahmen für Phase 5 extrahieren (Kurzfassung-Box entfernt, Review Juni 2026)
-        if(sitId===3){
+        if(sitId===3 && isSalesDiscoveryUseCaseV4199(state.activeId)){
+          // v4.213: Keine zusätzliche Case-Extraction bei Security/IT; sie blockiert Mobile nach der Generierung.
           try{
             const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
 
@@ -7476,7 +7495,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.212';
+const KI21_VERSION='v4.213';
 
 
 function runKi21VersionMigration(){
@@ -8068,7 +8087,7 @@ function renderKi21SafeStart(){
   wrap.className='wrap';
   wrap.style.paddingTop='18px';
   wrap.innerHTML=`
-    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.212</div>
+    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.213</div>
     <div style="font-family:'DM Serif Display',serif;font-size:25px;line-height:1.12;margin-bottom:10px;">Safe Start</div>
     <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:14px;">
       Diese Version lädt beim Start keine Opportunity-Daten, keine Migration und kein Cockpit. Erst testen wir, ob Klicks nativ funktionieren.
