@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.211: Safe lightweight app shell. Full load opens a non-cockpit shell first to avoid heavy render loops. -->
+<!-- v4.212: Stable shell retained. Security/IT phase-4/5 logic and context-specific cockpit questions restored without touching navigation/touch code. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -3982,7 +3982,137 @@ function cleanInvestmentLineV4189(accId){
   if(!inv || /konkreter Angebotspreis noch zu klären/i.test(inv))return '';
   return inv;
 }
+
+
+// v4.212: Kontextneutrale späte Phasen für Security/IT-Fälle.
+// Keine Änderungen an Navigation/Touch. Ziel: Security-Cases dürfen nie in KI21-/Sales-/Discovery-/Deal-ROI kippen.
+function getPrimaryContactNameV4212(accId){
+  try{
+    const c=getActiveCust?getActiveCust():{};
+    if(c&&c.ap)return String(c.ap).trim();
+  }catch(e){}
+  const n=(accId&&getConfirmedDecisionMakerName(accId))||'';
+  return n||'dem fachlichen Sponsor';
+}
+function getSecurityCaseTextV4212(accId){
+  try{return getCaseContextTextV4199(accId||'');}catch(e){}
+  const mu=LS.get('ki21_mu',{})||{};
+  return [mu.profil||'',mu.bausteine||'',getCurrentUserKnowledgeText?getCurrentUserKnowledgeText(accId||''):'' ].join('\n');
+}
+function extractSecurityInvestmentLinesV4212(accId){
+  const mu=LS.get('ki21_mu',{})||{};
+  const raw=[mu.profil||'',mu.bausteine||'',getSecurityCaseTextV4212(accId)].join('\n');
+  const lines=[];
+  const qc=raw.match(/Security\s+Quick\s+Check[^\n]{0,160}?(\d[\d\.\s,]*\s*€)/i) || raw.match(/Quick\s+Check[^\n]{0,160}?(\d[\d\.\s,]*\s*€)/i);
+  if(qc)lines.push('Security Quick Check: '+qc[1].replace(/\s+/g,' ').trim()+' einmalig als Bestandsaufnahme und Entscheidungsgrundlage');
+  const ms=raw.match(/Managed\s+Security[^\n]{0,180}?(\d[\d\.\s,]*\s*€\s*(?:\/|pro)\s*Monat)/i);
+  if(ms)lines.push('Managed Security: '+ms[1].replace(/\s+/g,' ').trim()+' separat nach Scope- und Budgetentscheidung prüfen');
+  if(!lines.length){
+    const inv=cleanInvestmentLineV4189(accId||'');
+    if(inv)lines.push(inv);
+  }
+  return lines;
+}
+function extractSecurityFactsV4212(accId){
+  const raw=getSecurityCaseTextV4212(accId||'');
+  const hasDeadline=/\b(Ende\s+Q[1-4]|Q[1-4]|bis\s+Ende\s+(?:des\s+)?(?:Quartals|Monats|Jahres)|Deadline|Frist|bis\s+\d{1,2}\.|bis\s+(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember))/i.test(raw);
+  const deadline=(raw.match(/bis\s+Ende\s+Q[1-4]/i)||raw.match(/Ende\s+Q[1-4]/i)||raw.match(/bis\s+(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[^\.\n,;]*/i)||[''])[0];
+  const hasCustomerShare=/\b\d{1,2}\s*%\s*(?:des\s+)?(?:Jahresumsatz|Umsatz|Revenue|Kundenbeziehung)/i.test(raw);
+  const customerShare=(raw.match(/\b\d{1,2}\s*%\s*(?:des\s+)?(?:Jahresumsatz|Umsatz|Revenue)[^\.\n;]*/i)||[''])[0];
+  const hasThreeRequests=/(?:drei|3)\s+(?:größere\s+)?(?:Rückfragen|Anfragen|Nachfragen)/i.test(raw);
+  const requests=hasThreeRequests?'3 größere Rückfragen in den letzten Monaten':'Häufigkeit der Anfragen noch quantifizieren';
+  const effort12=/1\s*[–\-]\s*2\s*Personen[^\.\n]{0,80}1\s*[–\-]\s*2\s*Tage/i.test(raw)||/1\s*bis\s*2\s*Personen[^\.\n]{0,80}1\s*bis\s*2\s*Tage/i.test(raw);
+  const effortSeveral=/mehrere\s+Stunden\s+bis\s+Tage/i.test(raw);
+  const effort=effort12?'1–2 Personen für jeweils 1–2 Tage pro größerer Anfrage':(effortSeveral?'mehrere Stunden bis Tage manueller Recherche pro Ad-hoc-Anfrage':'manueller Nachweis- und Rechercheaufwand noch zu quantifizieren');
+  const cfoQuick=/CFO[^\.\n]{0,160}(?:Quick\s+Check|4\.900|4900)[^\.\n]{0,120}(?:kurzfristig|entscheidbar|freigeben|Freigabe)/i.test(raw)||/(?:Quick\s+Check|4\.900|4900)[^\.\n]{0,160}CFO[^\.\n]{0,120}(?:kurzfristig|entscheidbar|freigeben|Freigabe)/i.test(raw);
+  const managedOpen=/(Managed\s+Security|2\.800|2800)[^\.\n]{0,180}(?:noch\s+keine\s+Freigabe|nach\s+dem\s+Quick\s+Check|Folge|abhängig|separat)/i.test(raw);
+  const noIso=/nicht\s+um\s+eine\s+formale\s+ISO|keine\s+ISO|nicht\s+formal(?:e)?\s+Zertifizierung/i.test(raw);
+  const supplierReview=/Lieferantenprüfung|Lieferantenreview|Auditfragen|Audit-Katalog/i.test(raw);
+  const directLossNotAnnounced=/unmittelbarer\s+Auftragsverlust\s+wurde\s+nicht\s+angekündigt|kein\s+unmittelbarer\s+Auftragsverlust|nicht\s+angekündigt/i.test(raw);
+  const fiveIt=/5\s*(?:IT[-\s]?Personen|Personen|köpfig|er Team|IT-Mitarbeit)/i.test(raw);
+  return {hasDeadline,deadline,hasCustomerShare,customerShare,requests,effort,cfoQuick,managedOpen,noIso,supplierReview,directLossNotAnnounced,fiveIt};
+}
+function buildStructuredSecurityPhase4OutputV4212(accId){
+  const name=getPrimaryContactNameV4212(accId);
+  const invs=extractSecurityInvestmentLinesV4212(accId);
+  const f=extractSecurityFactsV4212(accId);
+  const requirementLine=f.hasDeadline
+    ?('Großkunde fordert Nachweise '+(f.deadline?f.deadline:'mit bestätigter Deadline')+'; konkret: Patch-Management, Backup/Recovery, M365-Monitoring und Management-Report')
+    :'Großkunde fordert nachvollziehbare IT-Sicherheitsnachweise; konkrete Anforderungen und Deadline noch schriftlich klären';
+  const riskLine=f.hasCustomerShare
+    ?('Großkunde hat relevante geschäftliche Bedeutung ('+f.customerShare.replace(/\.$/,'')+'); direkter Verlust nur nennen, wenn bestätigt')
+    :'wirtschaftliche Folge fehlender Nachweise noch validieren';
+  const itLine=f.fiveIt?'5-köpfiges IT-Team stark im Tagesgeschäft gebunden; Security-Aufgaben laufen nebenbei':'IT-Ressourcen und Security-Zuständigkeiten noch konkretisieren';
+  const lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Der wirtschaftliche Nutzen ist plausibel und jetzt besser validierbar. Entscheidend sind Nachweisaufwand, Deadline des Großkunden, geschäftliche Relevanz der Kundenbeziehung und die kurzfristige Freigabe des Security Quick Checks durch Geschäftsführung/CFO. Ein vollständiger ROI bleibt noch nicht belastbar berechenbar.');
+  lines.push('');
+  lines.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN');
+  lines.push('• Externer Trigger: '+requirementLine+'.');
+  lines.push('• Operativer Aufwand: '+f.requests+'; '+f.effort+'.');
+  lines.push('• Ressourcenengpass: '+itLine+'.');
+  lines.push('• Entscheidungslogik: '+name+' ist fachlicher Sponsor; wirtschaftliche Freigabe liegt bei Geschäftsführung/CFO'+(f.cfoQuick?', Quick Check kurzfristig entscheidbar':'')+'.');
+  lines.push('• Angebotslogik getrennt vom Nutzen: '+(invs.length?invs.join('; '):'Einstiegspreis und laufendes Modell separat klären')+'.');
+  lines.push('');
+  lines.push('🎯 WIRTSCHAFTLICH RELEVANTE POSITIONEN');
+  lines.push('• Wichtigster Hebel: weniger manueller Nachweisaufwand, frühere Sichtbarkeit kritischer Sicherheitsrisiken und belastbarere Großkunden-/Auditkommunikation.');
+  lines.push('• Bekannte Größenordnung: '+f.effort+'; '+(f.requests||'Häufigkeit offen')+'.');
+  lines.push('• Geschäftsrisiko: '+riskLine+(f.supplierReview?'; zusätzlich Lieferantenprüfung/Auditfragen relevant':'')+'.');
+  lines.push('• Validierungsfrage: Wie häufig entstehen solche Nachweise, welche Personen sind beteiligt und welche Konsequenz hätte eine negative Bewertung im Lieferantenreview?');
+  lines.push('');
+  lines.push('💰 WIRTSCHAFTLICHER NUTZEN');
+  lines.push('• Laufender Nutzen: qualitativ stark plausibel; quantifizierbar über eingesparte Recherchezeit, weniger Ad-hoc-Aufwand, bessere Auditfähigkeit und geringeres Eskalationsrisiko.');
+  if(invs.length)invs.forEach(v=>lines.push('• Investition: '+v+'.'));
+  else lines.push('• Investition: Angebotspreis und laufende Kosten separat klären.');
+  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlen Euro-Wert der internen Aufwände, Häufigkeit über längeren Zeitraum und validierte wirtschaftliche Konsequenz.');
+  lines.push('');
+  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
+  lines.push(f.cfoQuick?'Formale Freigabe des Security Quick Checks durch Geschäftsführung/CFO.':'Konkrete Freigabe- und Budgetentscheidung für den Security Quick Check.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+name+' den Umfang des Security Quick Checks auf Großkundenanforderung, Sicherheitsstatus und Management-Report begrenzen und die Freigabe mit Geschäftsführung/CFO vorbereiten.');
+  lines.push('');
+  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+  lines.push('1. Quick-Check-Scope bestätigen: Patch-Management, Backup/Recovery, M365-Monitoring, Management-Report.');
+  lines.push('2. Mit '+name+' den CFO/GF-Termin vorbereiten: Aufwand, Deadline, Lieferantenreview und Entscheidungsgrundlage.');
+  if(f.directLossNotAnnounced)lines.push('3. Wichtig: Großkundenrisiko als Beziehungs-/Review-Risiko formulieren, nicht als bestätigten Umsatzverlust.');
+  return lines.join('\n');
+}
+function buildStructuredSecurityPhase5OutputV4212(accId){
+  const name=getPrimaryContactNameV4212(accId);
+  const invs=extractSecurityInvestmentLinesV4212(accId);
+  const f=extractSecurityFactsV4212(accId);
+  const lines=[];
+  lines.push('EINSCHÄTZUNG');
+  lines.push('Die Opportunity ist für einen begrenzten Security Quick Check gut vorbereitet, sofern Geschäftsführung/CFO die kurzfristige Freigabe geben. Managed Security bleibt eine Folgeoption nach Scope, Befund und Budgetklärung.');
+  lines.push('');
+  lines.push('KAUFARGUMENTE');
+  lines.push('• Der Großkunde liefert einen externen Trigger mit Deadline und Nachweisanforderung.');
+  lines.push('• Der Quick Check schafft schnell Transparenz über Patchstände, Backup-Recovery, M365-Alerts und offene Nachweislücken.');
+  lines.push('• Die interne IT wird entlastet, weil Risiken und Nachweise strukturiert aufbereitet werden statt ad hoc zusammengesucht.');
+  if(f.hasCustomerShare)lines.push('• Die Kundenbeziehung ist geschäftlich relevant ('+f.customerShare.replace(/\.$/,'')+'), ohne dass ein unmittelbarer Auftragsverlust behauptet werden muss.');
+  if(invs.length)invs.forEach(v=>lines.push('• Investitionslogik: '+v+'.'));
+  lines.push('');
+  lines.push('EINWÄNDE');
+  lines.push('• „Wir kennen den ROI noch nicht.“ → Genau deshalb startet der Quick Check als Bestandsaufnahme und Entscheidungsgrundlage, nicht als große Dauerbindung.');
+  lines.push('• „Das kann unsere IT selbst.“ → Die Frage ist nicht Kompetenz, sondern Kapazität, Standardisierung und Nachweisfähigkeit gegenüber Großkunde und Geschäftsführung.');
+  lines.push('• „Managed Security ist noch zu früh.“ → Richtig; das laufende Modell wird erst nach Quick Check, Scope und Budgetentscheidung bewertet.');
+  lines.push('');
+  lines.push('OFFENE PUNKTE');
+  lines.push('• Formale Freigabe für den Security Quick Check einholen.');
+  lines.push('• Scope auf Großkundenanforderung, Risiken und Management-Report begrenzen.');
+  lines.push('• Häufigkeit und Aufwand künftiger Nachweisanfragen weiter quantifizieren.');
+  lines.push('');
+  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+  lines.push('Mit '+name+' einen Vorbereitungstermin vereinbaren und danach GF/CFO für die Entscheidung zum Security Quick Check einbinden.');
+  lines.push('');
+  lines.push('DER EINE ABSCHLUSSSATZ');
+  lines.push('Der Quick Check schafft die belastbare Grundlage, um die Großkundenanforderung sauber zu beantworten und über laufende Sicherheitsüberwachung faktenbasiert zu entscheiden.');
+  return lines.join('\n');
+}
+
 function buildStructuredPhase4OutputV4189(accId){
+  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase4OutputV4212(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4029,6 +4159,7 @@ function buildStructuredPhase4OutputV4189(accId){
   return lines.join('\n');
 }
 function buildStructuredPhase5OutputV4189(accId){
+  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase5OutputV4212(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4186,8 +4317,23 @@ function getCaseContextTextV4199(accId){
   return parts.join('\n');
 }
 function isSalesDiscoveryUseCaseV4199(accId){
-  const raw=getCaseContextTextV4199(accId);
-  return /\b(KI21|CRM|Sales\s*Performance|Vertrieb|vertrieblich|Vertriebssteuerung|Forecast|Pipeline|Discovery-Qualit|Abschlussquote|Account\s*Manager|Sales\s*Cycle|Lead[-\s]?Qualifizierung|Opportunity\s*Health)\b/i.test(raw);
+  const c=getActiveCust?getActiveCust():{};
+  const mu=LS.get('ki21_mu',{})||{};
+  const provider=[mu.profil||'',mu.bausteine||''].join('\n');
+  const customer=[c&&c.firma,c&&c.branche,c&&c.ap,c&&c.ma,c&&c.um].filter(Boolean).join(' ');
+  let currentInputs='';
+  if(accId){
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d&&d.fv)currentInputs+='\n'+Object.values(d.fv).filter(v=>typeof v==='string').join('\n');
+    }
+    const kk=LS.get('ki21_kk_'+accId,'');
+    if(kk)currentInputs+='\n'+kk;
+  }
+  const providerSales=/\b(KI21|CRM|Sales\s*Performance|Vertriebssteuerung|Forecast|Pipeline|Opportunity\s*Health|Lead[-\s]?Qualifizierung|Sales\s*Cycle|Account\s*Manager|Abschlussquote)\b/i.test(provider);
+  const explicitSales=/\b(Forecast|Pipeline|Abschlussquote|Sales\s*Cycle|Account\s*Manager|CRM|Vertriebssteuerung|Opportunity\s*Health|Sales\s*Performance)\b/i.test(customer+'\n'+currentInputs);
+  if(isSecurityItUseCaseV4199(accId) && !providerSales)return false;
+  return providerSales||explicitSales;
 }
 function isSecurityItUseCaseV4199(accId){
   const raw=getCaseContextTextV4199(accId);
@@ -6369,9 +6515,9 @@ function renderStation(sitId){
         const finalResult=(sitId===1)
           ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
           :((sitId===3)
-            ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+            ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
             :((sitId===4)
-              ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+              ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase5OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
               :result));
         data.result=finalResult;
         data.prompt=prompt;
@@ -7330,7 +7476,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.211';
+const KI21_VERSION='v4.212';
 
 
 function runKi21VersionMigration(){
@@ -7922,7 +8068,7 @@ function renderKi21SafeStart(){
   wrap.className='wrap';
   wrap.style.paddingTop='18px';
   wrap.innerHTML=`
-    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.211</div>
+    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.212</div>
     <div style="font-family:'DM Serif Display',serif;font-size:25px;line-height:1.12;margin-bottom:10px;">Safe Start</div>
     <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:14px;">
       Diese Version lädt beim Start keine Opportunity-Daten, keine Migration und kein Cockpit. Erst testen wir, ob Klicks nativ funktionieren.
