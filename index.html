@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.210: True standalone safe start. No state hydration, no migration and no full render until explicit click. -->
+<!-- v4.211: Safe lightweight app shell. Full load opens a non-cockpit shell first to avoid heavy render loops. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -788,13 +788,13 @@ function goHomeV4200(e){
   try{
     if(e){e.preventDefault();e.stopPropagation();}
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-    state.view='home';
-    LS.set('ki21_view','home');
+    state.view='home-lite';
+    LS.set('ki21_view','home-lite');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
-    setTimeout(()=>renderHome(),0);
+    setTimeout(()=>renderHomeLiteV4211(),0);
   }catch(err){
-    try{renderHome();}catch(e2){}
+    try{renderHomeLiteV4211();}catch(e2){}
   }
 }
 
@@ -4726,6 +4726,61 @@ function buildCockpitTileHeader(label){
   );
 }
 
+
+function renderHomeLiteV4211(){
+  const app=document.getElementById('app');
+  if(!app)return;
+  app.innerHTML='';
+  try{ki21SafeRemoveBlockingUi&&ki21SafeRemoveBlockingUi();}catch(e){}
+  const aid=state.activeId||LS.get('ki21_aid',null);
+  const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
+  const cust=(acc&&acc.cust)||{};
+
+  const header=h('div',{className:'cockpit-header'},
+    h('div',{className:'cockpit-header-left'},
+      h('button',{type:'button',className:'cockpit-brand',style:{background:'none',border:'0',padding:'0',cursor:'pointer'},onclick:()=>renderHomeLiteV4211()},'KI','21'),
+      cust.firma
+        ? h('div',{className:'cockpit-opp-name',onclick:showKunde},cust.firma)
+        : h('div',{className:'cockpit-opp-placeholder',onclick:showKunde},'Opportunity wählen →')
+    ),
+    h('div',{className:'cockpit-header-right'},
+      h('button',{className:'btn',onclick:showSettings},'⚙')
+    )
+  );
+
+  const wrap=h('div',{className:'wrap'});
+  wrap.appendChild(h('div',{className:'cockpit-next-card'},
+    h('div',{className:'cockpit-next-eyebrow'},'Stabiler Arbeitsmodus'),
+    h('div',{className:'cockpit-next-text'},'Cockpit/Health werden hier nicht automatisch berechnet. Dadurch bleibt die Navigation schnell. Öffne Phasen direkt oder lade das Cockpit bewusst.'),
+    h('div',{className:'cockpit-btn-row'},
+      h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung'),
+      h('button',{className:'cockpit-btn-secondary',onclick:()=>{setTimeout(()=>{try{renderHome();}catch(e){alert('Cockpit konnte nicht geöffnet werden: '+e.message);renderHomeLiteV4211();}},0);}},'Cockpit bewusst öffnen')
+    )
+  ));
+
+  const phaseNames=['Qualifizierung','Discovery & Demo','Nachbereitung','Nutzen / ROI','Angebot'];
+  const phaseList=h('div',{className:'cockpit-phase-list'});
+  phaseNames.forEach((name,i)=>{
+    let status='';
+    try{status=getPhaseStatus(i);}catch(e){status='';}
+    const row=h('div',{className:'cockpit-phase-row',onclick:()=>{
+      if(!aid){state.pendingSit=i;showKunde();return;}
+      renderStation(i);
+    }},
+      h('span',{className:'cockpit-phase-num '+(status==='done'?'done':'')},String(i+1)),
+      h('span',{className:'cockpit-phase-name'},'Phase '+(i+1)+' – '+name),
+      h('span',{className:'cockpit-phase-chevron','aria-hidden':'true'},'›')
+    );
+    phaseList.appendChild(row);
+  });
+  wrap.appendChild(phaseList);
+  wrap.appendChild(h('button',{className:'btn',style:{width:'100%',marginTop:'12px'},onclick:()=>renderKi21SafeStart()},'Diagnose / Safe Start öffnen'));
+  wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
+  app.appendChild(header);
+  app.appendChild(wrap);
+  LS.set('ki21_view','home-lite');
+}
+
 function renderHome(){
   const cust=getActiveCust();
   const aid=state.activeId;
@@ -7275,7 +7330,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.210';
+const KI21_VERSION='v4.211';
 
 
 function runKi21VersionMigration(){
@@ -7841,8 +7896,8 @@ function ki21SafeFullLoad(){
       ki21HydrateStateFromStorage();
       localStorage.setItem('ki21_view',JSON.stringify('home'));
       state.view='home';
-      ki21SetStatus('Daten geladen. Öffne Cockpit …',false);
-      setTimeout(()=>{try{renderHome();}catch(e){ki21SetStatus('Render-Fehler: '+e.message,true);}},30);
+      ki21SetStatus('Daten geladen. Öffne stabilen Arbeitsmodus …',false);
+      setTimeout(()=>{try{renderHomeLiteV4211();}catch(e){ki21SetStatus('Render-Fehler: '+e.message,true);}},30);
     }catch(e){ki21SetStatus('Ladefehler: '+(e&&e.message?e.message:e),true);}
   },30);
 }
@@ -7867,7 +7922,7 @@ function renderKi21SafeStart(){
   wrap.className='wrap';
   wrap.style.paddingTop='18px';
   wrap.innerHTML=`
-    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.210</div>
+    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.211</div>
     <div style="font-family:'DM Serif Display',serif;font-size:25px;line-height:1.12;margin-bottom:10px;">Safe Start</div>
     <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:14px;">
       Diese Version lädt beim Start keine Opportunity-Daten, keine Migration und kein Cockpit. Erst testen wir, ob Klicks nativ funktionieren.
@@ -7910,7 +7965,7 @@ try{
   if(savedTheme==='light')document.body.classList.add('light');
 }catch(e){}
 
-// v4.210: keine Migration beim Start. Migration erst wieder aktivieren, wenn Mobile stabil ist.
+// v4.211: keine Migration beim Start. Full Load öffnet zuerst stabilen Arbeitsmodus, nicht das schwere Cockpit.
 renderKi21SafeStart();
 (function(){
   const v=document.createElement('div');
