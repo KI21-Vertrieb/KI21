@@ -5,6 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
+<!-- v4.207: Emergency rollback to last known stable mobile UI base v4.200; version bump only. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -624,14 +625,6 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
   .cockpit-phase-row{min-height:27px !important;padding:3.8px 8px !important;margin-bottom:3.5px !important;}
 }
 
-
-/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
-button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: rgba(255,107,0,.18);
-}
-.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
-
 </style>
 </head>
 <body>
@@ -775,15 +768,14 @@ const savedAid = LS.get('ki21_aid',null);
 if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 
 function goHomeV4200(e){
-  // v4.206: native click only. Keine Touch-Simulation, kein aggressives stopPropagation.
   try{
-    if(e&&e.preventDefault)e.preventDefault();
+    if(e){e.preventDefault();e.stopPropagation();}
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     state.view='home';
     LS.set('ki21_view','home');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
-    renderHome();
+    setTimeout(()=>renderHome(),0);
   }catch(err){
     try{renderHome();}catch(e2){}
   }
@@ -1620,10 +1612,56 @@ function getScoreLabel(){
 }
 
 function attachScoreLongPress(el,begruendung){
-  // v4.206: deaktiviert. Der frühere Long-Press-Tooltip registrierte globale
-  // touchstart/click-Capture-Handler und konnte auf iOS/Brave normale Taps blockieren.
-  // Health-Details bleiben über den Score-Badge-Click im Cockpit verfügbar.
-  return;
+  if(!begruendung)return;
+  let pressTimer=null;
+  let fired=false;
+  const showTooltip=()=>{
+    const existing=document.getElementById('score-tooltip');
+    if(existing)existing.remove();
+    const tip=document.createElement('div');
+    tip.id='score-tooltip';
+    tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
+      'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
+      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;'+
+      '-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;';
+    const textEl=document.createElement('div');
+    textEl.textContent=begruendung;
+    const hintEl=document.createElement('div');
+    hintEl.textContent='Tippen zum Schließen';
+    hintEl.style.cssText='font-size:9px;color:#8b949e;margin-top:6px;text-align:right;';
+    tip.appendChild(textEl);
+    tip.appendChild(hintEl);
+    tip.addEventListener('click',e=>{e.stopPropagation();tip.remove();});
+    document.body.appendChild(tip);
+    setTimeout(()=>{
+      const dismissOnAnyClick=(e)=>{
+        const t=document.getElementById('score-tooltip');
+        if(t){
+          e.preventDefault();
+          e.stopPropagation();
+          if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+          t.remove();
+        }
+        document.removeEventListener('click',dismissOnAnyClick,true);
+        document.removeEventListener('touchstart',dismissOnAnyClick,true);
+      };
+      document.addEventListener('click',dismissOnAnyClick,true);
+      document.addEventListener('touchstart',dismissOnAnyClick,true);
+    },100);
+  };
+  const start=(e)=>{
+    fired=false;
+    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
+  };
+  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
+  el.style.cursor='pointer';
+  el.addEventListener('touchstart',start,{passive:true});
+  el.addEventListener('touchend',cancel);
+  el.addEventListener('touchmove',cancel);
+  el.addEventListener('mousedown',start);
+  el.addEventListener('mouseup',cancel);
+  el.addEventListener('mouseleave',cancel);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 
 function extractBegruendung(text){
@@ -3974,106 +4012,7 @@ function cleanInvestmentLineV4189(accId){
   if(!inv || /konkreter Angebotspreis noch zu klären/i.test(inv))return '';
   return inv;
 }
-// v4.201: Kontextneutrale späte Phasen für Security/IT-Fälle.
-// Ziel: Phase 4/5 dürfen in Nicht-Sales-Cases keine KI21-/Discovery-/Deal-/Vermeidungsquote-Logik verwenden.
-function getPrimaryContactNameV4201(accId){
-  try{
-    const c=getActiveCust?getActiveCust():{};
-    if(c&&c.ap)return String(c.ap).trim();
-  }catch(e){}
-  const n=(accId&&getConfirmedDecisionMakerName(accId))||'';
-  return n||'Thomas Weber';
-}
-function extractSecurityInvestmentLinesV4201(){
-  const mu=LS.get('ki21_mu',{})||{};
-  const raw=[mu.profil||'',mu.bausteine||''].join('\n');
-  const lines=[];
-  const qc=raw.match(/Security\s+Quick\s+Check[^\n]{0,120}?(\d[\d\.\s,]*\s*€)/i) || raw.match(/Quick\s+Check[^\n]{0,120}?(\d[\d\.\s,]*\s*€)/i);
-  if(qc)lines.push('Security Quick Check: '+qc[1].replace(/\s+/g,' ').trim()+' einmalig als Bestandsaufnahme und Entscheidungsgrundlage');
-  const ms=raw.match(/Managed\s+Security[^\n]{0,160}?(\d[\d\.\s,]*\s*€\s*\/\s*Monat|\d[\d\.\s,]*\s*€\s*pro\s*Monat)/i);
-  if(ms)lines.push('Managed Security: '+ms[1].replace(/\s+/g,' ').trim()+' separat nach Scope- und Budgetentscheidung prüfen');
-  if(!lines.length){
-    const inv=cleanInvestmentLineV4189(state&&state.activeId?state.activeId:'');
-    if(inv)lines.push(inv);
-  }
-  return lines;
-}
-function hasTextV4201(accId,re){
-  return re.test(getCaseContextTextV4199(accId));
-}
-function buildStructuredSecurityPhase4OutputV4201(accId){
-  const name=getPrimaryContactNameV4201(accId);
-  const invs=extractSecurityInvestmentLinesV4201();
-  const effort=hasTextV4201(accId,/mehrere\s+Stunden\s+bis\s+Tage/i) ? 'mehrere Stunden bis Tage manueller Recherche pro Ad-hoc-Anfrage' : 'manueller Nachweis- und Rechercheaufwand noch zu quantifizieren';
-  const hasFive=hasTextV4201(accId,/5\s*(?:IT[-\s]?Personen|Personen|köpfig|er Team|IT-Mitarbeit)/i);
-  const itLine=hasFive?'5-köpfiges IT-Team stark im Tagesgeschäft gebunden; Security-Aufgaben laufen nebenbei':'IT-Ressourcen und Security-Zuständigkeiten noch konkretisieren';
-  const lines=[];
-  lines.push('EINSCHÄTZUNG');
-  lines.push('Der wirtschaftliche Nutzen ist plausibel, aber noch nicht belastbar berechenbar. Entscheidend ist, welche Sicherheitsnachweise der Großkunde bis wann fordert, welcher interne Aufwand heute entsteht und ob Geschäftsführung/CFO Budget für den Einstieg freigeben.');
-  lines.push('');
-  lines.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN');
-  lines.push('• Externer Trigger: Großkunde fordert nachvollziehbare IT-Sicherheitsnachweise; konkrete Anforderungen und Deadline noch schriftlich klären.');
-  lines.push('• Operativer Aufwand: '+effort+'.');
-  lines.push('• Ressourcenengpass: '+itLine+'.');
-  lines.push('• Entscheidungslogik: '+name+' ist fachlicher Sponsor; wirtschaftliche Freigabe liegt bei Geschäftsführung/CFO.');
-  lines.push('• Angebotslogik getrennt vom Nutzen: '+(invs.length?invs.join('; '):'Einstiegspreis und laufendes Modell separat klären')+'.');
-  lines.push('');
-  lines.push('🎯 ROI-WIRKSAME POSITIONEN');
-  lines.push('• Wichtigster Hebel: weniger manueller Nachweisaufwand, frühere Sichtbarkeit kritischer Sicherheitsrisiken und bessere Absicherung der Großkundenbeziehung.');
-  lines.push('• Bekannte Größenordnung: '+effort+'; Euro-Wert noch nicht validiert.');
-  lines.push('• Unsichere Annahme: wirtschaftliche Folge fehlender oder verspäteter Nachweise für Großkunde, Auditfähigkeit und interne Priorisierung.');
-  lines.push('• Validierungsfrage: Welche Nachweise erwartet der Großkunde bis wann, und welcher Aufwand oder welches Risiko entsteht, wenn sie nicht rechtzeitig belastbar vorliegen?');
-  lines.push('');
-  lines.push('💰 WIRTSCHAFTLICHER NUTZEN');
-  lines.push('• Laufender Nutzen: qualitativ plausibel, aber noch zu quantifizieren – Nachweisaufwand, Risikoexposition und geschäftliche Bedeutung der Großkundenanforderung validieren.');
-  if(invs.length)invs.forEach(v=>lines.push('• Investition: '+v+'.'));
-  else lines.push('• Investition: Angebotspreis und laufende Kosten separat klären.');
-  lines.push('• ROI: noch nicht belastbar berechenbar – es fehlen Deadline, konkrete Nachweise, Häufigkeit/Aufwand und wirtschaftliche Konsequenz.');
-  lines.push('');
-  lines.push('⚠️ DIE EINE SACHE DIE FEHLT');
-  lines.push('Konkrete Großkundenanforderung inklusive Deadline und wirtschaftlicher Konsequenz.');
-  lines.push('');
-  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
-  lines.push('Mit '+name+' die schriftliche Großkundenanforderung und Deadline beschaffen und klären, wie Geschäftsführung/CFO in die Budgetentscheidung eingebunden werden.');
-  lines.push('');
-  lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
-  lines.push('1. Großkundenanforderung schriftlich beschaffen: Nachweise, Deadline, Audit- oder Zertifizierungsbezug.');
-  lines.push('2. Mit '+name+' den GF/CFO-Zugang abstimmen und den Security Quick Check als mögliche Entscheidungsgrundlage positionieren.');
-  return lines.join('\n');
-}
-function buildStructuredSecurityPhase5OutputV4201(accId){
-  const name=getPrimaryContactNameV4201(accId);
-  const invs=extractSecurityInvestmentLinesV4201();
-  const lines=[];
-  lines.push('EINSCHÄTZUNG');
-  lines.push('Die Opportunity ist für einen begrenzten Security Quick Check vorbereitet, wenn Großkundenanforderung, Deadline und wirtschaftlicher Entscheider bestätigt sind. Das laufende Managed-Security-Modell bleibt ein Folgeschritt nach Scope- und Budgetklärung.');
-  lines.push('');
-  lines.push('KAUFARGUMENTE');
-  lines.push('• Der Großkunde liefert einen externen Trigger, der IT-Sicherheit zum Geschäftsführungsthema macht.');
-  lines.push('• Der Quick Check schafft schnell Transparenz über Patchstände, Backup-Recovery, M365-Alerts und offene Nachweislücken.');
-  lines.push('• Die interne IT wird entlastet, weil Risiken und Nachweise strukturiert aufbereitet werden statt ad hoc zusammengesucht.');
-  if(invs.length)invs.forEach(v=>lines.push('• Investitionslogik: '+v+'.'));
-  lines.push('');
-  lines.push('EINWÄNDE');
-  lines.push('• „Wir kennen den ROI noch nicht.“ → Genau deshalb startet der Quick Check als Bestandsaufnahme und Entscheidungsgrundlage, nicht als große Dauerbindung.');
-  lines.push('• „Das kann unsere IT selbst.“ → Die Frage ist nicht Kompetenz, sondern Kapazität, Standardisierung und Nachweisfähigkeit gegenüber Großkunde und Geschäftsführung.');
-  lines.push('• „Budget ist noch offen.“ → Dann muss zuerst geklärt werden, welche geschäftliche Relevanz die Großkundenanforderung hat.');
-  lines.push('');
-  lines.push('OFFENE PUNKTE');
-  lines.push('• Schriftliche Großkundenanforderung und Deadline beschaffen.');
-  lines.push('• GF/CFO als wirtschaftlichen Entscheider einbinden.');
-  lines.push('• Scope des Quick Checks auf Nachweise, Risiken und Management-Report fokussieren.');
-  lines.push('');
-  lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
-  lines.push('Mit '+name+' einen Vorbereitungstermin vereinbaren und danach GF/CFO für die Entscheidung zum Security Quick Check einbinden.');
-  lines.push('');
-  lines.push('DER EINE ABSCHLUSSSATZ');
-  lines.push('Der Quick Check schafft die belastbare Grundlage, um die Großkundenanforderung sauber zu beantworten und über laufende Sicherheitsüberwachung faktenbasiert zu entscheiden.');
-  return lines.join('\n');
-}
-
 function buildStructuredPhase4OutputV4189(accId){
-  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase4OutputV4201(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4120,7 +4059,6 @@ function buildStructuredPhase4OutputV4189(accId){
   return lines.join('\n');
 }
 function buildStructuredPhase5OutputV4189(accId){
-  if(isSecurityItUseCaseV4199(accId))return buildStructuredSecurityPhase5OutputV4201(accId||'');
   const facts=extractKnownBusinessFacts(accId||'');
   const dec=(accId&&getConfirmedDecisionMakerName(accId))||'dem bestätigten Entscheider';
   const authority=accId&&(hasConfirmedFullDecisionAuthority(accId)||hasAuthoritySignalInHealth(getOpportunityHealth(accId))||hasExplicitAuthorityText(accId));
@@ -4258,7 +4196,7 @@ function cleanPhase2Output(text){
 
 
 
-// v4.206: Kontext-Erkennung und generische Cleaner.
+// v4.200: Kontext-Erkennung und generische Cleaner.
 function getCaseContextTextV4199(accId){
   const c=getActiveCust?getActiveCust():{};
   const mu=LS.get('ki21_mu',{});
@@ -4749,7 +4687,12 @@ function showBottomSheet(title, items, emptyText){
   };
   overlay.addEventListener('click',close);
 
-  // v4.206: kein Swipe-Handler; Bottom-Sheet schließt nur über Overlay-Click.
+  // Swipe-down to dismiss
+  let startY=0;
+  panel.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;},{passive:true});
+  panel.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY-startY>60)close();
+  },{passive:true});
 
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
@@ -4827,9 +4770,9 @@ function renderHome(){
 
   setTimeout(()=>{
     renderHealthBadgeIfPresent();
-    // v4.206: Kein automatischer API-Call direkt beim Seitenaufbau.
-    // Auf iPhone/Brave wirkte das bei schlechter Verbindung wie ein hängender Start.
-    // Health wird nach Generierungen/Ergänzungen weiterhin explizit aktualisiert.
+    if(aid&&cust.firma&&!LS.get('ki21_health_'+aid,null)){
+      refreshOpportunityHealth(aid);
+    }
   },0);
 
   const health=aid?getOpportunityHealth(aid):null;
@@ -4898,7 +4841,7 @@ function renderHome(){
     if(!aid)return;
     const acc=state.accounts.find(a=>a.id===aid);
     if(acc)showNeuerKunde(acc.cust,acc.id,'kontext');
-  }},'＋ Ergänzung');
+  }},'＋ Erkenntnis');
 
   const smartPending=aid?LS.get('ki21_smart_pending_'+aid,null):null;
   const updateBtn=h('button',{
@@ -5321,14 +5264,6 @@ function exportAutopilotPDF(cust,dossierResults){
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11px !important;line-height:1.22 !important;margin-bottom:7px !important;-webkit-line-clamp:2 !important;}
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
-
-
-/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
-button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: rgba(255,107,0,.18);
-}
-.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
 
 </style></head><body>
   <h1>🔍 Opportunity-Vorschau</h1>
@@ -5756,10 +5691,10 @@ function renderStation(sitId){
   const nav=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand',style:{display:'flex',alignItems:'center',gap:'6px'}},
-        h('button',{onclick:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
-        h('button',{onclick:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
+        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
+        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
       ),
-      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
+      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200,ontouchend:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
     ),
     h('div',{className:'cockpit-header-right'},
       health2?h('div',{
@@ -6121,9 +6056,7 @@ function renderStation(sitId){
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}generate();}},genLabels[sitId]||'⚡ KI21 generieren');
   const genRow=h('div',{className:'gen-row'});
-  const addPhaseBtn=h('button',{className:'btn',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}showStkModal(sitId,sit.title);}},'＋ Ergänzung');
   genRow.appendChild(genBtn);
-  genRow.appendChild(addPhaseBtn);
 
   if(sitId===0){
     // Visuelle Harmonisierung mit dem Dashboard oben: gleiche Karten-Hülle (home-hero),
@@ -6418,9 +6351,9 @@ function renderStation(sitId){
         const finalResult=(sitId===1)
           ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
           :((sitId===3)
-            ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4201(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
+            ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
             :((sitId===4)
-              ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase5OutputV4201(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
+              ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
               :result));
         data.result=finalResult;
         data.prompt=prompt;
@@ -6968,14 +6901,6 @@ function generateKundePDF(aid, cust){
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
 
-
-/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
-button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: rgba(255,107,0,.18);
-}
-.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
-
 </style></head><body>
   <h1>Vertriebsdossier</h1>
   <div class="meta">
@@ -7115,14 +7040,6 @@ function showPDF(title,text,cust){
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11px !important;line-height:1.22 !important;margin-bottom:7px !important;-webkit-line-clamp:2 !important;}
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
-
-
-/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
-button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: rgba(255,107,0,.18);
-}
-.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
 
 </style>
 </head><body>
@@ -7395,7 +7312,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.206';
+const KI21_VERSION='v4.207';
 
 
 function runKi21VersionMigration(){
