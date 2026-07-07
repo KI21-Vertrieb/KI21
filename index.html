@@ -624,6 +624,14 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
   .cockpit-phase-row{min-height:27px !important;padding:3.8px 8px !important;margin-bottom:3.5px !important;}
 }
 
+
+/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
+button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,107,0,.18);
+}
+.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
+
 </style>
 </head>
 <body>
@@ -767,14 +775,15 @@ const savedAid = LS.get('ki21_aid',null);
 if(state.accounts.find(a=>a.id===savedAid)) state.activeId=savedAid;
 
 function goHomeV4200(e){
+  // v4.206: native click only. Keine Touch-Simulation, kein aggressives stopPropagation.
   try{
-    if(e){e.preventDefault();e.stopPropagation();}
+    if(e&&e.preventDefault)e.preventDefault();
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     state.view='home';
     LS.set('ki21_view','home');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
-    setTimeout(()=>renderHome(),0);
+    renderHome();
   }catch(err){
     try{renderHome();}catch(e2){}
   }
@@ -1611,56 +1620,10 @@ function getScoreLabel(){
 }
 
 function attachScoreLongPress(el,begruendung){
-  if(!begruendung)return;
-  let pressTimer=null;
-  let fired=false;
-  const showTooltip=()=>{
-    const existing=document.getElementById('score-tooltip');
-    if(existing)existing.remove();
-    const tip=document.createElement('div');
-    tip.id='score-tooltip';
-    tip.style.cssText='position:fixed;top:50px;left:14px;right:14px;background:#1c2333;'+
-      'border:1px solid #ff6b00;border-radius:8px;padding:10px 12px;font-size:12px;'+
-      'color:#e6edf3;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;'+
-      '-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;';
-    const textEl=document.createElement('div');
-    textEl.textContent=begruendung;
-    const hintEl=document.createElement('div');
-    hintEl.textContent='Tippen zum Schließen';
-    hintEl.style.cssText='font-size:9px;color:#8b949e;margin-top:6px;text-align:right;';
-    tip.appendChild(textEl);
-    tip.appendChild(hintEl);
-    tip.addEventListener('click',e=>{e.stopPropagation();tip.remove();});
-    document.body.appendChild(tip);
-    setTimeout(()=>{
-      const dismissOnAnyClick=(e)=>{
-        const t=document.getElementById('score-tooltip');
-        if(t){
-          e.preventDefault();
-          e.stopPropagation();
-          if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-          t.remove();
-        }
-        document.removeEventListener('click',dismissOnAnyClick,true);
-        document.removeEventListener('touchstart',dismissOnAnyClick,true);
-      };
-      document.addEventListener('click',dismissOnAnyClick,true);
-      document.addEventListener('touchstart',dismissOnAnyClick,true);
-    },100);
-  };
-  const start=(e)=>{
-    fired=false;
-    pressTimer=setTimeout(()=>{fired=true;showTooltip();},500);
-  };
-  const cancel=()=>{if(pressTimer)clearTimeout(pressTimer);};
-  el.style.cursor='pointer';
-  el.addEventListener('touchstart',start,{passive:true});
-  el.addEventListener('touchend',cancel);
-  el.addEventListener('touchmove',cancel);
-  el.addEventListener('mousedown',start);
-  el.addEventListener('mouseup',cancel);
-  el.addEventListener('mouseleave',cancel);
-  el.addEventListener('contextmenu',e=>e.preventDefault());
+  // v4.206: deaktiviert. Der frühere Long-Press-Tooltip registrierte globale
+  // touchstart/click-Capture-Handler und konnte auf iOS/Brave normale Taps blockieren.
+  // Health-Details bleiben über den Score-Badge-Click im Cockpit verfügbar.
+  return;
 }
 
 function extractBegruendung(text){
@@ -4295,7 +4258,7 @@ function cleanPhase2Output(text){
 
 
 
-// v4.205: Kontext-Erkennung und generische Cleaner.
+// v4.206: Kontext-Erkennung und generische Cleaner.
 function getCaseContextTextV4199(accId){
   const c=getActiveCust?getActiveCust():{};
   const mu=LS.get('ki21_mu',{});
@@ -4786,12 +4749,7 @@ function showBottomSheet(title, items, emptyText){
   };
   overlay.addEventListener('click',close);
 
-  // Swipe-down to dismiss
-  let startY=0;
-  panel.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;},{passive:true});
-  panel.addEventListener('touchend',e=>{
-    if(e.changedTouches[0].clientY-startY>60)close();
-  },{passive:true});
+  // v4.206: kein Swipe-Handler; Bottom-Sheet schließt nur über Overlay-Click.
 
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
@@ -4869,9 +4827,9 @@ function renderHome(){
 
   setTimeout(()=>{
     renderHealthBadgeIfPresent();
-    if(aid&&cust.firma&&!LS.get('ki21_health_'+aid,null)){
-      refreshOpportunityHealth(aid);
-    }
+    // v4.206: Kein automatischer API-Call direkt beim Seitenaufbau.
+    // Auf iPhone/Brave wirkte das bei schlechter Verbindung wie ein hängender Start.
+    // Health wird nach Generierungen/Ergänzungen weiterhin explizit aktualisiert.
   },0);
 
   const health=aid?getOpportunityHealth(aid):null;
@@ -5364,6 +5322,14 @@ function exportAutopilotPDF(cust,dossierResults){
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
 
+
+/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
+button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,107,0,.18);
+}
+.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
+
 </style></head><body>
   <h1>🔍 Opportunity-Vorschau</h1>
   <div class="meta">${cust.firma||'–'} | Erstellt: ${new Date().toLocaleDateString('de-DE')}</div>
@@ -5790,10 +5756,10 @@ function renderStation(sitId){
   const nav=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('div',{className:'cockpit-brand',style:{display:'flex',alignItems:'center',gap:'6px'}},
-        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
-        h('button',{onclick:goHomeV4200,ontouchend:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
+        h('button',{onclick:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'18px',padding:'4px 6px 4px 0',cursor:'pointer',lineHeight:'1',minWidth:'28px'}},'←'),
+        h('button',{onclick:goHomeV4200,style:{background:'none',border:'none',color:'#ff6b00',fontSize:'13px',fontWeight:'800',letterSpacing:'2px',padding:'4px 8px 4px 0',cursor:'pointer',lineHeight:'1'}},'KI21')
       ),
-      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200,ontouchend:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
+      cust.firma?h('div',{className:'cockpit-opp-name',onclick:goHomeV4200},SITS[sitId].title):h('div',{className:'cockpit-opp-placeholder'},'–')
     ),
     h('div',{className:'cockpit-header-right'},
       health2?h('div',{
@@ -7002,6 +6968,14 @@ function generateKundePDF(aid, cust){
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
 
+
+/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
+button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,107,0,.18);
+}
+.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
+
 </style></head><body>
   <h1>Vertriebsdossier</h1>
   <div class="meta">
@@ -7141,6 +7115,14 @@ function showPDF(title,text,cust){
 .cockpit-next-text,.cockpit-next-placeholder{font-size:11px !important;line-height:1.22 !important;margin-bottom:7px !important;-webkit-line-clamp:2 !important;}
 .cockpit-tile{padding:9px 9px !important;}
 .cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
+
+
+/* v4.206: iOS/Brave stabile native Tap-Logik; keine synthetischen Touch-Handler. */
+button, .btn, .btn-o, [onclick], .cockpit-phase, .cockpit-tile, .pill, .nav-item{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,107,0,.18);
+}
+.bs-overlay:not(.visible), .bs-panel:not(.visible){pointer-events:none !important;}
 
 </style>
 </head><body>
@@ -7413,7 +7395,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.205';
+const KI21_VERSION='v4.206';
 
 
 function runKi21VersionMigration(){
