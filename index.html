@@ -440,6 +440,13 @@ select option{background:var(--bg3);}
 .cockpit-phase-row:active .cockpit-phase-chevron{color:#ff6b00;opacity:1;}
 .phase-nav .btn{touch-action:manipulation;}
 
+/* v4.203: Mobile-Klickschutz – unsichtbare Sheets dürfen keine Klicks blockieren */
+button,.btn,.btn-o,.cockpit-phase-row,.cockpit-tile,.cockpit-tile-item,.cockpit-next-card,.cockpit-opp-name,.cockpit-score-badge{touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,107,0,.18);}
+.bs-overlay:not(.visible),.bs-panel:not(.visible){pointer-events:none !important;}
+.ki21-action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;margin-top:2px;}
+.ki21-action-row .btn-o,.ki21-action-row .btn{flex:0 0 auto;}
+
+
 
 
 /* v4.142: Executive Dashboard Visual Polish - Mockup-Richtung ohne neue Funktionen */
@@ -776,12 +783,26 @@ function goHomeV4202(e){
     LS.set('ki21_view','home');
     state.cockpitFocus=null;
     if(state.activeId)LS.set('ki21_cockpit_focus_'+state.activeId,null);
+    cleanupBlockingOverlaysV4203(true);
     renderHome();
   }catch(err){
     try{renderHome();}catch(e2){}
   }
 }
 function goHomeV4200(e){return goHomeV4202(e);}
+
+
+function cleanupBlockingOverlaysV4203(force){
+  // v4.203: Sicherheitsnetz gegen hängende Overlays/Bottom-Sheets, die auf iPhone/Brave Klicks abfangen können.
+  try{
+    document.querySelectorAll('.bs-overlay,.bs-panel').forEach(el=>{
+      if(force || !el.classList.contains('visible')) el.remove();
+    });
+    // Alte Tooltip-Capture-Handler lassen sich nicht direkt entfernen; der sichtbare Tooltip selbst aber schon.
+    const tip=document.getElementById('score-tooltip');
+    if(tip)tip.remove();
+  }catch(e){}
+}
 
 // ── BUILD CONTEXT ───────────────────────────────────────────
 function buildCtx(cust,mu,kk,stk,currentSitId){
@@ -1525,7 +1546,7 @@ function h(tag,attrs,...children){
 function modal(title,content,onClose){
   const bg=h('div',{className:'modal-bg'});
   bg.addEventListener('click',e=>{if(e.target===bg){bg.remove();if(onClose)onClose();}});
-  const box=h('div',{className:'modal-box'},
+  const box=h('div',{className:'modal-box',onclick:(e)=>e.stopPropagation()},
     h('div',{className:'modal-handle'}),
     h('div',{className:'modal-title'},title),
     content
@@ -4800,9 +4821,11 @@ function showBottomSheet(title, items, emptyText){
   panel.appendChild(body);
 
   const close=()=>{
+    overlay.style.pointerEvents='none';
+    panel.style.pointerEvents='none';
     overlay.classList.remove('visible');
     panel.classList.remove('visible');
-    setTimeout(()=>{overlay.remove();panel.remove();},280);
+    setTimeout(()=>{overlay.remove();panel.remove();},80);
   };
   overlay.addEventListener('click',close);
 
@@ -4882,6 +4905,7 @@ function buildCockpitTileHeader(label){
 }
 
 function renderHome(){
+  cleanupBlockingOverlaysV4203(false);
   const cust=getActiveCust();
   const aid=state.activeId;
   const app=document.getElementById('app');
@@ -4960,7 +4984,7 @@ function renderHome(){
     if(!aid)return;
     const acc=state.accounts.find(a=>a.id===aid);
     if(acc)showNeuerKunde(acc.cust,acc.id,'kontext');
-  }},'＋ Erkenntnis');
+  }},'＋ Ergänzung');
 
   const smartPending=aid?LS.get('ki21_smart_pending_'+aid,null):null;
   const updateBtn=h('button',{
@@ -5760,6 +5784,7 @@ function showSpinBulkPasteModalV4199({spinQuestions,spinLetters,taRefs,data,KEY,
 }
 
 function renderStation(sitId){
+  cleanupBlockingOverlaysV4203(false);
   state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
@@ -6174,8 +6199,10 @@ function renderStation(sitId){
   // Generate button
   const genLabels=['⚡ Lead-Steckbrief generieren','⚡ Bedarfsanalyse & Demo generieren','⚡ Besuchsbericht generieren','⚡ Nutzen-Kosten-Analyse generieren','⚡ Abschlussstrategie generieren'];
   const genBtn=h('button',{className:'btn-o',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}generate();}},genLabels[sitId]||'⚡ KI21 generieren');
-  const genRow=h('div',{className:'gen-row'});
+  const genRow=h('div',{className:'gen-row ki21-action-row'});
+  const addPhaseBtn=h('button',{className:'btn',onclick:(e)=>{if(e){e.preventDefault();e.stopPropagation();}showStkModal(sitId,sit.title);}},'＋ Ergänzung');
   genRow.appendChild(genBtn);
+  genRow.appendChild(addPhaseBtn);
 
   if(sitId===0){
     // Visuelle Harmonisierung mit dem Dashboard oben: gleiche Karten-Hülle (home-hero),
@@ -7431,7 +7458,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.202';
+const KI21_VERSION='v4.203';
 
 
 function runKi21VersionMigration(){
