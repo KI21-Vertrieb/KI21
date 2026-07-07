@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.208: True mobile safe mode. Removes active touch handlers, disables automatic health/network calls on render, keeps native clicks only. -->
+<!-- v4.209: True mobile safe mode. Removes active touch handlers, disables automatic health/network calls on render, keeps native clicks only. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -626,7 +626,7 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 }
 
 
-/* v4.208 mobile safe mode: native taps only, no custom touch interception */
+/* v4.209 mobile safe mode: native taps only, no custom touch interception */
 button, [onclick], .phase-row, .cockpit-tile-item, .cockpit-opp-name, .btn, .btn-o, textarea, input { touch-action: manipulation; }
 .bs-overlay:not(.visible){ pointer-events:none !important; }
 </style>
@@ -1616,7 +1616,7 @@ function getScoreLabel(){
 }
 
 function attachScoreLongPress(el,begruendung){
-  // v4.208: Mobile-Safe-Mode. No long-press/touch handlers.
+  // v4.209: Mobile-Safe-Mode. No long-press/touch handlers.
   // The previous implementation installed capture-phase touch/click listeners that could swallow taps on iPhone/Brave.
   return;
 }
@@ -4643,7 +4643,7 @@ function showBottomSheet(title, items, emptyText){
     setTimeout(()=>{overlay.remove();panel.remove();},280);
   };
   overlay.addEventListener('click',close);
-  // v4.208: no touch/swipe handlers in mobile safe mode.
+  // v4.209: no touch/swipe handlers in mobile safe mode.
 
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
@@ -4721,7 +4721,7 @@ function renderHome(){
 
   setTimeout(()=>{
     renderHealthBadgeIfPresent();
-    // v4.208: Keine automatische Health-/API-Berechnung beim Rendern.
+    // v4.209: Keine automatische Health-/API-Berechnung beim Rendern.
     // Mobile Start/Navigation muss ohne Netzwerk-Call sofort bedienbar bleiben.
   },0);
 
@@ -7262,7 +7262,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.208';
+const KI21_VERSION='v4.209';
 
 
 function runKi21VersionMigration(){
@@ -7750,6 +7750,111 @@ function showImport(){
   const m=modal('Importieren',content,null);
 }
 
+
+
+// ── v4.209 DIAGNOSE / SAFE START ─────────────────────────────────────
+// Ziel: Erst sichere, klickbare Shell rendern. Keine automatische Cockpit-, Health-
+// oder Phasenverarbeitung beim Seitenstart. Der Nutzer entscheidet aktiv, was geladen wird.
+const KI21_SAFE_START=true;
+
+function ki21SafeRemoveBlockingUi(){
+  try{
+    document.querySelectorAll('.bs-overlay,.bs-panel,.modal-backdrop,.modal,.ki21-loading,.loading,[data-ki21-transient="1"]').forEach(el=>{
+      try{el.remove();}catch(e){}
+    });
+    document.body.classList.remove('modal-open','sheet-open','loading','is-loading');
+    document.documentElement.classList.remove('modal-open','sheet-open','loading','is-loading');
+  }catch(e){}
+}
+
+function ki21SafeLocalStorageStats(){
+  let keys=0, bytes=0, ki21Keys=0, ki21Bytes=0, largest=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i)||'';
+      const v=localStorage.getItem(k)||'';
+      const b=(k.length+v.length)*2;
+      keys++; bytes+=b;
+      if(k.indexOf('ki21_')===0){
+        ki21Keys++; ki21Bytes+=b;
+        largest.push({k,b});
+      }
+    }
+    largest.sort((a,b)=>b.b-a.b);
+  }catch(e){}
+  return {keys,bytes,ki21Keys,ki21Bytes,largest:largest.slice(0,5)};
+}
+
+function ki21FmtBytes(n){
+  if(!n)return '0 KB';
+  if(n<1024)return n+' B';
+  if(n<1024*1024)return Math.round(n/1024)+' KB';
+  return (n/1024/1024).toFixed(1)+' MB';
+}
+
+function ki21SafeResetUiState(){
+  ki21SafeRemoveBlockingUi();
+  try{
+    const remove=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i)||'';
+      if(/^ki21_(view|cockpit_focus_|pending_|loading|modal|sheet|overlay|ui_|route|last_render)/.test(k))remove.push(k);
+    }
+    remove.forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+  try{LS.set('ki21_view','home');}catch(e){}
+}
+
+function renderKi21SafeStart(){
+  const app=document.getElementById('app');
+  if(!app)return;
+  ki21SafeRemoveBlockingUi();
+  const stats=ki21SafeLocalStorageStats();
+  let accCount=0, active='';
+  try{accCount=(state.accounts||[]).length; active=state.activeId||LS.get('ki21_aid','')||'';}catch(e){}
+  app.innerHTML='';
+  const wrap=h('div',{className:'wrap',style:{paddingTop:'18px'}},
+    h('div',{style:{fontSize:'11px',fontWeight:'900',letterSpacing:'1.6px',color:'#ff6b00',textTransform:'uppercase',marginBottom:'6px'}},'KI21 Diagnose-Start · v4.209'),
+    h('div',{style:{fontFamily:"'DM Serif Display',serif",fontSize:'25px',lineHeight:'1.12',marginBottom:'10px'}},'Safe Start'),
+    h('div',{style:{fontSize:'13px',lineHeight:'1.5',color:'var(--text2)',marginBottom:'14px'}},
+      'Die App lädt zuerst nur diese klickbare Shell. Cockpit, Health und Phasen werden erst nach deinem Klick verarbeitet.'),
+    h('div',{style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'12px',marginBottom:'12px'}},
+      h('div',{style:{fontSize:'11px',fontWeight:'800',color:'var(--text3)',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'8px'}},'Diagnose'),
+      h('div',{style:{fontSize:'12px',lineHeight:'1.55'}},
+        'Opportunities: '+accCount+'\n',h('br'),
+        'Aktive Opportunity: '+(active||'keine') ,h('br'),
+        'localStorage gesamt: '+stats.keys+' Keys / '+ki21FmtBytes(stats.bytes),h('br'),
+        'KI21-Daten: '+stats.ki21Keys+' Keys / '+ki21FmtBytes(stats.ki21Bytes)
+      )
+    ),
+    h('button',{className:'btn-o',style:{width:'100%',marginBottom:'8px',minHeight:'44px'},onclick:()=>{
+      ki21SafeRemoveBlockingUi();
+      try{LS.set('ki21_view','home');}catch(e){}
+      renderHome();
+    }},'Opportunity laden'),
+    h('button',{className:'btn',style:{width:'100%',marginBottom:'8px',minHeight:'44px'},onclick:()=>{
+      ki21SafeRemoveBlockingUi();
+      try{LS.set('ki21_view','home');}catch(e){}
+      renderHome();
+      setTimeout(()=>{try{renderHealthBadgeIfPresent();}catch(e){}},0);
+    }},'Cockpit öffnen / aktualisieren'),
+    h('button',{className:'btn',style:{width:'100%',marginBottom:'8px',minHeight:'44px'},onclick:()=>{
+      ki21SafeResetUiState();
+      renderKi21SafeStart();
+      alert('UI-Zustand zurückgesetzt. Opportunity-Daten wurden nicht gelöscht.');
+    }},'UI-Zustand zurücksetzen'),
+    h('button',{className:'btn',style:{width:'100%',marginBottom:'12px',minHeight:'44px'},onclick:()=>{
+      const s=ki21SafeLocalStorageStats();
+      const lines=s.largest.map(x=>x.k+' · '+ki21FmtBytes(x.b)).join('\n')||'Keine KI21-Daten gefunden.';
+      alert('Größte KI21-Speicherblöcke:\n\n'+lines);
+    }},'Speicherblöcke anzeigen'),
+    h('div',{style:{fontSize:'11px',color:'var(--text3)',lineHeight:'1.45'}},
+      'Hinweis: Wenn bereits dieser Safe-Start langsam oder nicht klickbar ist, liegt das Problem sehr wahrscheinlich außerhalb der Phasen-/Health-Logik, z. B. Browser-Cache, Hosting oder ein übergroßer gespeicherter Zustand.'
+    )
+  );
+  app.appendChild(wrap);
+}
+
 // ── START ──────────────────────────────────────────────────
 // Apply saved font size
 const savedFs=LS.get('ki21_fontsize','small');
@@ -7761,7 +7866,9 @@ if(savedTheme==='light')document.body.classList.add('light');
 runKi21VersionMigration();
 
 const savedView=LS.get('ki21_view','home');
-if(typeof savedView==='number'&&state.activeId){
+if(KI21_SAFE_START){
+  renderKi21SafeStart();
+} else if(typeof savedView==='number'&&state.activeId){
   renderStation(savedView);
 } else {
   renderHome();
