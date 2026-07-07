@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.216 Quality Candidate: konsolidierter stabiler Arbeitsstand; lazy Cockpit, keine Touch-Sonderlogik. -->
+<!-- v4.217 Cockpit Candidate: konsolidierter stabiler Arbeitsstand; lazy Cockpit, keine Touch-Sonderlogik. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -629,6 +629,26 @@ html,body{background:radial-gradient(circle at 50% -10%,rgba(255,107,0,.055),tra
 /* v4.210 standalone safe mode: native taps only, no custom touch interception */
 button, [onclick], .phase-row, .cockpit-tile-item, .cockpit-opp-name, .btn, .btn-o, textarea, input { touch-action: manipulation; }
 .bs-overlay:not(.visible){ pointer-events:none !important; }
+
+
+/* v4.217 Cockpit Candidate: luftigeres Fullscreen-Cockpit + reine Navigationslinks in Phasen */
+body .cockpit-grid{gap:14px !important;margin-bottom:18px !important;}
+body .cockpit-tile{min-height:154px !important;padding:16px 15px 15px !important;border-radius:18px !important;}
+body .cockpit-tile-header{margin-bottom:12px !important;}
+body .cockpit-tile-label{font-size:9.5px !important;letter-spacing:1.55px !important;}
+body .cockpit-tile-expand{width:19px !important;height:19px !important;font-size:13px !important;opacity:.72 !important;}
+body .cockpit-tile-item{display:block;width:100%;text-align:left;background:transparent;border:0;font-family:inherit;position:relative;z-index:1;font-size:11.8px !important;line-height:1.36 !important;margin:0 0 9px !important;padding:0 16px 0 13px !important;color:#edf2f7 !important;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+body .cockpit-tile-item:last-child{margin-bottom:0 !important;}
+body .cockpit-tile-item::before{content:'·';position:absolute;left:2px;top:0;color:rgba(230,237,243,.45) !important;}
+body .cockpit-tile-link::after{content:'›';position:absolute;right:1px;top:0;color:rgba(230,237,243,.34);font-weight:900;font-size:15px;line-height:1.35;}
+body .cockpit-tile-link:active{color:#fff !important;background:rgba(255,255,255,.045);border-radius:8px;}
+body .cockpit-empty{font-size:11.8px !important;line-height:1.38 !important;color:rgba(230,237,243,.52) !important;}
+body .cockpit-next-card{margin-bottom:16px !important;}
+@media(max-width:390px){
+  body .cockpit-grid{gap:12px !important;}
+  body .cockpit-tile{min-height:148px !important;padding:15px 13px 14px !important;}
+  body .cockpit-tile-item{font-size:11.4px !important;line-height:1.34 !important;margin-bottom:8px !important;}
+}
 </style>
 </head>
 <body>
@@ -759,7 +779,7 @@ function buildSimplePdfHtml(title,text,cust){
 }
 
 // ── STATE ──────────────────────────────────────────────────
-// v4.216 Quality Candidate: Start lädt nur den minimal nötigen Opportunity-State.
+// v4.217 Cockpit Candidate: Start lädt nur den minimal nötigen Opportunity-State.
 // Cockpit/Health werden lazy und nie automatisch beim Navigieren berechnet.
 const state={
   view:'home-lite',
@@ -4884,17 +4904,17 @@ function getCockpitWorkTarget(kind,text){
 
   if(kind==='question'){
     phaseId=1;section='Discovery & Demo';hint='Nutze diese Frage im nächsten Termin und dokumentiere die Antwort im Arbeitsbereich.';
-  } else if(/business case|nutzen|roi|vermeidungsquote|wirtschaft|kennzahl|messbar|effekt|kosten|impact/.test(t)){
-    phaseId=3;section='Nutzen / ROI';hint='Validiere hier wirtschaftlichen Nutzen, Kennzahlen und Belastbarkeit des Business Case.';
-  } else if(/vertrags|vertrag|beschaffung|einkauf|angebot|abschluss|paper|freigabe|beauftragung/.test(t)){
-    phaseId=4;section='Angebot';hint='Kläre hier Vertrags-, Beschaffungs- und Abschlussprozess.';
+  } else if(/quick check|managed security|angebot|abschluss|vertrag|vertrags|beschaffung|einkauf|paper|freigabe|beauftragung|einwand/.test(t)){
+    phaseId=4;section='Angebot';hint='Bearbeite hier Angebot, Freigabe, Einwände und nächsten Abschluss-Schritt.';
+  } else if(/business case|nutzen|roi|vermeidungsquote|wirtschaft|kennzahl|messbar|effekt|kosten|impact|umsatz|lieferantenreview|review|audit|deadline|großkunde|nachweis/.test(t)){
+    phaseId=3;section='Nutzen / ROI';hint='Validiere hier wirtschaftliche Relevanz, Nutzenhebel, Nachweise und Belastbarkeit.';
   } else if(/pilot|start|termin|nächster schritt|nachbereitung|follow-up|verbindlich/.test(t)){
     phaseId=2;section='Nachbereitung';hint='Kläre hier den nächsten verbindlichen Schritt und dokumentiere Zusagen.';
-  } else if(/discovery|frage|informationen|nachqualifizierung|hubspot|notizen|e-mail|demo|zeigen|bedarf|schmerz/.test(t)){
-    phaseId=1;section='Discovery & Demo';hint='Kläre hier Bedarf, Discovery-Fragen und Demo-Fokus.';
-  } else if(/wettbewerb|mitbewerb|konkurrent|alternative|einwand/.test(t)){
+  } else if(/discovery|frage|informationen|nachqualifizierung|hubspot|notizen|e-mail|demo|zeigen|bedarf|schmerz|patch|backup|m365|security|sicherheits|ad-hoc|management-report|report|operativ|ressource|kapazität/.test(t)){
+    phaseId=1;section='Discovery & Demo';hint='Kläre hier Bedarf, Schmerz, Nachweise und konkrete Gesprächsfragen.';
+  } else if(/wettbewerb|mitbewerb|konkurrent|alternative/.test(t)){
     phaseId=4;section='Angebot';hint='Bearbeite hier Wettbewerbsrisiko, Einwandbehandlung und Abschlussstrategie.';
-  } else if(/entscheider|entscheidungsbefugnis|budget|sponsor|champion|fürsprecher|qualifiz/.test(t)){
+  } else if(/entscheider|entscheidungsbefugnis|budget|sponsor|champion|fürsprecher|qualifiz|geschäftsführung|geschäftsführer|cfo|leiter/.test(t)){
     phaseId=0;section='Qualifizierung';hint='Prüfe hier Qualifizierung, Entscheiderstatus und zentrale Deal-Grundlagen.';
   }
 
@@ -4983,7 +5003,7 @@ function renderHomeLiteV4211(){
   });
   wrap.appendChild(phaseList);
 
-  // v4.216 Quality Candidate: sichtbarer Cockpit-Zugang außerhalb der kompakten Top-Card.
+  // v4.217 Cockpit Candidate: sichtbarer Cockpit-Zugang außerhalb der kompakten Top-Card.
   // Die Top-Card blendet sekundäre Buttons auf Mobile aus; deshalb steht der bewusste
   // Cockpit-Start als eigener Button unter der Phasenliste. Keine automatische Berechnung.
   wrap.appendChild(h('button',{
@@ -5038,22 +5058,25 @@ function renderCockpitSnapshotLiteV4215(){
     )
   ));
   const grid=h('div',{className:'cockpit-grid'});
-  const mkTile=(label,items,empty)=>{
-    const tile=h('div',{className:'cockpit-tile'});
+  const mkTile=(label,items,empty,kind,maxItems)=>{
+    const tile=h('div',{className:'cockpit-tile cockpit-tile-linked'});
     tile.appendChild(buildCockpitTileHeader(label));
-    const arr=(items||[]).map(clean).filter(Boolean).slice(0,4);
-    if(arr.length)arr.forEach(t=>tile.appendChild(h('div',{className:'cockpit-tile-item'},t)));
+    const arr=(items||[]).map(clean).filter(Boolean).slice(0,maxItems||5);
+    if(arr.length)arr.forEach(t=>{
+      const item=h('button',{type:'button',className:'cockpit-tile-item cockpit-tile-link',onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
+      tile.appendChild(item);
+    });
     else tile.appendChild(h('div',{className:'cockpit-empty'},empty));
     return tile;
   };
-  grid.appendChild(mkTile('Erkenntnisse',pos,'Noch keine gespeicherten Erkenntnisse.'));
-  grid.appendChild(mkTile('Risiken / Bremsen',warn,'Noch keine gespeicherten Risiken.'));
-  grid.appendChild(mkTile('Die eine Sache, die fehlt',open.slice(0,1),'Noch kein offener Hauptpunkt gespeichert.'));
-  grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(1,5),'Noch keine gespeicherten Fragen.'));
+  grid.appendChild(mkTile('Erkenntnisse',pos,'Noch keine gespeicherten Erkenntnisse.','insight',5));
+  grid.appendChild(mkTile('Risiken / Bremsen',warn,'Noch keine gespeicherten Risiken.','risk',5));
+  grid.appendChild(mkTile('Die eine Sache, die fehlt',open.slice(0,1),'Noch kein offener Hauptpunkt gespeichert.','open',1));
+  grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(1,6),'Noch keine gespeicherten Fragen.','question',5));
   wrap.appendChild(grid);
   const phaseBtn=h('button',{className:'btn',style:{width:'100%',marginTop:'12px',justifyContent:'center'},onclick:()=>renderHomeLiteV4211()},'Zur Phasenübersicht');
   wrap.appendChild(phaseBtn);
-  wrap.appendChild(h('div',{className:'tagline'},'v4.216 Quality Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.217 Cockpit Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7606,7 +7629,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.216 Quality Candidate';
+const KI21_VERSION='v4.217 Cockpit Candidate';
 
 
 function runKi21VersionMigration(){
@@ -8198,7 +8221,7 @@ function renderKi21SafeStart(){
   wrap.className='wrap';
   wrap.style.paddingTop='18px';
   wrap.innerHTML=`
-    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.216 Quality Candidate</div>
+    <div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#ff6b00;text-transform:uppercase;margin-bottom:6px;">KI21 Diagnose-Start · v4.217 Cockpit Candidate</div>
     <div style="font-family:'DM Serif Display',serif;font-size:25px;line-height:1.12;margin-bottom:10px;">Safe Start</div>
     <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:14px;">
       Diese Version lädt beim Start keine Opportunity-Daten, keine Migration und kein Cockpit. Erst testen wir, ob Klicks nativ funktionieren.
@@ -8241,7 +8264,7 @@ try{
   if(savedTheme==='light')document.body.classList.add('light');
 }catch(e){}
 
-// v4.216 Quality Candidate: normaler Start in die leichte Opportunity-Übersicht.
+// v4.217 Cockpit Candidate: normaler Start in die leichte Opportunity-Übersicht.
 // Keine automatische Cockpit-/Health-Berechnung beim Start oder Rücksprung.
 try{
   ki21SafeRemoveBlockingUi();
