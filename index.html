@@ -4180,6 +4180,85 @@ function cleanPhase2Output(text){
 }
 
 
+
+// v4.199: Kontext-Erkennung und generische Cleaner.
+function getCaseContextTextV4199(accId){
+  const c=getActiveCust?getActiveCust():{};
+  const mu=LS.get('ki21_mu',{});
+  const parts=[];
+  if(mu&&mu.profil)parts.push(mu.profil);
+  if(mu&&mu.bausteine)parts.push(mu.bausteine);
+  if(c)parts.push([c.firma,c.branche,c.ap,c.ma,c.um].filter(Boolean).join(' '));
+  if(accId){
+    for(let i=0;i<5;i++){
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d&&d.fv)parts.push(Object.values(d.fv).filter(v=>typeof v==='string').join('\n'));
+      if(d&&d.result)parts.push(d.result);
+    }
+    const kk=LS.get('ki21_kk_'+accId,'');
+    if(kk)parts.push(kk);
+  }
+  return parts.join('\n');
+}
+function isSalesDiscoveryUseCaseV4199(accId){
+  const raw=getCaseContextTextV4199(accId);
+  return /\b(KI21|CRM|Sales\s*Performance|Vertrieb|vertrieblich|Vertriebssteuerung|Forecast|Pipeline|Discovery-Qualit|Abschlussquote|Account\s*Manager|Sales\s*Cycle|Lead[-\s]?Qualifizierung|Opportunity\s*Health)\b/i.test(raw);
+}
+function isSecurityItUseCaseV4199(accId){
+  const raw=getCaseContextTextV4199(accId);
+  return /\b(Security|IT-Sicherheit|Managed\s*Security|Endpoint|M365|Microsoft\s*365|Patch|Patchstand|Backup|Recovery|Schwachstellen|Vulnerability|Audit|Sicherheitsnachweis|Sicherheitsbericht|IT-Leiter|Security\s*Awareness|Großkunde|Compliance)\b/i.test(raw);
+}
+function cleanNoSalesLeakageV4199(text,accId){
+  if(!text)return text;
+  let x=String(text);
+  if(isSalesDiscoveryUseCaseV4199(accId))return x;
+  x=x.replace(/Pilot-Deals/gi,'Beispiel-Fälle')
+     .replace(/Pilot-Deal/gi,'Beispiel-Fall')
+     .replace(/schlecht\s+qualifizierte\s+Deals?/gi,'unklare oder risikoreiche Fälle')
+     .replace(/Discovery-Qualität/gi,'Bedarfsanalyse')
+     .replace(/Discovery-Fehler/gi,'offene Klärungspunkte')
+     .replace(/Discovery\s+scheiterte/gi,'Klärung fehlte')
+     .replace(/Forecast-Qualität|Forecast-Sicherheit/gi,'Planungs- und Entscheidungssicherheit')
+     .replace(/Pipeline-Sicherheit|Pipeline-Qualität/gi,'Priorisierungssicherheit')
+     .replace(/Account\s*Manager/gi,'verantwortliche Ansprechpartner')
+     .replace(/Sales\s*Cycle/gi,'Entscheidungsprozess')
+     .replace(/Abschlussquote/gi,'Erfolgswahrscheinlichkeit')
+     .replace(/Vermeidungsquote|Rettungsquote|Vermeidbarkeit/gi,'wirtschaftliche Wirkung')
+     .replace(/Startprojekt/gi,'nächster Validierungsschritt')
+     .replace(/Startangebot\s+durchgehen/gi,'Einstieg und Scope prüfen')
+     .replace(/\bPilot\b/gi,'Validierung');
+  return x.replace(/\n{3,}/g,'\n\n').trim();
+}
+function cleanGenericPhase2OutputV4199(text,accId){
+  let x=cleanNoSalesLeakageV4199(text,accId);
+  if(!x)return x;
+  if(isSecurityItUseCaseV4199(accId)){
+    x=x.replace(/Welche\s+3\s*[–-]\s*5\s+konkreten\s+Deals[^\n?]*\?/gi,'Welche konkreten Security-Fälle oder Nachweisanforderungen zeigen den Handlungsbedarf am besten?');
+    x=x.replace(/Was\s+kostet\s+ein\s+schlecht\s+qualifizierter\s+Deal[^\n?]*\?/gi,'Welcher Aufwand entsteht heute durch ungeplante Sicherheitsnachweise, Audits oder Nachfragen?');
+    x=x.replace(/Welche\s+Fälle\s+wären\s+durch\s+bessere\s+Discovery[^\n?]*\?/gi,'Welche Risiken oder Nachweislücken wären mit systematischem Monitoring früher sichtbar?');
+  }
+  return x;
+}
+function cleanGenericLatePhaseOutputV4199(text,accId){
+  let x=cleanNoSalesLeakageV4199(text,accId);
+  if(!x)return x;
+  x=x.replace(/(\d[\d\.\s,]*\s*(?:€|EUR|Euro)\s+pro\s+(?:Fall|Deal|Vorgang))(?![^\n]{0,60}(?:Rolle|Schaden|Aufwand|Umsatz|Marge|validiert|bestätigt|offen|klären))/gi,'$1; Rolle noch klären');
+  x=x.replace(/Schaden\s+pro\s+(?:Deal|Fall)\s+ist\s+noch\s+nicht\s+belastbar\s+beziffert/gi,'Schaden/Rolle noch offen');
+  if(isSecurityItUseCaseV4199(accId)){
+    x=x.replace(/echte\s+Deals?/gi,'konkrete Security-Fälle')
+     .replace(/Beispiel-Deals?/gi,'Beispiel-Fälle')
+     .replace(/Messkriterien\s+festlegen/gi,'Validierungskriterien festlegen')
+     .replace(/Wirkung\s+mit\s+konkreten\s+Security-Fällen\s+validieren/gi,'wirtschaftliche Wirkung mit Sicherheitsrisiken, Nachweisaufwand und Kundenanforderung validieren');
+  }
+  return x.replace(/\n{3,}/g,'\n\n').trim();
+}
+function buildContextualDashboardNextV4199(accId){
+  const name=getConfirmedDecisionMakerName(accId)||'dem Ansprechpartner';
+  if(isSecurityItUseCaseV4199(accId))return 'Mit '+name+' konkrete Großkundenanforderung, Deadline und Entscheidungsweg klären.';
+  if(isSalesDiscoveryUseCaseV4199(accId))return 'Mit '+name+' 3–5 echte Beispiel-Deals auswählen und prüfen, wo Discovery scheiterte.';
+  return 'Mit '+name+' den konkreten Bedarf, die wirtschaftliche Auswirkung und den Entscheidungsweg klären.';
+}
+
 // v4.198: Cockpit frühphasig bereinigen. Wenn die zuletzt bearbeitete/generierte Phase
 // noch Qualifizierung oder Discovery ist, darf das Cockpit keine Startangebot-/Pilot-/ROI-Sprache anzeigen.
 function getLatestGeneratedPhaseId(accId){
@@ -4207,8 +4286,8 @@ function cleanEarlyPhaseCockpitText(accId,text,kind){
   let x=String(text||'').trim();
   if(!x)return '';
   if(!isEarlyPhaseCockpitMode(accId))return x;
-  const dec=(getConfirmedDecisionMakerName(accId)||'Marius');
-  const discoveryNext='Mit '+dec+' 3–5 echte Beispiel-Deals auswählen und prüfen, wo Discovery scheiterte.';
+  const dec=(getConfirmedDecisionMakerName(accId)||'dem Ansprechpartner');
+  const discoveryNext=buildContextualDashboardNextV4199(accId);
 
   const hasLateLanguage=/(startangebot|angebot\s+durchgehen|pilot[-\s]?deals?|pilot\b|messkriterien|vermeidungsquote|rettungsquote|roi|business\s*case|startprojekt)/i.test(x);
   if((kind==='nextStep'||kind==='missing'||kind==='open')&&hasLateLanguage){
@@ -4247,7 +4326,11 @@ function applyEarlyPhaseCockpitMatrixClean(accId,matrix){
   // Wenn frühe Phase: keine künstlichen Pilot-/Startangebot-Risiken erzwingen.
   risks=risks.filter(t=>!/(startangebot|pilot|roi|business\s*case|vermeidungsquote)/i.test(String(t||'')));
   open=open.filter(t=>!/(startangebot|pilot|roi|business\s*case|vermeidungsquote)/i.test(String(t||'')));
-  if(!open.length)open.push('Konkrete Beispiel-Deals und Nacharbeit sauber klären');
+  if(!open.length){
+    if(isSecurityItUseCaseV4199(accId))open.push('Konkrete Großkundenanforderung, Deadline und wirtschaftliche Auswirkung klären');
+    else if(isSalesDiscoveryUseCaseV4199(accId))open.push('Konkrete Beispiel-Deals und Nacharbeit sauber klären');
+    else open.push('Konkreten Bedarf, wirtschaftliche Auswirkung und Entscheidungsweg klären');
+  }
   return {positive,risks,open};
 }
 
@@ -4303,12 +4386,30 @@ function isBadLegacyQuestionV4190(q,accId){
 }
 function buildCanonicalDashboardQuestionsV4191(accId){
   const raw=String(getValidatedBusinessInputText(accId)||getCurrentUserKnowledgeText(accId)||'');
+  if(isSecurityItUseCaseV4199(accId)){
+    return [
+      'Welche Sicherheitsnachweise fordert der Großkunde konkret und bis wann?',
+      'Welche Systeme, Standorte oder Prozesse werden heute nicht regelmäßig geprüft?',
+      'Wer entscheidet Budget und Start: CFO, Geschäftsführung oder gemeinsam?',
+      'Welcher Aufwand entsteht heute durch Ad-hoc-Nachweise, Audits oder Sicherheitsfragen?',
+      'Was passiert wirtschaftlich, wenn die geforderten Nachweise nicht rechtzeitig vorliegen?'
+    ];
+  }
+  if(!isSalesDiscoveryUseCaseV4199(accId)){
+    return [
+      'Welcher konkrete Auslöser macht das Thema jetzt relevant?',
+      'Wer entscheidet Budget und Start formal?',
+      'Welche wirtschaftliche Auswirkung hat das Problem, wenn nichts passiert?',
+      'Welche Anforderungen oder Erfolgskriterien müssen konkret erfüllt werden?',
+      'Welcher nächste Schritt würde die Entscheidung belastbar vorbereiten?'
+    ];
+  }
   const hasForecast=/forecast|pipeline|prognose|vorschau/i.test(raw);
   const qs=[
     'Welche 3–5 konkreten Deals zeigen am besten, wo Discovery heute scheitert?',
     'Was kostet ein schlecht qualifizierter Deal konkret an Zeit, Umsatz oder Nacharbeit?',
     'Welche Fälle wären durch bessere Discovery früher erkannt, gerettet oder sauber disqualifiziert worden?',
-    'Welche Messkriterien zeigen nach dem Startprojekt, dass die Discovery-Qualität besser wird?'
+    'Welche Messkriterien zeigen, dass die Discovery-Qualität besser wird?'
   ];
   if(hasForecast)qs.push('Wie wirkt sich bessere Discovery konkret auf Forecast-Qualität und Pipeline-Sicherheit aus?');
   qs.push('Welche Account Manager und welche Opportunities eignen sich für den Start?');
@@ -5391,6 +5492,82 @@ function scoreColor(s){
   if(s>=4)return '#d29922';
   return '#f85149';
 }
+
+function parseDirectSpinAnswersV4199(note,questionCount){
+  const txt=String(note||'').trim();
+  const out=new Array(questionCount).fill('');
+  if(!txt)return out;
+  const re=/(?:^|\n)\s*(?:(?:[SPIN]\s*)?(\d{1,2})|([SPIN])\s*(\d{1,2}))\s*[\.:\)-]\s*([\s\S]*?)(?=(?:\n\s*(?:(?:[SPIN]\s*)?\d{1,2}|[SPIN]\s*\d{1,2})\s*[\.:\)-])|$)/gi;
+  let m;
+  while((m=re.exec(txt))){
+    const idx=parseInt(m[1]||m[3],10)-1;
+    if(idx>=0&&idx<questionCount)out[idx]=String(m[4]||'').trim();
+  }
+  return out;
+}
+function applySpinAnswersToRefsV4199(values,taRefs,data,KEY,spinQuestions){
+  (values||[]).forEach((v,i)=>{
+    if(taRefs[i]&&String(v||'').trim()){
+      taRefs[i].value=String(v).trim();
+      taRefs[i].style.height='auto';
+      taRefs[i].style.height=Math.min(taRefs[i].scrollHeight,240)+'px';
+    }
+  });
+  data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
+  data.fv['antwortenSpinSig']=ki21SpinQuestionSignature(spinQuestions);
+  data.fv['antwortenReviewNeeded']=false;
+  LS.set(KEY,data);
+}
+function showSpinBulkPasteModalV4199({spinQuestions,spinLetters,taRefs,data,KEY,cust,mu,kk,stk}){
+  const content=h('div',{});
+  content.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text2)',lineHeight:'1.55',marginBottom:'10px'}},
+    'Füge hier eine Gesprächsnotiz oder einen Antwortblock ein. KI21 ordnet die Informationen den SPIN-Fragen zu. Nicht belegte Antworten bleiben leer.'));
+  const ta=h('textarea',{placeholder:'Gesprächsnotiz einfügen ...\n\nBeispiel: Thomas sagt, dass die IT mit 5 Leuten ...',style:{minHeight:'220px',marginBottom:'10px'}});
+  content.appendChild(ta);
+  const status=h('div',{style:{fontSize:'11px',color:'var(--text3)',margin:'4px 0 10px',minHeight:'16px'}},'');
+  content.appendChild(status);
+  const row=h('div',{style:{display:'flex',gap:'8px',justifyContent:'flex-end'}});
+  let bg=null;
+  const cancel=h('button',{className:'btn',onclick:()=>{if(bg)bg.remove();}},'Abbrechen');
+  const run=h('button',{className:'btn-o',onclick:async()=>{
+    const note=ta.value.trim();
+    if(!note){status.textContent='Bitte zuerst eine Notiz einfügen.';return;}
+    run.disabled=true;run.textContent='⏳ Ordne zu...';status.textContent='KI21 ordnet die Notiz den Fragen zu.';
+    try{
+      let direct=parseDirectSpinAnswersV4199(note,spinQuestions.length);
+      const directCount=direct.filter(Boolean).length;
+      if(directCount>=Math.min(2,spinQuestions.length)){
+        applySpinAnswersToRefsV4199(direct,taRefs,data,KEY,spinQuestions);
+        if(bg)bg.remove();
+        return;
+      }
+      const prompt=buildCtx(cust||{},mu||{},kk||'',stk||'',1)+`Du ordnest eine freie Gesprächsnotiz den vorgegebenen SPIN-Fragen zu.\n\nRegeln:\n- Nutze nur Informationen aus der Gesprächsnotiz.\n- Erfinde keine Antworten.\n- Wenn eine Frage nicht beantwortet ist, setze answer auf "" und status auf "nicht beantwortet".\n- Wenn eine Antwort nur logisch abgeleitet ist, status "abgeleitet".\n- Wenn sie direkt belegt ist, status "beantwortet".\n- Antworte ausschließlich als JSON: {"answers":[{"index":1,"answer":"...","status":"beantwortet|teilweise|abgeleitet|nicht beantwortet"}]}\n\nSPIN-Fragen:\n${spinQuestions.map((q,i)=>`${i+1}. ${spinLetters[i]||''}: ${q}`).join('\n')}\n\nGesprächsnotiz:\n${note}`;
+      const json=await callClaudeJSON(prompt);
+      const vals=new Array(spinQuestions.length).fill('');
+      if(json&&Array.isArray(json.answers)){
+        json.answers.forEach(a=>{
+          const idx=parseInt(a.index,10)-1;
+          if(idx>=0&&idx<vals.length&&a.answer)vals[idx]=String(a.answer).trim();
+        });
+      }
+      if(!vals.some(Boolean)){
+        status.textContent='Keine Antworten erkennbar. Bitte Notiz konkreter einfügen oder Antworten einzeln eintragen.';
+        run.disabled=false;run.textContent='Antworten zuordnen';
+        return;
+      }
+      applySpinAnswersToRefsV4199(vals,taRefs,data,KEY,spinQuestions);
+      if(bg)bg.remove();
+    }catch(e){
+      console.warn(e);
+      status.textContent='Zuordnung fehlgeschlagen. Bitte API-Key/Verbindung prüfen oder Antworten einzeln eintragen.';
+      run.disabled=false;run.textContent='Antworten zuordnen';
+    }
+  }},'Antworten zuordnen');
+  row.appendChild(cancel);row.appendChild(run);content.appendChild(row);
+  bg=modal('Gesprächsnotiz den SPIN-Fragen zuordnen',content);
+  setTimeout(()=>ta.focus(),50);
+}
+
 function renderStation(sitId){
   state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
   const sit=SITS[sitId];
@@ -5612,8 +5789,12 @@ function renderStation(sitId){
         wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px',border:'1px solid rgba(255,107,0,.35)',borderRadius:'8px',padding:'8px 10px',color:'#ff8a2a'}},
           data.fv.antwortenArchivHinweis||'Leitfragen wurden aktualisiert. Bitte prüfe, ob deine vorhandenen Antworten noch zu den aktuellen Fragen passen.'));
       }
-      wrap.appendChild(h('div',{className:'home-section-label',style:{marginBottom:'10px'}},'Leitfragen & Antworten'));
       const taRefs=[];
+      const bulkHead=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',marginBottom:'10px'}},
+        h('div',{className:'home-section-label',style:{marginBottom:'0'}},'Leitfragen & Antworten'),
+        h('button',{className:'btn',style:{fontSize:'11px',padding:'6px 10px',whiteSpace:'nowrap'},onclick:()=>showSpinBulkPasteModalV4199({spinQuestions,spinLetters,taRefs,data,KEY,cust,mu,kk,stk})},'Notiz zuordnen')
+      );
+      wrap.appendChild(bulkHead);
       spinQuestions.forEach((q,i)=>{
         const letter=spinLetters[i]||String(i+1);
         const groupName=SPIN_FULL_NAMES[letter]||'';
@@ -6095,7 +6276,13 @@ function renderStation(sitId){
         fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
       });
       if(result){
-        const finalResult=(sitId===1)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):((sitId===3)?sanitizePhase4NoRoiMath(result,state.activeId):((sitId===4)?sanitizePhase5OfferOutput(result,state.activeId):result));
+        const finalResult=(sitId===1)
+          ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
+          :((sitId===3)
+            ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+            :((sitId===4)
+              ?(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId))
+              :result));
         data.result=finalResult;
         data.prompt=prompt;
         data.generatedAt=Date.now();
@@ -7053,7 +7240,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.198';
+const KI21_VERSION='v4.199';
 
 
 function runKi21VersionMigration(){
