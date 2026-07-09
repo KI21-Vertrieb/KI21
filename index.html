@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1851,6 +1851,34 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .phase2-economic-capture{margin-top:10px !important;margin-bottom:16px !important;}
 .cockpit-economic-summary-only .cockpit-economic-row,
 .cockpit-economic-summary-only .cockpit-economic-input-wrap{display:none !important;}
+
+
+
+/* v4.246: einfache Euro-Wert-Erfassung direkt an I-Fragen, keine separate Erfassungsstrecke */
+.implication-value-box{
+  margin:0 12px 12px 46px !important;
+  padding:9px 10px !important;
+  border-radius:11px !important;
+  background:rgba(255,107,0,.055) !important;
+  border:1px solid rgba(255,107,0,.20) !important;
+}
+.implication-value-head{
+  display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;margin-bottom:7px !important;
+}
+.implication-value-label{
+  font-size:9.5px !important;font-weight:900 !important;letter-spacing:1px !important;text-transform:uppercase !important;color:#ff8a2a !important;
+}
+.implication-value-status{
+  font-size:9.5px !important;font-weight:850 !important;color:var(--text3) !important;white-space:nowrap !important;
+}
+.implication-value-status.filled{color:#3fb950 !important;}
+.implication-value-input{
+  width:100% !important;min-height:34px !important;border-left:3px solid rgba(255,107,0,.55) !important;font-size:12px !important;
+}
+.implication-value-help{
+  font-size:10.5px !important;line-height:1.35 !important;color:#c9d1d9 !important;margin-top:6px !important;opacity:.82 !important;
+}
+@media(max-width:390px){.implication-value-box{margin-left:38px !important;padding:8px 9px !important;}.implication-value-help{font-size:10px !important;}}
 
 </style>
 </head>
@@ -2328,6 +2356,7 @@ P (PROBLEM) = SCHWIERIGKEITEN UND ENGPÄSSE. Lass den Kunden selbst benennen, wa
 I (IMPLICATION) = KONSEQUENZEN DES PROBLEMS. Mach die Kosten/Folgen des ungelösten Problems sichtbar.
 ✅ Erlaubt: "Was passiert, wenn ein Angebot einen Tag zu spät kommt?" / "Wie viele Abschlüsse verzögern sich dadurch?" / "Was kostet diese manuelle Arbeit pro Woche in Stunden?"
 ✅ PFLICHT: Mindestens eine I-Frage muss EXPLIZIT nach Nicht-Handeln fragen und eine klare Formulierung enthalten wie: "Was passiert, wenn ihr das Problem nicht löst?" oder "Was passiert, wenn ihr nichts verändert?". Eine reine Bleibt-Frage ist zu schwach, wenn "nicht lösen / nichts verändern" fehlt.
+✅ PFLICHT: Mindestens eine I-Frage muss die wirtschaftliche Wirkung quantifizieren: Aufwand, Schaden, Risiko oder entgangenen Nutzen als Euro-Wert pro Zeitraum erfragen, z.B. "Welcher monatliche Aufwand entsteht dadurch ungefähr?" oder "Welchen Euro-Wert würdet ihr pro Monat ansetzen?". Keine Scheingenauigkeit erzwingen; wenn der Kunde keinen Wert nennen kann, bleibt der Wert offen.
 ✅ FORECAST-HEBEL KONTEXTABHÄNGIG NUTZEN: Stelle Forecast-Fragen nur, wenn das eigene Angebot Forecast/Opportunity Health/Pipeline-/CRM-/Sales-Qualifizierung/Discovery/Vertriebssteuerung adressiert, Mein Unternehmen KI21 ist oder der Kunde explizit Forecast-Probleme nennt. Dann nutze auch kleine Anhaltspunkte (schwache Qualifizierung, späte Disqualifikation, unklare Opportunity-Bewertung, CRM-Datenqualität), um Forecast-Genauigkeit anzusprechen. Wenn dieser Kontext fehlt: Forecast NICHT künstlich einbauen.
 ✅ KEINE ERFUNDENE PRÄZISION: Wenn du nach Start, Pilot, Validierung oder ROI fragst, keine unbestätigten Quoten, Teilnehmerzahlen oder Zeiträume erfinden. Frage nach Vermeidungsquote/Messkriterien statt eine Quote vorzuschlagen.
 ❌ VERBOTEN: Lösungsvorschläge, Features nennen.
@@ -2369,6 +2398,7 @@ Antworten des Kunden: ${f.antworten||''}
 WICHTIG: Gib einen realen Score als Zahl aus – niemals "X/10".
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
 KRITISCH – PHASE 2 KURZ, KONKRET, NICHT ROI-LASTIG: Die Standardausgabe darf keine ROI-Sprache vorwegnehmen. Vermeide in Phase 2 besonders: Vermeidungsquote, Rettungsquote, ROI-Sicherheit, Business Case belastbar machen. Nutze stattdessen einfache Discovery-Sprache: früher erkennen, Nacharbeit reduzieren, sauber disqualifizieren, wirtschaftliche Wirkung klären.
+KRITISCH – QUANTIFIZIERUNG AKTIV EINFORDERN: Bei Implikationen immer versuchen, eine einfache wirtschaftliche Zahl zu bekommen: Euro-Wert pro Zeitraum, Aufwand pro Monat, Personentage pro Ereignis oder Kosten pro Vorfall. Formuliere mindestens eine konkrete Nachfrage, die dem Verkäufer hilft, mit dem Kunden einen Wert wie "2.000 € monatlich" abzuleiten. Wenn kein Wert vorhanden ist, klar als offen markieren.
 KRITISCH – KEINE PILOT-SPRACHE IN PHASE 2: Schreibe in Phase 2 nicht von Pilot-Deals, Pilot-Setup, Startprojekt oder Testphase, außer der Kunde hat das ausdrücklich genannt. Nutze stattdessen: Beispiel-Deals, echte Opportunities, konkrete Fälle.
 KRITISCH – ZAHLEN IN PHASE 2 NUR EINMAL UND MIT ROLLE: Wiederhole dieselbe Zahl nicht in mehreren Bullets der Standardansicht. Wenn eine wirtschaftliche Zahl genannt wird, kennzeichne knapp Rolle und Unsicherheit, z.B. "ca. 5.000 € pro Fall genannt; Rolle noch klären". Keine Herleitung und keine Rechnung in der Standardansicht.
 KRITISCH – DIE SPIN-FRAGEN BLEIBEN DER ROTE FADEN: Erfinde KEINE neuen, allgemeinen Fragen. Die Bedarfsanalyse baut ausschließlich auf den oben übergebenen SPIN-Fragen und den Antworten des Kunden auf.
@@ -6837,6 +6867,115 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
   return box;
 }
 
+
+// v4.246: Wirtschaftlicher Euro-Wert direkt an I-Fragen statt separater Erfassungsstrecke
+function getImplicationValueKeyV4246(aid){return 'ki21_implication_values_v4246_'+(aid||'global');}
+function slugQuestionV4246(q,idx){
+  const base=String(q||'').toLowerCase().replace(/[„“"'’]/g,'').replace(/[^a-z0-9äöüß]+/gi,' ').trim().slice(0,90);
+  return 'i_'+idx+'_'+base;
+}
+function loadImplicationValuesV4246(aid){
+  const v=LS.get(getImplicationValueKeyV4246(aid),{});
+  return (v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+}
+function saveImplicationValuesV4246(aid,obj){LS.set(getImplicationValueKeyV4246(aid),obj||{});}
+function isMonthlyValueV4246(v){return /(monat|monatlich|pro\s*monat|\/\s*monat|p\.?\s*m\.?)/i.test(String(v||''));}
+function parseMonthlyImplicationValueV4246(v){
+  if(!isMonthlyValueV4246(v))return 0;
+  return parseMonthlyEffectV4240(v);
+}
+function formatRawEconomicValueV4246(v){return String(v||'').trim();}
+function getPhase2ImplicationQuestionsV4246(){
+  try{
+    const aid=state.activeId||LS.get('ki21_aid',null);
+    if(!aid)return [];
+    const d=LS.get('ki21_st_'+aid+'_1',{});
+    const qs=parseSpinQuestionsFromTextV4169((d&&d.fv&&d.fv.spin)||'');
+    return (qs||[]).map((q,i)=>({q:String(q||''),idx:i,letter:getSpinLetterForQuestionV4169(q,i)})).filter(x=>String(x.letter||'').toUpperCase()==='I');
+  }catch(e){return [];}
+}
+function getImplicationSummaryV4246(aid){
+  const values=loadImplicationValuesV4246(aid);
+  const qs=getPhase2ImplicationQuestionsV4246();
+  const rows=qs.map(x=>{
+    const id=slugQuestionV4246(x.q,x.idx);
+    const val=formatRawEconomicValueV4246(values[id]);
+    return {id,question:x.q,idx:x.idx,value:val,monthly:parseMonthlyImplicationValueV4246(val)};
+  });
+  const filled=rows.filter(r=>r.value);
+  const monthly=rows.filter(r=>r.monthly>0);
+  const open=rows.filter(r=>!r.value);
+  const sum=monthly.reduce((a,r)=>a+r.monthly,0);
+  let status='nicht quantifiziert';
+  if(filled.length&&open.length)status='teilquantifiziert';
+  else if(filled.length&&!open.length)status='quantifiziert';
+  return {rows,filled,monthly,open,sum,status};
+}
+function renderImplicationEconomicFieldV4246(aid,idx,q){
+  const vals=loadImplicationValuesV4246(aid);
+  const id=slugQuestionV4246(q,idx);
+  const current=formatRawEconomicValueV4246(vals[id]);
+  const box=h('div',{className:'implication-value-box'});
+  const status=h('div',{className:'implication-value-status '+(current?'filled':'')},current?'erfasst':'optional');
+  box.appendChild(h('div',{className:'implication-value-head'},
+    h('div',{className:'implication-value-label'},'Wirtschaftlicher Effekt'),
+    status
+  ));
+  const input=h('input',{className:'implication-value-input',type:'text',inputmode:'decimal',placeholder:'z. B. 2.000 € monatlich',value:current,oninput:(e)=>{
+    const obj=loadImplicationValuesV4246(aid);
+    const val=String(e.target.value||'');
+    obj[id]=val;
+    saveImplicationValuesV4246(aid,obj);
+    status.textContent=val.trim()?'erfasst':'optional';
+    status.className='implication-value-status '+(val.trim()?'filled':'');
+  }});
+  box.appendChild(input);
+  box.appendChild(h('div',{className:'implication-value-help'},'Optionaler Euro-Wert pro Zeitraum, gemeinsam mit dem Kunden abgeleitet. KI21 rechnet nur Monatswerte mit Monatsbezug in die Cockpit-Summe ein.'));
+  return box;
+}
+// Überschreibt v4.245-Kontext: Phase 4 nutzt jetzt I-Fragen-Werte, nicht separate Effekt-Positionen.
+function buildEconomicEffectsContextV4245(aid){
+  const s=getImplicationSummaryV4246(aid);
+  if(!s.rows.length)return '';
+  const lines=[];
+  lines.push('Wirtschaftliche Effekte direkt an I-Fragen / Implikationen erfasst.');
+  lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
+  lines.push('Status: '+s.status);
+  if(s.filled.length){
+    lines.push('Erfasste I-Werte:');
+    s.filled.forEach(r=>lines.push('- '+r.question.replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value));
+  }
+  if(s.open.length){
+    lines.push('Noch nicht bezifferte I-Fragen:');
+    s.open.forEach(r=>lines.push('- '+r.question.replace(/^I\s*[:.-]?\s*/i,'')));
+  }
+  lines.push('Regel: Nur manuell eingegebene Monatswerte mit klarem Monatsbezug werden summiert. Andere Zeiträume bleiben als Einzelwerte erhalten und werden nicht automatisch umgerechnet.');
+  return lines.join('\n');
+}
+// Überschreibt v4.245-Cockpitkarte: nur Zusammenfassung der I-Werte, keine Erfassungsstrecke.
+function renderEconomicSummaryCardV4245(aid,deepCase){
+  const s=getImplicationSummaryV4246(aid);
+  let offer='Angebotskosten noch nicht sauber erkannt';
+  try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
+  const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
+    h('div',{className:'cockpit-economic-kicker'},'Business Case'),
+    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
+    h('div',{className:'cockpit-economic-help'},'Euro-Werte werden direkt bei den I-Fragen in Phase 2 erfasst. Das Cockpit zeigt nur die verdichtete Lage.')
+  );
+  const summary=h('div',{className:'cockpit-economic-summary'});
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Summe monatlicher I-Werte'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'I-Werte erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
+  card.appendChild(summary);
+  if(s.filled.length){
+    card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>r.value).join(' · ')));
+  }
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 I-Werte erfassen →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Keine automatische Umrechnung anderer Zeiträume.'));
+  return card;
+}
+
 function renderHomeLiteV4211(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -7006,7 +7145,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.245 Phase2 Economic Capture Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.246 I-Question Economic Value Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7516,7 +7655,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7606,7 +7745,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -8457,7 +8596,7 @@ function renderStation(sitId){
         item.appendChild(header);
 
         const ta=h('textarea',{className:'exec-spin-ta',
-          placeholder:'Antwort aus dem Gespräch ...',
+          placeholder:(String(letter).toUpperCase()==='I'?'Antwort aus dem Gespräch ... bitte Aufwand, Schaden, Risiko oder €-Wirkung möglichst quantifizieren.':'Antwort aus dem Gespräch ...'),
           oninput:()=>{
             data.fv['antworten']=taRefs.map((t,j)=>`${j+1}. Frage: ${t.value}`).join('\n');
             data.fv['antwortenSpinSig']=ki21SpinQuestionSignature(spinQuestions);
@@ -8471,23 +8610,13 @@ function renderStation(sitId){
         ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,240)+'px';});
         taRefs.push(ta);
         item.appendChild(ta);
+        if(String(letter).toUpperCase()==='I'){
+          try{item.appendChild(renderImplicationEconomicFieldV4246(aid,i,q));}catch(e){}
+        }
         wrap.appendChild(item);
       });
-      // v4.245: Wirtschaftliche Wirkung gehört methodisch zur Implikation/Bedarfsanalyse.
-      // Cockpit zeigt später nur die Zusammenfassung, Phase 4 nutzt diese Werte als Business-Case-Datenbasis.
-      try{
-        const rawHealth=aid?LS.get('ki21_health_'+aid,null):null;
-        const deepCaseForEco=getCockpitDeepCaseCardsV4238(rawHealth,aid);
-        const ecoBox=renderEconomicEffectCaptureV4240(aid,deepCaseForEco);
-        ecoBox.classList.add('phase2-economic-capture');
-        const divider=h('div',{className:'exec-divider'},
-          h('div',{className:'exec-divider-line'}),
-          h('div',{className:'exec-divider-label'},'Implikationen beziffern'),
-          h('div',{className:'exec-divider-line'})
-        );
-        wrap.appendChild(divider);
-        wrap.appendChild(ecoBox);
-      }catch(e){}
+      // v4.246: Keine separate Erfassungsstrecke mehr.
+      // Wirtschaftliche Wirkung wird direkt an den I-Fragen (Implikationen) als einfacher Euro-Wert / Zeitraum erfasst.
     } else {
       // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
@@ -9807,7 +9936,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9897,7 +10026,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10249,7 +10378,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10339,7 +10468,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10820,7 +10949,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.245 Phase2 Economic Capture Candidate';
+const KI21_VERSION='v4.246 I-Question Economic Value Candidate';
 
 
 function runKi21VersionMigration(){
