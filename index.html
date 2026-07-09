@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1854,7 +1854,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.246: einfache Euro-Wert-Erfassung direkt an I-Fragen, keine separate Erfassungsstrecke */
+/* v4.247: freie Euro-Wert-Erfassung direkt an I-Fragen, Text inkl. Zeitraum erlaubt */
 .implication-value-box{
   margin:0 12px 12px 46px !important;
   padding:9px 10px !important;
@@ -6829,7 +6829,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
         info.appendChild(document.createTextNode('Monatswert fehlt.'));
       }
     };
-    const input=h('input',{type:'text',inputmode:'decimal',placeholder:'Monatswert',value:r.amount||'',oninput:(e)=>{
+    const input=h('input',{type:'text',inputmode:'text',autocomplete:'off',placeholder:'z. B. 2.000 € monatlich',value:r.amount||'',oninput:(e)=>{
       rows[idx].amount=e.target.value;
       saveEconomicEffectsV4240(aid,rows);
       const n=parseMonthlyEffectV4240(e.target.value);
@@ -6868,7 +6868,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
 }
 
 
-// v4.246: Wirtschaftlicher Euro-Wert direkt an I-Fragen statt separater Erfassungsstrecke
+// v4.247: Wirtschaftlicher Euro-Wert direkt an I-Fragen; Eingabe als freier Text inkl. Zeitraum
 function getImplicationValueKeyV4246(aid){return 'ki21_implication_values_v4246_'+(aid||'global');}
 function slugQuestionV4246(q,idx){
   const base=String(q||'').toLowerCase().replace(/[„“"'’]/g,'').replace(/[^a-z0-9äöüß]+/gi,' ').trim().slice(0,90);
@@ -6921,7 +6921,7 @@ function renderImplicationEconomicFieldV4246(aid,idx,q){
     h('div',{className:'implication-value-label'},'Wirtschaftlicher Effekt'),
     status
   ));
-  const input=h('input',{className:'implication-value-input',type:'text',inputmode:'decimal',placeholder:'z. B. 2.000 € monatlich',value:current,oninput:(e)=>{
+  const input=h('input',{className:'implication-value-input',type:'text',inputmode:'text',autocomplete:'off',placeholder:'z. B. 2.000 € monatlich',value:current,oninput:(e)=>{
     const obj=loadImplicationValuesV4246(aid);
     const val=String(e.target.value||'');
     obj[id]=val;
@@ -7145,7 +7145,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.246 I-Question Economic Value Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.247 I-Value Text Input Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7655,7 +7655,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7745,7 +7745,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -9936,7 +9936,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10026,7 +10026,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10378,7 +10378,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10468,7 +10468,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.246 I-Question Economic Value Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10949,7 +10949,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.246 I-Question Economic Value Candidate';
+const KI21_VERSION='v4.247 I-Value Text Input Candidate';
 
 
 function runKi21VersionMigration(){
