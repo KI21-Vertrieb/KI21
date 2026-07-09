@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.232 Selectable SPIN Stable: konsolidierter stabiler Arbeitsstand; lazy Cockpit, keine Touch-Sonderlogik. -->
+<!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -1218,18 +1218,19 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   font-size:10px !important;
 }
 .cockpit-score-lever{
-  display:inline-flex !important;
-  align-items:center !important;
-  align-self:flex-start !important;
-  margin:-5px 0 11px !important;
-  padding:5px 8px !important;
-  border-radius:999px !important;
-  border:1px solid rgba(255,107,0,.34) !important;
-  background:rgba(255,107,0,.09) !important;
-  color:#ff8a2a !important;
-  font-size:10.8px !important;
-  font-weight:800 !important;
-  letter-spacing:.2px !important;
+  display:block !important;
+  margin:4px 0 0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:rgba(201,209,217,.72) !important;
+  font-size:10.2px !important;
+  font-weight:650 !important;
+  letter-spacing:.15px !important;
+  line-height:1.25 !important;
+  cursor:default !important;
+  pointer-events:none !important;
 }
 .bs-row.bs-kind-cta{
   border:1px solid rgba(255,107,0,.38) !important;
@@ -1262,7 +1263,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-one-screen .cockpit-next-text{font-size:13.3px !important;}
   .cockpit-one-screen .cockpit-tile-item,
   .cockpit-one-screen .cockpit-tile-link{font-size:12.35px !important;}
-  .cockpit-score-lever{font-size:10.5px !important;margin-bottom:9px !important;}
+  .cockpit-score-lever{font-size:10px !important;}
 }
 
 
@@ -1449,6 +1450,61 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .note-parser-spin.excluded::after{content:'ausgeschlossen' !important;color:#8b949e !important;font-size:9.5px !important;font-weight:800 !important;margin-left:auto !important;white-space:nowrap !important;}
 .note-parser-spin:active{transform:translateY(1px) !important;}
 @media(max-width:390px){.note-parser-spin small{display:none !important;}}
+
+
+
+/* v4.234 Cockpit Economic/Close Candidate: kompakter Wirtschafts- und Abschlussstatus */
+.cockpit-deal-status{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px !important;
+  margin:0 0 8px !important;
+  flex:0 0 auto !important;
+}
+.cockpit-deal-chip{
+  border:1px solid rgba(139,148,158,.22) !important;
+  background:linear-gradient(145deg,rgba(22,27,34,.78),rgba(17,22,29,.66)) !important;
+  border-radius:13px !important;
+  padding:8px 9px !important;
+  min-height:45px !important;
+  overflow:hidden !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025) !important;
+}
+.cockpit-deal-chip.eco{
+  border-color:rgba(86,211,144,.24) !important;
+  background:linear-gradient(145deg,rgba(17,39,34,.62),rgba(17,22,29,.68)) !important;
+}
+.cockpit-deal-chip.close{
+  border-color:rgba(255,107,0,.28) !important;
+  background:linear-gradient(145deg,rgba(46,29,18,.64),rgba(17,22,29,.68)) !important;
+}
+.cockpit-deal-label{
+  font-size:7.8px !important;
+  font-weight:900 !important;
+  letter-spacing:1.05px !important;
+  text-transform:uppercase !important;
+  color:rgba(201,209,217,.58) !important;
+  margin-bottom:3px !important;
+  line-height:1.05 !important;
+}
+.cockpit-deal-text{
+  font-size:10.3px !important;
+  font-weight:800 !important;
+  line-height:1.18 !important;
+  color:#edf2f7 !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+.cockpit-deal-chip.eco .cockpit-deal-label{color:rgba(86,211,144,.80) !important;}
+.cockpit-deal-chip.close .cockpit-deal-label{color:rgba(255,138,42,.88) !important;}
+@media(max-width:390px){
+  .cockpit-deal-status{gap:7px !important;margin-bottom:7px !important;}
+  .cockpit-deal-chip{padding:7px 8px !important;min-height:41px !important;border-radius:12px !important;}
+  .cockpit-deal-label{font-size:7.2px !important;letter-spacing:.85px !important;}
+  .cockpit-deal-text{font-size:9.45px !important;line-height:1.12 !important;}
+}
 
 </style>
 </head>
@@ -5905,6 +5961,49 @@ function getScoreLeverCategoryV4226(text){
   return 'Klärpunkt';
 }
 
+
+function getCockpitEconomicCloseStatusV4234(raw,aid){
+  const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
+  const texts=[];
+  try{
+    ['positive','warning','open'].forEach(k=>{
+      const arr=Array.isArray(raw&&raw[k])?raw[k]:[];
+      arr.forEach(x=>{const t=clean(x);if(t)texts.push(t);});
+    });
+  }catch(e){}
+  const all=texts.join(' \n ').toLowerCase();
+  const has=(re)=>re.test(all);
+  const phase5=aid?LS.get('ki21_st_'+aid+'_4',{}):{};
+  const fv5=(phase5&&phase5.fv)||{};
+  const mu=LS.get('ki21_mu',{})||{};
+  const offerText=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' ').toLowerCase();
+
+  let economy='Wirtschaft: noch offen';
+  if(has(/nicht belastbar|zu validieren|validier|offen|klären|kein.*roi|roi.*nicht|wirkung.*fehlt|vermeidungsquote/)){
+    if(has(/nutzen|roi|business case|wirtschaft|aufwand|stunden|tage|schaden|review|audit|umsatz|kosten|€|euro/)) economy='Wirtschaft: Nutzen validieren';
+  } else if(has(/nutzen|roi|business case|wirtschaft|aufwand|stunden|tage|schaden|review|audit|großkunde|umsatz|kosten|€|euro/)){
+    economy='Wirtschaft: Nutzen plausibel';
+  }
+  if(has(/bestätigt|schriftlich|deadline|q3|großkunde|audit|anforderung/) && has(/aufwand|tage|stunden|review|risiko|management-report|nachweis/)){
+    economy='Wirtschaft: Hebel erkennbar';
+  }
+
+  let closing='Abschluss: Angebot offen';
+  if(/quick check|start|paket|angebot|€|euro|monat|preis|managed|security|lizenz|compact|sprint/.test(offerText)){
+    closing='Abschluss: Angebot definiert';
+  }
+  if(has(/cfo|geschäftsführung|gf|entscheider|freigabe|beauftragung|formal|zustimmen|entscheidung/)){
+    closing='Abschluss: Freigabe klären';
+  }
+  if(has(/cfo.*entscheidbar|budget.*entscheidbar|freigabe.*bestätigt|entscheidung.*bestätigt/)){
+    closing='Abschluss: Entscheidung nah';
+  }
+  if(has(/managed security|folgeoption|noch nicht freigegeben|scope|umfang|quick check/)){
+    closing='Abschluss: Scope schärfen';
+  }
+  return {economy,closing};
+}
+
 function renderHomeLiteV4211(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -5955,18 +6054,7 @@ function renderHomeLiteV4211(){
   });
   wrap.appendChild(phaseList);
 
-  // v4.232 Selectable SPIN Stable: sichtbarer Cockpit-Zugang außerhalb der kompakten Top-Card.
-  // Die Top-Card blendet sekundäre Buttons auf Mobile aus; deshalb steht der bewusste
-  // Cockpit-Start als eigener Button unter der Phasenliste. Keine automatische Berechnung.
-  wrap.appendChild(h('button',{
-    type:'button',
-    className:'btn',
-    style:{width:'100%',margin:'10px 0 0',justifyContent:'center'},
-    onclick:()=>{
-      try{renderCockpitSnapshotLiteV4215();}
-      catch(e){alert('Cockpit konnte nicht geöffnet werden: '+(e&&e.message?e.message:e));renderHomeLiteV4211();}
-    }
-  },'Cockpit'));
+  // v4.233 UI Cleanup: unterer Cockpit-Zusatzbutton entfernt; Navigation läuft über die Tabs.
 
   wrap.appendChild(h('div',{className:'tagline'},'Verstehen. Fragen. Strategie.'));
   app.appendChild(header);
@@ -6031,10 +6119,21 @@ function renderCockpitSnapshotLiteV4215(){
   wrap.appendChild(h('div',{className:'cockpit-next-card cockpit-best-step-card'},
     h('div',{className:'cockpit-next-eyebrow'},'Nächster bester Schritt'),
     h('div',{className:'cockpit-next-text'},cockpitNextText),
-    cockpitLever?h('div',{className:'cockpit-score-lever'},'Score-Hebel: '+cockpitLever):null,
+    cockpitLever?h('div',{className:'cockpit-score-lever'},'Hebel: '+cockpitLever):null,
     h('div',{className:'cockpit-btn-row'},
       h('button',{className:'cockpit-btn-secondary',onclick:()=>renderHomeLiteV4211()},'← Übersicht'),
       h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung')
+    )
+  ));
+  const dealStatus=getCockpitEconomicCloseStatusV4234(raw,aid);
+  wrap.appendChild(h('div',{className:'cockpit-deal-status'},
+    h('div',{className:'cockpit-deal-chip eco'},
+      h('div',{className:'cockpit-deal-label'},'Wirtschaft'),
+      h('div',{className:'cockpit-deal-text'},dealStatus.economy)
+    ),
+    h('div',{className:'cockpit-deal-chip close'},
+      h('div',{className:'cockpit-deal-label'},'Abschluss'),
+      h('div',{className:'cockpit-deal-text'},dealStatus.closing)
     )
   ));
   const grid=h('div',{className:'cockpit-grid'});
@@ -6060,9 +6159,8 @@ function renderCockpitSnapshotLiteV4215(){
   grid.appendChild(mkTile('Die eine Sache, die fehlt',open.slice(0,1),'Noch kein offener Hauptpunkt gespeichert.','open',1));
   grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(1,5),'Noch keine gespeicherten Fragen.','question',3));
   wrap.appendChild(grid);
-  const phaseBtn=h('button',{className:'btn',style:{width:'100%',marginTop:'12px',justifyContent:'center'},onclick:()=>renderHomeLiteV4211()},'Zur Phasenübersicht');
-  wrap.appendChild(phaseBtn);
-  wrap.appendChild(h('div',{className:'tagline'},'v4.232 Selectable SPIN Stable'));
+  // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
+  wrap.appendChild(h('div',{className:'tagline'},'v4.234 Economic/Close Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8955,7 +9053,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.232 Selectable SPIN Stable';
+const KI21_VERSION='v4.234 Economic/Close Candidate';
 
 
 function runKi21VersionMigration(){
