@@ -1554,7 +1554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1661,7 +1661,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1945,7 +1945,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.254: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
+/* v4.255: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
 .cockpit-tile-item.cockpit-ki21-inline,
 .cockpit-tile-link.cockpit-ki21-inline{
   color:#ff8a2a !important;
@@ -6327,6 +6327,26 @@ function buildCockpitTileHeader(label,onOpen){
 
 
 
+
+
+// v4.255: globale KI21-Insight-Erkennung für Cockpit und Sheets.
+// Orange bedeutet: KI21 hat den Punkt durch Einordnung, Verknüpfung oder Ableitung entwickelt – nicht bloß Rohinformation kopiert.
+function isKi21DashboardInsight(txt,kind){
+  const s=String(txt||'').toLowerCase();
+  const has=(re)=>re.test(s);
+  if(has(/bezifferter\s+schmerz|beziffertes\s+potenzial|einsparpotenzial|eingetragene\s+(i-?werte|monatswerte)|wirtschaftlicher\s+effekt/))return true;
+  if(kind==='value'||kind==='question')return true;
+  if(kind==='risk'){
+    if(has(/strategisch|formal|eingekoppelt|abhängig|folgeoption|nicht\s+aktuelles\s+angebot|ohne\s+freigabe|budget\s+noch|nicht\s+entscheider|scope|block|bremse|priorität|unklar|offen/))return true;
+    return false;
+  }
+  if(kind==='insight'){
+    if(has(/trigger|relevanz|relevante|schmerz\s+quantifiziert|quantifiz|sponsor|champion|aktive?r\s+sponsor|nicht\s+entscheider|geschäftlich|einordnung|plausibel|validiert/))return true;
+    return false;
+  }
+  return false;
+}
+
 function getStoredHealthV4224(){
   const aid=state.activeId||LS.get('ki21_aid',null);
   return aid?LS.get('ki21_health_'+aid,null):null;
@@ -7420,7 +7440,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.254 KI21 Orange Dashboard Insights'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.255 KI21 Orange Dashboard Insights Fixed'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7930,7 +7950,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -8020,7 +8040,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10211,7 +10231,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10301,7 +10321,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10653,7 +10673,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10743,7 +10763,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10954,7 +10974,7 @@ function showPDF(title,text,cust){
 }
 
 
-/* v4.254: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
+/* v4.255: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
 .cockpit-tile-item.cockpit-ki21-inline,
 .cockpit-tile-link.cockpit-ki21-inline{
   color:#ff8a2a !important;
@@ -11246,7 +11266,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.254 KI21 Orange Dashboard Insights';
+const KI21_VERSION='v4.255 KI21 Orange Dashboard Insights Fixed';
 
 
 function runKi21VersionMigration(){
