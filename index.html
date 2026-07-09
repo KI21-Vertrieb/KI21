@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.240 Economic Effect Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.241 Economic Effect Delete Orientation Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.240 Economic Effect Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.241 Economic Effect Delete Orientation Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1763,6 +1763,58 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   line-height:1.36 !important;
   color:rgba(230,237,243,.50) !important;
 }
+.cockpit-economic-actions{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  flex:0 0 auto !important;
+}
+.cockpit-economic-delete{
+  border:1px solid rgba(248,81,73,.35) !important;
+  color:#ff7b72 !important;
+  background:rgba(248,81,73,.08) !important;
+  border-radius:999px !important;
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-delete:active{transform:translateY(1px) !important;}
+.cockpit-economic-orient-btn{
+  margin-top:7px !important;
+  border:1px solid rgba(255,107,0,.34) !important;
+  color:#ff8a2a !important;
+  background:rgba(255,107,0,.06) !important;
+  border-radius:9px !important;
+  min-height:29px !important;
+  padding:6px 9px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  font-weight:850 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-orient-btn:disabled{
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+}
+.cockpit-economic-orientation{
+  margin-top:7px !important;
+  font-size:10.8px !important;
+  line-height:1.42 !important;
+  color:rgba(230,237,243,.70) !important;
+  border:1px solid rgba(255,107,0,.18) !important;
+  border-left:2px solid rgba(255,107,0,.62) !important;
+  border-radius:9px !important;
+  padding:7px 8px !important;
+  background:rgba(255,107,0,.045) !important;
+  white-space:pre-wrap !important;
+}
+.cockpit-economic-orientation b{color:#ff8a2a !important;}
 @media(max-width:390px){
   .cockpit-economic-capture{padding:12px !important;border-radius:16px !important;}
   .cockpit-economic-title{font-size:13.2px !important;}
@@ -6466,11 +6518,12 @@ function parseMonthlyEffectV4240(v){
 }
 function formatMonthlyEffectV4240(n){return Number(n||0).toLocaleString('de-DE')+' €/Monat';}
 function getEconomicEffectKeyV4240(aid){return 'ki21_economic_effects_v4240_'+(aid||'global');}
+function getEconomicDeletedKeyV4241(aid){return 'ki21_economic_effects_deleted_v4241_'+(aid||'global');}
 function inferEconomicEffectRowsV4240(deepCase){
   const rows=[];
   const add=(id,label,benchmark,unit)=>{
     if(rows.some(r=>r.id===id))return;
-    rows.push({id,label,amount:'',benchmark:benchmark||'',unit:unit||''});
+    rows.push({id,label,amount:'',benchmark:benchmark||'',unit:unit||'',orientation:''});
   };
   let all='';
   try{all=(deepCase||[]).map(c=>[c.headline,c.evidence].concat((c.points||[]).map(p=>p&&p.text||p)).join(' ')).join('\n').toLowerCase();}catch(e){}
@@ -6490,13 +6543,29 @@ function inferEconomicEffectRowsV4240(deepCase){
 function loadEconomicEffectsV4240(aid,deepCase){
   const key=getEconomicEffectKeyV4240(aid);
   let saved=LS.get(key,null);
-  const inferred=inferEconomicEffectRowsV4240(deepCase);
+  const deleted=LS.get(getEconomicDeletedKeyV4241(aid),[]);
+  const inferred=inferEconomicEffectRowsV4240(deepCase).filter(r=>!deleted.includes(r.id));
   if(!Array.isArray(saved)||!saved.length){saved=inferred;LS.set(key,saved);return saved;}
   inferred.forEach(r=>{if(!saved.some(x=>x&&x.id===r.id))saved.push(r);});
+  // alte Zeilen kompatibel halten
+  saved=saved.filter(r=>r&&r.id&&!deleted.includes(r.id)).map(r=>Object.assign({orientation:''},r));
   LS.set(key,saved);
   return saved;
 }
 function saveEconomicEffectsV4240(aid,rows){LS.set(getEconomicEffectKeyV4240(aid),rows||[]);}
+function deleteEconomicEffectV4241(aid,rows,idx){
+  const r=rows[idx];
+  if(!r)return;
+  if(!String(r.id||'').startsWith('custom_')){
+    const key=getEconomicDeletedKeyV4241(aid);
+    const deleted=LS.get(key,[]);
+    if(!deleted.includes(r.id))deleted.push(r.id);
+    LS.set(key,deleted);
+  }
+  rows.splice(idx,1);
+  saveEconomicEffectsV4240(aid,rows);
+  renderCockpitSnapshotLiteV4215();
+}
 function getEconomicSummaryV4240(rows){
   rows=Array.isArray(rows)?rows:[];
   const filled=rows.filter(r=>parseMonthlyEffectV4240(r&&r.amount)>0);
@@ -6521,17 +6590,76 @@ function updateEconomicSummaryDomV4240(aid,rows){
   el.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Benchmarks ohne Monatswert'),h('strong',{},String(s.benchmarks.length))));
   el.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
 }
+function buildEconomicOrientationPromptV4241(aid,deepCase,row){
+  let opp='';
+  try{
+    const acc=(state.accounts||[]).find(a=>a.id===aid)||{};
+    const c=acc.cust||{};
+    const mu=LS.get('ki21_mu',{});
+    opp+='Kunde: '+(c.firma||'')+'\nAnsprechpartner: '+(c.ap||'')+'\nBranche: '+(c.branche||'')+'\nMitarbeiter: '+(c.ma||'')+'\nUmsatz: '+(c.um||'')+'\n';
+    if(mu&&mu.profil)opp+='Mein Unternehmen: '+mu.profil+'\n';
+    if(mu&&mu.bausteine)opp+='Angebotsbausteine: '+mu.bausteine+'\n';
+  }catch(e){}
+  let cards='';
+  try{cards=(deepCase||[]).map(c=>'['+(c.title||'')+'] '+(c.headline||'')+'\nGrundlage: '+(c.evidence||'')+'\n- '+(c.points||[]).map(p=>p&&p.text||p).join('\n- ')).join('\n\n');}catch(e){}
+  return `Du bist KI21. Erzeuge für genau eine wirtschaftliche Effekt-Position eine kurze Orientierung für den Verkäufer. Nutze Websuche nur, wenn sie für eine belastbare externe Orientierung wirklich hilft. Erfinde keine Quellen, keine Benchmarks und keine Zahlen.
+
+POSITION:
+${row.label||'Wirtschaftlicher Effekt'}
+
+AKTUELLE OPPORTUNITY:
+${opp}
+
+COCKPIT-KONTEXT:
+${cards}
+
+REGELN:
+- Schreibe maximal 4 kurze Zeilen auf Deutsch.
+- Beginne mit "Aufgrund von ..." und benenne die konkrete Zahlen-/Faktenbasis, falls vorhanden.
+- Wenn eine belastbare externe Orientierung gefunden wird, zeige sie im Originalkontext und mit Einheit, z.B. "pro Stunde", "pro Vorfall", "pro Jahr".
+- Rechne NICHT auf Monatswerte um.
+- Trage KEINEN Wert ins Feld ein und empfehle keinen automatischen Monatswert.
+- Wenn keine belastbare Zahlenbasis oder Quelle vorhanden ist, schreibe ausdrücklich: "Kein Monatswert geschätzt – Zahlenbasis fehlt." 
+- Keine generischen Aussagen wie "hohe Kosten".
+- Der Text soll nur Orientierung sein, keine ROI-Berechnung.
+
+AUSGABEFORMAT:
+Aufgrund von ...
+Orientierung: ...
+Kein Wert auf Monatsbasis geschätzt / bzw. Kein Monatswert geschätzt – Zahlenbasis fehlt.
+Hinweis: Nicht automatisch umrechnen; Monatswert mit dem Kunden ableiten.`;
+}
+async function generateEconomicOrientationV4241(aid,deepCase,rows,idx,outEl,btn){
+  const r=rows[idx];
+  if(!r)return;
+  try{
+    if(btn){btn.disabled=true;btn.textContent='KI21 recherchiert...';}
+    if(outEl)outEl.textContent='KI21 recherchiert Orientierung. Es wird kein Wert ins Monatsfeld übernommen...';
+    const prompt=buildEconomicOrientationPromptV4241(aid,deepCase,r);
+    const text=await callClaude(prompt,(t)=>{if(outEl)outEl.textContent=t;});
+    rows[idx].orientation=(text||'').trim()||'Kein Monatswert geschätzt – Zahlenbasis fehlt.';
+    saveEconomicEffectsV4240(aid,rows);
+    if(outEl)outEl.textContent=rows[idx].orientation;
+  }catch(e){
+    if(outEl)outEl.textContent='KI21-Orientierung konnte nicht generiert werden: '+(e&&e.message?e.message:'Unbekannter Fehler');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='KI21-Orientierung generieren';}
+  }
+}
 function renderEconomicEffectCaptureV4240(aid,deepCase){
   const rows=loadEconomicEffectsV4240(aid,deepCase);
   const box=h('div',{className:'cockpit-economic-capture'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
     h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung erfassen'),
-    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. Benchmarks dienen nur zur Orientierung und werden nicht automatisch umgerechnet.')
+    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. Benchmarks und KI21-Orientierungen bleiben Text und werden nicht automatisch ins Feld übernommen.')
   );
   rows.forEach((r,idx)=>{
     const row=h('div',{className:'cockpit-economic-row'});
     const status=h('div',{className:'cockpit-economic-status '+(parseMonthlyEffectV4240(r.amount)>0?'filled':'')},parseMonthlyEffectV4240(r.amount)>0?'erfasst':'offen');
-    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Wirtschaftlicher Effekt'),status));
+    const delBtn=h('button',{className:'cockpit-economic-delete',title:'Effekt löschen',onclick:()=>{
+      if(confirm('Diesen wirtschaftlichen Effekt löschen?'))deleteEconomicEffectV4241(aid,rows,idx);
+    }},'×');
+    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Wirtschaftlicher Effekt'),h('div',{className:'cockpit-economic-actions'},status,delBtn)));
     const input=h('input',{type:'text',inputmode:'decimal',placeholder:'offen',value:r.amount||'',oninput:(e)=>{
       rows[idx].amount=e.target.value;
       saveEconomicEffectsV4240(aid,rows);
@@ -6545,16 +6673,20 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     }else{
       row.appendChild(h('div',{className:'cockpit-economic-benchmark'},h('b',{},'Wirtschaftlicher Effekt pro Monat: '),'offen – für eine wirtschaftliche Bewertung fehlt noch ein Zahlenwert.'));
     }
+    const out=h('div',{className:'cockpit-economic-orientation'},r.orientation||'Noch keine KI21-Orientierung generiert.');
+    const orientBtn=h('button',{className:'cockpit-economic-orient-btn',onclick:(e)=>generateEconomicOrientationV4241(aid,deepCase,rows,idx,out,e.currentTarget)},'KI21-Orientierung generieren');
+    row.appendChild(orientBtn);
+    row.appendChild(out);
     box.appendChild(row);
   });
   const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
   box.appendChild(summary);
   box.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>{
-    rows.push({id:'custom_'+Date.now(),label:'Zusätzlicher wirtschaftlicher Effekt',amount:'',benchmark:'',unit:''});
+    rows.push({id:'custom_'+Date.now(),label:'Zusätzlicher wirtschaftlicher Effekt',amount:'',benchmark:'',unit:'',orientation:''});
     saveEconomicEffectsV4240(aid,rows);
     renderCockpitSnapshotLiteV4215();
   }},'＋ weiteren Effekt erfassen'));
-  box.appendChild(h('div',{className:'cockpit-economic-note'},'KI21 berechnet den ROI nicht automatisch. KI21 macht den Business Case rechenbar: Nur manuell eingetragene Monatswerte fließen in die Summe ein.'));
+  box.appendChild(h('div',{className:'cockpit-economic-note'},'KI21 berechnet den ROI nicht automatisch. KI21 macht den Business Case rechenbar: Nur manuell eingetragene Monatswerte fließen in die Summe ein. KI21-Orientierungen bleiben Text und werden nicht in Monatswerte umgerechnet.'));
   setTimeout(()=>updateEconomicSummaryDomV4240(aid,rows),0);
   return box;
 }
@@ -6725,10 +6857,10 @@ function renderCockpitSnapshotLiteV4215(){
     deepWrap.appendChild(c);
   });
   wrap.appendChild(deepWrap);
-  // v4.240: Business Case wird manuell rechenbar; Benchmarks bleiben Orientierung und werden nicht automatisch umgerechnet.
+  // v4.241: Business Case wird manuell rechenbar; Effekte löschbar; KI21-Orientierung wird als Text generiert und nie ins Monatsfeld übernommen.
   wrap.appendChild(renderEconomicEffectCaptureV4240(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.240 Economic Effect Capture Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.241 Economic Effect Delete Orientation Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7238,7 +7370,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.241 Economic Effect Delete Orientation Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7328,7 +7460,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.241 Economic Effect Delete Orientation Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -7455,6 +7587,58 @@ function exportAutopilotPDF(cust,dossierResults){
   line-height:1.36 !important;
   color:rgba(230,237,243,.50) !important;
 }
+.cockpit-economic-actions{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  flex:0 0 auto !important;
+}
+.cockpit-economic-delete{
+  border:1px solid rgba(248,81,73,.35) !important;
+  color:#ff7b72 !important;
+  background:rgba(248,81,73,.08) !important;
+  border-radius:999px !important;
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-delete:active{transform:translateY(1px) !important;}
+.cockpit-economic-orient-btn{
+  margin-top:7px !important;
+  border:1px solid rgba(255,107,0,.34) !important;
+  color:#ff8a2a !important;
+  background:rgba(255,107,0,.06) !important;
+  border-radius:9px !important;
+  min-height:29px !important;
+  padding:6px 9px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  font-weight:850 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-orient-btn:disabled{
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+}
+.cockpit-economic-orientation{
+  margin-top:7px !important;
+  font-size:10.8px !important;
+  line-height:1.42 !important;
+  color:rgba(230,237,243,.70) !important;
+  border:1px solid rgba(255,107,0,.18) !important;
+  border-left:2px solid rgba(255,107,0,.62) !important;
+  border-radius:9px !important;
+  padding:7px 8px !important;
+  background:rgba(255,107,0,.045) !important;
+  white-space:pre-wrap !important;
+}
+.cockpit-economic-orientation b{color:#ff8a2a !important;}
 @media(max-width:390px){
   .cockpit-economic-capture{padding:12px !important;border-radius:16px !important;}
   .cockpit-economic-title{font-size:13.2px !important;}
@@ -9438,7 +9622,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.241 Economic Effect Delete Orientation Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9528,7 +9712,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.241 Economic Effect Delete Orientation Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -9655,6 +9839,58 @@ function generateKundePDF(aid, cust){
   line-height:1.36 !important;
   color:rgba(230,237,243,.50) !important;
 }
+.cockpit-economic-actions{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  flex:0 0 auto !important;
+}
+.cockpit-economic-delete{
+  border:1px solid rgba(248,81,73,.35) !important;
+  color:#ff7b72 !important;
+  background:rgba(248,81,73,.08) !important;
+  border-radius:999px !important;
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-delete:active{transform:translateY(1px) !important;}
+.cockpit-economic-orient-btn{
+  margin-top:7px !important;
+  border:1px solid rgba(255,107,0,.34) !important;
+  color:#ff8a2a !important;
+  background:rgba(255,107,0,.06) !important;
+  border-radius:9px !important;
+  min-height:29px !important;
+  padding:6px 9px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  font-weight:850 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-orient-btn:disabled{
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+}
+.cockpit-economic-orientation{
+  margin-top:7px !important;
+  font-size:10.8px !important;
+  line-height:1.42 !important;
+  color:rgba(230,237,243,.70) !important;
+  border:1px solid rgba(255,107,0,.18) !important;
+  border-left:2px solid rgba(255,107,0,.62) !important;
+  border-radius:9px !important;
+  padding:7px 8px !important;
+  background:rgba(255,107,0,.045) !important;
+  white-space:pre-wrap !important;
+}
+.cockpit-economic-orientation b{color:#ff8a2a !important;}
 @media(max-width:390px){
   .cockpit-economic-capture{padding:12px !important;border-radius:16px !important;}
   .cockpit-economic-title{font-size:13.2px !important;}
@@ -9804,7 +10040,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.241 Economic Effect Delete Orientation Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9894,7 +10130,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.240 Economic Effect Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.241 Economic Effect Delete Orientation Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10021,6 +10257,58 @@ function showPDF(title,text,cust){
   line-height:1.36 !important;
   color:rgba(230,237,243,.50) !important;
 }
+.cockpit-economic-actions{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  flex:0 0 auto !important;
+}
+.cockpit-economic-delete{
+  border:1px solid rgba(248,81,73,.35) !important;
+  color:#ff7b72 !important;
+  background:rgba(248,81,73,.08) !important;
+  border-radius:999px !important;
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-delete:active{transform:translateY(1px) !important;}
+.cockpit-economic-orient-btn{
+  margin-top:7px !important;
+  border:1px solid rgba(255,107,0,.34) !important;
+  color:#ff8a2a !important;
+  background:rgba(255,107,0,.06) !important;
+  border-radius:9px !important;
+  min-height:29px !important;
+  padding:6px 9px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  font-weight:850 !important;
+  cursor:pointer !important;
+}
+.cockpit-economic-orient-btn:disabled{
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+}
+.cockpit-economic-orientation{
+  margin-top:7px !important;
+  font-size:10.8px !important;
+  line-height:1.42 !important;
+  color:rgba(230,237,243,.70) !important;
+  border:1px solid rgba(255,107,0,.18) !important;
+  border-left:2px solid rgba(255,107,0,.62) !important;
+  border-radius:9px !important;
+  padding:7px 8px !important;
+  background:rgba(255,107,0,.045) !important;
+  white-space:pre-wrap !important;
+}
+.cockpit-economic-orientation b{color:#ff8a2a !important;}
 @media(max-width:390px){
   .cockpit-economic-capture{padding:12px !important;border-radius:16px !important;}
   .cockpit-economic-title{font-size:13.2px !important;}
@@ -10299,7 +10587,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.240 Economic Effect Capture Candidate';
+const KI21_VERSION='v4.241 Economic Effect Delete Orientation Candidate';
 
 
 function runKi21VersionMigration(){
