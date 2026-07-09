@@ -1554,7 +1554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1661,7 +1661,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1941,6 +1941,28 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 .cockpit-tile-item.cockpit-savings-inline::after,
 .cockpit-tile-link.cockpit-savings-inline::after{
+  color:#ff8a2a !important;
+}
+
+
+/* v4.254: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
+.cockpit-tile-item.cockpit-ki21-inline,
+.cockpit-tile-link.cockpit-ki21-inline{
+  color:#ff8a2a !important;
+  font-weight:820 !important;
+}
+.cockpit-tile-item.cockpit-ki21-inline::before,
+.cockpit-tile-link.cockpit-ki21-inline::before,
+.cockpit-tile-item.cockpit-ki21-inline::after,
+.cockpit-tile-link.cockpit-ki21-inline::after{
+  color:#ff8a2a !important;
+}
+.bs-row.bs-kind-ki21 .bs-glyph,
+.bs-row.bs-kind-ki21 .bs-row-arrow{
+  color:#ff8a2a !important;
+  opacity:1 !important;
+}
+.bs-row.bs-kind-ki21{
   color:#ff8a2a !important;
 }
 
@@ -6330,6 +6352,24 @@ function showScoreDetailsV4224(raw){
     return;
   }
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
+  // v4.254: Übergangsmarkierung im Dashboard.
+  // Orange bedeutet: KI21 hat den Punkt durch Einordnung, Verknüpfung oder Ableitung entwickelt – nicht bloß Rohinformation kopiert.
+  const isKi21DashboardInsight=(txt,kind)=>{
+    const s=String(txt||'').toLowerCase();
+    const has=(re)=>re.test(s);
+    if(has(/bezifferter\s+schmerz|beziffertes\s+potenzial|einsparpotenzial|eingetragene\s+(i-?werte|monatswerte)|wirtschaftlicher\s+effekt/))return true;
+    if(kind==='value'||kind==='question')return true;
+    if(kind==='risk'){
+      if(has(/strategisch|formal|eingekoppelt|abhängig|folgeoption|nicht\s+aktuelles\s+angebot|ohne\s+freigabe|budget\s+noch|nicht\s+entscheider|scope|block|bremse|priorität|unklar|offen/))return true;
+      return false;
+    }
+    if(kind==='insight'){
+      if(has(/trigger|relevanz|relevante|schmerz\s+quantifiziert|quantifiz|sponsor|champion|aktive?r\s+sponsor|nicht\s+entscheider|geschäftlich|einordnung|plausibel|validiert/))return true;
+      // Direkte Aussagen wie "CFO bestätigt..." oder "Großkunde fordert..." bleiben normalerweise nicht orange.
+      return false;
+    }
+    return false;
+  };
   const positives=(Array.isArray(raw.positive)?raw.positive:[]).map(clean).filter(Boolean);
   const warnings=(Array.isArray(raw.warning)?raw.warning:[]).map(clean).filter(Boolean);
   const opens=(Array.isArray(raw.open)?raw.open:[]).map(clean).filter(Boolean);
@@ -7321,15 +7361,21 @@ function renderCockpitSnapshotLiteV4215(){
   const grid=h('div',{className:'cockpit-grid'});
   const mkTile=(label,items,empty,kind,maxItems)=>{
     const normalized=(items||[]).map((it,i)=>{
-      if(it&&typeof it==='object'&&('text' in it))return {text:clean(it.text),highlight:!!it.highlight,idx:i};
-      return {text:clean(it),highlight:/Beziffertes\s+Schmerz/i.test(String(it||'')),idx:i};
+      const rawText=(it&&typeof it==='object'&&('text' in it))?it.text:it;
+      const text=clean(rawText);
+      const highlight=!!(it&&typeof it==='object'&&it.highlight)||/Bezifferter?\s+Schmerz/i.test(String(rawText||''));
+      return {text,highlight,ki21:highlight||isKi21DashboardInsight(text,kind||'cockpit'),idx:i};
     }).filter(x=>x.text);
-    const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>({text:t,highlight:/Beziffertes\s+Schmerz/i.test(String(t||'')),idx:i}));
+    const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>{
+      const original=normalized.find(x=>x.text===t)||{};
+      const highlight=!!original.highlight||/Bezifferter?\s+Schmerz/i.test(String(t||''));
+      return {text:t,highlight,ki21:highlight||isKi21DashboardInsight(t,kind||'cockpit'),idx:i};
+    });
     const all=sorted;
     const openList=()=>{
       const rows=all.map(x=>{
         const t=x.text;
-        return {glyph:x.highlight?'●':'•',text:t,kind:x.highlight?'savings':'',onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
+        return {glyph:(x.highlight||x.ki21)?'●':'•',text:t,kind:x.highlight?'savings':(x.ki21?'ki21':''),onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
       });
       showBottomSheet(label,rows,empty);
     };
@@ -7338,7 +7384,7 @@ function renderCockpitSnapshotLiteV4215(){
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.highlight?' cockpit-savings-inline':'');
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.highlight?' cockpit-savings-inline':(x.ki21?' cockpit-ki21-inline':''));
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7374,7 +7420,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.253 Bezifferter Schmerz Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.254 KI21 Orange Dashboard Insights'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7884,7 +7930,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7974,7 +8020,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10165,7 +10211,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10255,7 +10301,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10607,7 +10653,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.254 KI21 Orange Dashboard Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10697,7 +10743,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.253 Bezifferter Schmerz Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.254 KI21 Orange Dashboard Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10905,6 +10951,28 @@ function showPDF(title,text,cust){
   .cockpit-economic-title{font-size:13.2px !important;}
   .cockpit-economic-help{font-size:10.5px !important;}
   .cockpit-economic-label{font-size:11.6px !important;}
+}
+
+
+/* v4.254: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
+.cockpit-tile-item.cockpit-ki21-inline,
+.cockpit-tile-link.cockpit-ki21-inline{
+  color:#ff8a2a !important;
+  font-weight:820 !important;
+}
+.cockpit-tile-item.cockpit-ki21-inline::before,
+.cockpit-tile-link.cockpit-ki21-inline::before,
+.cockpit-tile-item.cockpit-ki21-inline::after,
+.cockpit-tile-link.cockpit-ki21-inline::after{
+  color:#ff8a2a !important;
+}
+.bs-row.bs-kind-ki21 .bs-glyph,
+.bs-row.bs-kind-ki21 .bs-row-arrow{
+  color:#ff8a2a !important;
+  opacity:1 !important;
+}
+.bs-row.bs-kind-ki21{
+  color:#ff8a2a !important;
 }
 
 </style>
@@ -11178,7 +11246,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.253 Bezifferter Schmerz Cockpit';
+const KI21_VERSION='v4.254 KI21 Orange Dashboard Insights';
 
 
 function runKi21VersionMigration(){
