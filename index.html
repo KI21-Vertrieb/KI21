@@ -1453,7 +1453,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.234 Cockpit Economic/Close Candidate: kompakter Wirtschafts- und Abschlussstatus */
+/* v4.235 Cockpit Evidence Status Candidate: Wirtschafts- und Abschlussstatus mit Belegzeile */
 .cockpit-deal-status{
   display:grid !important;
   grid-template-columns:1fr 1fr !important;
@@ -1488,22 +1488,37 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   line-height:1.05 !important;
 }
 .cockpit-deal-text{
-  font-size:10.3px !important;
-  font-weight:800 !important;
-  line-height:1.18 !important;
+  font-size:10.4px !important;
+  font-weight:850 !important;
+  line-height:1.14 !important;
   color:#edf2f7 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.cockpit-deal-proof{
+  margin-top:3px !important;
+  font-size:8.7px !important;
+  font-weight:650 !important;
+  line-height:1.18 !important;
+  color:rgba(201,209,217,.62) !important;
   display:-webkit-box !important;
   -webkit-line-clamp:2 !important;
   -webkit-box-orient:vertical !important;
   overflow:hidden !important;
 }
+.cockpit-deal-proof b{
+  color:rgba(201,209,217,.78) !important;
+  font-weight:850 !important;
+}
 .cockpit-deal-chip.eco .cockpit-deal-label{color:rgba(86,211,144,.80) !important;}
 .cockpit-deal-chip.close .cockpit-deal-label{color:rgba(255,138,42,.88) !important;}
 @media(max-width:390px){
   .cockpit-deal-status{gap:7px !important;margin-bottom:7px !important;}
-  .cockpit-deal-chip{padding:7px 8px !important;min-height:41px !important;border-radius:12px !important;}
-  .cockpit-deal-label{font-size:7.2px !important;letter-spacing:.85px !important;}
-  .cockpit-deal-text{font-size:9.45px !important;line-height:1.12 !important;}
+  .cockpit-deal-chip{padding:6px 8px !important;min-height:47px !important;border-radius:12px !important;}
+  .cockpit-deal-label{font-size:7px !important;letter-spacing:.82px !important;margin-bottom:2px !important;}
+  .cockpit-deal-text{font-size:9.55px !important;line-height:1.08 !important;}
+  .cockpit-deal-proof{font-size:8.05px !important;line-height:1.12 !important;margin-top:2px !important;}
 }
 
 </style>
@@ -5962,7 +5977,7 @@ function getScoreLeverCategoryV4226(text){
 }
 
 
-function getCockpitEconomicCloseStatusV4234(raw,aid){
+function getCockpitEconomicCloseStatusV4235(raw,aid){
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const texts=[];
   try{
@@ -5977,33 +5992,68 @@ function getCockpitEconomicCloseStatusV4234(raw,aid){
   const fv5=(phase5&&phase5.fv)||{};
   const mu=LS.get('ki21_mu',{})||{};
   const offerText=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' ').toLowerCase();
+  const offerRaw=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' · ');
+  const findText=(re)=>{
+    const hit=texts.find(t=>re.test(String(t).toLowerCase()));
+    return hit?hit.replace(/\s+/g,' ').trim():'';
+  };
+  const short=(t,max)=>{
+    t=String(t||'').replace(/^\s*(wirtschaft|abschluss)\s*:\s*/i,'').trim();
+    if(t.length<=max)return t;
+    const cut=t.lastIndexOf(' ',max-1);
+    return t.substring(0,cut>22?cut:max-1).trim()+'…';
+  };
+  const joinBits=(arr,max)=>short(arr.filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · '),max);
 
-  let economy='Wirtschaft: noch offen';
+  let economy={state:'Noch offen',evidence:'Noch kein belastbarer Nutzenbeleg'};
   if(has(/nicht belastbar|zu validieren|validier|offen|klären|kein.*roi|roi.*nicht|wirkung.*fehlt|vermeidungsquote/)){
-    if(has(/nutzen|roi|business case|wirtschaft|aufwand|stunden|tage|schaden|review|audit|umsatz|kosten|€|euro/)) economy='Wirtschaft: Nutzen validieren';
+    if(has(/nutzen|roi|business case|wirtschaft|aufwand|stunden|tage|schaden|review|audit|umsatz|kosten|€|euro/)){
+      economy.state='Nutzen validieren';
+      economy.evidence=joinBits([
+        findText(/nutzen|roi|business case|wirtschaft|wirkung|vermeidungsquote|validier/),
+        findText(/aufwand|stunden|tage|review|audit|umsatz|kosten|€|euro/)
+      ],82)||'Wirkung/ROI noch nicht belastbar';
+    }
   } else if(has(/nutzen|roi|business case|wirtschaft|aufwand|stunden|tage|schaden|review|audit|großkunde|umsatz|kosten|€|euro/)){
-    economy='Wirtschaft: Nutzen plausibel';
+    economy.state='Nutzen plausibel';
+    economy.evidence=joinBits([
+      findText(/großkunde|audit|review|anforderung|q3/),
+      findText(/aufwand|stunden|tage|kosten|€|euro|umsatz|nutzen/)
+    ],82)||'Wirtschaftliches Signal vorhanden';
   }
   if(has(/bestätigt|schriftlich|deadline|q3|großkunde|audit|anforderung/) && has(/aufwand|tage|stunden|review|risiko|management-report|nachweis/)){
-    economy='Wirtschaft: Hebel erkennbar';
+    economy.state='Hebel erkennbar';
+    economy.evidence=joinBits([
+      findText(/großkunde|audit|review|anforderung|q3|schriftlich/),
+      findText(/aufwand|tage|stunden|management-report|nachweis|risiko/)
+    ],82)||'Anforderung + operativer Aufwand belegt';
   }
 
-  let closing='Abschluss: Angebot offen';
+  let closing={state:'Angebot offen',evidence:'Kein konkretes Angebot erkannt'};
   if(/quick check|start|paket|angebot|€|euro|monat|preis|managed|security|lizenz|compact|sprint/.test(offerText)){
-    closing='Abschluss: Angebot definiert';
+    closing.state='Angebot definiert';
+    closing.evidence=short(offerRaw||'Angebotsbaustein/Preis vorhanden',82);
   }
   if(has(/cfo|geschäftsführung|gf|entscheider|freigabe|beauftragung|formal|zustimmen|entscheidung/)){
-    closing='Abschluss: Freigabe klären';
+    closing.state='Freigabe klären';
+    closing.evidence=joinBits([
+      findText(/cfo|geschäftsführung|gf|entscheider|freigabe|beauftragung|formal|zustimmen|entscheidung/),
+      findText(/sponsor|champion|thomas|ansprechpartner/)
+    ],82)||'Entscheider/Freigabe nicht vollständig belegt';
   }
   if(has(/cfo.*entscheidbar|budget.*entscheidbar|freigabe.*bestätigt|entscheidung.*bestätigt/)){
-    closing='Abschluss: Entscheidung nah';
+    closing.state='Entscheidung nah';
+    closing.evidence=findText(/cfo.*entscheidbar|budget.*entscheidbar|freigabe.*bestätigt|entscheidung.*bestätigt/)||closing.evidence;
   }
   if(has(/managed security|folgeoption|noch nicht freigegeben|scope|umfang|quick check/)){
-    closing='Abschluss: Scope schärfen';
+    closing.state='Scope schärfen';
+    closing.evidence=joinBits([
+      findText(/quick check|scope|umfang/),
+      findText(/managed security|folgeoption|noch nicht freigegeben/)
+    ],82)||'Startangebot und Folgeoption sauber trennen';
   }
   return {economy,closing};
 }
-
 function renderHomeLiteV4211(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -6125,15 +6175,17 @@ function renderCockpitSnapshotLiteV4215(){
       h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung')
     )
   ));
-  const dealStatus=getCockpitEconomicCloseStatusV4234(raw,aid);
+  const dealStatus=getCockpitEconomicCloseStatusV4235(raw,aid);
   wrap.appendChild(h('div',{className:'cockpit-deal-status'},
     h('div',{className:'cockpit-deal-chip eco'},
       h('div',{className:'cockpit-deal-label'},'Wirtschaft'),
-      h('div',{className:'cockpit-deal-text'},dealStatus.economy)
+      h('div',{className:'cockpit-deal-text'},dealStatus.economy.state),
+      h('div',{className:'cockpit-deal-proof'},h('b',{},'Beleg: '),dealStatus.economy.evidence)
     ),
     h('div',{className:'cockpit-deal-chip close'},
       h('div',{className:'cockpit-deal-label'},'Abschluss'),
-      h('div',{className:'cockpit-deal-text'},dealStatus.closing)
+      h('div',{className:'cockpit-deal-text'},dealStatus.closing.state),
+      h('div',{className:'cockpit-deal-proof'},h('b',{},'Beleg: '),dealStatus.closing.evidence)
     )
   ));
   const grid=h('div',{className:'cockpit-grid'});
@@ -6160,7 +6212,7 @@ function renderCockpitSnapshotLiteV4215(){
   grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(1,5),'Noch keine gespeicherten Fragen.','question',3));
   wrap.appendChild(grid);
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.234 Economic/Close Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.235 Evidence Status Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -9053,7 +9105,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.234 Economic/Close Candidate';
+const KI21_VERSION='v4.235 Evidence Status Candidate';
 
 
 function runKi21VersionMigration(){
