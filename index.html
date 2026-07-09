@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -6530,6 +6530,12 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
   }
 
   const casePoints=[];
+  // v4.249: I-Werte aus Phase 2 direkt in der Business-Case-Vertiefung sichtbar machen.
+  let iSummaryV4249=null;
+  try{iSummaryV4249=getImplicationSummaryV4246(aid2);}catch(e){iSummaryV4249=null;}
+  if(iSummaryV4249&&iSummaryV4249.sum>0){
+    add(casePoints,'Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+' wirtschaftlicher Effekt.',true);
+  }
   if(has(/quick\s*check|4\.?900|4900/)){
     add(casePoints,'Quick Check 4.900 € ist der begrenzte nächste Angebotsschritt.',false);
   }
@@ -6561,6 +6567,10 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
     caseEvidence=has(/quick\s*check|4\.?900|4900/)
       ? '4.900 € Quick Check kurzfristig entscheidbar; 2.800 €/Monat noch offen.'
       : short((casePoints[0]&&casePoints[0].text)||'',125);
+  }
+  if(iSummaryV4249&&iSummaryV4249.sum>0){
+    caseHead='Business Case teilquantifiziert';
+    caseEvidence='Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.';
   }
 
   return [
@@ -6969,7 +6979,7 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
   card.appendChild(summary);
   if(s.filled.length){
-    card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>r.value).join(' · ')));
+    card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasste I-Werte: '+s.filled.map(r=>r.value).join(' · ')));
   }
   card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 I-Werte erfassen →'));
   card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Keine automatische Umrechnung anderer Zeiträume.'));
@@ -7175,9 +7185,18 @@ function renderCockpitSnapshotLiteV4215(){
   const cust=(acc&&acc.cust)||{};
   const raw=aid?LS.get('ki21_health_'+aid,null):null; // bewusst nur gespeicherter Snapshot, keine schwere getOpportunityHealth()-Logik
   const score=(raw&&typeof raw.score==='number')?Math.round(raw.score):null;
-  const pos=Array.isArray(raw&&raw.positive)?raw.positive:[];
-  const warn=Array.isArray(raw&&raw.warning)?raw.warning:[];
-  const open=Array.isArray(raw&&raw.open)?raw.open:[];
+  let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
+  let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
+  let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
+  // v4.249: manuell erfasste I-Werte aus Phase 2 auch in den sichtbaren Cockpit-Kacheln zeigen,
+  // nicht nur in der unteren Business-Case-Zusammenfassung.
+  try{
+    const iSummary=getImplicationSummaryV4246(aid);
+    if(iSummary&&iSummary.sum>0){
+      const iLine='Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummary.sum)+' wirtschaftlicher Effekt';
+      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Eingetragene I-Werte')>=0))pos.unshift(iLine);
+    }
+  }catch(e){}
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const rankCockpitItem=(txt,kind)=>{
     const s=String(txt||'').toLowerCase();
@@ -7274,7 +7293,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.248 I-Value Dashboard Context Fix'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.249 I-Value Visible Dashboard Cards'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7784,7 +7803,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7874,7 +7893,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10065,7 +10084,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10155,7 +10174,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10507,7 +10526,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10597,7 +10616,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11078,7 +11097,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.248 I-Value Dashboard Context Fix';
+const KI21_VERSION='v4.249 I-Value Visible Dashboard Cards';
 
 
 function runKi21VersionMigration(){
