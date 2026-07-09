@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1845,6 +1845,12 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-economic-help{font-size:10.5px !important;}
   .cockpit-economic-label{font-size:11.6px !important;}
 }
+
+
+/* v4.245: Phase-2-Erfassung, Cockpit nur Zusammenfassung */
+.phase2-economic-capture{margin-top:10px !important;margin-bottom:16px !important;}
+.cockpit-economic-summary-only .cockpit-economic-row,
+.cockpit-economic-summary-only .cockpit-economic-input-wrap{display:none !important;}
 
 </style>
 </head>
@@ -2182,6 +2188,13 @@ function buildCtx(cust,mu,kk,stk,currentSitId){
   }
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
+  try{
+    const aidEco=LS.get('ki21_aid',null);
+    if(aidEco && (currentSitId===3 || currentSitId===4)){
+      const ecoCtx=buildEconomicEffectsContextV4245(aidEco);
+      if(ecoCtx)s+='\nEINGETRAGENE WIRTSCHAFTLICHE EFFEKTE (manuell erfasst, Benchmarks/Hinweise nicht eingerechnet):\n'+ecoCtx+'\n';
+    }
+  }catch(e){}
   const intelData=LS.get('ki21_intelligence',{});
   if(intelData&&intelData.inhalt)s+='\nKI21 Intelligence (verdichtete Business Patterns):\n'+intelData.inhalt+'\n';
   if(stk)s+='\nZusätzlicher Kontext:\n'+stk+'\n';
@@ -6588,7 +6601,7 @@ function deleteEconomicEffectV4241(aid,rows,idx){
   }
   rows.splice(idx,1);
   saveEconomicEffectsV4240(aid,rows);
-  renderCockpitSnapshotLiteV4215();
+  refreshEconomicAreaV4245();
 }
 function getEconomicSummaryV4240(rows){
   rows=Array.isArray(rows)?rows:[];
@@ -6600,6 +6613,60 @@ function getEconomicSummaryV4240(rows){
   if(filled.length&&open.length)status='teilquantifiziert';
   else if(filled.length&&!open.length)status='belastbar quantifiziert';
   return {sum,filled,open,benchmarks,status};
+}
+
+function refreshEconomicAreaV4245(){
+  try{
+    if(state&&state.currentSitId===1)renderStation(1);
+    else renderCockpitSnapshotLiteV4215();
+  }catch(e){try{renderCockpitSnapshotLiteV4215();}catch(_){}}
+}
+function buildEconomicEffectsContextV4245(aid){
+  let rows=LS.get(getEconomicEffectKeyV4240(aid),[]);
+  if(!Array.isArray(rows)||!rows.length)return '';
+  const summary=getEconomicSummaryV4240(rows);
+  let lines=[];
+  lines.push('Summe eingetragener Monatswerte: '+formatMonthlyEffectV4240(summary.sum));
+  lines.push('Status: '+summary.status);
+  if(summary.filled.length){
+    lines.push('Erfasste monatliche Effekte:');
+    summary.filled.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))));
+  }
+  if(summary.open.length){
+    lines.push('Offene wirtschaftliche Effekte:');
+    summary.open.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': Monatswert fehlt'));
+  }
+  const hints=rows.filter(r=>String(r&&r.orientation||'').trim());
+  if(hints.length){
+    lines.push('KI21-Hinweise / Vergleichswerte (nicht eingerechnet):');
+    hints.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': '+String(r.orientation||'').replace(/^Hinweis:\s*/i,'')));
+  }
+  lines.push('Regel: Nur manuell eingetragene Monatswerte zählen. Benchmarks/Hinweise werden nicht automatisch umgerechnet oder eingerechnet.');
+  return lines.join('\n');
+}
+function renderEconomicSummaryCardV4245(aid,deepCase){
+  const rows=loadEconomicEffectsV4240(aid,deepCase||[]);
+  const s=getEconomicSummaryV4240(rows);
+  let offer='Angebotskosten noch nicht sauber erkannt';
+  try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
+  const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
+    h('div',{className:'cockpit-economic-kicker'},'Business Case'),
+    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
+    h('div',{className:'cockpit-economic-help'},'Erfassung in Phase 2 bei den Implikationen. Im Cockpit steht nur die verdichtete Lage.')
+  );
+  const summary=h('div',{className:'cockpit-economic-summary'});
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Summe erfasster Monatswerte'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Offene Effekte'),h('strong',{},String(s.open.length))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
+  card.appendChild(summary);
+  if(s.filled.length){
+    const list=h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>(r.label||'Effekt')+' '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))).join(' · '));
+    card.appendChild(list);
+  }
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 wirtschaftliche Wirkung erfassen →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingetragene Monatswerte werden gezählt. KI21-Hinweise bleiben Orientierung.'));
+  return card;
 }
 function updateEconomicSummaryDomV4240(aid,rows){
   const s=getEconomicSummaryV4240(rows);
@@ -6683,7 +6750,7 @@ function setEconomicOrientationVisibleV4242(aid,rows,idx,visible){
   if(!rows||!rows[idx])return;
   rows[idx].orientationHidden=!visible;
   saveEconomicEffectsV4240(aid,rows);
-  renderCockpitSnapshotLiteV4215();
+  refreshEconomicAreaV4245();
 }
 async function generateEconomicOrientationV4241(aid,deepCase,rows,idx,outEl,btn){
   const r=rows[idx];
@@ -6706,9 +6773,9 @@ async function generateEconomicOrientationV4241(aid,deepCase,rows,idx,outEl,btn)
 function renderEconomicEffectCaptureV4240(aid,deepCase){
   const rows=loadEconomicEffectsV4240(aid,deepCase);
   const box=h('div',{className:'cockpit-economic-capture'},
-    h('div',{className:'cockpit-economic-kicker'},'Business Case'),
+    h('div',{className:'cockpit-economic-kicker'},'Implikation / Business Case'),
     h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung erfassen'),
-    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. KI21-Hinweise sind recherchierte Vergleichswerte und werden nicht automatisch übernommen.')
+    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. Diese Werte entstehen in Phase 2 und werden im Cockpit sowie in Phase 4 verwendet. KI21-Hinweise bleiben Orientierung.')
   );
   const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
   box.appendChild(summary);
@@ -6763,7 +6830,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
   box.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>{
     rows.push({id:'custom_'+Date.now(),label:'Zusätzlicher wirtschaftlicher Effekt',amount:'',benchmark:'',unit:'',orientation:''});
     saveEconomicEffectsV4240(aid,rows);
-    renderCockpitSnapshotLiteV4215();
+    refreshEconomicAreaV4245();
   }},'＋ weiteren Effekt erfassen'));
   box.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingetragene Monatswerte fließen in die Summe ein. Gelöschte KI21-Vorschläge werden nicht automatisch wieder angelegt.'));
   setTimeout(()=>updateEconomicSummaryDomV4240(aid,rows),0);
@@ -6936,10 +7003,10 @@ function renderCockpitSnapshotLiteV4215(){
     deepWrap.appendChild(c);
   });
   wrap.appendChild(deepWrap);
-  // v4.244: Business Case bleibt manuell; KI21-Hinweis ist ein online recherchierter Vergleichswert/Orientierungswert und nie ein Monatswert.
-  wrap.appendChild(renderEconomicEffectCaptureV4240(aid,deepCase));
+  // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
+  wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.244 Economic Benchmark Hint Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.245 Phase2 Economic Capture Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7449,7 +7516,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7539,7 +7606,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -8406,6 +8473,21 @@ function renderStation(sitId){
         item.appendChild(ta);
         wrap.appendChild(item);
       });
+      // v4.245: Wirtschaftliche Wirkung gehört methodisch zur Implikation/Bedarfsanalyse.
+      // Cockpit zeigt später nur die Zusammenfassung, Phase 4 nutzt diese Werte als Business-Case-Datenbasis.
+      try{
+        const rawHealth=aid?LS.get('ki21_health_'+aid,null):null;
+        const deepCaseForEco=getCockpitDeepCaseCardsV4238(rawHealth,aid);
+        const ecoBox=renderEconomicEffectCaptureV4240(aid,deepCaseForEco);
+        ecoBox.classList.add('phase2-economic-capture');
+        const divider=h('div',{className:'exec-divider'},
+          h('div',{className:'exec-divider-line'}),
+          h('div',{className:'exec-divider-label'},'Implikationen beziffern'),
+          h('div',{className:'exec-divider-line'})
+        );
+        wrap.appendChild(divider);
+        wrap.appendChild(ecoBox);
+      }catch(e){}
     } else {
       // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
@@ -9725,7 +9807,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9815,7 +9897,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10167,7 +10249,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.245 Phase2 Economic Capture Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10257,7 +10339,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.245 Phase2 Economic Capture Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10738,7 +10820,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.244 Economic Benchmark Hint Candidate';
+const KI21_VERSION='v4.245 Phase2 Economic Capture Candidate';
 
 
 function runKi21VersionMigration(){
