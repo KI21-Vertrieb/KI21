@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -6976,6 +6976,135 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   return card;
 }
 
+
+// v4.248: I-Werte robust im Cockpit/Dashboard und Phase-4-Kontext verwenden
+function normalizeMoneyNumberV4248(v){
+  let s=String(v||'').trim();
+  if(!s)return 0;
+  s=s.replace(/€/g,'').replace(/\beuro\b/ig,'').replace(/\beur\b/ig,'');
+  s=s.replace(/pro\s*monat/ig,'').replace(/\/\s*monat/ig,'').replace(/monatlich/ig,'').replace(/monatl\.?/ig,'').replace(/mtl\.?/ig,'').replace(/p\.?\s*m\.?/ig,'');
+  s=s.replace(/[^0-9.,kK]/g,'');
+  if(!s)return 0;
+  const hasK=/k$/i.test(s); s=s.replace(/k$/i,'');
+  // 3.000,50 -> 3000.50 | 3,000.50 -> 3000.50 | 3000,50 -> 3000.50 | 3.000 -> 3000
+  if(/,\d{1,2}$/.test(s))s=s.replace(/\./g,'').replace(',','.');
+  else if(/\.\d{1,2}$/.test(s) && /,/.test(s))s=s.replace(/,/g,'');
+  else s=s.replace(/[.,]/g,'');
+  let n=parseFloat(s);
+  if(!isFinite(n)||n<=0)return 0;
+  if(hasK)n*=1000;
+  return Math.round(n);
+}
+function isMonthlyValueV4246(v){
+  const s=String(v||'').toLowerCase();
+  return /(monat|monatlich|monatl\.?|mtl\.?|pro\s*monat|\/\s*monat|p\.?\s*m\.?)\b/.test(s);
+}
+function parseMonthlyImplicationValueV4246(v){
+  if(!isMonthlyValueV4246(v))return 0;
+  return normalizeMoneyNumberV4248(v);
+}
+function parseMonthlyEffectV4240(v){
+  if(!String(v||'').trim())return 0;
+  return normalizeMoneyNumberV4248(v);
+}
+function getPhase2ImplicationQuestionsV4246(){
+  try{
+    const aid=state.activeId||LS.get('ki21_aid',null);
+    if(!aid)return [];
+    const d=LS.get('ki21_st_'+aid+'_1',{fv:{},result:''});
+    const raw=d&&d.fv?String(d.fv.spin||''):'';
+    const lines=(typeof extractSpinQuestions==='function')?extractSpinQuestions(raw):[];
+    return (lines||[]).map((line,i)=>{
+      const m=String(line||'').match(/^([SPIN])\s*[:\-–]?\s*(.*)$/i);
+      return {q:(m?(m[2]||''):String(line||'')).trim(),idx:i,letter:m?m[1].toUpperCase():''};
+    }).filter(x=>String(x.letter||'').toUpperCase()==='I' && String(x.q||'').trim());
+  }catch(e){return [];}
+}
+function getImplicationSummaryV4246(aid){
+  const values=loadImplicationValuesV4246(aid);
+  const qs=getPhase2ImplicationQuestionsV4246();
+  const rows=qs.map(x=>{
+    const id=slugQuestionV4246(x.q,x.idx);
+    const val=formatRawEconomicValueV4246(values[id]);
+    return {id,question:x.q,idx:x.idx,value:val,monthly:parseMonthlyImplicationValueV4246(val)};
+  });
+  const filled=rows.filter(r=>String(r.value||'').trim());
+  const monthly=rows.filter(r=>r.monthly>0);
+  const open=rows.filter(r=>!String(r.value||'').trim());
+  const sum=monthly.reduce((a,r)=>a+r.monthly,0);
+  let status='nicht quantifiziert';
+  if(monthly.length&&open.length)status='teilquantifiziert';
+  else if(monthly.length&&!open.length)status='quantifiziert';
+  else if(filled.length&&!monthly.length)status='Werte ohne Monatsbezug';
+  return {rows,filled,monthly,open,sum,status};
+}
+function buildOfferEconomicsSummaryV4248(aid){
+  try{
+    const mu=LS.get('ki21_mu',{})||{};
+    const txt=String((mu.bausteine||'')+'\n'+(mu.profil||''));
+    const lines=txt.split(/\n|\r|;/).map(x=>x.trim()).filter(Boolean);
+    const money='(\\d{1,3}(?:[\\.\\s]\\d{3})*(?:,\\d{1,2})?|\\d{3,})(?:\\s*)(?:€|EUR|Euro)';
+    const one=[]; const recurring=[];
+    lines.forEach(line=>{
+      const m=line.match(new RegExp(money,'i'));
+      if(!m)return;
+      const amount=(m[1]||'').replace(/\s/g,'.')+' €';
+      let label=line.replace(new RegExp(money,'i'),'').replace(/[:\-–]+/g,' ').trim();
+      label=label.replace(/\b(einmalig|monatlich|pro\s*monat|\/\s*monat|mtl\.?|per\s*month)\b/ig,'').trim();
+      label=label.split(',')[0].trim();
+      if(label.length>32)label=label.slice(0,32).trim();
+      const item=(amount+(label?' '+label:''));
+      if(/monat|\/\s*monat|mtl\.?|pro\s*user\s*\/\s*monat/i.test(line))recurring.push(amount+'/Monat'+(label?' '+label:''));
+      else one.push(item+( /einmalig/i.test(line)?' einmalig':''));
+    });
+    const parts=[];
+    if(one.length)parts.push(one[0].replace(/\s+einmalig\s+einmalig/i,' einmalig'));
+    if(recurring.length)parts.push(recurring[0]+' Folgeoption/offen');
+    if(parts.length)return parts.join('; ');
+  }catch(e){}
+  try{return buildSafeOfferEconomicsText(aid)||'Angebotskosten noch nicht sauber erkannt';}catch(e){return 'Angebotskosten noch nicht sauber erkannt';}
+}
+function buildEconomicEffectsContextV4245(aid){
+  const s=getImplicationSummaryV4246(aid);
+  if(!s.rows.length)return '';
+  const lines=[];
+  lines.push('Wirtschaftliche Effekte direkt an I-Fragen / Implikationen erfasst.');
+  lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
+  lines.push('Status: '+s.status);
+  if(s.filled.length){
+    lines.push('Erfasste I-Werte:');
+    s.filled.forEach(r=>lines.push('- '+String(r.question||'').replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value+(r.monthly>0?' (in Cockpit-Summe enthalten)':' (nicht summiert, kein Monatsbezug erkannt)')));
+  }
+  if(s.open.length){
+    lines.push('Noch nicht bezifferte I-Fragen:');
+    s.open.forEach(r=>lines.push('- '+String(r.question||'').replace(/^I\s*[:.-]?\s*/i,'')));
+  }
+  lines.push('PFLICHT FÜR PHASE 4: Diese manuell eingegebenen I-Werte sind vorrangige Business-Case-Daten. Wenn Monatswerte vorhanden sind, nicht schreiben, dass Euro-Werte fehlen. Stattdessen ROI-Status als teilquantifiziert/quantifiziert einordnen und offene Annahmen separat nennen.');
+  lines.push('Regel: Nur manuell eingegebene Monatswerte mit klarem Monatsbezug werden summiert. Andere Zeiträume bleiben als Einzelwerte erhalten und werden nicht automatisch umgerechnet.');
+  return lines.join('\n');
+}
+function renderEconomicSummaryCardV4245(aid,deepCase){
+  const s=getImplicationSummaryV4246(aid);
+  const offer=buildOfferEconomicsSummaryV4248(aid);
+  const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
+    h('div',{className:'cockpit-economic-kicker'},'Business Case'),
+    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
+    h('div',{className:'cockpit-economic-help'},'Euro-Werte werden direkt bei den I-Fragen in Phase 2 erfasst. Das Cockpit zeigt nur die verdichtete Lage.')
+  );
+  const summary=h('div',{className:'cockpit-economic-summary'});
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Summe monatlicher I-Werte'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'I-Werte erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
+  card.appendChild(summary);
+  if(s.filled.length){
+    card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>r.value).join(' · ')));
+  }
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 I-Werte erfassen →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Keine automatische Umrechnung anderer Zeiträume.'));
+  return card;
+}
+
 function renderHomeLiteV4211(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -7145,7 +7274,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.247 I-Value Text Input Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.248 I-Value Dashboard Context Fix'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7655,7 +7784,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7745,7 +7874,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -9936,7 +10065,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10026,7 +10155,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10378,7 +10507,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.247 I-Value Text Input Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.248 I-Value Dashboard Context Fix: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10468,7 +10597,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.247 I-Value Text Input Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.248 I-Value Dashboard Context Fix: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10949,7 +11078,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.247 I-Value Text Input Candidate';
+const KI21_VERSION='v4.248 I-Value Dashboard Context Fix';
 
 
 function runKi21VersionMigration(){
