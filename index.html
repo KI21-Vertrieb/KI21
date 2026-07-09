@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1854,7 +1854,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.247: freie Euro-Wert-Erfassung direkt an I-Fragen, Text inkl. Zeitraum erlaubt */
+/* v4.247: freie Euro-Wert-Erfassung direkt an Implikationsfragen, Text inkl. Zeitraum erlaubt */
 .implication-value-box{
   margin:0 12px 12px 46px !important;
   padding:9px 10px !important;
@@ -1879,6 +1879,28 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   font-size:10.5px !important;line-height:1.35 !important;color:#c9d1d9 !important;margin-top:6px !important;opacity:.82 !important;
 }
 @media(max-width:390px){.implication-value-box{margin-left:38px !important;padding:8px 9px !important;}.implication-value-help{font-size:10px !important;}}
+
+
+
+/* v4.250: Cockpit-Schrift minimal kleiner, Begriffe ruhiger */
+.cockpit-one-screen .cockpit-next-text{font-size:12.6px !important;line-height:1.38 !important;}
+.cockpit-one-screen .cockpit-tile-item,
+.cockpit-one-screen .cockpit-tile-link{font-size:11.8px !important;line-height:1.32 !important;}
+.cockpit-one-screen .cockpit-tile-label{font-size:9.2px !important;}
+.cockpit-deep-title{font-size:13.2px !important;}
+.cockpit-deep-lead{font-size:12.0px !important;}
+.cockpit-deep-point{font-size:11.4px !important;line-height:1.34 !important;}
+.cockpit-deep-evidence,.cockpit-deep-question{font-size:10.7px !important;}
+.cockpit-economic-title{font-size:13.0px !important;}
+.cockpit-economic-summary-line{font-size:11.1px !important;}
+.cockpit-economic-help,.cockpit-economic-note{font-size:10.5px !important;}
+@media(max-width:390px){
+  .cockpit-one-screen .cockpit-next-text{font-size:12.2px !important;}
+  .cockpit-one-screen .cockpit-tile-item,
+  .cockpit-one-screen .cockpit-tile-link{font-size:11.3px !important;}
+  .cockpit-deep-point{font-size:11.0px !important;}
+  .cockpit-economic-summary-line{font-size:10.8px !important;}
+}
 
 </style>
 </head>
@@ -4575,7 +4597,7 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
   }
   if(authority&&isObsoleteGfCfoText(x)){
     if(/schaden|jahresschaden|umsatzverlust|umsatzschaden|wirtschaftlicher schaden|quote|vermeidungsquote|roi/i.test(x)){
-      return (kind==='warning'||kind==='risk')?'Wirtschaftliche Wirkung mit Entscheider validieren':'Vermeidungsquote mit Entscheider validieren';
+      return (kind==='warning'||kind==='risk')?'Beziffertes Potenzial mit Entscheider validieren':'Vermeidungsquote mit Entscheider validieren';
     }
     if(kind==='missing'||kind==='open')return 'Wirtschaftlichen Nutzen mit Entscheider validieren';
     if(kind==='warning'||kind==='risk')return 'Formale Beauftragung / Startentscheidung noch offen';
@@ -5066,7 +5088,7 @@ function sanitizeOutputIntegrityText(accId,text,kind){
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung).{0,80}(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Bestätigung|Zusage|Commitment)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+decName+' anhand echter Deals validieren.');
     x=x.replace(/Geschäftsführer(?:in)?\s+involviert:\s*/gi,'Management-Sicht: ');
     x=x.replace(/Geschäftsführung\s+involviert:\s*/gi,'Management-Sicht: ');
-    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,80}(?:durchsprechen|anschauen|validieren|fragen|klären)[^\n.]*(?:\.|$)/gi,'Wirtschaftliche Wirkung mit '+decName+' anhand echter Deals validieren.');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,80}(?:durchsprechen|anschauen|validieren|fragen|klären)[^\n.]*(?:\.|$)/gi,'Beziffertes Potenzial mit '+decName+' anhand echter Deals validieren.');
     x=x.replace(/(?:durch|mit)\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'mit '+decName+' anhand echter Deals validieren.');
   }
 
@@ -5126,7 +5148,7 @@ function sanitizeGeneratedOutputFinal(accId,text,kind){
   // GF/Geschäftsführung nicht als Pflichtinstanz bei bestätigter Entscheidungsbefugnis.
   if(authority){
     x=x.replace(/ohne\s+wirtschaftliche\s+Dimensionierung\s+durch\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'Ohne Validierung mit echten Deals bleibt die wirtschaftliche Wirkung ungesichert.');
-    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,100}(?:durchsprechen|anschauen|validieren|fragen|klären|bestätigen)[^\n.]*(?:\.|$)/gi,'Wirtschaftliche Wirkung mit '+dec+' anhand echter Deals validieren.');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,100}(?:durchsprechen|anschauen|validieren|fragen|klären|bestätigen)[^\n.]*(?:\.|$)/gi,'Beziffertes Potenzial mit '+dec+' anhand echter Deals validieren.');
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?Status\s+bestätigen[^\n.]*/gi,'Formale Beauftragung und Startzuständigkeit klären');
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Zusage)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.');
     x=x.replace(/Marius\s+müssen\s+gemeinsam/gi,'Marius sollte');
@@ -5198,7 +5220,7 @@ function sanitizeFinalOutputV4188(accId,text,kind){
         if(/^(?:•|-)?\s*(?:Die 5 Punkte|KAUFARGUMENTE|Schmerz|BESTÄTIGT)/i.test(section+t)){
           line=line.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung|CEO|CFO)/gi,'Management');
         }else{
-          line='Wirtschaftliche Wirkung und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.';
+          line='Beziffertes Potenzial und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.';
         }
       }
     }
@@ -5233,7 +5255,7 @@ function sanitizeFinalOutputV4188(accId,text,kind){
   x=safeLines.join('\n');
 
   // Nachbereinigung: doppelte identische Standardzeilen reduzieren.
-  x=x.replace(/(?:Wirtschaftliche Wirkung und Erfolgskriterien mit [^\n]+ anhand echter Deals validieren\.\s*\n){2,}/gi, m=>m.split('\n')[0]+'\n');
+  x=x.replace(/(?:Beziffertes Potenzial und Erfolgskriterien mit [^\n]+ anhand echter Deals validieren\.\s*\n){2,}/gi, m=>m.split('\n')[0]+'\n');
   x=x.replace(/(?:Vermeidungsquote\/Wirkung ist offen und muss mit echten Deals validiert werden\.\s*\n){2,}/gi,'Vermeidungsquote/Wirkung ist offen und muss mit echten Deals validiert werden.\n');
   x=x.replace(/\bkeine\s+Keine\b/gi,'keine');
   x=x.replace(/\n{3,}/g,'\n\n');
@@ -5866,10 +5888,10 @@ function sanitizeDossierEarlyPhaseV4190(text,accId){
     let line=rawLine;
     const t=line.trim();
     if(!t){out.push(line);continue;}
-    if(/Wirtschaftliche Wirkung und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i.test(t)){
+    if(/Beziffertes Potenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i.test(t)){
       if(seenValidation)continue;
       seenValidation=true;
-      line=line.replace(/Wirtschaftliche Wirkung und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i,'Konkrete Pilot-Deals und Messkriterien für die Wirkungsmessung festlegen.');
+      line=line.replace(/Beziffertes Potenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i,'Konkrete Pilot-Deals und Messkriterien für die Wirkungsmessung festlegen.');
     }
     if(authority && /(?:Geschäftsführer|Geschäftsführung|\bGF\b|CEO|CFO).{0,100}(Kaufbereitschaft|Freigabe|Zusage|Commitment|validieren|bestätigen|muss|müssen|erforderlich|ausstehend|Termin)/i.test(t))continue;
     if(/\d{1,3}\s*%\s*(?:→|->|auf|bis|zu)\s*\d{1,3}\s*%/i.test(t))continue;
@@ -6530,11 +6552,11 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
   }
 
   const casePoints=[];
-  // v4.249: I-Werte aus Phase 2 direkt in der Business-Case-Vertiefung sichtbar machen.
+  // v4.250: Potenzial aus Phase 2 direkt in der Business-Case-Vertiefung sichtbar machen.
   let iSummaryV4249=null;
   try{iSummaryV4249=getImplicationSummaryV4246(aid2);}catch(e){iSummaryV4249=null;}
   if(iSummaryV4249&&iSummaryV4249.sum>0){
-    add(casePoints,'Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+' wirtschaftlicher Effekt.',true);
+    add(casePoints,'Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.',true);
   }
   if(has(/quick\s*check|4\.?900|4900/)){
     add(casePoints,'Quick Check 4.900 € ist der begrenzte nächste Angebotsschritt.',false);
@@ -6570,7 +6592,7 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
   }
   if(iSummaryV4249&&iSummaryV4249.sum>0){
     caseHead='Business Case teilquantifiziert';
-    caseEvidence='Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.';
+    caseEvidence='Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.';
   }
 
   return [
@@ -6614,7 +6636,7 @@ function inferEconomicEffectRowsV4240(deepCase){
   if(/ausfall|datenpanne|security|backup|m365|patch|risiko/.test(all)){
     add('security_risk','IT-/Security-Risiko','','');
   }
-  if(!rows.length)add('economic_effect','Wirtschaftlicher Effekt','','');
+  if(!rows.length)add('economic_effect','Potenzial','','');
   return rows;
 }
 function loadEconomicEffectsV4240(aid,deepCase){
@@ -6670,16 +6692,16 @@ function buildEconomicEffectsContextV4245(aid){
   lines.push('Status: '+summary.status);
   if(summary.filled.length){
     lines.push('Erfasste monatliche Effekte:');
-    summary.filled.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))));
+    summary.filled.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))));
   }
   if(summary.open.length){
     lines.push('Offene wirtschaftliche Effekte:');
-    summary.open.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': Monatswert fehlt'));
+    summary.open.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': Monatswert fehlt'));
   }
   const hints=rows.filter(r=>String(r&&r.orientation||'').trim());
   if(hints.length){
     lines.push('KI21-Hinweise / Vergleichswerte (nicht eingerechnet):');
-    hints.forEach(r=>lines.push('- '+(r.label||'Wirtschaftlicher Effekt')+': '+String(r.orientation||'').replace(/^Hinweis:\s*/i,'')));
+    hints.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': '+String(r.orientation||'').replace(/^Hinweis:\s*/i,'')));
   }
   lines.push('Regel: Nur manuell eingetragene Monatswerte zählen. Benchmarks/Hinweise werden nicht automatisch umgerechnet oder eingerechnet.');
   return lines.join('\n');
@@ -6691,7 +6713,7 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
     h('div',{className:'cockpit-economic-help'},'Erfassung in Phase 2 bei den Implikationen. Im Cockpit steht nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
@@ -6704,7 +6726,7 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
     const list=h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>(r.label||'Effekt')+' '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))).join(' · '));
     card.appendChild(list);
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 wirtschaftliche Wirkung erfassen →'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
   card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingetragene Monatswerte werden gezählt. KI21-Hinweise bleiben Orientierung.'));
   return card;
 }
@@ -6738,7 +6760,7 @@ function buildEconomicOrientationPromptV4241(aid,deepCase,row){
 Wichtig: Es geht NICHT um Verkaufstext und NICHT um das eigene Angebot. Der Hinweis soll helfen, mit dem Kunden einen monatlichen wirtschaftlichen Effekt abzuleiten.
 
 POSITION:
-${row.label||'Wirtschaftlicher Effekt'}
+${row.label||'Potenzial'}
 
 AKTUELLE OPPORTUNITY:
 ${opp}
@@ -6814,7 +6836,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
   const rows=loadEconomicEffectsV4240(aid,deepCase);
   const box=h('div',{className:'cockpit-economic-capture'},
     h('div',{className:'cockpit-economic-kicker'},'Implikation / Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung erfassen'),
+    h('div',{className:'cockpit-economic-title'},'Potenzial erfassen'),
     h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. Diese Werte entstehen in Phase 2 und werden im Cockpit sowie in Phase 4 verwendet. KI21-Hinweise bleiben Orientierung.')
   );
   const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
@@ -6826,7 +6848,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     const delBtn=h('button',{className:'cockpit-economic-delete',title:'Effekt löschen',onclick:()=>{
       if(confirm('Diesen wirtschaftlichen Effekt löschen?'))deleteEconomicEffectV4241(aid,rows,idx);
     }},'×');
-    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Wirtschaftlicher Effekt'),h('div',{className:'cockpit-economic-actions'},status,delBtn)));
+    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Potenzial'),h('div',{className:'cockpit-economic-actions'},status,delBtn)));
     const info=h('div',{className:'cockpit-economic-benchmark'});
     const setInfo=(val)=>{
       const n=parseMonthlyEffectV4240(val);
@@ -6868,7 +6890,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     box.appendChild(row);
   });
   box.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>{
-    rows.push({id:'custom_'+Date.now(),label:'Zusätzlicher wirtschaftlicher Effekt',amount:'',benchmark:'',unit:'',orientation:''});
+    rows.push({id:'custom_'+Date.now(),label:'Zusätzliches Potenzial',amount:'',benchmark:'',unit:'',orientation:''});
     saveEconomicEffectsV4240(aid,rows);
     refreshEconomicAreaV4245();
   }},'＋ weiteren Effekt erfassen'));
@@ -6878,7 +6900,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
 }
 
 
-// v4.247: Wirtschaftlicher Euro-Wert direkt an I-Fragen; Eingabe als freier Text inkl. Zeitraum
+// v4.247: Wirtschaftlicher Euro-Wert direkt an Implikationsfragen; Eingabe als freier Text inkl. Zeitraum
 function getImplicationValueKeyV4246(aid){return 'ki21_implication_values_v4246_'+(aid||'global');}
 function slugQuestionV4246(q,idx){
   const base=String(q||'').toLowerCase().replace(/[„“"'’]/g,'').replace(/[^a-z0-9äöüß]+/gi,' ').trim().slice(0,90);
@@ -6928,7 +6950,7 @@ function renderImplicationEconomicFieldV4246(aid,idx,q){
   const box=h('div',{className:'implication-value-box'});
   const status=h('div',{className:'implication-value-status '+(current?'filled':'')},current?'erfasst':'optional');
   box.appendChild(h('div',{className:'implication-value-head'},
-    h('div',{className:'implication-value-label'},'Wirtschaftlicher Effekt'),
+    h('div',{className:'implication-value-label'},'Potenzial'),
     status
   ));
   const input=h('input',{className:'implication-value-input',type:'text',inputmode:'text',autocomplete:'off',placeholder:'z. B. 2.000 € monatlich',value:current,oninput:(e)=>{
@@ -6940,54 +6962,54 @@ function renderImplicationEconomicFieldV4246(aid,idx,q){
     status.className='implication-value-status '+(val.trim()?'filled':'');
   }});
   box.appendChild(input);
-  box.appendChild(h('div',{className:'implication-value-help'},'Optionaler Euro-Wert pro Zeitraum, gemeinsam mit dem Kunden abgeleitet. KI21 rechnet nur Monatswerte mit Monatsbezug in die Cockpit-Summe ein.'));
+  box.appendChild(h('div',{className:'implication-value-help'},'Optionaler Euro-Wert pro Zeitraum, gemeinsam mit dem Kunden abgeleitet. Potenzial ist keine automatische ROI-Zusage; Monatswerte erscheinen im Cockpit.'));
   return box;
 }
-// Überschreibt v4.245-Kontext: Phase 4 nutzt jetzt I-Fragen-Werte, nicht separate Effekt-Positionen.
+// Überschreibt v4.245-Kontext: Phase 4 nutzt jetzt Implikationswerte, nicht separate Effekt-Positionen.
 function buildEconomicEffectsContextV4245(aid){
   const s=getImplicationSummaryV4246(aid);
   if(!s.rows.length)return '';
   const lines=[];
-  lines.push('Wirtschaftliche Effekte direkt an I-Fragen / Implikationen erfasst.');
+  lines.push('Eingetragenes Potenzial direkt an Implikationsfragen erfasst.');
   lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
   lines.push('Status: '+s.status);
   if(s.filled.length){
-    lines.push('Erfasste I-Werte:');
+    lines.push('Eingetragenes Potenzial:');
     s.filled.forEach(r=>lines.push('- '+r.question.replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value));
   }
   if(s.open.length){
-    lines.push('Noch nicht bezifferte I-Fragen:');
+    lines.push('Noch nicht bezifferte Implikationsfragen:');
     s.open.forEach(r=>lines.push('- '+r.question.replace(/^I\s*[:.-]?\s*/i,'')));
   }
   lines.push('Regel: Nur manuell eingegebene Monatswerte mit klarem Monatsbezug werden summiert. Andere Zeiträume bleiben als Einzelwerte erhalten und werden nicht automatisch umgerechnet.');
   return lines.join('\n');
 }
-// Überschreibt v4.245-Cockpitkarte: nur Zusammenfassung der I-Werte, keine Erfassungsstrecke.
+// Überschreibt v4.245-Cockpitkarte: nur Zusammenfassung der Potenziale, keine Erfassungsstrecke.
 function renderEconomicSummaryCardV4245(aid,deepCase){
   const s=getImplicationSummaryV4246(aid);
   let offer='Angebotskosten noch nicht sauber erkannt';
   try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
-    h('div',{className:'cockpit-economic-help'},'Euro-Werte werden direkt bei den I-Fragen in Phase 2 erfasst. Das Cockpit zeigt nur die verdichtete Lage.')
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
+    h('div',{className:'cockpit-economic-help'},'Potenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Summe monatlicher I-Werte'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Potenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'I-Werte erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Potenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
   card.appendChild(summary);
   if(s.filled.length){
-    card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasste I-Werte: '+s.filled.map(r=>r.value).join(' · ')));
+    card.appendChild(h('div',{className:'cockpit-economic-note'},'Eingetragenes Potenzial: '+s.filled.map(r=>r.value).join(' · ')));
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 I-Werte erfassen →'));
-  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Keine automatische Umrechnung anderer Zeiträume.'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Potenzial ist keine automatische ROI-Zusage.'));
   return card;
 }
 
 
-// v4.248: I-Werte robust im Cockpit/Dashboard und Phase-4-Kontext verwenden
+// v4.250: Potenzial robust im Cockpit/Dashboard und Phase-4-Kontext verwenden
 function normalizeMoneyNumberV4248(v){
   let s=String(v||'').trim();
   if(!s)return 0;
@@ -7078,18 +7100,18 @@ function buildEconomicEffectsContextV4245(aid){
   const s=getImplicationSummaryV4246(aid);
   if(!s.rows.length)return '';
   const lines=[];
-  lines.push('Wirtschaftliche Effekte direkt an I-Fragen / Implikationen erfasst.');
+  lines.push('Eingetragenes Potenzial direkt an Implikationsfragen erfasst.');
   lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
   lines.push('Status: '+s.status);
   if(s.filled.length){
-    lines.push('Erfasste I-Werte:');
+    lines.push('Eingetragenes Potenzial:');
     s.filled.forEach(r=>lines.push('- '+String(r.question||'').replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value+(r.monthly>0?' (in Cockpit-Summe enthalten)':' (nicht summiert, kein Monatsbezug erkannt)')));
   }
   if(s.open.length){
-    lines.push('Noch nicht bezifferte I-Fragen:');
+    lines.push('Noch nicht bezifferte Implikationsfragen:');
     s.open.forEach(r=>lines.push('- '+String(r.question||'').replace(/^I\s*[:.-]?\s*/i,'')));
   }
-  lines.push('PFLICHT FÜR PHASE 4: Diese manuell eingegebenen I-Werte sind vorrangige Business-Case-Daten. Wenn Monatswerte vorhanden sind, nicht schreiben, dass Euro-Werte fehlen. Stattdessen ROI-Status als teilquantifiziert/quantifiziert einordnen und offene Annahmen separat nennen.');
+  lines.push('PFLICHT FÜR PHASE 4: Diese manuell eingegebenen Potenziale sind vorrangige Business-Case-Daten. Wenn Monatswerte vorhanden sind, nicht schreiben, dass Euro-Werte fehlen. Stattdessen ROI-Status als teilquantifiziert/quantifiziert einordnen und offene Annahmen separat nennen.');
   lines.push('Regel: Nur manuell eingegebene Monatswerte mit klarem Monatsbezug werden summiert. Andere Zeiträume bleiben als Einzelwerte erhalten und werden nicht automatisch umgerechnet.');
   return lines.join('\n');
 }
@@ -7098,20 +7120,20 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   const offer=buildOfferEconomicsSummaryV4248(aid);
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung'),
-    h('div',{className:'cockpit-economic-help'},'Euro-Werte werden direkt bei den I-Fragen in Phase 2 erfasst. Das Cockpit zeigt nur die verdichtete Lage.')
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
+    h('div',{className:'cockpit-economic-help'},'Potenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Summe monatlicher I-Werte'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Potenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'I-Werte erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Potenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
   card.appendChild(summary);
   if(s.filled.length){
     card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>r.value).join(' · ')));
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'In Phase 2 I-Werte erfassen →'));
-  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Keine automatische Umrechnung anderer Zeiträume.'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Potenzial ist keine automatische ROI-Zusage.'));
   return card;
 }
 
@@ -7188,13 +7210,13 @@ function renderCockpitSnapshotLiteV4215(){
   let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
   let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
   let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
-  // v4.249: manuell erfasste I-Werte aus Phase 2 auch in den sichtbaren Cockpit-Kacheln zeigen,
+  // v4.250: manuell erfasste Potenziale aus Phase 2 auch in den sichtbaren Cockpit-Kacheln zeigen,
   // nicht nur in der unteren Business-Case-Zusammenfassung.
   try{
     const iSummary=getImplicationSummaryV4246(aid);
     if(iSummary&&iSummary.sum>0){
-      const iLine='Eingetragene I-Werte: '+formatMonthlyEffectV4240(iSummary.sum)+' wirtschaftlicher Effekt';
-      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Eingetragene I-Werte')>=0))pos.unshift(iLine);
+      const iLine='Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummary.sum)+'';
+      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Beziffertes Potenzial')>=0))pos.unshift(iLine);
     }
   }catch(e){}
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
@@ -7293,7 +7315,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.249 I-Value Visible Dashboard Cards'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.250 Potenzial Terminology + Cockpit Font'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7803,7 +7825,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7893,7 +7915,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -8764,7 +8786,7 @@ function renderStation(sitId){
         wrap.appendChild(item);
       });
       // v4.246: Keine separate Erfassungsstrecke mehr.
-      // Wirtschaftliche Wirkung wird direkt an den I-Fragen (Implikationen) als einfacher Euro-Wert / Zeitraum erfasst.
+      // Beziffertes Potenzial wird direkt an den Implikationsfragen (Implikationen) als einfacher Euro-Wert / Zeitraum erfasst.
     } else {
       // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
@@ -10084,7 +10106,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10174,7 +10196,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10526,7 +10548,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10616,7 +10638,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.249 I-Value Visible Dashboard Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11097,7 +11119,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.249 I-Value Visible Dashboard Cards';
+const KI21_VERSION='v4.250 Potenzial Terminology + Cockpit Font';
 
 
 function runKi21VersionMigration(){
