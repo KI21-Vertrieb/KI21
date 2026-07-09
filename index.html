@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.243 Economic Hint Only Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1636,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.243 Economic Hint Only Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -6625,8 +6625,10 @@ function buildEconomicOrientationPromptV4241(aid,deepCase,row){
     if(mu&&mu.bausteine)opp+='Angebotsbausteine: '+mu.bausteine+'\n';
   }catch(e){}
   let cards='';
-  try{cards=(deepCase||[]).map(c=>'['+(c.title||'')+'] '+(c.headline||'')+'\nGrundlage: '+(c.evidence||'')+'\n- '+(c.points||[]).map(p=>p&&p.text||p).join('\n- ')).join('\n\n');}catch(e){}
-  return `Du bist KI21. Erzeuge für genau eine wirtschaftliche Effekt-Position eine extrem kurze Orientierung für den Verkäufer. Ziel ist ein belastbarer Kernausschnitt, nicht ein Erklärungstext. Nutze Websuche nur, wenn sie für eine belastbare externe Orientierung wirklich hilft. Erfinde keine Quellen, keine Benchmarks und keine Zahlen.
+  try{cards=(deepCase||[]).map(c=>'['+(c.title||c.label||'')+'] '+(c.headline||'')+'\nGrundlage: '+(c.evidence||'')+'\n- '+(c.points||[]).map(p=>p&&p.text||p).join('\n- ')).join('\n\n');}catch(e){}
+  return `Du bist KI21. Erzeuge für genau eine wirtschaftliche Effekt-Position einen KURZEN, online recherchierten Vergleichswert / Orientierungswert für den Verkäufer.
+
+Wichtig: Es geht NICHT um Verkaufstext und NICHT um das eigene Angebot. Der Hinweis soll helfen, mit dem Kunden einen monatlichen wirtschaftlichen Effekt abzuleiten.
 
 POSITION:
 ${row.label||'Wirtschaftlicher Effekt'}
@@ -6638,39 +6640,44 @@ COCKPIT-KONTEXT:
 ${cards}
 
 REGELN:
-- Maximal 1-2 kurze Sätze, insgesamt maximal 180 Zeichen.
-- Zeige nur den entscheidenden Hinweis für den Verkäufer.
-- Idealer Stil: "Hinweis: Ausfallkosten einer Spedition ca. 3.000 €/Stunde Downtime."
-- Wenn die belastbare Aussage genau einen starken Ausschnitt enthält, zeige genau diesen Ausschnitt und nichts Nebensächliches.
-- Originalkontext beibehalten: pro Stunde, pro Vorfall, pro Jahr usw.
-- Rechne NICHT auf Monatswerte um.
+- Nutze nach Möglichkeit eine online recherchierte, belastbare Vergleichsgröße oder eine allgemein anerkannte Bewertungslogik.
+- Wenn du eine Quelle nennen kannst, nenne sie sehr kurz im Hinweis (z.B. "Bitkom", "IBM Cost of a Data Breach", "Branchenvergleich Logistik"). Erfinde keine Quelle.
+- Maximal 1-2 kurze Sätze, insgesamt maximal 220 Zeichen.
+- Der Hinweis muss auf die Herleitung eines Monatswerts zielen: welche Vergleichsgröße, welche Einheit, welche Kundenzahl muss validiert werden?
+- Originaleinheit beibehalten: €/Stunde Downtime, €/Vorfall, Personentag, Vertragswert, Umsatzanteil usw.
+- Rechne NICHT automatisch auf €/Monat um.
 - Trage KEINEN Wert ins Feld ein und empfehle keinen automatischen Monatswert.
-- Wenn keine belastbare Zahlenbasis oder Quelle vorhanden ist, schreibe exakt: "Kein Monatswert geschätzt – Zahlenbasis fehlt."
-- Keine generischen Aussagen wie "hohe Kosten".
-- Keine separaten Zeilen wie "Einheit:" oder "Nicht eingerechnet:".
-- Keine langen Begründungen, keine Aufzählung, keine Methodenerklärung.
+- KEINE Angebotsnutzen-Sätze: nicht schreiben "Quick Check liefert...", "unser Angebot deckt...", "SecuraNet löst...".
+- KEINE generischen Aussagen wie "hohe Kosten".
+- Wenn keine belastbare Zahl, Quelle oder Vergleichslogik vorhanden ist, schreibe exakt: "Kein Monatswert geschätzt – belastbarer Vergleichswert fehlt."
+
+GUTE BEISPIELE:
+Hinweis: Ausfallkosten einer Spedition können in €/Stunde Downtime bewertet werden; Monatswert erst mit Ausfallhäufigkeit ableiten.
+Hinweis: Drei Rückfragen à 1–2 Personentage; Monatswert mit internem IT-Tagessatz ableiten.
+Hinweis: 12 % Umsatzanteil zeigt Relevanz, aber keinen Verlust; Monatswert nur mit Eintrittswahrscheinlichkeit oder Vertragsrisiko ableiten.
 
 AUSGABEFORMAT:
-Hinweis: [entscheidender kurzer Hinweis]`;
+Hinweis: [entscheidender kurzer Vergleichswert-/Herleitungshinweis]`;
 }
 function compactEconomicOrientationV4242(text){
   let raw=String(text||'').trim();
-  if(!raw)return 'Kein Monatswert geschätzt – Zahlenbasis fehlt.';
-  if(raw.indexOf('Kein Monatswert geschätzt')!==-1)return 'Kein Monatswert geschätzt – Zahlenbasis fehlt.';
+  if(!raw)return 'Kein Monatswert geschätzt – belastbarer Vergleichswert fehlt.';
+  if(/Kein Monatswert geschätzt/i.test(raw))return 'Kein Monatswert geschätzt – belastbarer Vergleichswert fehlt.';
   let lines=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  // v4.243: keine Meta-Zeilen in der Karte; nur der entscheidende Hinweis bleibt sichtbar.
-  lines=lines.filter(s=>!/^\s*(einheit|nicht eingerechnet|monatlicher effekt|monatswert)\s*:/i.test(s));
+  lines=lines.filter(s=>!/^(einheit|nicht eingerechnet|monatlicher effekt|monatswert|quelle)\s*:/i.test(s));
   lines=lines.map(s=>s.replace(/^[-•]\s*/,'').replace(/^Orientierung\s*:/i,'Hinweis:').trim());
-  const valued=lines.filter(s=>/\d|€|eur|pro\s+(stunde|tag|vorfall|monat|quartal|jahr|person)|downtime|ausfall|umsatz|personentage|rückfragen|nachweise/i.test(s));
+  // Angebotstexte konsequent entfernen: Dieser Bereich dient der Zahlenableitung, nicht der Nutzenargumentation.
+  lines=lines.filter(s=>!/(quick\s*check|secura\w*|angebot|management[-\s]?report|liefert|deckt|vorbereitung|priorisierte\s+risiken)/i.test(s) || /(tagessatz|personentag|downtime|€\/stunde|pro\s+stunde|umsatzanteil|vertragsrisiko|eintrittswahrscheinlichkeit|häufigkeit)/i.test(s));
+  const valued=lines.filter(s=>/\d|€|eur|pro\s+(stunde|tag|vorfall|monat|quartal|jahr|person)|downtime|ausfall|umsatz|personentage|tagessatz|vertragsrisiko|eintrittswahrscheinlichkeit|häufigkeit|vergleich|benchmark|bitkom|ibm|allianz|kosten/i.test(s));
   if(valued.length)lines=valued;
   let out=(lines[0]||'').trim();
-  if(out && !/^Hinweis:/i.test(out))out='Hinweis: '+out;
-  // Entferne angehängte Erklärsätze, wenn das Modell sie trotzdem liefert.
-  out=out.replace(/\s*Nicht eingerechnet\s*:.*/i,'').replace(/\s*Einheit\s*:.*/i,'').trim();
-  if(out.length>200){
-    out=out.slice(0,200).replace(/\s+\S*$/,'').trim()+'.';
+  if(!out)return 'Kein Monatswert geschätzt – belastbarer Vergleichswert fehlt.';
+  if(!/^Hinweis:/i.test(out))out='Hinweis: '+out;
+  out=out.replace(/\s*Nicht eingerechnet\s*:.*/i,'').replace(/\s*Einheit\s*:.*/i,'').replace(/\s*Quelle\s*:.*/i,'').trim();
+  if(out.length>230){
+    out=out.slice(0,230).replace(/\s+\S*$/,'').trim()+'.';
   }
-  return out||'Kein Monatswert geschätzt – Zahlenbasis fehlt.';
+  return out||'Kein Monatswert geschätzt – belastbarer Vergleichswert fehlt.';
 }
 function setEconomicOrientationVisibleV4242(aid,rows,idx,visible){
   if(!rows||!rows[idx])return;
@@ -6693,7 +6700,7 @@ async function generateEconomicOrientationV4241(aid,deepCase,rows,idx,outEl,btn)
   }catch(e){
     if(outEl)outEl.textContent='KI21-Hinweis konnte nicht generiert werden: '+(e&&e.message?e.message:'Unbekannter Fehler');
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='KI21-Hinweis generieren';}
+    if(btn){btn.disabled=false;btn.textContent='KI21-Hinweis neu recherchieren';}
   }
 }
 function renderEconomicEffectCaptureV4240(aid,deepCase){
@@ -6701,8 +6708,10 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
   const box=h('div',{className:'cockpit-economic-capture'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
     h('div',{className:'cockpit-economic-title'},'Wirtschaftliche Wirkung erfassen'),
-    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. KI21-Hinweise bleiben Text und werden nicht automatisch ins Feld übernommen.')
+    h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. KI21-Hinweise sind recherchierte Vergleichswerte und werden nicht automatisch übernommen.')
   );
+  const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
+  box.appendChild(summary);
   rows.forEach((r,idx)=>{
     const row=h('div',{className:'cockpit-economic-row'});
     const current=parseMonthlyEffectV4240(r.amount);
@@ -6718,15 +6727,12 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
       if(n>0){
         info.appendChild(h('b',{},'Erfasst: '));
         info.appendChild(document.createTextNode(formatMonthlyEffectV4240(n)));
-      }else if(String(r.benchmark||'').trim() && !(r.orientation&&!r.orientationHidden)){
-        info.appendChild(h('b',{},'Hinweis: '));
-        info.appendChild(document.createTextNode(String(r.benchmark||'').replace(/^KI21-Orientierung:\s*/i,'').replace(/\s*Einheit:\s*[^.]+\.\s*/i,'').replace(/\s*Wird nicht automatisch.*$/i,'')));
       }else{
-        info.appendChild(h('b',{},'Wirtschaftlicher Effekt pro Monat: '));
-        info.appendChild(document.createTextNode('offen – für eine wirtschaftliche Bewertung fehlt noch ein Zahlenwert.'));
+        info.appendChild(h('b',{},'Offen: '));
+        info.appendChild(document.createTextNode('Monatswert fehlt.'));
       }
     };
-    const input=h('input',{type:'text',inputmode:'decimal',placeholder:'offen',value:r.amount||'',oninput:(e)=>{
+    const input=h('input',{type:'text',inputmode:'decimal',placeholder:'Monatswert',value:r.amount||'',oninput:(e)=>{
       rows[idx].amount=e.target.value;
       saveEconomicEffectsV4240(aid,rows);
       const n=parseMonthlyEffectV4240(e.target.value);
@@ -6738,31 +6744,28 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     row.appendChild(h('div',{className:'cockpit-economic-input-wrap'},input,h('div',{className:'cockpit-economic-suffix'},'€/Monat')));
     setInfo(r.amount);
     row.appendChild(info);
+
     const out=h('div',{className:'cockpit-economic-orientation'},r.orientation||'Noch kein KI21-Hinweis generiert.');
-    const orientBtn=h('button',{className:'cockpit-economic-orient-btn',onclick:(e)=>generateEconomicOrientationV4241(aid,deepCase,rows,idx,out,e.currentTarget)},r.orientation?'KI21-Hinweis neu generieren':'KI21-Hinweis generieren');
+    const orientBtn=h('button',{className:'cockpit-economic-orient-btn',onclick:(e)=>generateEconomicOrientationV4241(aid,deepCase,rows,idx,out,e.currentTarget)},r.orientation?'KI21-Hinweis neu recherchieren':'KI21-Hinweis recherchieren');
     row.appendChild(orientBtn);
     if(r.orientation&&r.orientationHidden){
       const showBtn=h('button',{className:'cockpit-economic-orient-btn',onclick:()=>setEconomicOrientationVisibleV4242(aid,rows,idx,true)},'KI21-Hinweis anzeigen');
       row.appendChild(showBtn);
-    }else{
-      if(r.orientation){
-        out.insertBefore(h('div',{className:'cockpit-economic-orient-head'},
-          h('div',{className:'cockpit-economic-orient-title'},'KI21-Hinweis'),
-          h('button',{className:'cockpit-economic-orient-hide',onclick:()=>setEconomicOrientationVisibleV4242(aid,rows,idx,false)},'ausblenden')
-        ),out.firstChild);
-        row.appendChild(out);
-      }
+    }else if(r.orientation){
+      out.insertBefore(h('div',{className:'cockpit-economic-orient-head'},
+        h('div',{className:'cockpit-economic-orient-title'},'KI21-Hinweis'),
+        h('button',{className:'cockpit-economic-orient-hide',onclick:()=>setEconomicOrientationVisibleV4242(aid,rows,idx,false)},'ausblenden')
+      ),out.firstChild);
+      row.appendChild(out);
     }
     box.appendChild(row);
   });
-  const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
-  box.appendChild(summary);
   box.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>{
     rows.push({id:'custom_'+Date.now(),label:'Zusätzlicher wirtschaftlicher Effekt',amount:'',benchmark:'',unit:'',orientation:''});
     saveEconomicEffectsV4240(aid,rows);
     renderCockpitSnapshotLiteV4215();
   }},'＋ weiteren Effekt erfassen'));
-  box.appendChild(h('div',{className:'cockpit-economic-note'},'KI21 berechnet den ROI nicht automatisch. Nur manuell eingetragene Monatswerte fließen in die Summe ein. KI21-Hinweise bleiben Orientierungstext.'));
+  box.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingetragene Monatswerte fließen in die Summe ein. Gelöschte KI21-Vorschläge werden nicht automatisch wieder angelegt.'));
   setTimeout(()=>updateEconomicSummaryDomV4240(aid,rows),0);
   return box;
 }
@@ -6933,10 +6936,10 @@ function renderCockpitSnapshotLiteV4215(){
     deepWrap.appendChild(c);
   });
   wrap.appendChild(deepWrap);
-  // v4.243: Business Case bleibt manuell; KI21-Orientierung ist nur ein kurzer Hinweis und nie ein Monatswert.
+  // v4.244: Business Case bleibt manuell; KI21-Hinweis ist ein online recherchierter Vergleichswert/Orientierungswert und nie ein Monatswert.
   wrap.appendChild(renderEconomicEffectCaptureV4240(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.243 Economic Hint Only Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.244 Economic Benchmark Hint Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7446,7 +7449,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.243 Economic Hint Only Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7536,7 +7539,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.243 Economic Hint Only Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -9722,7 +9725,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.243 Economic Hint Only Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9812,7 +9815,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.243 Economic Hint Only Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10164,7 +10167,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.243 Economic Hint Only Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.244 Economic Benchmark Hint Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10254,7 +10257,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.243 Economic Hint Only Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.244 Economic Benchmark Hint Candidate: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10735,7 +10738,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.243 Economic Hint Only Candidate';
+const KI21_VERSION='v4.244 Economic Benchmark Hint Candidate';
 
 
 function runKi21VersionMigration(){
