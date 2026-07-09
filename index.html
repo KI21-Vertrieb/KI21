@@ -1554,7 +1554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.252 Nutzen/Potenzial Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1661,7 +1661,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.252 Nutzen/Potenzial Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -1925,6 +1925,23 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-one-screen .cockpit-tile-link{font-size:11.3px !important;}
   .cockpit-deep-point{font-size:11.0px !important;}
   .cockpit-economic-summary-line{font-size:10.8px !important;}
+}
+
+
+
+/* v4.252: Nutzen/Potenzial als eigene Cockpit-Kachel; Einsparpotenzial nur als orange Schrift, keine Box */
+.cockpit-tile-item.cockpit-savings-inline,
+.cockpit-tile-link.cockpit-savings-inline{
+  color:#ff8a2a !important;
+  font-weight:850 !important;
+}
+.cockpit-tile-item.cockpit-savings-inline::before,
+.cockpit-tile-link.cockpit-savings-inline::before{
+  color:#ff8a2a !important;
+}
+.cockpit-tile-item.cockpit-savings-inline::after,
+.cockpit-tile-link.cockpit-savings-inline::after{
+  color:#ff8a2a !important;
 }
 
 </style>
@@ -7235,15 +7252,9 @@ function renderCockpitSnapshotLiteV4215(){
   let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
   let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
   let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
-  // v4.250: manuell erfasste Potenziale aus Phase 2 auch in den sichtbaren Cockpit-Kacheln zeigen,
-  // nicht nur in der unteren Business-Case-Zusammenfassung.
-  try{
-    const iSummary=getImplicationSummaryV4246(aid);
-    if(iSummary&&iSummary.sum>0){
-      const iLine='Beziffertes Einsparpotenzial: '+formatMonthlyEffectV4240(iSummary.sum)+'';
-      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Beziffertes Einsparpotenzial')>=0))pos.unshift(iLine);
-    }
-  }catch(e){}
+  // v4.252: Einsparpotenzial wird nicht mehr als normale Erkenntnis einsortiert,
+  // sondern in der eigenen Cockpit-Kachel "Nutzen / Potenzial" geführt.
+  pos=pos.filter(x=>!/Beziffertes\s+Einsparpotenzial/i.test(String((x&&x.text)||x||'')));
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const rankCockpitItem=(txt,kind)=>{
     const s=String(txt||'').toLowerCase();
@@ -7292,21 +7303,43 @@ function renderCockpitSnapshotLiteV4215(){
       h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung')
     )
   ));
+  // v4.237: große Vertiefungskacheln liegen bewusst unter den vier Cockpit-Kacheln und werden erst beim Scrollen sichtbar.
+  const deepCase=getCockpitDeepCaseCardsV4238(raw,aid);
+  const savingsSummaryV4252=(()=>{try{return getImplicationSummaryV4246(aid);}catch(e){return null;}})();
+  const valueTileItemsV4252=[];
+  if(savingsSummaryV4252&&savingsSummaryV4252.sum>0){
+    valueTileItemsV4252.push({text:'Beziffertes Einsparpotenzial: '+formatMonthlyEffectV4240(savingsSummaryV4252.sum),highlight:true});
+  }
+  try{
+    const valueCard=(deepCase||[]).find(c=>c&&String(c.label||'').toLowerCase().indexOf('nutzen')>=0);
+    ((valueCard&&valueCard.points)||[]).forEach(p=>{
+      const t=clean((p&&p.text)||p);
+      if(t&&!valueTileItemsV4252.some(x=>String((x&&x.text)||x)===t))valueTileItemsV4252.push(t);
+    });
+  }catch(e){}
+
   const grid=h('div',{className:'cockpit-grid'});
   const mkTile=(label,items,empty,kind,maxItems)=>{
-    const all=sortCockpitItems((items||[]).map(clean).filter(Boolean),kind||'cockpit');
+    const normalized=(items||[]).map((it,i)=>{
+      if(it&&typeof it==='object'&&('text' in it))return {text:clean(it.text),highlight:!!it.highlight,idx:i};
+      return {text:clean(it),highlight:/Beziffertes\s+Einsparpotenzial/i.test(String(it||'')),idx:i};
+    }).filter(x=>x.text);
+    const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>({text:t,highlight:/Beziffertes\s+Einsparpotenzial/i.test(String(t||'')),idx:i}));
+    const all=sorted;
     const openList=()=>{
-      const rows=all.map(t=>{
-        const isSavings=/Beziffertes\s+Einsparpotenzial/i.test(String(t||''));
-        return {glyph:isSavings?'●':'•',text:t,kind:isSavings?'savings':'',onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
+      const rows=all.map(x=>{
+        const t=x.text;
+        return {glyph:x.highlight?'●':'•',text:t,kind:x.highlight?'savings':'',onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
       });
       showBottomSheet(label,rows,empty);
     };
     const tile=h('div',{className:'cockpit-tile cockpit-tile-linked'});
     tile.appendChild(buildCockpitTileHeader(label,openList));
     const arr=all.slice(0,maxItems||4);
-    if(arr.length)arr.forEach(t=>{
-      const item=h('button',{type:'button',className:'cockpit-tile-item cockpit-tile-link',onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
+    if(arr.length)arr.forEach(x=>{
+      const t=x.text;
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.highlight?' cockpit-savings-inline':'');
+      const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
     else tile.appendChild(h('div',{className:'cockpit-empty'},empty));
@@ -7315,11 +7348,9 @@ function renderCockpitSnapshotLiteV4215(){
   };
   grid.appendChild(mkTile('Erkenntnisse',pos,'Noch keine gespeicherten Erkenntnisse.','insight',4));
   grid.appendChild(mkTile('Risiken / Bremsen',warn,'Noch keine gespeicherten Risiken.','risk',3));
-  grid.appendChild(mkTile('Die eine Sache, die fehlt',open.slice(0,1),'Noch kein offener Hauptpunkt gespeichert.','open',1));
-  grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(1,5),'Noch keine gespeicherten Fragen.','question',3));
+  grid.appendChild(mkTile('Nutzen / Potenzial',valueTileItemsV4252,'Nutzen und Potenzial noch nicht belegt.','value',3));
+  grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(0,4),'Noch keine gespeicherten Fragen.','question',3));
   wrap.appendChild(grid);
-  // v4.237: große Vertiefungskacheln liegen bewusst unter den vier Cockpit-Kacheln und werden erst beim Scrollen sichtbar.
-  const deepCase=getCockpitDeepCaseCardsV4238(raw,aid);
   wrap.appendChild(h('div',{className:'cockpit-deep-case-title'},'Wirtschaftliche Vertiefung'));
   wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'KI21-Erkenntnis: entsteht durch Verknüpfung und Bewertung, nicht durch bloßes Abschreiben.'));
   const deepWrap=h('div',{className:'cockpit-core-case'});
@@ -7343,7 +7374,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.251 Einsparpotenzial Orange Highlight'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.252 Nutzen/Potenzial Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7853,7 +7884,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.252 Nutzen/Potenzial Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7943,7 +7974,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.252 Nutzen/Potenzial Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10134,7 +10165,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.252 Nutzen/Potenzial Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10224,7 +10255,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.252 Nutzen/Potenzial Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10576,7 +10607,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.252 Nutzen/Potenzial Cockpit: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10666,7 +10697,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.252 Nutzen/Potenzial Cockpit: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11147,7 +11178,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.251 Einsparpotenzial Orange Highlight';
+const KI21_VERSION='v4.252 Nutzen/Potenzial Cockpit';
 
 
 function runKi21VersionMigration(){
