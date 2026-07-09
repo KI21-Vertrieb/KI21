@@ -1259,6 +1259,31 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .bs-row.bs-kind-open{
   cursor:default !important;
 }
+
+
+/* v4.251: Beziffertes Einsparpotenzial im Erkenntnis-Sheet in KI21-Orange hervorheben */
+.bs-row.bs-kind-savings{
+  border:1px solid rgba(255,107,0,.38) !important;
+  border-radius:13px !important;
+  padding:10px !important;
+  background:linear-gradient(135deg,rgba(255,107,0,.14),rgba(255,107,0,.04)) !important;
+  margin:8px 0 !important;
+}
+.bs-row.bs-kind-savings .bs-glyph{
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  border-radius:999px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:#ff8a2a !important;
+  background:rgba(255,107,0,.15) !important;
+  border:1px solid rgba(255,107,0,.50) !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+.bs-row.bs-kind-savings .bs-row-arrow{color:#ff8a2a !important;opacity:1 !important;}
 @media(max-width:390px){
   .cockpit-one-screen .cockpit-next-text{font-size:13.3px !important;}
   .cockpit-one-screen .cockpit-tile-item,
@@ -1529,7 +1554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1636,7 +1661,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -4597,7 +4622,7 @@ function sanitizeCockpitTextFinal(accId,text,kind,opts){
   }
   if(authority&&isObsoleteGfCfoText(x)){
     if(/schaden|jahresschaden|umsatzverlust|umsatzschaden|wirtschaftlicher schaden|quote|vermeidungsquote|roi/i.test(x)){
-      return (kind==='warning'||kind==='risk')?'Beziffertes Potenzial mit Entscheider validieren':'Vermeidungsquote mit Entscheider validieren';
+      return (kind==='warning'||kind==='risk')?'Beziffertes Einsparpotenzial mit Entscheider validieren':'Vermeidungsquote mit Entscheider validieren';
     }
     if(kind==='missing'||kind==='open')return 'Wirtschaftlichen Nutzen mit Entscheider validieren';
     if(kind==='warning'||kind==='risk')return 'Formale Beauftragung / Startentscheidung noch offen';
@@ -5088,7 +5113,7 @@ function sanitizeOutputIntegrityText(accId,text,kind){
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung).{0,80}(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Bestätigung|Zusage|Commitment)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+decName+' anhand echter Deals validieren.');
     x=x.replace(/Geschäftsführer(?:in)?\s+involviert:\s*/gi,'Management-Sicht: ');
     x=x.replace(/Geschäftsführung\s+involviert:\s*/gi,'Management-Sicht: ');
-    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,80}(?:durchsprechen|anschauen|validieren|fragen|klären)[^\n.]*(?:\.|$)/gi,'Beziffertes Potenzial mit '+decName+' anhand echter Deals validieren.');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,80}(?:durchsprechen|anschauen|validieren|fragen|klären)[^\n.]*(?:\.|$)/gi,'Beziffertes Einsparpotenzial mit '+decName+' anhand echter Deals validieren.');
     x=x.replace(/(?:durch|mit)\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'mit '+decName+' anhand echter Deals validieren.');
   }
 
@@ -5148,7 +5173,7 @@ function sanitizeGeneratedOutputFinal(accId,text,kind){
   // GF/Geschäftsführung nicht als Pflichtinstanz bei bestätigter Entscheidungsbefugnis.
   if(authority){
     x=x.replace(/ohne\s+wirtschaftliche\s+Dimensionierung\s+durch\s+(?:den\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:\.|$)/gi,'Ohne Validierung mit echten Deals bleibt die wirtschaftliche Wirkung ungesichert.');
-    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,100}(?:durchsprechen|anschauen|validieren|fragen|klären|bestätigen)[^\n.]*(?:\.|$)/gi,'Beziffertes Potenzial mit '+dec+' anhand echter Deals validieren.');
+    x=x.replace(/(?:gemeinsam\s+mit\s+)?(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n]{0,100}(?:durchsprechen|anschauen|validieren|fragen|klären|bestätigen)[^\n.]*(?:\.|$)/gi,'Beziffertes Einsparpotenzial mit '+dec+' anhand echter Deals validieren.');
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[-\s]?Status\s+bestätigen[^\n.]*/gi,'Formale Beauftragung und Startzuständigkeit klären');
     x=x.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung)[^\n.]*(?:Voraussetzung|erforderlich|nötig|muss|Freigabe|Zusage)[^\n.]*(?:\.|$)/gi,'Wirkung und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.');
     x=x.replace(/Marius\s+müssen\s+gemeinsam/gi,'Marius sollte');
@@ -5220,7 +5245,7 @@ function sanitizeFinalOutputV4188(accId,text,kind){
         if(/^(?:•|-)?\s*(?:Die 5 Punkte|KAUFARGUMENTE|Schmerz|BESTÄTIGT)/i.test(section+t)){
           line=line.replace(/(?:GF|Geschäftsführer(?:in)?|Geschäftsführung|CEO|CFO)/gi,'Management');
         }else{
-          line='Beziffertes Potenzial und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.';
+          line='Beziffertes Einsparpotenzial und Erfolgskriterien mit '+dec+' anhand echter Deals validieren.';
         }
       }
     }
@@ -5255,7 +5280,7 @@ function sanitizeFinalOutputV4188(accId,text,kind){
   x=safeLines.join('\n');
 
   // Nachbereinigung: doppelte identische Standardzeilen reduzieren.
-  x=x.replace(/(?:Beziffertes Potenzial und Erfolgskriterien mit [^\n]+ anhand echter Deals validieren\.\s*\n){2,}/gi, m=>m.split('\n')[0]+'\n');
+  x=x.replace(/(?:Beziffertes Einsparpotenzial und Erfolgskriterien mit [^\n]+ anhand echter Deals validieren\.\s*\n){2,}/gi, m=>m.split('\n')[0]+'\n');
   x=x.replace(/(?:Vermeidungsquote\/Wirkung ist offen und muss mit echten Deals validiert werden\.\s*\n){2,}/gi,'Vermeidungsquote/Wirkung ist offen und muss mit echten Deals validiert werden.\n');
   x=x.replace(/\bkeine\s+Keine\b/gi,'keine');
   x=x.replace(/\n{3,}/g,'\n\n');
@@ -5888,10 +5913,10 @@ function sanitizeDossierEarlyPhaseV4190(text,accId){
     let line=rawLine;
     const t=line.trim();
     if(!t){out.push(line);continue;}
-    if(/Beziffertes Potenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i.test(t)){
+    if(/Beziffertes Einsparpotenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i.test(t)){
       if(seenValidation)continue;
       seenValidation=true;
-      line=line.replace(/Beziffertes Potenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i,'Konkrete Pilot-Deals und Messkriterien für die Wirkungsmessung festlegen.');
+      line=line.replace(/Beziffertes Einsparpotenzial und Erfolgskriterien mit .* anhand echter Deals validieren\.?/i,'Konkrete Pilot-Deals und Messkriterien für die Wirkungsmessung festlegen.');
     }
     if(authority && /(?:Geschäftsführer|Geschäftsführung|\bGF\b|CEO|CFO).{0,100}(Kaufbereitschaft|Freigabe|Zusage|Commitment|validieren|bestätigen|muss|müssen|erforderlich|ausstehend|Termin)/i.test(t))continue;
     if(/\d{1,3}\s*%\s*(?:→|->|auf|bis|zu)\s*\d{1,3}\s*%/i.test(t))continue;
@@ -6552,11 +6577,11 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
   }
 
   const casePoints=[];
-  // v4.250: Potenzial aus Phase 2 direkt in der Business-Case-Vertiefung sichtbar machen.
+  // v4.251: Einsparpotenzial aus Phase 2 direkt in der Business-Case-Vertiefung sichtbar machen.
   let iSummaryV4249=null;
   try{iSummaryV4249=getImplicationSummaryV4246(aid2);}catch(e){iSummaryV4249=null;}
   if(iSummaryV4249&&iSummaryV4249.sum>0){
-    add(casePoints,'Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.',true);
+    add(casePoints,'Beziffertes Einsparpotenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.',true);
   }
   if(has(/quick\s*check|4\.?900|4900/)){
     add(casePoints,'Quick Check 4.900 € ist der begrenzte nächste Angebotsschritt.',false);
@@ -6592,7 +6617,7 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
   }
   if(iSummaryV4249&&iSummaryV4249.sum>0){
     caseHead='Business Case teilquantifiziert';
-    caseEvidence='Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.';
+    caseEvidence='Beziffertes Einsparpotenzial: '+formatMonthlyEffectV4240(iSummaryV4249.sum)+'.';
   }
 
   return [
@@ -6636,7 +6661,7 @@ function inferEconomicEffectRowsV4240(deepCase){
   if(/ausfall|datenpanne|security|backup|m365|patch|risiko/.test(all)){
     add('security_risk','IT-/Security-Risiko','','');
   }
-  if(!rows.length)add('economic_effect','Potenzial','','');
+  if(!rows.length)add('economic_effect','Einsparpotenzial','','');
   return rows;
 }
 function loadEconomicEffectsV4240(aid,deepCase){
@@ -6692,16 +6717,16 @@ function buildEconomicEffectsContextV4245(aid){
   lines.push('Status: '+summary.status);
   if(summary.filled.length){
     lines.push('Erfasste monatliche Effekte:');
-    summary.filled.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))));
+    summary.filled.forEach(r=>lines.push('- '+(r.label||'Einsparpotenzial')+': '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))));
   }
   if(summary.open.length){
     lines.push('Offene wirtschaftliche Effekte:');
-    summary.open.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': Monatswert fehlt'));
+    summary.open.forEach(r=>lines.push('- '+(r.label||'Einsparpotenzial')+': Monatswert fehlt'));
   }
   const hints=rows.filter(r=>String(r&&r.orientation||'').trim());
   if(hints.length){
     lines.push('KI21-Hinweise / Vergleichswerte (nicht eingerechnet):');
-    hints.forEach(r=>lines.push('- '+(r.label||'Potenzial')+': '+String(r.orientation||'').replace(/^Hinweis:\s*/i,'')));
+    hints.forEach(r=>lines.push('- '+(r.label||'Einsparpotenzial')+': '+String(r.orientation||'').replace(/^Hinweis:\s*/i,'')));
   }
   lines.push('Regel: Nur manuell eingetragene Monatswerte zählen. Benchmarks/Hinweise werden nicht automatisch umgerechnet oder eingerechnet.');
   return lines.join('\n');
@@ -6713,7 +6738,7 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Einsparpotenzial'),
     h('div',{className:'cockpit-economic-help'},'Erfassung in Phase 2 bei den Implikationen. Im Cockpit steht nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
@@ -6726,7 +6751,7 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
     const list=h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>(r.label||'Effekt')+' '+formatMonthlyEffectV4240(parseMonthlyEffectV4240(r.amount))).join(' · '));
     card.appendChild(list);
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Einsparpotenzial in Phase 2 beziffern →'));
   card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingetragene Monatswerte werden gezählt. KI21-Hinweise bleiben Orientierung.'));
   return card;
 }
@@ -6760,7 +6785,7 @@ function buildEconomicOrientationPromptV4241(aid,deepCase,row){
 Wichtig: Es geht NICHT um Verkaufstext und NICHT um das eigene Angebot. Der Hinweis soll helfen, mit dem Kunden einen monatlichen wirtschaftlichen Effekt abzuleiten.
 
 POSITION:
-${row.label||'Potenzial'}
+${row.label||'Einsparpotenzial'}
 
 AKTUELLE OPPORTUNITY:
 ${opp}
@@ -6836,7 +6861,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
   const rows=loadEconomicEffectsV4240(aid,deepCase);
   const box=h('div',{className:'cockpit-economic-capture'},
     h('div',{className:'cockpit-economic-kicker'},'Implikation / Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Potenzial erfassen'),
+    h('div',{className:'cockpit-economic-title'},'Einsparpotenzial erfassen'),
     h('div',{className:'cockpit-economic-help'},'Trage hier den mit dem Kunden abgeleiteten monatlichen Aufwand, Schaden oder Nutzen ein. Diese Werte entstehen in Phase 2 und werden im Cockpit sowie in Phase 4 verwendet. KI21-Hinweise bleiben Orientierung.')
   );
   const summary=h('div',{className:'cockpit-economic-summary',id:'economic-summary-v4240-'+aid});
@@ -6848,7 +6873,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     const delBtn=h('button',{className:'cockpit-economic-delete',title:'Effekt löschen',onclick:()=>{
       if(confirm('Diesen wirtschaftlichen Effekt löschen?'))deleteEconomicEffectV4241(aid,rows,idx);
     }},'×');
-    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Potenzial'),h('div',{className:'cockpit-economic-actions'},status,delBtn)));
+    row.appendChild(h('div',{className:'cockpit-economic-row-head'},h('div',{className:'cockpit-economic-label'},r.label||'Einsparpotenzial'),h('div',{className:'cockpit-economic-actions'},status,delBtn)));
     const info=h('div',{className:'cockpit-economic-benchmark'});
     const setInfo=(val)=>{
       const n=parseMonthlyEffectV4240(val);
@@ -6890,7 +6915,7 @@ function renderEconomicEffectCaptureV4240(aid,deepCase){
     box.appendChild(row);
   });
   box.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>{
-    rows.push({id:'custom_'+Date.now(),label:'Zusätzliches Potenzial',amount:'',benchmark:'',unit:'',orientation:''});
+    rows.push({id:'custom_'+Date.now(),label:'Zusätzliches Einsparpotenzial',amount:'',benchmark:'',unit:'',orientation:''});
     saveEconomicEffectsV4240(aid,rows);
     refreshEconomicAreaV4245();
   }},'＋ weiteren Effekt erfassen'));
@@ -6950,7 +6975,7 @@ function renderImplicationEconomicFieldV4246(aid,idx,q){
   const box=h('div',{className:'implication-value-box'});
   const status=h('div',{className:'implication-value-status '+(current?'filled':'')},current?'erfasst':'optional');
   box.appendChild(h('div',{className:'implication-value-head'},
-    h('div',{className:'implication-value-label'},'Potenzial'),
+    h('div',{className:'implication-value-label'},'Einsparpotenzial'),
     status
   ));
   const input=h('input',{className:'implication-value-input',type:'text',inputmode:'text',autocomplete:'off',placeholder:'z. B. 2.000 € monatlich',value:current,oninput:(e)=>{
@@ -6962,7 +6987,7 @@ function renderImplicationEconomicFieldV4246(aid,idx,q){
     status.className='implication-value-status '+(val.trim()?'filled':'');
   }});
   box.appendChild(input);
-  box.appendChild(h('div',{className:'implication-value-help'},'Optionaler Euro-Wert pro Zeitraum, gemeinsam mit dem Kunden abgeleitet. Potenzial ist keine automatische ROI-Zusage; Monatswerte erscheinen im Cockpit.'));
+  box.appendChild(h('div',{className:'implication-value-help'},'Optionaler Euro-Wert pro Zeitraum, gemeinsam mit dem Kunden abgeleitet. Einsparpotenzial ist keine automatische ROI-Zusage; Monatswerte erscheinen im Cockpit.'));
   return box;
 }
 // Überschreibt v4.245-Kontext: Phase 4 nutzt jetzt Implikationswerte, nicht separate Effekt-Positionen.
@@ -6970,11 +6995,11 @@ function buildEconomicEffectsContextV4245(aid){
   const s=getImplicationSummaryV4246(aid);
   if(!s.rows.length)return '';
   const lines=[];
-  lines.push('Eingetragenes Potenzial direkt an Implikationsfragen erfasst.');
+  lines.push('Eingetragenes Einsparpotenzial direkt an Implikationsfragen erfasst.');
   lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
   lines.push('Status: '+s.status);
   if(s.filled.length){
-    lines.push('Eingetragenes Potenzial:');
+    lines.push('Eingetragenes Einsparpotenzial:');
     s.filled.forEach(r=>lines.push('- '+r.question.replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value));
   }
   if(s.open.length){
@@ -6991,25 +7016,25 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   try{offer=buildSafeOfferEconomicsText(aid)||offer;}catch(e){}
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
-    h('div',{className:'cockpit-economic-help'},'Potenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Einsparpotenzial'),
+    h('div',{className:'cockpit-economic-help'},'Einsparpotenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Potenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Einsparpotenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Potenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Einsparpotenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
   card.appendChild(summary);
   if(s.filled.length){
-    card.appendChild(h('div',{className:'cockpit-economic-note'},'Eingetragenes Potenzial: '+s.filled.map(r=>r.value).join(' · ')));
+    card.appendChild(h('div',{className:'cockpit-economic-note'},'Eingetragenes Einsparpotenzial: '+s.filled.map(r=>r.value).join(' · ')));
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
-  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Potenzial ist keine automatische ROI-Zusage.'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Einsparpotenzial in Phase 2 beziffern →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Einsparpotenzial ist keine automatische ROI-Zusage.'));
   return card;
 }
 
 
-// v4.250: Potenzial robust im Cockpit/Dashboard und Phase-4-Kontext verwenden
+// v4.251: Einsparpotenzial robust im Cockpit/Dashboard und Phase-4-Kontext verwenden
 function normalizeMoneyNumberV4248(v){
   let s=String(v||'').trim();
   if(!s)return 0;
@@ -7100,11 +7125,11 @@ function buildEconomicEffectsContextV4245(aid){
   const s=getImplicationSummaryV4246(aid);
   if(!s.rows.length)return '';
   const lines=[];
-  lines.push('Eingetragenes Potenzial direkt an Implikationsfragen erfasst.');
+  lines.push('Eingetragenes Einsparpotenzial direkt an Implikationsfragen erfasst.');
   lines.push('Summe eingetragener Monatswerte mit Monatsbezug: '+formatMonthlyEffectV4240(s.sum));
   lines.push('Status: '+s.status);
   if(s.filled.length){
-    lines.push('Eingetragenes Potenzial:');
+    lines.push('Eingetragenes Einsparpotenzial:');
     s.filled.forEach(r=>lines.push('- '+String(r.question||'').replace(/^I\s*[:.-]?\s*/i,'')+': '+r.value+(r.monthly>0?' (in Cockpit-Summe enthalten)':' (nicht summiert, kein Monatsbezug erkannt)')));
   }
   if(s.open.length){
@@ -7120,20 +7145,20 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   const offer=buildOfferEconomicsSummaryV4248(aid);
   const card=h('div',{className:'cockpit-economic-capture cockpit-economic-summary-only'},
     h('div',{className:'cockpit-economic-kicker'},'Business Case'),
-    h('div',{className:'cockpit-economic-title'},'Beziffertes Potenzial'),
-    h('div',{className:'cockpit-economic-help'},'Potenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
+    h('div',{className:'cockpit-economic-title'},'Beziffertes Einsparpotenzial'),
+    h('div',{className:'cockpit-economic-help'},'Einsparpotenziale werden direkt bei den Implikationsfragen in Phase 2 beziffert. Das Cockpit zeigt nur die verdichtete Lage.')
   );
   const summary=h('div',{className:'cockpit-economic-summary'});
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Potenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Beziffertes Einsparpotenzial'),h('strong',{},formatMonthlyEffectV4240(s.sum))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Angebotskosten'),h('strong',{},offer)));
-  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Potenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
+  summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Einsparpotenziale erfasst'),h('strong',{},String(s.filled.length)+' / '+String(s.rows.length||0))));
   summary.appendChild(h('div',{className:'cockpit-economic-summary-line'},h('span',{},'Status'),h('strong',{},s.status)));
   card.appendChild(summary);
   if(s.filled.length){
     card.appendChild(h('div',{className:'cockpit-economic-note'},'Erfasst: '+s.filled.map(r=>r.value).join(' · ')));
   }
-  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Potenzial in Phase 2 beziffern →'));
-  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Potenzial ist keine automatische ROI-Zusage.'));
+  card.appendChild(h('button',{className:'cockpit-economic-add',onclick:()=>renderStation(1)},'Einsparpotenzial in Phase 2 beziffern →'));
+  card.appendChild(h('div',{className:'cockpit-economic-note'},'Nur manuell eingegebene Monatswerte mit Monatsbezug werden summiert. Einsparpotenzial ist keine automatische ROI-Zusage.'));
   return card;
 }
 
@@ -7215,8 +7240,8 @@ function renderCockpitSnapshotLiteV4215(){
   try{
     const iSummary=getImplicationSummaryV4246(aid);
     if(iSummary&&iSummary.sum>0){
-      const iLine='Beziffertes Potenzial: '+formatMonthlyEffectV4240(iSummary.sum)+'';
-      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Beziffertes Potenzial')>=0))pos.unshift(iLine);
+      const iLine='Beziffertes Einsparpotenzial: '+formatMonthlyEffectV4240(iSummary.sum)+'';
+      if(!pos.some(x=>String((x&&x.text)||x||'').indexOf('Beziffertes Einsparpotenzial')>=0))pos.unshift(iLine);
     }
   }catch(e){}
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
@@ -7271,7 +7296,10 @@ function renderCockpitSnapshotLiteV4215(){
   const mkTile=(label,items,empty,kind,maxItems)=>{
     const all=sortCockpitItems((items||[]).map(clean).filter(Boolean),kind||'cockpit');
     const openList=()=>{
-      const rows=all.map(t=>({glyph:'•',text:t,onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)}));
+      const rows=all.map(t=>{
+        const isSavings=/Beziffertes\s+Einsparpotenzial/i.test(String(t||''));
+        return {glyph:isSavings?'●':'•',text:t,kind:isSavings?'savings':'',onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
+      });
       showBottomSheet(label,rows,empty);
     };
     const tile=h('div',{className:'cockpit-tile cockpit-tile-linked'});
@@ -7315,7 +7343,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.250 Potenzial Terminology + Cockpit Font'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.251 Einsparpotenzial Orange Highlight'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7520,7 +7548,7 @@ function renderHome(){
 
     const erkTile=mkTile('Erkenntnisse',pos,'chance','Noch keine Erkenntnisse',
       ()=>showBottomSheet('Wichtigste Erkenntnisse',
-        allPos.map(s=>({glyph:'✔',text:s.text,onClick:()=>openCockpitWorkTarget('chance',s.text)})),'Noch keine bestätigten Erkenntnisse.'),'chance');
+        allPos.map(s=>{const isSavings=/Beziffertes\s+Einsparpotenzial/i.test(String(s.text||''));return {glyph:isSavings?'●':'✔',kind:isSavings?'savings':'',text:s.text,onClick:()=>openCockpitWorkTarget('chance',s.text)};}),'Noch keine bestätigten Erkenntnisse.'),'chance');
     const riskTile=mkTile('Risiken / Bremsen',warn.map(s=>String(s||'').replace(/→ Strategie:.*/,'').trim()),'risk','Keine Bremsfaktoren erkannt',
       ()=>showBottomSheet('Größte Risiken',
         allWarn.map(s=>{
@@ -7825,7 +7853,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -7915,7 +7943,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -8786,7 +8814,7 @@ function renderStation(sitId){
         wrap.appendChild(item);
       });
       // v4.246: Keine separate Erfassungsstrecke mehr.
-      // Beziffertes Potenzial wird direkt an den Implikationsfragen (Implikationen) als einfacher Euro-Wert / Zeitraum erfasst.
+      // Beziffertes Einsparpotenzial wird direkt an den Implikationsfragen (Implikationen) als einfacher Euro-Wert / Zeitraum erfasst.
     } else {
       // Fallback: kein SPIN aus Phase 1 übertragen
       wrap.appendChild(h('div',{className:'home-empty-note',style:{marginBottom:'10px'}},
@@ -10106,7 +10134,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10196,7 +10224,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10548,7 +10576,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.251 Einsparpotenzial Orange Highlight: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10638,7 +10666,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.250 Potenzial Terminology + Cockpit Font: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.251 Einsparpotenzial Orange Highlight: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11119,7 +11147,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.250 Potenzial Terminology + Cockpit Font';
+const KI21_VERSION='v4.251 Einsparpotenzial Orange Highlight';
 
 
 function runKi21VersionMigration(){
