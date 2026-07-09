@@ -1529,7 +1529,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.238 Semantic Case Cards Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.239 KI21 Insight Markers Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1598,6 +1598,23 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   left:2px !important;
   top:0 !important;
   color:rgba(230,237,243,.48) !important;
+}
+.cockpit-core-point.ki21-insight::before{
+  content:'●' !important;
+  color:#ff8a2a !important;
+  font-size:8.5px !important;
+  top:2px !important;
+}
+.cockpit-core-insight-legend{
+  font-size:10.2px !important;
+  line-height:1.32 !important;
+  color:rgba(201,209,217,.62) !important;
+  margin:-2px 0 10px !important;
+}
+.cockpit-core-insight-legend .dot{
+  color:#ff8a2a !important;
+  font-size:8.5px !important;
+  margin-right:5px !important;
 }
 .cockpit-core-note{
   margin-top:10px !important;
@@ -6161,10 +6178,9 @@ function getCockpitCoreCaseStatusV4236(raw,aid){
 }
 
 function getCockpitDeepCaseCardsV4238(raw,aid){
-  // v4.238: harte semantische Trennung.
-  // Schmerz = Kundendruck/Problem/Aufwand/Risiko des Nicht-Handelns.
-  // Nutzen = konkrete Verbesserung durch den nächsten Angebots-/Arbeitsschritt.
-  // Business Case = Investition, Budget/Freigabe, wirtschaftliche Plausibilität, ROI-Offenheit, Folgeangebot.
+  // v4.239: gleiche UI wie v4.238, aber mit KI21-Insight-Markern.
+  // Orange markiert NICHT die Quelle, sondern den Mehrwert: Erkenntnis entsteht durch Verknüpfung/Bewertung,
+  // nicht durch bloßes Abschreiben der vorliegenden Information.
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const all=[];
   try{
@@ -6174,90 +6190,131 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
     });
   }catch(e){}
   const low=all.join(' \n ').toLowerCase();
-  const has=(re)=>re.test(low);
+  const aid2=aid||LS.get('ki21_aid',null);
+  const phase5=aid2?LS.get('ki21_st_'+aid2+'_4',{}):{};
+  const fv5=(phase5&&phase5.fv)||{};
+  const mu=LS.get('ki21_mu',{})||{};
+  const offerText=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' ');
+  const offerLow=String(offerText||'').toLowerCase();
+  const hay=(low+'\n'+offerLow).toLowerCase();
+  const has=(re)=>re.test(hay);
   const short=(t,max)=>{
     t=String(t||'').replace(/\s+/g,' ').trim();
     if(t.length<=max)return t;
     const cut=t.lastIndexOf(' ',max-1);
     return t.substring(0,cut>25?cut:max-1).trim()+'…';
   };
-  const uniq=(arr)=>arr.filter(Boolean).map(t=>short(t,120)).filter((v,i,a)=>a.indexOf(v)===i);
-  const limit=(arr,n)=>uniq(arr).slice(0,n||5);
-  const aid2=aid||LS.get('ki21_aid',null);
-  const phase5=aid2?LS.get('ki21_st_'+aid2+'_4',{}):{};
-  const fv5=(phase5&&phase5.fv)||{};
-  const mu=LS.get('ki21_mu',{})||{};
-  const offerText=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' ');
-  const offerLow=offerText.toLowerCase();
+  const add=(arr,text,insight)=>{
+    text=short(text,132);
+    if(!text)return;
+    if(arr.some(p=>String(p&&p.text||p)===text))return;
+    arr.push({text,insight:!!insight});
+  };
+  const textHit=(re)=>all.find(t=>re.test(String(t).toLowerCase()))||'';
 
-  const isAction=(t)=>/\b(abholen|klären|identifizieren|engagieren|finalisieren|vorbereiten|bereitstellen|termin|scope\s+schärfen|scope\s+finalisieren|fragen|prüfen|nächster\s+schritt)\b/i.test(t);
-  const isDecisionOrOffer=(t)=>/\b(cfo|geschäftsführung|gf|entscheider|freigabe|budget|quick\s*check|managed\s*security|angebot|preis|€|euro|4\.?900|4900|2\.?800|2800|folgeoption|scope|umfang)\b/i.test(t);
-  const hasPainWords=(t)=>/(großkunde.*anforder|anforder.*großkunde|audit|lieferantenreview|negative\s+bewertung|eskalation|q3|deadline|patch|backup|m365|alert|nicht\s+(systematisch|zentral)|standardisiert|anlassbezogen|security\s+läuft\s+nebenbei|ausgelastet|rückfragen|anfragen|personen|tage|manuell|zusammengesucht|aufwand|risiko)/i.test(t);
-  const hasValueWords=(t)=>/(nachweis|management[-\s]?bericht|management[-\s]?report|überblick|risiken?\s+priorisier|status\s+bewerten|review\s+vorbereiten|entlast|schneller|belastbar\s+beantwort|entscheidungsgrundlage|professionell|priorisiert)/i.test(t);
-  const hasCaseWords=(t)=>/(quick\s*check|4\.?900|4900|cfo|budget|entscheidbar|freigabe|managed\s*security|2\.?800|2800|folgeoption|angebot|preis|invest|roi|business\s*case|umsatz|12\s*%|auftragsverlust|monetaris|validier|wirkung|scope|umfang)/i.test(t);
-
-  // Kein einzelner Rohpunkt darf beliebig überall landen. Budget/Entscheider ist kein Nutzen;
-  // offene Aufgaben sind kein Schmerz; Angebots-/Freigabeinformationen sind Business Case.
-  const painHits=limit(all.filter(t=>hasPainWords(t)&&!isAction(t)&&!(isDecisionOrOffer(t)&&!/(großkunde|audit|review|anforder|q3|deadline|umsatz|risiko)/i.test(t))),5);
-  const valueHits=limit(all.filter(t=>hasValueWords(t)&&!/(budget|freigabe|entscheidbar|entscheider|nicht\s+entscheider|strategisch\s+noch\s+nicht|managed\s*security\s*2\.?800|2\.?800|2800)/i.test(t)),5);
-  const caseHits=limit(all.filter(t=>hasCaseWords(t)&&!/(abholen|identifizieren|engagieren)/i.test(t)),5);
-
+  const painPoints=[];
+  if(has(/großkunde|audit|lieferantenreview|review|anforder|q3|deadline/)){
+    add(painPoints,'Großkunde fordert belastbare Nachweise bis Ende Q3.',false);
+  }
+  if(has(/patch|backup|m365|alert|nicht\s+(systematisch|zentral)|standardisiert|anlassbezogen/)){
+    add(painPoints,'Patchstände, Backup-Tests und M365-Alerts sind nicht systematisch geprüft.',false);
+  }
+  if(has(/rückfragen|anfragen|personen|tage|manuell|zusammengesucht/)){
+    add(painPoints,'Drei Rückfragen banden je 1–2 Personen für 1–2 Tage.',false);
+  }
+  if(has(/ausgelastet|security\s+läuft\s+nebenbei|nebenbei/)){
+    add(painPoints,'Security läuft nebenbei in einer bereits ausgelasteten IT.',false);
+  }
+  if(has(/negative\s+bewertung|eskalation|auditfragen|lieferantenreview|auftragsverlust|12\s*%|umsatz/)){
+    add(painPoints,'Negative Lieferantenbewertung droht; Auftragsverlust ist nicht bestätigt.',true);
+  }
+  if(!painPoints.length){
+    const hit=textHit(/schmerz|problem|aufwand|risiko|anforder|deadline|review|audit/);
+    add(painPoints,hit||'Konkreten Kundendruck, Aufwand und Risiko im nächsten Gespräch belegen.',false);
+  }
   let painHead='Schmerz noch nicht ausreichend belegt';
   let painEvidence='Noch fehlen konkrete Kundenaussagen zu Druck, Aufwand oder Risiko.';
-  if(painHits.length){
-    if(has(/großkunde|audit|lieferantenreview|anforder|q3|deadline/) && has(/rückfragen|anfragen|personen|tage|manuell|ausgelastet|security\s+läuft\s+nebenbei|patch|backup|m365/))painHead='Nachweisdruck trifft unsystematische Security';
+  if(painPoints.length){
+    if(has(/großkunde|audit|lieferantenreview|anforder|q3|deadline/) && has(/patch|backup|m365|rückfragen|anfragen|manuell|ausgelastet|nebenbei/))painHead='Nachweisdruck trifft unsystematische Security';
     else if(has(/großkunde|audit|lieferantenreview|anforder|q3|deadline/))painHead='Externer Nachweisdruck';
     else painHead='Operativer Schmerz erkennbar';
-    painEvidence=short(painHits.find(t=>/(großkunde|audit|anforder|q3|deadline)/i.test(t))||painHits[0],125);
+    painEvidence=has(/großkunde|audit|lieferantenreview|anforder|q3|deadline/)
+      ? 'Großkunde fordert Nachweise bis Ende Q3.'
+      : short((painPoints[0]&&painPoints[0].text)||'',125);
   }
-  const painFallback=[];
-  if(has(/patch|backup|m365|alert|nicht\s+(systematisch|zentral)|anlassbezogen/))painFallback.push('Security-Nachweise entstehen heute nicht nach festem Standard.');
-  if(has(/rückfragen|anfragen|personen|tage|manuell|zusammengesucht/))painFallback.push('Rückfragen binden interne IT-Zeit durch manuelle Suche.');
-  if(has(/ausgelastet|security\s+läuft\s+nebenbei/))painFallback.push('Security läuft nebenbei in einer ausgelasteten IT.');
-  if(has(/negative\s+bewertung|eskalation|lieferantenreview|auditfragen/))painFallback.push('Schlechte Nachweise riskieren Eskalation und negative Bewertung.');
-  if(has(/auftragsverlust|direkter\s+verlust/))painFallback.push('Auftragsverlust nur nennen, wenn ausdrücklich bestätigt.');
-  else if(has(/12\s*%|umsatz/))painFallback.push('12 % Umsatzanteil zeigt Relevanz, keinen bestätigten Verlust.');
-  const painPoints=limit([...painHits,...painFallback],5);
 
+  const valuePoints=[];
+  if(has(/management[-\s]?(bericht|report)|geschäftsführung|gf|überblick|status|risiko/)){
+    add(valuePoints,'Geschäftsführung erhält einen belastbaren Sicherheitsüberblick.',true);
+  }
+  if(has(/patch|backup|m365|risiken?\s+priorisier|status\s+bewerten|quick\s*check/)){
+    add(valuePoints,'Patch-, Backup- und M365-Risiken werden priorisiert.',true);
+  }
+  if(has(/review|audit|großkunde|anforder|lieferantenreview|q3/)){
+    add(valuePoints,'Großkundenreview wird professionell vorbereitet.',true);
+  }
+  if(has(/entlast|kontrolliert|manuell|zusammengesucht|rückfragen|anfragen|ausgelastet|nebenbei/)){
+    add(valuePoints,'Interne IT wird entlastet, nicht kontrolliert.',true);
+  }
+  if(has(/rückfragen|anfragen|nachweis|belegen|zusammengesucht/)){
+    add(valuePoints,'Nachweise lassen sich schneller zusammenstellen.',true);
+  }
+  if(!valuePoints.length){
+    const hit=textHit(/nutzen|entlast|nachweis|management|überblick|review|risiko/);
+    add(valuePoints,hit||'Nutzen als Kundenergebnis formulieren, nicht als Produktfunktion.',false);
+  }
   let valueHead='Nutzen noch konkretisieren';
   let valueEvidence='Noch ist nicht klar genug, welche Verbesserung der Kunde konkret erreichen will.';
-  if(valueHits.length || has(/quick\s*check|status\s+bewerten|risiken?\s+priorisier|management[-\s]?(bericht|report)|review|nachweis|entlast/)){
-    if(has(/nachweis|review|audit/) && has(/überblick|management|entlast|priorisier|risiko/))valueHead='Belastbare Nachweise statt manueller Sucharbeit';
-    else if(has(/nachweis|review|audit/))valueHead='Nachweisfähigkeit für Management und Review';
+  if(valuePoints.length){
+    if(has(/nachweis|review|audit|lieferantenreview/) && has(/manuell|zusammengesucht|entlast|rückfragen|anfragen/))valueHead='Belastbare Nachweise statt manueller Sucharbeit';
+    else if(has(/nachweis|review|audit|lieferantenreview/))valueHead='Nachweisfähigkeit für Management und Review';
     else valueHead='Konkreter Kundennutzen erkennbar';
-    valueEvidence=short(valueHits.find(t=>/(nachweis|management|überblick|review|audit)/i.test(t))||valueHits[0]||'Quick Check soll Status, Risiken und Management-Bericht liefern.',125);
+    valueEvidence=has(/quick\s*check|management[-\s]?(bericht|report)|risiken?\s+priorisier|status\s+bewerten/)
+      ? 'Quick Check soll Status, Risiken und Management-Bericht liefern.'
+      : short((valuePoints[0]&&valuePoints[0].text)||'',125);
   }
-  const valueFallback=[];
-  if(has(/management[-\s]?(bericht|report)|geschäftsführung|gf|überblick/))valueFallback.push('Geschäftsführung erhält einen belastbaren Sicherheitsüberblick.');
-  if(has(/patch|backup|m365|risiken?\s+priorisier|status\s+bewerten/))valueFallback.push('Patch-, Backup- und M365-Risiken werden priorisiert.');
-  if(has(/review|audit|großkunde|anforder/))valueFallback.push('Großkundenreview wird professionell vorbereitet.');
-  if(has(/entlast|manuell|zusammengesucht|rückfragen|anfragen|ausgelastet/))valueFallback.push('Interne IT wird entlastet, nicht kontrolliert.');
-  if(has(/rückfragen|anfragen|nachweis/))valueFallback.push('Kundenrückfragen lassen sich schneller belegen.');
-  const valuePoints=limit([...valueHits,...valueFallback],5);
 
+  const casePoints=[];
+  if(has(/quick\s*check|4\.?900|4900/)){
+    add(casePoints,'Quick Check 4.900 € ist der begrenzte nächste Angebotsschritt.',false);
+  }
+  if(has(/cfo|budget|entscheidbar|freigabe/)){
+    add(casePoints,'CFO hält 4.900 € kurzfristig für entscheidbar.',false);
+  }
+  if(has(/rückfragen|anfragen|personen|tage|aufwand|manuell|zusammengesucht/)){
+    add(casePoints,'Operativer Aufwand ist bestätigt, aber noch nicht monetarisiert.',true);
+  }
+  if(has(/12\s*%|umsatz/)){
+    add(casePoints,'12 % Umsatzanteil erhöht Relevanz, ist kein Verlustbeleg.',true);
+  }
+  if(has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/)){
+    add(casePoints,'Managed Security bleibt Folgeoption, nicht aktuelles Angebot.',true);
+  }
+  if(has(/kein\s+direkter\s+auftragsverlust|auftragsverlust.*nicht|nicht\s+angedroht|nicht\s+bestätigt/)){
+    add(casePoints,'Harter ROI bleibt offen, weil kein Auftragsverlust bestätigt ist.',true);
+  }
+  if(!casePoints.length){
+    const hit=textHit(/business\s*case|roi|budget|angebot|preis|freigabe|invest|wirtschaft/);
+    add(casePoints,hit||'Aktuelles Angebot, Budget/Freigabe und Folgeoption sauber trennen.',false);
+  }
   let caseHead='Business Case noch nicht belastbar';
   let caseEvidence='Preis, Wirkung oder Freigabe sind noch nicht sauber genug geklärt.';
-  if(/quick check|4\.?900|4900|start|paket|angebot|€|euro|compact|sprint/.test(offerLow)||caseHits.length){
-    if(has(/quick\s*check|4\.?900|4900/) && (has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/) || /managed\s*security|2\.?800|2800/i.test(offerText)))caseHead='Quick Check plausibel, Folgegeschäft offen';
-    else if(has(/quick\s*check|4\.?900|4900|entscheidbar|budget|freigabe/) || /quick\s*check|4\.?900|4900/i.test(offerText))caseHead='Startangebot wirtschaftlich plausibel';
+  if(casePoints.length){
+    if(has(/quick\s*check|4\.?900|4900/) && has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/))caseHead='Quick Check plausibel, Folgegeschäft offen';
+    else if(has(/quick\s*check|4\.?900|4900|entscheidbar|budget|freigabe/))caseHead='Startangebot wirtschaftlich plausibel';
     else caseHead='Wirtschaftliche Entscheidungslogik klären';
-    caseEvidence=short(caseHits.find(t=>/(quick\s*check|4\.?900|4900|cfo|budget|entscheidbar|freigabe)/i.test(t))||caseHits[0]||offerText,125)||caseEvidence;
+    caseEvidence=has(/quick\s*check|4\.?900|4900/)
+      ? '4.900 € Quick Check kurzfristig entscheidbar; 2.800 €/Monat noch offen.'
+      : short((casePoints[0]&&casePoints[0].text)||'',125);
   }
-  const caseFallback=[];
-  if(has(/quick\s*check|4\.?900|4900/) || /quick\s*check|4\.?900|4900/i.test(offerText))caseFallback.push('Quick Check 4.900 € ist der begrenzte nächste Schritt.');
-  if(has(/cfo|budget|entscheidbar|freigabe/))caseFallback.push('CFO-Freigabe wirkt möglich, formaler Weg bleibt zu klären.');
-  if(has(/rückfragen|anfragen|personen|tage|aufwand/))caseFallback.push('Operativer Aufwand ist beschrieben, aber noch nicht monetarisiert.');
-  if(has(/12\s*%|umsatz/))caseFallback.push('12 % Umsatzanteil erhöht Relevanz, ist kein Verlustbeleg.');
-  if(has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/) || /managed\s*security|2\.?800|2800/i.test(offerText))caseFallback.push('Managed Security 2.800 €/Monat bleibt Folgeoption.');
-  if(has(/kein\s+direkter\s+auftragsverlust|auftragsverlust.*nicht|nicht\s+angedroht/))caseFallback.push('Kein direkter Auftragsverlust bestätigt; harter ROI offen.');
-  const casePoints=limit([...caseHits,...caseFallback],5);
 
   return [
-    {cls:'pain',label:'Schmerz',headline:painHead,evidence:painEvidence,points:painPoints.length?painPoints:['Konkreten Kundendruck, Aufwand und Risiko im nächsten Gespräch belegen.'],note:'Leitfrage: Warum muss der Kunde handeln – und was ist nur Relevanz, aber noch kein bestätigter Schaden?'},
-    {cls:'value',label:'Nutzen',headline:valueHead,evidence:valueEvidence,points:valuePoints.length?valuePoints:['Nutzen als Kundenergebnis formulieren, nicht als Produktfunktion.'],note:'Leitfrage: Was wird für IT, Geschäftsführung und Kundenreview konkret besser?'},
-    {cls:'case',label:'Business Case',headline:caseHead,evidence:caseEvidence,points:casePoints.length?casePoints:['Aktuelles Angebot, Budget/Freigabe und Folgeoption sauber trennen.'],note:'Leitfrage: Ist die Investition plausibel – und welche Annahme fehlt noch für Belastbarkeit?'}
+    {cls:'pain',label:'Schmerz',headline:painHead,evidence:painEvidence,points:painPoints,note:'Leitfrage: Warum muss der Kunde handeln – und was ist nur Relevanz, aber noch kein bestätigter Schaden?'},
+    {cls:'value',label:'Nutzen',headline:valueHead,evidence:valueEvidence,points:valuePoints,note:'Leitfrage: Was wird für IT, Geschäftsführung und Kundenreview konkret besser?'},
+    {cls:'case',label:'Business Case',headline:caseHead,evidence:caseEvidence,points:casePoints,note:'Leitfrage: Ist die Investition plausibel – und welche Annahme fehlt noch für Belastbarkeit?'}
   ];
 }
+
 function renderHomeLiteV4211(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -6405,6 +6462,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.237: große Vertiefungskacheln liegen bewusst unter den vier Cockpit-Kacheln und werden erst beim Scrollen sichtbar.
   const deepCase=getCockpitDeepCaseCardsV4238(raw,aid);
   wrap.appendChild(h('div',{className:'cockpit-deep-case-title'},'Wirtschaftliche Vertiefung'));
+  wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'KI21-Erkenntnis: entsteht durch Verknüpfung und Bewertung, nicht durch bloßes Abschreiben.'));
   const deepWrap=h('div',{className:'cockpit-core-case'});
   deepCase.forEach(card=>{
     const c=h('div',{className:'cockpit-core-card '+card.cls},
@@ -6413,14 +6471,18 @@ function renderCockpitSnapshotLiteV4215(){
       h('div',{className:'cockpit-core-evidence'},h('b',{},'Grundlage: '),card.evidence)
     );
     const list=h('div',{className:'cockpit-core-list'});
-    (card.points||[]).forEach(pt=>list.appendChild(h('div',{className:'cockpit-core-point'},pt)));
+    (card.points||[]).forEach(pt=>{
+      const text=String((pt&&pt.text)||pt||'');
+      const cls='cockpit-core-point'+((pt&&pt.insight)?' ki21-insight':'');
+      list.appendChild(h('div',{className:cls},text));
+    });
     c.appendChild(list);
     if(card.note)c.appendChild(h('div',{className:'cockpit-core-note'},card.note));
     deepWrap.appendChild(c);
   });
   wrap.appendChild(deepWrap);
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.238 Semantic Case Cards Candidate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.239 KI21 Insight Markers Candidate'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -6930,7 +6992,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.238 Semantic Case Cards Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.239 KI21 Insight Markers Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -8994,7 +9056,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.238 Semantic Case Cards Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.239 KI21 Insight Markers Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9224,7 +9286,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.238 Semantic Case Cards Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.239 KI21 Insight Markers Candidate: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -9583,7 +9645,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.238 Semantic Case Cards Candidate';
+const KI21_VERSION='v4.239 KI21 Insight Markers Candidate';
 
 
 function runKi21VersionMigration(){
