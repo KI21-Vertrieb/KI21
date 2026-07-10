@@ -2065,6 +2065,26 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-executive-card .cockpit-executive-insight{font-size:13.2px !important;}
 }
 
+
+/* v4.264 Variable Height Cards: 2x2-Struktur bleibt, Karten wachsen nur mit ihrem Inhalt */
+.cockpit-grid{
+  align-items:start !important;
+  grid-template-rows:auto auto !important;
+  grid-auto-rows:max-content !important;
+}
+.cockpit-grid > .cockpit-executive-card{
+  min-height:0 !important;
+  height:auto !important;
+  align-self:start !important;
+  overflow:visible !important;
+}
+.cockpit-grid > .cockpit-executive-card .cockpit-tile-header{
+  margin-bottom:10px !important;
+}
+@media(max-width:390px){
+  .cockpit-grid > .cockpit-executive-card{min-height:0 !important;height:auto !important;}
+}
+
 </style>
 </head>
 <body>
@@ -7670,7 +7690,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.263 Executive Cards'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.264 Variable Height Cards'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11512,7 +11532,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.263 Executive Cards';
+const KI21_VERSION='v4.264 Variable Height Cards';
 
 
 function runKi21VersionMigration(){
