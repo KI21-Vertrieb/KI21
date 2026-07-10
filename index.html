@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v5.3 Executive Intelligence</title>
+<title>KI21 v5.4 Lagebild Cockpit</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2199,6 +2199,47 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
 .v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
 .v53-summary-evidence span{display:inline-block;margin-right:5px;}
+
+
+
+/* v5.4 Lagebild Cockpit: klare Ebenen, leichteres Lagebild, Orange nur für echte Insights */
+.cockpit-v54-lagebild{
+  border-color:rgba(139,148,158,.22)!important;
+  background:linear-gradient(145deg,rgba(18,23,30,.98),rgba(12,17,24,.97))!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+.cockpit-v54-lagebild::after{opacity:.28!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-head{margin-bottom:9px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-kicker{
+  color:#f3f6fb!important;font-size:10px!important;letter-spacing:1.4px!important;
+}
+.cockpit-v54-lagebild .cockpit-v5-summary-status{display:none!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-grid{gap:7px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-row{
+  grid-template-columns:92px 1fr!important;padding:10px 11px!important;
+  background:rgba(255,255,255,.018)!important;
+}
+.cockpit-v54-lagebild .cockpit-v5-summary-row.chance{border-color:rgba(86,211,144,.22)!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-row.risk{border-color:rgba(255,123,114,.22)!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-label{font-size:8.3px!important;line-height:1.22!important;}
+.cockpit-v54-lagebild .v53-summary-status{font-size:17px!important;line-height:1.12!important;margin-bottom:4px!important;}
+.cockpit-v54-lagebild .v53-summary-evidence{font-size:11.2px!important;line-height:1.34!important;color:#aeb8c4!important;}
+.cockpit-v54-lagebild .v53-summary-evidence.executive-insight{color:#ff9a45!important;font-weight:780!important;}
+.cockpit-v5-workgrid .cockpit-card-next{order:1;}
+.cockpit-v5-workgrid .cockpit-card-value{order:2;}
+.cockpit-v5-workgrid .cockpit-card-risk{order:3;}
+.cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-label::before{content:'Arbeitsmodus · ';color:#a78bfa;}
+.cockpit-business-amount,.v53-bc-value{font-size:31px!important;line-height:1!important;letter-spacing:-.9px!important;}
+.cockpit-business-caption,.v53-bc-sub{color:#8fd9ad!important;}
+.cockpit-v5-workgrid .cockpit-card-risk .cockpit-tile-item:not(.cockpit-ki21-inline),
+.cockpit-v5-workgrid .cockpit-card-value .cockpit-tile-item:not(.cockpit-ki21-inline){color:#dce3eb!important;}
+.cockpit-v5-workgrid .cockpit-card-risk .cockpit-tile-item.cockpit-ki21-inline,
+.cockpit-v5-workgrid .cockpit-card-value .cockpit-tile-item.cockpit-ki21-inline{color:#ff9a45!important;}
+@media(max-width:390px){
+  .cockpit-v54-lagebild .cockpit-v5-summary-row{grid-template-columns:78px 1fr!important;padding:9px!important;}
+  .cockpit-v54-lagebild .v53-summary-status{font-size:15.8px!important;}
+  .cockpit-business-amount,.v53-bc-value{font-size:27px!important;}
+}
 
 </style>
 </head>
@@ -7583,29 +7624,30 @@ function buildBusinessAnchorV52(value){
 }
 
 function buildV51Summary(chance,risk){
-  const box=h('div',{className:'cockpit-v5-summary'});
+  const box=h('div',{className:'cockpit-v5-summary cockpit-v54-lagebild'});
   box.appendChild(h('div',{className:'cockpit-v5-summary-head'},
-    h('div',{className:'cockpit-v5-summary-kicker'},'Executive Intelligence'),
-    h('div',{className:'cockpit-v5-summary-status'},'Lagebild')
+    h('div',{className:'cockpit-v5-summary-kicker'},'Lagebild')
   ));
   const body=h('div',{className:'cockpit-v5-summary-grid'});
   const c=shortenExecutiveInsightV52(chance,18);
   const r=shortenExecutiveInsightV52(risk,18);
+  const cEvidence=String(c||'').replace(/^Quick Check mit guter Einstiegschance:\s*/i,'').replace(/^Chance vorhanden:\s*/i,'');
+  const rEvidence=String(r||'').replace(/^Größter Engpass:\s*/i,'').replace(/^Zentraler Engpass:\s*/i,'');
   if(c)body.appendChild(h('div',{className:'cockpit-v5-summary-row chance'},
     h('div',{className:'cockpit-v5-summary-label'},'Chance'),
     h('div',{},
-      h('div',{className:'v53-summary-status'},/gute Einstiegschance|konkrete Einstiegschance/i.test(c)?'Gute Einstiegschance':'Chance vorhanden'),
-      h('div',{className:'v53-summary-evidence executive-insight'},c)
+      h('div',{className:'v53-summary-status'},/gute Einstiegschance|konkrete Einstiegschance/i.test(c)?'Gute Einstiegschance':'Einstiegschance vorhanden'),
+      h('div',{className:'v53-summary-evidence '+(isExecutiveInsightV53(c)?'executive-insight':'')},cEvidence)
     )
   ));
   if(r)body.appendChild(h('div',{className:'cockpit-v5-summary-row risk'},
-    h('div',{className:'cockpit-v5-summary-label'},'Engpass'),
+    h('div',{className:'cockpit-v5-summary-label'},'Größter Engpass'),
     h('div',{},
       h('div',{className:'v53-summary-status'},/Entscheider/i.test(r)?'Wirtschaftliche Entscheider fehlen':'Zentraler Engpass'),
-      h('div',{className:'v53-summary-evidence executive-insight'},r)
+      h('div',{className:'v53-summary-evidence '+(isExecutiveInsightV53(r)?'executive-insight':'')},rEvidence)
     )
   ));
-  if(!c&&!r)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Die Opportunity ist noch nicht ausreichend verdichtet.'));
+  if(!c&&!r)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Für ein belastbares Lagebild fehlen noch Informationen.'));
   box.appendChild(body);
   return box;
 }
@@ -7875,7 +7917,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v5.3 Executive Intelligence'));
+  wrap.appendChild(h('div',{className:'tagline'},'v5.4 Lagebild Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8060,7 +8102,7 @@ function renderHome(){
         if(anchor){
           const amount=String(anchor).replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
           tile.appendChild(h('div',{className:'v53-bc-value'},amount));
-          tile.appendChild(h('div',{className:'v53-bc-sub'},'Kundenproblem · bestätigt'));
+          tile.appendChild(h('div',{className:'v53-bc-sub'},'Kundenproblem · beziffert'));
           tile.appendChild(h('div',{className:'v53-bc-divider'}));
         }
         items.filter(it=>it!==anchor).slice(0,2).forEach(it=>tile.appendChild(h('div',{className:'v53-bc-benefit'},String(it||''))));
@@ -11816,7 +11858,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v5.3 Executive Intelligence';
+const KI21_VERSION='v5.4 Lagebild Cockpit';
 
 
 function runKi21VersionMigration(){
