@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.258 Strict KI21 Orange Insights: sichere Analysefunktion mit stabilem Fallback. -->
+<!-- v4.259 Deduplicated Analysis Cards: sichere Analysefunktion mit stabilem Fallback. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1555,7 +1555,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.259 Deduplicated Analysis Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1662,7 +1662,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.259 Deduplicated Analysis Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -6330,7 +6330,7 @@ function buildCockpitTileHeader(label,onOpen){
 
 
 
-// v4.258: Orange nur bei echtem KI21-Mehrwert.
+// v4.259: Orange nur bei echtem KI21-Mehrwert.
 // Markiert werden ausschließlich nicht offensichtliche Verknüpfungen, Abgrenzungen oder Priorisierungen.
 // Direkte Fakten, manuell eingetragene Werte, offene Punkte und normale nächste Fragen bleiben weiß.
 function isKi21DashboardInsight(txt,kind){
@@ -6379,7 +6379,7 @@ function showScoreDetailsV4224(raw){
     return;
   }
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
-  // v4.258: Score-Sheet verwendet dieselbe strenge globale Orange-Regel.
+  // v4.259: Score-Sheet verwendet dieselbe strenge globale Orange-Regel.
   const positives=(Array.isArray(raw.positive)?raw.positive:[]).map(clean).filter(Boolean);
   const warnings=(Array.isArray(raw.warning)?raw.warning:[]).map(clean).filter(Boolean);
   const opens=(Array.isArray(raw.open)?raw.open:[]).map(clean).filter(Boolean);
@@ -6695,7 +6695,8 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
 }
 
 
-// v4.258: Sichere Analysefunktion mit strenger Orange-Regel.
+// v4.259: Sichere Analysefunktion mit strenger Orange-Regel.
+// v4.259: Analyseebene entdoppelt; separate Summary-Karte entfernt.
 function getCockpitDeepCaseCardsAnalysisV4257(raw,aid){
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const all=[];
@@ -6739,8 +6740,6 @@ function getCockpitDeepCaseCardsAnalysisV4257(raw,aid){
     add(pain,'Verstärker: Security konkurriert mit dem operativen IT-Tagesgeschäft.',true);
   if(has(/12\s*%|umsatz/))
     add(pain,'Geschäftliche Relevanz ist hoch; ein Umsatzverlust ist jedoch nicht bestätigt.',true);
-  if(painSummary.sum>0)
-    add(pain,'Bezifferter Schmerz: '+formatMonthlyEffectV4240(painSummary.sum)+'.',false);
   if(!pain.length)add(pain,'Schmerz noch nicht belastbar genug bestätigt.',false);
   const painHead=painSummary.sum>0?'Schmerz bestätigt und beziffert':(pain.length>=3?'Schmerz bestätigt, noch nicht beziffert':'Schmerz noch validieren');
   const painEvidence=painSummary.sum>0
@@ -6767,7 +6766,6 @@ function getCockpitDeepCaseCardsAnalysisV4257(raw,aid){
 
   // 3) BUSINESS CASE: Schmerz, Angebot, offene Annahme und Entscheidungsstatus verbinden.
   const bc=[];
-  if(painSummary.sum>0)add(bc,'Bezifferter Schmerz: '+formatMonthlyEffectV4240(painSummary.sum)+'.',false);
   if(has(/quick\s*check|4\.?900|4900/))add(bc,'Aktuelles Angebot: Security Quick Check 4.900 € einmalig.',false);
   if(has(/cfo|budget|entscheidbar|freigabe/))add(bc,'Freigabe für den Quick Check ist kurzfristig grundsätzlich möglich.',false);
   if(has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/))add(bc,'Managed Security 2.800 €/Monat bleibt eine separate Folgeoption.',true);
@@ -7525,9 +7523,8 @@ function renderCockpitSnapshotLiteV4215(){
   });
   wrap.appendChild(deepWrap);
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
-  wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.258 Strict KI21 Orange Insights'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.259 Deduplicated Analysis Cards'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8037,7 +8034,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.259 Deduplicated Analysis Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -8127,7 +8124,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.259 Deduplicated Analysis Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10318,7 +10315,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.259 Deduplicated Analysis Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10408,7 +10405,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.259 Deduplicated Analysis Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10760,7 +10757,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.259 Deduplicated Analysis Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10850,7 +10847,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.259 Deduplicated Analysis Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11353,7 +11350,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.258 Strict KI21 Orange Insights';
+const KI21_VERSION='v4.259 Deduplicated Analysis Cards';
 
 
 function runKi21VersionMigration(){
