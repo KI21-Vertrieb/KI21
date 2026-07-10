@@ -5,6 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
+<!-- v4.256 KI21 Analysis Deep Cards: Untere Karten als Schmerzanalyse, Nutzenanalyse und Business-Case-Analyse. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -6705,6 +6706,98 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
 }
 
 
+// v4.256: Untere Kacheln sind echte KI21-Analysen statt Wiederholungen der oberen Übersicht.
+function getCockpitDeepCaseCardsV4238(raw,aid){
+  const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
+  const all=[];
+  try{
+    ['positive','warning','open'].forEach(k=>{
+      const arr=Array.isArray(raw&&raw[k])?raw[k]:[];
+      arr.forEach(x=>{const t=clean(x);if(t)all.push(t);});
+    });
+  }catch(e){}
+  const low=all.join(' \n ').toLowerCase();
+  const aid2=aid||LS.get('ki21_aid',null);
+  const phase5=aid2?LS.get('ki21_st_'+aid2+'_4',{}):{};
+  const fv5=(phase5&&phase5.fv)||{};
+  const mu=LS.get('ki21_mu',{})||{};
+  const offerText=[fv5.paket,fv5.budget,fv5.minimum,mu.bausteine].filter(Boolean).join(' ');
+  const hay=(low+'\n'+String(offerText||'').toLowerCase());
+  const has=(re)=>re.test(hay);
+  const short=(t,max=132)=>{
+    t=String(t||'').replace(/\s+/g,' ').trim();
+    if(t.length<=max)return t;
+    const cut=t.lastIndexOf(' ',max-1);
+    return t.substring(0,cut>25?cut:max-1).trim()+'…';
+  };
+  const add=(arr,text,insight=false)=>{
+    text=short(text);
+    if(!text||arr.some(p=>String((p&&p.text)||p)===text))return;
+    arr.push({text,insight:!!insight});
+  };
+  let painSummary={sum:0,filled:[],rows:[]};
+  try{painSummary=getImplicationSummaryV4246(aid2)||painSummary;}catch(e){}
+
+  // 1) SCHMERZANALYSE: bestätigte Ursache, Auswirkung, Quantifizierungsgrad.
+  const pain=[];
+  if(has(/großkunde|audit|lieferantenreview|review|anforder|q3|deadline/))
+    add(pain,'Externer Handlungsdruck: Nachweise werden bis Ende Q3 verlangt.',false);
+  if(has(/patch|backup|m365|alert|nicht\s+(systematisch|zentral)|anlassbezogen/))
+    add(pain,'Ursache: Sicherheitsnachweise werden heute nicht systematisch erzeugt.',false);
+  if(has(/rückfragen|anfragen|personen|tage|manuell|zusammengesucht/))
+    add(pain,'Operative Auswirkung: Rückfragen binden mehrere Personentage.',false);
+  if(has(/ausgelastet|security\s+läuft\s+nebenbei|nebenbei/))
+    add(pain,'Verstärker: Security konkurriert mit dem operativen IT-Tagesgeschäft.',true);
+  if(has(/12\s*%|umsatz/))
+    add(pain,'Geschäftliche Relevanz ist hoch; ein Umsatzverlust ist jedoch nicht bestätigt.',true);
+  if(painSummary.sum>0)
+    add(pain,'Bezifferter Schmerz: '+formatMonthlyEffectV4240(painSummary.sum)+'.',false);
+  if(!pain.length)add(pain,'Schmerz noch nicht belastbar genug bestätigt.',false);
+  const painHead=painSummary.sum>0?'Schmerz bestätigt und beziffert':(pain.length>=3?'Schmerz bestätigt, noch nicht beziffert':'Schmerz noch validieren');
+  const painEvidence=painSummary.sum>0
+    ? 'Quantifizierungsgrad: '+painSummary.filled.length+' Position(en), zusammen '+formatMonthlyEffectV4240(painSummary.sum)+'.'
+    : 'Quantifizierungsgrad: offen – wirtschaftliche Auswirkung in Phase 2 beziffern.';
+
+  // 2) NUTZENANALYSE: welche bestätigten Schmerzen werden durch das aktuelle Angebot adressiert?
+  const value=[];
+  if(has(/rückfragen|anfragen|manuell|zusammengesucht|nachweis/))
+    add(value,'Manuelle Nachweisarbeit → standardisierte Nachweise reduzieren Rechercheaufwand.',true);
+  if(has(/patch|backup|m365|risiko|alert/))
+    add(value,'Unsystematische Sicherheitsprüfung → Risiken werden priorisiert und sichtbar.',true);
+  if(has(/geschäftsführung|management[-\s]?(bericht|report)|überblick/))
+    add(value,'Fehlender Management-Überblick → belastbare Entscheidungsgrundlage für GF/CFO.',true);
+  if(has(/review|audit|großkunde|lieferantenreview|q3/))
+    add(value,'Reviewdruck → Großkundenanforderung kann professionell beantwortet werden.',true);
+  if(has(/entlast|ausgelastet|security\s+läuft\s+nebenbei/))
+    add(value,'Überlastete IT → operative Entlastung ohne Kontrollwirkung.',true);
+  if(!value.length)add(value,'Nutzen noch nicht sauber an bestätigte Schmerzen gekoppelt.',false);
+  const valueHead=painSummary.sum>0?'Nutzen plausibel, Realisierung noch validieren':'Nutzenhebel erkannt, wirtschaftliche Wirkung offen';
+  const valueEvidence=painSummary.sum>0
+    ? 'Ausgangspunkt: '+formatMonthlyEffectV4240(painSummary.sum)+' bezifferter Schmerz; reduzierbarer Anteil noch zu bestätigen.'
+    : 'Nutzen ist qualitativ erkennbar, aber noch nicht wirtschaftlich beziffert.';
+
+  // 3) BUSINESS CASE: Schmerz, Angebot, offene Annahme und Entscheidungsstatus verbinden.
+  const bc=[];
+  if(painSummary.sum>0)add(bc,'Bezifferter Schmerz: '+formatMonthlyEffectV4240(painSummary.sum)+'.',false);
+  if(has(/quick\s*check|4\.?900|4900/))add(bc,'Aktuelles Angebot: Security Quick Check 4.900 € einmalig.',false);
+  if(has(/cfo|budget|entscheidbar|freigabe/))add(bc,'Freigabe für den Quick Check ist kurzfristig grundsätzlich möglich.',false);
+  if(has(/managed\s*security|2\.?800|2800|folgeoption|nicht\s+freigegeben/))add(bc,'Managed Security 2.800 €/Monat bleibt eine separate Folgeoption.',true);
+  if(painSummary.sum>0)add(bc,'Offene Kernannahme: Welcher Anteil des bezifferten Schmerzes wird tatsächlich reduziert?',true);
+  else add(bc,'Offene Kernannahme: wirtschaftliche Auswirkung des Problems fehlt.',true);
+  if(has(/12\s*%|umsatz/))add(bc,'12 % Umsatzanteil erhöht die Relevanz, ist aber kein Verlustbeleg.',true);
+  const bcHead=painSummary.sum>0?'Business Case teilquantifiziert':'Business Case qualitativ plausibel';
+  const bcEvidence=painSummary.sum>0
+    ? 'Schmerz beziffert; Nutzenrealisierung und Folgeangebot noch nicht bestätigt.'
+    : 'Angebot und Relevanz sind erkennbar; bezifferter Schmerz fehlt noch.';
+
+  return [
+    {cls:'pain',label:'Schmerzanalyse',headline:painHead,evidence:painEvidence,points:pain,note:'Analyse: Was ist bestätigt, was verstärkt den Schmerz und wie weit ist er quantifiziert?'},
+    {cls:'value',label:'Nutzenanalyse',headline:valueHead,evidence:valueEvidence,points:value,note:'Analyse: Welcher bestätigte Schmerz wird durch welchen Nutzenhebel reduziert?'},
+    {cls:'case',label:'Business Case',headline:bcHead,evidence:bcEvidence,points:bc,note:'Analyse: Welche wirtschaftliche Annahme trägt die Entscheidung – und was ist noch offen?'}
+  ];
+}
+
+
 function parseMonthlyEffectV4240(v){
   let s=String(v||'').trim();
   if(!s)return 0;
@@ -7417,8 +7510,8 @@ function renderCockpitSnapshotLiteV4215(){
   grid.appendChild(mkTile('Nutzen / Potenzial',valueTileItemsV4252,'Nutzen und Potenzial noch nicht belegt.','value',3));
   grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(0,4),'Noch keine gespeicherten Fragen.','question',3));
   wrap.appendChild(grid);
-  wrap.appendChild(h('div',{className:'cockpit-deep-case-title'},'Wirtschaftliche Vertiefung'));
-  wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'KI21-Erkenntnis: entsteht durch Verknüpfung und Bewertung, nicht durch bloßes Abschreiben.'));
+  wrap.appendChild(h('div',{className:'cockpit-deep-case-title'},'KI21-Analyse'));
+  wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'Orange markiert nur eigenständige KI21-Erkenntnisse aus Verknüpfung und Bewertung.'));
   const deepWrap=h('div',{className:'cockpit-core-case'});
   deepCase.forEach(card=>{
     const c=h('div',{className:'cockpit-core-card '+card.cls},
@@ -7440,7 +7533,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.255 KI21 Orange Dashboard Insights Fixed'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.256 KI21 Analysis Deep Cards'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
