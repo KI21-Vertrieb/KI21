@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
-<!-- v4.259 Deduplicated Analysis Cards: sichere Analysefunktion mit stabilem Fallback. -->
+<!-- v4.261 Cockpit Content Priority: vier Kernkacheln mit klarer Inhaltspriorisierung. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1983,6 +1983,54 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   background:rgba(255,107,0,.10) !important;color:#ff8a2a !important;border:1px solid rgba(255,107,0,.62) !important;
 }
 @media(max-width:390px){.cockpit-core-action-row{margin-bottom:8px !important;}}
+
+
+
+/* v4.261 Cockpit Content Priority: wirtschaftlichen Anker und wichtigste Aktion klar priorisieren */
+.cockpit-tile-item.cockpit-savings-inline,
+.cockpit-tile-link.cockpit-savings-inline{
+  color:#ff9a45 !important;
+  font-weight:900 !important;
+  background:rgba(255,107,0,.075) !important;
+  border:1px solid rgba(255,107,0,.22) !important;
+  border-radius:9px !important;
+  padding:6px 15px 6px 12px !important;
+  margin-bottom:8px !important;
+}
+.cockpit-tile-item.cockpit-savings-inline::before,
+.cockpit-tile-link.cockpit-savings-inline::before{
+  content:'€' !important;
+  color:#ff8a2a !important;
+  font-size:9px !important;
+  font-weight:950 !important;
+  top:7px !important;
+}
+.cockpit-tile-item.cockpit-next-primary,
+.cockpit-tile-link.cockpit-next-primary{
+  color:#f5f1ff !important;
+  font-weight:900 !important;
+  background:rgba(167,139,250,.10) !important;
+  border:1px solid rgba(167,139,250,.28) !important;
+  border-radius:9px !important;
+  padding:6px 15px 6px 12px !important;
+  margin-bottom:8px !important;
+}
+.cockpit-tile-item.cockpit-next-primary::before,
+.cockpit-tile-link.cockpit-next-primary::before{
+  content:'1' !important;
+  width:13px !important;
+  height:13px !important;
+  top:7px !important;
+  left:1px !important;
+  border-radius:50% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:#d8caff !important;
+  background:rgba(167,139,250,.20) !important;
+  font-size:8px !important;
+  font-weight:950 !important;
+}
 
 </style>
 </head>
@@ -7413,6 +7461,7 @@ function renderCockpitSnapshotLiteV4215(){
   // sondern in der eigenen Cockpit-Kachel "Nutzen / Potenzial" geführt.
   pos=pos.filter(x=>!/Beziffertes\s+Schmerz/i.test(String((x&&x.text)||x||'')));
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
+  const isOperationalPainDetailV4261=(txt)=>/\b(?:anfragen?|rückfragen?|1[–-]2\s*tage|person(?:en)?tage|aufwand|recherche|nachweisarbeit)\b/i.test(String(txt||''));
   const rankCockpitItem=(txt,kind)=>{
     const s=String(txt||'').toLowerCase();
     const has=(re)=>re.test(s);
@@ -7499,7 +7548,7 @@ function renderCockpitSnapshotLiteV4215(){
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'');
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.highlight?' cockpit-savings-inline':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7507,7 +7556,7 @@ function renderCockpitSnapshotLiteV4215(){
     if(all.length>arr.length) tile.appendChild(h('button',{type:'button',className:'cockpit-tile-more cockpit-tile-more-btn',onclick:(e)=>{e.preventDefault();e.stopPropagation();openList();}},'+'+(all.length-arr.length)+' weitere'));
     return tile;
   };
-  grid.appendChild(mkTile('Erkenntnisse',pos,'Noch keine gespeicherten Erkenntnisse.','insight',4));
+  grid.appendChild(mkTile('Erkenntnisse',pos.filter(x=>!isOperationalPainDetailV4261(clean(x))),'Noch keine gespeicherten Erkenntnisse.','insight',3));
   grid.appendChild(mkTile('Risiken / Bremsen',warn,'Noch keine gespeicherten Risiken.','risk',3));
   grid.appendChild(mkTile('Nutzen / Potenzial',valueTileItemsV4252,'Nutzen und Potenzial noch nicht belegt.','value',3));
   const nextStepItemsV4260=[];
@@ -7517,7 +7566,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.260 Cockpit Core Only'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.261 Cockpit Content Priority'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7670,7 +7719,8 @@ function renderHome(){
   // ── 3. VIER COCKPIT-KACHELN 2×2 ─────────────────────────────────
   if(cust.firma&&health){
     const matrix=buildCockpitMatrixData(aid,health);
-    const pos=matrix.positive.slice(0,3);
+    const isOperationalPainDetailV4261=(txt)=>/\b(?:anfragen?|rückfragen?|1[–-]2\s*tage|person(?:en)?tage|aufwand|recherche|nachweisarbeit)\b/i.test(String(txt||''));
+    const pos=matrix.positive.filter(x=>!isOperationalPainDetailV4261(x)).slice(0,3);
     const warn=matrix.risks.slice(0,3);
     const open=matrix.open.slice(0,2);
 
@@ -7684,9 +7734,10 @@ function renderHome(){
       if(!items.length){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
       } else {
-        items.forEach(it=>{
+        items.forEach((it,idx)=>{
           const itemText=String(it||'');
-          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable',
+          const extraClass=(kind==='value'&&/Bezifferter?\s+Schmerz/i.test(itemText)?' cockpit-savings-inline':'')+(kind==='next'&&idx===0?' cockpit-next-primary':'');
+          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable'+extraClass,
             onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||cls||'cockpit',itemText);}},itemText);
           tile.appendChild(row);
         });
@@ -7784,7 +7835,7 @@ function renderHome(){
     const valueTile=mkTile('Nutzen / Potenzial',valueItemsV4260.slice(0,3),'value','Nutzen und Potenzial noch nicht belegt',
       ()=>showBottomSheet('Nutzen / Potenzial',valueItemsV4260.map(t=>({glyph:'•',text:t,onClick:()=>openCockpitWorkTarget('value',t)})),'Nutzen und Potenzial noch nicht belegt.'),'value');
     const nextTile=mkTile('Nächste Schritte',nextItemsV4260.slice(0,4),'question','Noch keine nächsten Schritte',
-      ()=>showBottomSheet('Nächste Schritte',nextItemsV4260.map((t,idx)=>({glyph:idx===0?'1':'→',text:t,priority:idx===0,caption:idx===0?'Wichtigster nächster Schritt':'',onClick:()=>openCockpitWorkTarget('question',t)})),'Noch keine nächsten Schritte gespeichert.'),'question');
+      ()=>showBottomSheet('Nächste Schritte',nextItemsV4260.map((t,idx)=>({glyph:idx===0?'1':'→',text:t,priority:idx===0,caption:idx===0?'Wichtigster nächster Schritt':'',onClick:()=>openCockpitWorkTarget('question',t)})),'Noch keine nächsten Schritte gespeichert.'),'next');
 
     const grid=h('div',{className:'cockpit-grid'});
     grid.appendChild(erkTile);grid.appendChild(riskTile);
@@ -11357,7 +11408,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.260 Cockpit Core Only';
+const KI21_VERSION='v4.261 Cockpit Content Priority';
 
 
 function runKi21VersionMigration(){
