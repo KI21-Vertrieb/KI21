@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v5.4 Lagebild Cockpit</title>
+<title>KI21 v6.1 Daily Sales Workspace</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2228,7 +2228,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .cockpit-v5-workgrid .cockpit-card-next{order:1;}
 .cockpit-v5-workgrid .cockpit-card-value{order:2;}
 .cockpit-v5-workgrid .cockpit-card-risk{order:3;}
-.cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-label::before{content:'Arbeitsmodus · ';color:#a78bfa;}
+.cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-label::before{content:'';}
 .cockpit-business-amount,.v53-bc-value{font-size:31px!important;line-height:1!important;letter-spacing:-.9px!important;}
 .cockpit-business-caption,.v53-bc-sub{color:#8fd9ad!important;}
 .cockpit-v5-workgrid .cockpit-card-risk .cockpit-tile-item:not(.cockpit-ki21-inline),
@@ -2239,6 +2239,35 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-v54-lagebild .cockpit-v5-summary-row{grid-template-columns:78px 1fr!important;padding:9px!important;}
   .cockpit-v54-lagebild .v53-summary-status{font-size:15.8px!important;}
   .cockpit-business-amount,.v53-bc-value{font-size:27px!important;}
+}
+
+
+/* v6.1 Daily Sales Workspace */
+.cockpit-score-stack{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;}
+.cockpit-dealstatus{max-width:235px;font-size:8.8px;line-height:1.2;color:rgba(201,209,217,.72);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;}
+.cockpit-v54-lagebild{padding:12px 13px!important;border-radius:16px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-head{margin-bottom:6px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-grid{gap:5px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-row{grid-template-columns:78px 1fr!important;padding:7px 9px!important;border-radius:11px!important;}
+.cockpit-v54-lagebild .cockpit-v5-summary-label{font-size:7.7px!important;letter-spacing:1px!important;}
+.cockpit-v54-lagebild .v53-summary-status{font-size:15.5px!important;margin-bottom:2px!important;}
+.cockpit-v54-lagebild .v53-summary-evidence{font-size:10.4px!important;line-height:1.27!important;}
+.cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-label::before{content:''!important;}
+.cockpit-v61-task{padding-left:30px!important;position:relative!important;}
+.cockpit-v61-task::before{content:'☐'!important;left:2px!important;top:-1px!important;font-size:18px!important;color:rgba(230,237,243,.62)!important;line-height:1.1!important;}
+.cockpit-v61-task::after{content:'›'!important;}
+.cockpit-v61-insights-title{margin:11px 0 7px;padding-top:9px;border-top:1px solid rgba(139,148,158,.18);font-size:8.8px;font-weight:950;letter-spacing:1.2px;text-transform:uppercase;color:#ff9a45;}
+.cockpit-card-value .cockpit-business-anchor + .cockpit-v61-insights-title{margin-top:12px;}
+.cockpit-card-risk .cockpit-tile-item:first-of-type::before{content:'Aktuell'!important;font-size:7.5px!important;font-weight:900!important;letter-spacing:.7px!important;text-transform:uppercase!important;color:#ff7b72!important;top:-13px!important;left:0!important;}
+.cockpit-card-risk .cockpit-tile-item:first-of-type{margin-top:15px!important;}
+.cockpit-card-risk .cockpit-tile-item:nth-of-type(2)::before{content:'Strategie'!important;font-size:7.5px!important;font-weight:900!important;letter-spacing:.7px!important;text-transform:uppercase!important;color:#d29922!important;top:-13px!important;left:0!important;}
+.cockpit-card-risk .cockpit-tile-item:nth-of-type(2){margin-top:15px!important;}
+@media(max-width:390px){
+ .cockpit-dealstatus{max-width:190px;font-size:8px;}
+ .cockpit-v54-lagebild{padding:10px 11px!important;}
+ .cockpit-v54-lagebild .cockpit-v5-summary-row{grid-template-columns:70px 1fr!important;padding:6px 8px!important;}
+ .cockpit-v54-lagebild .v53-summary-status{font-size:14.2px!important;}
+ .cockpit-v54-lagebild .v53-summary-evidence{font-size:9.8px!important;}
 }
 
 </style>
@@ -7669,7 +7698,10 @@ function renderHomeLiteV4211(){
         : h('button',{type:'button',className:'cockpit-opp-placeholder cockpit-opp-link',onclick:showKunde},'Opportunity wählen →')
     ),
     h('div',{className:'cockpit-header-right'},
-      renderScoreBadgeV4224(''),
+      h('div',{className:'cockpit-score-stack'},
+        renderScoreBadgeV4224(''),
+        h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
+      ),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -7875,7 +7907,10 @@ function renderCockpitSnapshotLiteV4215(){
         ));
         return;
       }
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
+      if(kind==='value' && !tile.querySelector('.cockpit-v61-insights-title')){
+        tile.appendChild(h('div',{className:'cockpit-v61-insights-title'},'KI21 Insights'));
+      }
+      const cls='cockpit-tile-item cockpit-tile-link'+(kind==='next'?' cockpit-v61-task':'')+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7900,6 +7935,14 @@ function renderCockpitSnapshotLiteV4215(){
 
   const summaryChanceV500=shortenExecutiveInsightV52(clean((executiveInsightsV4263[0]&&executiveInsightsV4263[0].text)||executiveInsightsV4263[0]||''),20);
   const summaryRiskV500=shortenExecutiveInsightV52(clean((executiveRisksV4263[0]&&executiveRisksV4263[0].text)||executiveRisksV4263[0]||''),20);
+  setTimeout(()=>{
+    const el=document.getElementById('ki21-dealstatus');
+    if(el){
+      const chance=/gute|konkrete|vorhanden/i.test(summaryChanceV500)?'Gute Einstiegschance':'Chance prüfen';
+      const action=/entscheid|gf|cfo/i.test(summaryRiskV500)?'Entscheider einbinden':'Engpass bearbeiten';
+      el.textContent='Dealstatus: '+chance+' · '+action;
+    }
+  },0);
   wrap.appendChild(buildV51Summary(summaryChanceV500,summaryRiskV500));
 
   const nextStepItemsV4263=[];
@@ -7912,12 +7955,12 @@ function renderCockpitSnapshotLiteV4215(){
   grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
   grid.appendChild(mkTile('Business Case',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
   const riskDetailV51=allExecutiveRisksV4263.filter(x=>clean((x&&x.text)||x).toLowerCase()!==summaryRiskV500.toLowerCase()).slice(0,2);
-  grid.appendChild(mkTile('Risiken',riskDetailV51,'Weitere Risikotreiber sind aktuell nicht erkennbar.','risk',2));
+  grid.appendChild(mkTile('Darauf achten',riskDetailV51,'Aktuell sind keine weiteren Hinweise erkennbar.','risk',2));
   wrap.appendChild(grid);
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v5.4 Lagebild Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.1 Daily Sales Workspace'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11858,7 +11901,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.0 Opportunity Control Center – Repair';
+const KI21_VERSION='v6.1 Daily Sales Workspace';
 
 
 function runKi21VersionMigration(){
