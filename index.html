@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.1 Daily Sales Workspace</title>
+<title>KI21 v6.1.2 Navigation Compact</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2268,6 +2268,87 @@ body .cockpit-next-card{margin-bottom:16px !important;}
  .cockpit-v54-lagebild .cockpit-v5-summary-row{grid-template-columns:70px 1fr!important;padding:6px 8px!important;}
  .cockpit-v54-lagebild .v53-summary-status{font-size:14.2px!important;}
  .cockpit-v54-lagebild .v53-summary-evidence{font-size:9.8px!important;}
+}
+
+
+
+/* v6.1.2 Navigation Compact: Dealstatus sichtbar, saubere To-dos, sicherer Seitenabschluss */
+.cockpit-v611-stable{padding-bottom:max(82px,calc(56px + env(safe-area-inset-bottom)))!important;}
+.cockpit-v611-stable .cockpit-card-next .cockpit-v61-task,
+.cockpit-v611-stable .cockpit-card-next .cockpit-next-primary{
+  padding-left:36px!important;
+}
+.cockpit-v611-stable .cockpit-card-next .cockpit-v61-task::before,
+.cockpit-v611-stable .cockpit-card-next .cockpit-next-primary::before{
+  content:''!important;
+  position:absolute!important;
+  left:12px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  width:14px!important;
+  height:14px!important;
+  border:1.5px solid rgba(230,237,243,.56)!important;
+  border-radius:3px!important;
+  background:rgba(255,255,255,.025)!important;
+  display:block!important;
+  box-sizing:border-box!important;
+}
+.cockpit-v611-stable .cockpit-card-next .cockpit-v61-task::after,
+.cockpit-v611-stable .cockpit-card-next .cockpit-next-primary::after{
+  content:'›'!important;
+  right:4px!important;
+}
+.cockpit-v611-stable .tagline{
+  display:block!important;
+  position:relative!important;
+  margin:22px 0 0!important;
+  padding:0 0 10px!important;
+  font-size:9px!important;
+  opacity:.45!important;
+  pointer-events:none!important;
+}
+.cockpit-score-stack{max-width:245px!important;}
+.cockpit-dealstatus{display:block!important;min-height:11px!important;color:rgba(201,209,217,.78)!important;}
+@media(max-width:390px){
+  .cockpit-score-stack{max-width:198px!important;}
+  .cockpit-dealstatus{max-width:198px!important;font-size:7.8px!important;}
+  .cockpit-v611-stable{padding-bottom:max(92px,calc(64px + env(safe-area-inset-bottom)))!important;}
+}
+
+
+/* v6.1.2 Navigation Compact: Cockpit, Phasen und Ergänzung in einer Zeile */
+.ki21-mode-tabs{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto !important;
+  gap:7px !important;
+  margin:0 0 8px !important;
+  align-items:stretch !important;
+}
+.ki21-mode-tab,
+.ki21-mode-add{
+  min-height:36px !important;
+  height:36px !important;
+  border-radius:12px !important;
+  font-family:'DM Sans',sans-serif !important;
+  font-size:11.5px !important;
+  font-weight:850 !important;
+  padding:0 10px !important;
+  white-space:nowrap !important;
+  touch-action:manipulation !important;
+}
+.ki21-mode-add{
+  min-width:112px !important;
+  border:1px solid rgba(255,107,0,.62) !important;
+  background:rgba(255,107,0,.06) !important;
+  color:#ff8a2a !important;
+  cursor:pointer !important;
+}
+.ki21-mode-add:active{background:rgba(255,107,0,.14) !important;transform:translateY(1px);}
+.cockpit-v612-compact .cockpit-core-action-row{display:none !important;}
+.cockpit-v612-compact .cockpit-next-card{display:none !important;}
+@media(max-width:390px){
+  .ki21-mode-tabs{gap:6px !important;margin-bottom:7px !important;}
+  .ki21-mode-tab,.ki21-mode-add{height:34px !important;min-height:34px !important;font-size:10.8px !important;padding:0 8px !important;}
+  .ki21-mode-add{min-width:98px !important;}
 }
 
 </style>
@@ -6736,9 +6817,16 @@ function showScoreDetailsV4224(raw){
   showBottomSheet('Opportunity Score',rows,'Noch keine Score-Details vorhanden.');
 }
 function buildModeTabsV4224(active){
+  const aid=state.activeId||LS.get('ki21_aid',null);
   return h('div',{className:'ki21-mode-tabs'},
     h('button',{type:'button',className:'ki21-mode-tab '+(active==='cockpit'?'active':''),onclick:(e)=>{e.preventDefault();renderCockpitSnapshotLiteV4215();}},'Cockpit'),
-    h('button',{type:'button',className:'ki21-mode-tab '+(active==='phases'?'active':''),onclick:(e)=>{e.preventDefault();renderHomeLiteV4211();}},'Phasen')
+    h('button',{type:'button',className:'ki21-mode-tab '+(active==='phases'?'active':''),onclick:(e)=>{e.preventDefault();renderHomeLiteV4211();}},'Phasen'),
+    h('button',{type:'button',className:'ki21-mode-add',onclick:(e)=>{
+      e.preventDefault();
+      if(!aid){showKunde();return;}
+      const a=(state.accounts||[]).find(x=>x.id===aid);
+      if(a)showNeuerKunde(a.cust,a.id,'kontext');
+    }},'＋ Ergänzung')
   );
 }
 function getCockpitNextStepV4224(raw){
@@ -7706,16 +7794,8 @@ function renderHomeLiteV4211(){
     )
   );
 
-  const wrap=h('div',{className:'wrap'});
+  const wrap=h('div',{className:'wrap cockpit-v612-compact'});
   wrap.appendChild(buildModeTabsV4224('phases'));
-  wrap.appendChild(h('div',{className:'cockpit-next-card'},
-    h('div',{className:'cockpit-next-eyebrow'},'Opportunity bearbeiten'),
-    h('div',{className:'cockpit-next-text'},'Wähle die nächste Phase oder ergänze eine neue Erkenntnis.'),
-    h('div',{className:'cockpit-btn-row'},
-      h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung'),
-      h('button',{className:'cockpit-btn-secondary',onclick:()=>{setTimeout(()=>{try{renderCockpitSnapshotLiteV4215();}catch(e){alert('Cockpit konnte nicht geöffnet werden: '+e.message);renderHomeLiteV4211();}},0);}},'Cockpit')
-    )
-  ));
 
   const phaseNames=['Qualifizierung','Discovery & Demo','Nachbereitung','Nutzen / ROI','Angebot'];
   const phaseList=h('div',{className:'cockpit-phase-list'});
@@ -7844,16 +7924,16 @@ function renderCockpitSnapshotLiteV4215(){
       cust.firma?h('button',{type:'button',className:'cockpit-opp-name cockpit-opp-link',onclick:showKunde},cust.firma):h('button',{type:'button',className:'cockpit-opp-placeholder cockpit-opp-link',onclick:showKunde},'Opportunity wählen →')
     ),
     h('div',{className:'cockpit-header-right'},
-      renderScoreBadgeV4224(''),
+      h('div',{className:'cockpit-score-stack'},
+        renderScoreBadgeV4224(''),
+        h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
+      ),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
-  const wrap=h('div',{className:'wrap cockpit-one-screen'});
+  const wrap=h('div',{className:'wrap cockpit-one-screen cockpit-v611-stable cockpit-v612-compact'});
   wrap.appendChild(buildModeTabsV4224('cockpit'));
   const cockpitNextText=raw?getCockpitNextStepV4224(raw):'';
-  wrap.appendChild(h('div',{className:'cockpit-core-action-row'},
-    h('button',{className:'cockpit-btn-primary',onclick:()=>{if(!aid)return;const a=(state.accounts||[]).find(x=>x.id===aid);if(a)showNeuerKunde(a.cust,a.id,'kontext');}},'＋ Ergänzung')
-  ));
   // v4.237: große Vertiefungskacheln liegen bewusst unter den vier Cockpit-Kacheln und werden erst beim Scrollen sichtbar.
   let deepCase=[];
   try{
@@ -7960,7 +8040,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v6.1 Daily Sales Workspace'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.1.2 Navigation Compact'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11901,7 +11981,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.1 Daily Sales Workspace';
+const KI21_VERSION='v6.1.2 Navigation Compact';
 
 
 function runKi21VersionMigration(){
