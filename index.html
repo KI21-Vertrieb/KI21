@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.257 KI21 Analysis Deep Cards Fixed: sichere Analysefunktion mit stabilem Fallback. -->
+<!-- v4.258 Strict KI21 Orange Insights: sichere Analysefunktion mit stabilem Fallback. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1555,7 +1555,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -1662,7 +1662,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -6330,21 +6330,27 @@ function buildCockpitTileHeader(label,onOpen){
 
 
 
-// v4.255: globale KI21-Insight-Erkennung für Cockpit und Sheets.
-// Orange bedeutet: KI21 hat den Punkt durch Einordnung, Verknüpfung oder Ableitung entwickelt – nicht bloß Rohinformation kopiert.
+// v4.258: Orange nur bei echtem KI21-Mehrwert.
+// Markiert werden ausschließlich nicht offensichtliche Verknüpfungen, Abgrenzungen oder Priorisierungen.
+// Direkte Fakten, manuell eingetragene Werte, offene Punkte und normale nächste Fragen bleiben weiß.
 function isKi21DashboardInsight(txt,kind){
   const s=String(txt||'').toLowerCase();
   const has=(re)=>re.test(s);
-  if(has(/bezifferter\s+schmerz|beziffertes\s+potenzial|einsparpotenzial|eingetragene\s+(i-?werte|monatswerte)|wirtschaftlicher\s+effekt/))return true;
-  if(kind==='value'||kind==='question')return true;
-  if(kind==='risk'){
-    if(has(/strategisch|formal|eingekoppelt|abhängig|folgeoption|nicht\s+aktuelles\s+angebot|ohne\s+freigabe|budget\s+noch|nicht\s+entscheider|scope|block|bremse|priorität|unklar|offen/))return true;
-    return false;
-  }
-  if(kind==='insight'){
-    if(has(/trigger|relevanz|relevante|schmerz\s+quantifiziert|quantifiz|sponsor|champion|aktive?r\s+sponsor|nicht\s+entscheider|geschäftlich|einordnung|plausibel|validiert/))return true;
-    return false;
-  }
+
+  // Harte Abgrenzungen: KI21 verhindert hier eine typische Fehlinterpretation.
+  if(has(/kein(?:e|en)?\s+(?:bestätigt(?:er|en)?\s+)?(?:umsatz)?verlust|kein\s+verlustbeleg|relevanz[^.]*nicht[^.]*verlust/))return true;
+  if(has(/folgeoption[^.]*nicht\s+(?:das\s+)?aktuelle(?:s|n)?\s+angebot|startangebot[^.]*folgeangebot|quick\s*check[^.]*managed\s+security[^.]*getrennt/))return true;
+  if(has(/sponsor[^.]*nicht\s+(?:wirtschaftlicher\s+)?entscheider|champion[^.]*nicht\s+(?:wirtschaftlicher\s+)?entscheider|fachlicher\s+sponsor[^.]*entscheider/))return true;
+  if(has(/budgetsignal[^.]*nicht\s+abschluss|budgetfreigabe[^.]*nicht\s+abschluss/))return true;
+  if(has(/bezifferter\s+schmerz[^.]*nicht\s+(?:automatisch\s+)?(?:einsparung|nutzen|roi)/))return true;
+
+  // Echte Nutzenableitung: bestätigter Schmerz wird mit einem konkreten Nutzenhebel verbunden.
+  if(kind==='value' && has(/→|reduzier|entlast|standardisiert|priorisiert|sichtbar|entscheidungsgrundlage|professionell\s+beantwort/))return true;
+
+  // Nicht offensichtliche Deal-Einordnung oder Priorisierung.
+  if(kind==='risk' && has(/strategisch[^.]*nicht\s+formal\s+eingekoppelt|fachlich[^.]*wirtschaftlich|entscheidungsweg[^.]*unklar/))return true;
+  if(kind==='insight' && has(/geschäftliche\s+relevanz[^.]*kein|sponsor[^.]*entscheider|einstieg[^.]*folgeoption/))return true;
+
   return false;
 }
 
@@ -6373,24 +6379,7 @@ function showScoreDetailsV4224(raw){
     return;
   }
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
-  // v4.254: Übergangsmarkierung im Dashboard.
-  // Orange bedeutet: KI21 hat den Punkt durch Einordnung, Verknüpfung oder Ableitung entwickelt – nicht bloß Rohinformation kopiert.
-  const isKi21DashboardInsight=(txt,kind)=>{
-    const s=String(txt||'').toLowerCase();
-    const has=(re)=>re.test(s);
-    if(has(/bezifferter\s+schmerz|beziffertes\s+potenzial|einsparpotenzial|eingetragene\s+(i-?werte|monatswerte)|wirtschaftlicher\s+effekt/))return true;
-    if(kind==='value'||kind==='question')return true;
-    if(kind==='risk'){
-      if(has(/strategisch|formal|eingekoppelt|abhängig|folgeoption|nicht\s+aktuelles\s+angebot|ohne\s+freigabe|budget\s+noch|nicht\s+entscheider|scope|block|bremse|priorität|unklar|offen/))return true;
-      return false;
-    }
-    if(kind==='insight'){
-      if(has(/trigger|relevanz|relevante|schmerz\s+quantifiziert|quantifiz|sponsor|champion|aktive?r\s+sponsor|nicht\s+entscheider|geschäftlich|einordnung|plausibel|validiert/))return true;
-      // Direkte Aussagen wie "CFO bestätigt..." oder "Großkunde fordert..." bleiben normalerweise nicht orange.
-      return false;
-    }
-    return false;
-  };
+  // v4.258: Score-Sheet verwendet dieselbe strenge globale Orange-Regel.
   const positives=(Array.isArray(raw.positive)?raw.positive:[]).map(clean).filter(Boolean);
   const warnings=(Array.isArray(raw.warning)?raw.warning:[]).map(clean).filter(Boolean);
   const opens=(Array.isArray(raw.open)?raw.open:[]).map(clean).filter(Boolean);
@@ -6706,7 +6695,7 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
 }
 
 
-// v4.257: Sichere Analysefunktion ohne Überschreiben der stabilen Deep-Card-Funktion.
+// v4.258: Sichere Analysefunktion mit strenger Orange-Regel.
 function getCockpitDeepCaseCardsAnalysisV4257(raw,aid){
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const all=[];
@@ -7482,18 +7471,18 @@ function renderCockpitSnapshotLiteV4215(){
       const rawText=(it&&typeof it==='object'&&('text' in it))?it.text:it;
       const text=clean(rawText);
       const highlight=!!(it&&typeof it==='object'&&it.highlight)||/Bezifferter?\s+Schmerz/i.test(String(rawText||''));
-      return {text,highlight,ki21:highlight||isKi21DashboardInsight(text,kind||'cockpit'),idx:i};
+      return {text,highlight,ki21:isKi21DashboardInsight(text,kind||'cockpit'),idx:i};
     }).filter(x=>x.text);
     const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>{
       const original=normalized.find(x=>x.text===t)||{};
       const highlight=!!original.highlight||/Bezifferter?\s+Schmerz/i.test(String(t||''));
-      return {text:t,highlight,ki21:highlight||isKi21DashboardInsight(t,kind||'cockpit'),idx:i};
+      return {text:t,highlight,ki21:isKi21DashboardInsight(t,kind||'cockpit'),idx:i};
     });
     const all=sorted;
     const openList=()=>{
       const rows=all.map(x=>{
         const t=x.text;
-        return {glyph:(x.highlight||x.ki21)?'●':'•',text:t,kind:x.highlight?'savings':(x.ki21?'ki21':''),onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
+        return {glyph:x.ki21?'●':'•',text:t,kind:x.ki21?'ki21':'',onClick:()=>openCockpitWorkTarget(kind||'cockpit',t)};
       });
       showBottomSheet(label,rows,empty);
     };
@@ -7502,7 +7491,7 @@ function renderCockpitSnapshotLiteV4215(){
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.highlight?' cockpit-savings-inline':(x.ki21?' cockpit-ki21-inline':''));
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'');
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7516,7 +7505,7 @@ function renderCockpitSnapshotLiteV4215(){
   grid.appendChild(mkTile('Fragen für nächsten Termin',open.slice(0,4),'Noch keine gespeicherten Fragen.','question',3));
   wrap.appendChild(grid);
   wrap.appendChild(h('div',{className:'cockpit-deep-case-title'},'KI21-Analyse'));
-  wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'Orange markiert nur eigenständige KI21-Erkenntnisse aus Verknüpfung und Bewertung.'));
+  wrap.appendChild(h('div',{className:'cockpit-core-insight-legend'},h('span',{className:'dot'},'●'),'Orange markiert nur echten KI21-Mehrwert: nicht offensichtliche Verknüpfung, Abgrenzung oder Priorisierung.'));
   const deepWrap=h('div',{className:'cockpit-core-case'});
   deepCase.forEach(card=>{
     const c=h('div',{className:'cockpit-core-card '+card.cls},
@@ -7538,7 +7527,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.257 KI21 Analysis Deep Cards Fixed'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.258 Strict KI21 Orange Insights'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8048,7 +8037,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -8138,7 +8127,7 @@ function exportAutopilotPDF(cust,dossierResults){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10329,7 +10318,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10419,7 +10408,7 @@ function generateKundePDF(aid, cust){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -10771,7 +10760,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
+/* v4.258 Strict KI21 Orange Insights: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
 .cockpit-one-screen{
   height:auto !important;
   max-height:none !important;
@@ -10861,7 +10850,7 @@ function showPDF(title,text,cust){
 
 
 
-/* v4.255 KI21 Orange Dashboard Insights Fixed: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
+/* v4.258 Strict KI21 Orange Insights: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
 .cockpit-economic-capture{
   margin:12px 0 18px !important;
   background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
@@ -11364,7 +11353,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.255 KI21 Orange Dashboard Insights Fixed';
+const KI21_VERSION='v4.258 Strict KI21 Orange Insights';
 
 
 function runKi21VersionMigration(){
