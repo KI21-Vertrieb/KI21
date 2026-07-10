@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
-<!-- v4.256 KI21 Analysis Deep Cards: Untere Karten als Schmerzanalyse, Nutzenanalyse und Business-Case-Analyse. -->
+<!-- v4.257 KI21 Analysis Deep Cards Fixed: sichere Analysefunktion mit stabilem Fallback. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -6706,8 +6706,8 @@ function getCockpitDeepCaseCardsV4238(raw,aid){
 }
 
 
-// v4.256: Untere Kacheln sind echte KI21-Analysen statt Wiederholungen der oberen Übersicht.
-function getCockpitDeepCaseCardsV4238(raw,aid){
+// v4.257: Sichere Analysefunktion ohne Überschreiben der stabilen Deep-Card-Funktion.
+function getCockpitDeepCaseCardsAnalysisV4257(raw,aid){
   const clean=(x)=>String((x&&x.text)||x||'').replace(/^[-•\s]+/,'').trim();
   const all=[];
   try{
@@ -7457,7 +7457,12 @@ function renderCockpitSnapshotLiteV4215(){
     )
   ));
   // v4.237: große Vertiefungskacheln liegen bewusst unter den vier Cockpit-Kacheln und werden erst beim Scrollen sichtbar.
-  const deepCase=getCockpitDeepCaseCardsV4238(raw,aid);
+  let deepCase=[];
+  try{
+    deepCase=getCockpitDeepCaseCardsAnalysisV4257(raw,aid);
+  }catch(e){
+    try{deepCase=getCockpitDeepCaseCardsV4238(raw,aid);}catch(_){deepCase=[];}
+  }
   const savingsSummaryV4252=(()=>{try{return getImplicationSummaryV4246(aid);}catch(e){return null;}})();
   const valueTileItemsV4252=[];
   if(savingsSummaryV4252&&savingsSummaryV4252.sum>0){
@@ -7533,7 +7538,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   wrap.appendChild(renderEconomicSummaryCardV4245(aid,deepCase));
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.256 KI21 Analysis Deep Cards'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.257 KI21 Analysis Deep Cards Fixed'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
