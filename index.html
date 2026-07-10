@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>KI21</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
-<!-- v4.261 Cockpit Content Priority: vier Kernkacheln mit klarer Inhaltspriorisierung. -->
+<!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -2031,6 +2031,18 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   font-size:8px !important;
   font-weight:950 !important;
 }
+
+
+/* v4.262 Executive Briefing: verdichtete KI21-Aussagen klar, aber sparsam markieren */
+.cockpit-tile-item.cockpit-executive-insight,
+.cockpit-tile-link.cockpit-executive-insight{
+  color:#ff9a45 !important;
+  font-weight:880 !important;
+}
+.cockpit-tile-item.cockpit-executive-insight::before,
+.cockpit-tile-link.cockpit-executive-insight::before,
+.cockpit-tile-item.cockpit-executive-insight::after,
+.cockpit-tile-link.cockpit-executive-insight::after{color:#ff8a2a !important;}
 
 </style>
 </head>
@@ -7486,6 +7498,58 @@ function renderCockpitSnapshotLiteV4215(){
     return score;
   };
   const sortCockpitItems=(arr,kind)=>arr.map((t,i)=>({t,i,s:rankCockpitItem(t,kind)})).sort((a,b)=>(b.s-a.s)||(a.i-b.i)).map(x=>x.t);
+
+  // v4.262: Cockpit verdichtet Fakten zu wenigen vertrieblichen Aussagen.
+  // Eine Ableitung wird nur erzeugt, wenn beide nötigen Signale im gespeicherten Snapshot vorkommen.
+  const textListV4262=(arr)=>(arr||[]).map(clean).filter(Boolean);
+  const findSignalV4262=(arr,re)=>textListV4262(arr).find(t=>re.test(t))||'';
+  const uniquePushV4262=(arr,item)=>{
+    const text=clean(item&&typeof item==='object'?item.text:item);
+    if(!text)return;
+    if(arr.some(x=>clean(x&&typeof x==='object'?x.text:x).toLowerCase()===text.toLowerCase()))return;
+    arr.push(item&&typeof item==='object'?item:text);
+  };
+  const buildExecutiveInsightsV4262=(items)=>{
+    const facts=textListV4262(items);
+    const budget=findSignalV4262(facts,/budget|freigabe|entscheidbar|startangebot|quick\s*check/i);
+    const trigger=findSignalV4262(facts,/großkunde|deadline|q3|audit|anforder|externer\s+trigger|frist/i);
+    const relevance=findSignalV4262(facts,/\b\d{1,2}\s*%|umsatz|strategisch\s+relevant|geschäftlich\s+relevant/i);
+    const out=[];
+    if(budget&&trigger){
+      uniquePushV4262(out,{text:'Externer Handlungsdruck und freigegebenes Startbudget schaffen eine konkrete Einstiegschance.',ki21:true,executive:true});
+    }else if(trigger&&relevance){
+      uniquePushV4262(out,{text:'Externer Handlungsdruck trifft auf eine geschäftlich relevante Kundenbeziehung.',ki21:true,executive:true});
+    }
+    sortCockpitItems(facts,'insight').forEach(t=>uniquePushV4262(out,t));
+    return out;
+  };
+  const buildExecutiveRisksV4262=(items)=>{
+    const facts=textListV4262(items);
+    const decision=findSignalV4262(facts,/geschäftsführung|\bgf\b|cfo|entscheider|freigabe|formal\s+eingekoppelt|projekt[-\s]?priorität/i);
+    const follow=findSignalV4262(facts,/managed\s*security|folgeoption|laufend|monat|2\.?800|budget.*offen/i);
+    const evidence=findSignalV4262(facts,/schrift|audit[-\s]?katalog|anforderung.*nicht|deadline.*offen/i);
+    const out=[];
+    if(decision){
+      uniquePushV4262(out,{text:'Die Opportunity kann sich verzögern, solange die wirtschaftlichen Entscheider nicht verbindlich eingebunden sind.',ki21:true,executive:true});
+    }
+    if(follow){
+      uniquePushV4262(out,{text:'Die Folgeoption ist wirtschaftlich noch nicht freigegeben und darf den aktuellen Einstieg nicht belasten.',ki21:true,executive:true});
+    }
+    if(evidence)uniquePushV4262(out,evidence);
+    sortCockpitItems(facts,'risk').forEach(t=>uniquePushV4262(out,t));
+    return out;
+  };
+  const makeActionV4262=(text)=>{
+    let t=clean(text).replace(/[.;]+$/,'').trim();
+    if(!t)return '';
+    if(/^(bitte\s+)?(?:einholen|anfordern|bestätigen|klären|vereinbaren|vorbereiten|finalisieren|abstimmen|prüfen|festlegen|fragen|terminieren)\b/i.test(t))return t.charAt(0).toUpperCase()+t.slice(1)+'.';
+    if(/exakte\s+deadline/i.test(t)&&/schrift|audit|katalog|großkunde/i.test(t))return 'Exakte Deadline und Audit-Katalog beim Großkunden schriftlich bestätigen.';
+    if(/gf\/cfo|cfo\/gf|geschäftsführung/i.test(t)&&/termin|entscheidung|priorität/i.test(t))return 'Entscheidungstermin mit GF/CFO vereinbaren.';
+    if(/schriftliche?\s+anforder/i.test(t))return 'Schriftliche Kundenanforderung einholen.';
+    if(/quick\s*check/i.test(t)&&/scope|umfang|final/i.test(t))return 'Quick-Check-Umfang finalisieren.';
+    if(/wer\s+erteilt|wer\s+entscheidet|formal.*freigabe/i.test(t))return 'Formale Freigabe klären.';
+    return t+'.';
+  };
   const header=h('div',{className:'cockpit-header'},
     h('div',{className:'cockpit-header-left'},
       h('button',{type:'button',className:'cockpit-brand ki21-logo-left',style:{background:'none',border:'0',padding:'0',cursor:'pointer'},onclick:()=>renderHomeLiteV4211()},'KI','21'),
@@ -7528,12 +7592,12 @@ function renderCockpitSnapshotLiteV4215(){
       const rawText=(it&&typeof it==='object'&&('text' in it))?it.text:it;
       const text=clean(rawText);
       const highlight=!!(it&&typeof it==='object'&&it.highlight)||/Bezifferter?\s+Schmerz/i.test(String(rawText||''));
-      return {text,highlight,ki21:(kind==='next'?false:isKi21DashboardInsight(text,kind||'cockpit')),idx:i};
+      return {text,highlight,ki21:!!(it&&typeof it==='object'&&it.ki21)||(kind==='next'?false:isKi21DashboardInsight(text,kind||'cockpit')),executive:!!(it&&typeof it==='object'&&it.executive),idx:i};
     }).filter(x=>x.text);
     const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>{
       const original=normalized.find(x=>x.text===t)||{};
       const highlight=!!original.highlight||/Bezifferter?\s+Schmerz/i.test(String(t||''));
-      return {text:t,highlight,ki21:(kind==='next'?false:isKi21DashboardInsight(t,kind||'cockpit')),idx:i};
+      return {text:t,highlight,ki21:!!original.ki21||(kind==='next'?false:isKi21DashboardInsight(t,kind||'cockpit')),executive:!!original.executive,idx:i};
     });
     const all=sorted;
     const openList=()=>{
@@ -7548,7 +7612,7 @@ function renderCockpitSnapshotLiteV4215(){
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.highlight?' cockpit-savings-inline':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+(x.highlight?' cockpit-savings-inline':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7556,17 +7620,19 @@ function renderCockpitSnapshotLiteV4215(){
     if(all.length>arr.length) tile.appendChild(h('button',{type:'button',className:'cockpit-tile-more cockpit-tile-more-btn',onclick:(e)=>{e.preventDefault();e.stopPropagation();openList();}},'+'+(all.length-arr.length)+' weitere'));
     return tile;
   };
-  grid.appendChild(mkTile('Erkenntnisse',pos.filter(x=>!isOperationalPainDetailV4261(clean(x))),'Noch keine gespeicherten Erkenntnisse.','insight',3));
-  grid.appendChild(mkTile('Risiken / Bremsen',warn,'Noch keine gespeicherten Risiken.','risk',3));
+  const executiveInsightsV4262=buildExecutiveInsightsV4262(pos.filter(x=>!isOperationalPainDetailV4261(clean(x))));
+  const executiveRisksV4262=buildExecutiveRisksV4262(warn);
+  grid.appendChild(mkTile('Erkenntnisse',executiveInsightsV4262,'Noch keine gespeicherten Erkenntnisse.','insight',3));
+  grid.appendChild(mkTile('Risiken / Bremsen',executiveRisksV4262,'Noch keine gespeicherten Risiken.','risk',3));
   grid.appendChild(mkTile('Nutzen / Potenzial',valueTileItemsV4252,'Nutzen und Potenzial noch nicht belegt.','value',3));
-  const nextStepItemsV4260=[];
-  [cockpitNextText].concat(open.map(clean)).forEach(t=>{const x=clean(t);if(x&&!nextStepItemsV4260.some(y=>y.toLowerCase()===x.toLowerCase()))nextStepItemsV4260.push(x);});
-  grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4260,'Noch keine nächsten Schritte gespeichert.','next',4));
+  const nextStepItemsV4262=[];
+  [cockpitNextText].concat(open.map(clean)).forEach(t=>{const x=makeActionV4262(t);if(x&&!nextStepItemsV4262.some(y=>y.toLowerCase()===x.toLowerCase()))nextStepItemsV4262.push(x);});
+  grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4262,'Noch keine nächsten Schritte gespeichert.','next',3));
   wrap.appendChild(grid);
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.261 Cockpit Content Priority'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.262 Executive Briefing'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11408,7 +11474,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.261 Cockpit Content Priority';
+const KI21_VERSION='v4.262 Executive Briefing';
 
 
 function runKi21VersionMigration(){
