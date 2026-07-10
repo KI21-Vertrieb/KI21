@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v5.2 Executive Insight Engine</title>
+<title>KI21 v5.3 Executive Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2162,7 +2162,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-item{font-size:12.25px!important;}
 }
 
-/* v5.2 Executive Insight Engine: Orange nur für echte Management-Ableitungen; klarer Business Case */
+/* v5.3 Executive Intelligence: Orange nur für echte Management-Ableitungen; klarer Business Case */
 .cockpit-business-anchor{
   display:block!important;width:100%!important;text-align:left!important;
   border:1px solid rgba(86,211,144,.28)!important;
@@ -2177,6 +2177,28 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .cockpit-v5-workgrid .cockpit-card-value .cockpit-tile-item:not(.cockpit-ki21-inline){color:#e6edf3!important;font-weight:680!important;}
 .cockpit-v5-workgrid .cockpit-card-risk .cockpit-tile-item:not(.cockpit-ki21-inline){color:#e6edf3!important;font-weight:680!important;}
 @media(max-width:390px){.cockpit-business-amount{font-size:18px!important;}.cockpit-business-anchor{padding:11px 12px!important;}}
+
+
+
+/* v5.3 Executive Intelligence: Task-, KPI- und Insight-Polish */
+.v53-task-list{display:flex;flex-direction:column;gap:9px;}
+.v53-task{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.055);}
+.v53-task-primary{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.38);}
+.v53-task-box{width:17px;height:17px;border:1.5px solid rgba(230,237,243,.48);border-radius:4px;flex:0 0 auto;margin-top:2px;}
+.v53-task-text{font-size:12.7px;line-height:1.36;color:#f3f6fb;font-weight:760;}
+.v53-task-primary .v53-task-text{font-weight:900;}
+.v53-bc-value{font-size:28px;line-height:1.02;font-weight:950;letter-spacing:-.7px;color:#fff;margin:2px 0 7px;}
+.v53-bc-sub{font-size:9.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#56d390;margin-bottom:10px;}
+.v53-bc-divider{height:1px;background:rgba(139,148,158,.18);margin:9px 0;}
+.v53-bc-benefit{display:flex;gap:8px;align-items:flex-start;font-size:11.8px;line-height:1.35;color:#e6edf3;margin:7px 0;}
+.v53-bc-benefit::before{content:'✓';color:#56d390;font-weight:950;}
+.v53-risk-group{margin-bottom:10px;}
+.v53-risk-label{font-size:8.8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff7b72;margin-bottom:5px;}
+.v53-risk-label.secondary{color:#d29922;}
+.v53-risk-text{font-size:12.3px;line-height:1.38;color:#edf2f7;}
+.v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
+.v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
+.v53-summary-evidence span{display:inline-block;margin-right:5px;}
 
 </style>
 </head>
@@ -7563,19 +7585,27 @@ function buildBusinessAnchorV52(value){
 function buildV51Summary(chance,risk){
   const box=h('div',{className:'cockpit-v5-summary'});
   box.appendChild(h('div',{className:'cockpit-v5-summary-head'},
-    h('div',{className:'cockpit-v5-summary-kicker'},'Executive Briefing'),
+    h('div',{className:'cockpit-v5-summary-kicker'},'Executive Intelligence'),
     h('div',{className:'cockpit-v5-summary-status'},'Lagebild')
   ));
   const body=h('div',{className:'cockpit-v5-summary-grid'});
-  if(chance)body.appendChild(h('div',{className:'cockpit-v5-summary-row chance'},
+  const c=shortenExecutiveInsightV52(chance,18);
+  const r=shortenExecutiveInsightV52(risk,18);
+  if(c)body.appendChild(h('div',{className:'cockpit-v5-summary-row chance'},
     h('div',{className:'cockpit-v5-summary-label'},'Chance'),
-    h('div',{className:'cockpit-v5-summary-line executive-insight'},shortenExecutiveInsightV52(chance,20))
+    h('div',{},
+      h('div',{className:'v53-summary-status'},/gute Einstiegschance|konkrete Einstiegschance/i.test(c)?'Gute Einstiegschance':'Chance vorhanden'),
+      h('div',{className:'v53-summary-evidence executive-insight'},c)
+    )
   ));
-  if(risk)body.appendChild(h('div',{className:'cockpit-v5-summary-row risk'},
+  if(r)body.appendChild(h('div',{className:'cockpit-v5-summary-row risk'},
     h('div',{className:'cockpit-v5-summary-label'},'Engpass'),
-    h('div',{className:'cockpit-v5-summary-line executive-insight'},shortenExecutiveInsightV52(risk,20))
+    h('div',{},
+      h('div',{className:'v53-summary-status'},/Entscheider/i.test(r)?'Wirtschaftliche Entscheider fehlen':'Zentraler Engpass'),
+      h('div',{className:'v53-summary-evidence executive-insight'},r)
+    )
   ));
-  if(!chance&&!risk)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Die Opportunity ist noch nicht ausreichend verdichtet.'));
+  if(!c&&!r)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Die Opportunity ist noch nicht ausreichend verdichtet.'));
   box.appendChild(body);
   return box;
 }
@@ -7845,7 +7875,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v5.2 Executive Insight Engine'));
+  wrap.appendChild(h('div',{className:'tagline'},'v5.3 Executive Intelligence'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8012,19 +8042,46 @@ function renderHome(){
       tile.appendChild(buildCockpitTileHeader(label));
       if(!items.length){
         tile.appendChild(h('div',{className:'cockpit-tile-empty'},emptyText));
-      } else {
-        items.forEach((it,idx)=>{
-          const itemText=String(it||'');
-          const extraClass=(kind==='value'&&/Bezifferter?\s+Schmerz/i.test(itemText)?' cockpit-savings-inline':'')+(kind==='next'&&idx===0?' cockpit-next-primary':'');
-          const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable'+extraClass,
-            onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||cls||'cockpit',itemText);}},itemText);
-          tile.appendChild(row);
-        });
-        const total=cls==='chance'?matrix.positive.length:
-          cls==='risk'?matrix.risks.length:0;
-        const visibleCount=items.length;
-        if(total>visibleCount)tile.appendChild(h('div',{className:'cockpit-tile-more'},'+ '+(total-visibleCount)+' weitere'));
+        return tile;
       }
+      if(kind==='next'){
+        const list=h('div',{className:'v53-task-list'});
+        items.slice(0,2).forEach((it,idx)=>{
+          const itemText=String(it||'');
+          const task=h('div',{className:'v53-task '+(idx===0?'v53-task-primary':''),onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget('question',itemText);}},
+            h('span',{className:'v53-task-box'}),h('span',{className:'v53-task-text'},itemText));
+          list.appendChild(task);
+        });
+        tile.appendChild(list);
+        return tile;
+      }
+      if(kind==='value'){
+        const anchor=items.find(it=>/Bezifferter?\s+Schmerz/i.test(String(it||'')));
+        if(anchor){
+          const amount=String(anchor).replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
+          tile.appendChild(h('div',{className:'v53-bc-value'},amount));
+          tile.appendChild(h('div',{className:'v53-bc-sub'},'Kundenproblem · bestätigt'));
+          tile.appendChild(h('div',{className:'v53-bc-divider'}));
+        }
+        items.filter(it=>it!==anchor).slice(0,2).forEach(it=>tile.appendChild(h('div',{className:'v53-bc-benefit'},String(it||''))));
+        return tile;
+      }
+      if(kind==='risk'){
+        items.slice(0,2).forEach((it,idx)=>{
+          const text=String(it||'');
+          const group=h('div',{className:'v53-risk-group'},
+            h('div',{className:'v53-risk-label '+(idx?'secondary':'')},idx?'Nachgelagertes Risiko':'Aktuelles Risiko'),
+            h('div',{className:'v53-risk-text '+(isExecutiveInsightV53(text)?'executive-insight':'')},text));
+          tile.appendChild(group);
+        });
+        return tile;
+      }
+      items.forEach((it)=>{
+        const itemText=String(it||'');
+        const row=h('div',{className:'cockpit-tile-item '+(cls||'')+' is-actionable'+(isExecutiveInsightV53(itemText)?' cockpit-ki21-inline':''),
+          onclick:(e)=>{e.stopPropagation();openCockpitWorkTarget(kind||cls||'cockpit',itemText);}},itemText);
+        tile.appendChild(row);
+      });
       return tile;
     };
 
@@ -8047,7 +8104,7 @@ function renderHome(){
       ()=>showBottomSheet('Wichtigste Erkenntnisse',
         allPos.map(s=>{const isSavings=/Beziffertes\s+Schmerz/i.test(String(s.text||''));return {glyph:isSavings?'●':'✔',kind:isSavings?'savings':'',text:s.text,onClick:()=>openCockpitWorkTarget('chance',s.text)};}),'Noch keine bestätigten Erkenntnisse.'),'chance');
     const summaryRiskCandidateV51=String((warn&&warn[0])||'').replace(/^[-•\s]+/,'').replace(/→ Strategie:.*/,'').trim();
-    const riskDetailsV51=warn.map(s=>String(s||'').replace(/→ Strategie:.*/,'').trim()).filter((t,i)=>i>0&&t&&t.toLowerCase()!==summaryRiskCandidateV51.toLowerCase());
+    const riskDetailsV51=warn.map(s=>String(s||'').replace(/→ Strategie:.*/,'').trim()).filter((t,i)=>i>0&&t&&t.toLowerCase()!==summaryRiskCandidateV51.toLowerCase()).slice(0,2);
     const riskTile=mkTile('Risiken',riskDetailsV51.slice(0,2),'risk','Weitere Risikotreiber sind aktuell nicht erkennbar',
       ()=>showBottomSheet('Größte Risiken',
         allWarn.map(s=>{
@@ -8676,6 +8733,28 @@ function exportAutopilotPDF(cust,dossierResults){
   .cockpit-economic-help{font-size:10.5px !important;}
   .cockpit-economic-label{font-size:11.6px !important;}
 }
+
+
+
+/* v5.3 Executive Intelligence: Task-, KPI- und Insight-Polish */
+.v53-task-list{display:flex;flex-direction:column;gap:9px;}
+.v53-task{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.055);}
+.v53-task-primary{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.38);}
+.v53-task-box{width:17px;height:17px;border:1.5px solid rgba(230,237,243,.48);border-radius:4px;flex:0 0 auto;margin-top:2px;}
+.v53-task-text{font-size:12.7px;line-height:1.36;color:#f3f6fb;font-weight:760;}
+.v53-task-primary .v53-task-text{font-weight:900;}
+.v53-bc-value{font-size:28px;line-height:1.02;font-weight:950;letter-spacing:-.7px;color:#fff;margin:2px 0 7px;}
+.v53-bc-sub{font-size:9.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#56d390;margin-bottom:10px;}
+.v53-bc-divider{height:1px;background:rgba(139,148,158,.18);margin:9px 0;}
+.v53-bc-benefit{display:flex;gap:8px;align-items:flex-start;font-size:11.8px;line-height:1.35;color:#e6edf3;margin:7px 0;}
+.v53-bc-benefit::before{content:'✓';color:#56d390;font-weight:950;}
+.v53-risk-group{margin-bottom:10px;}
+.v53-risk-label{font-size:8.8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff7b72;margin-bottom:5px;}
+.v53-risk-label.secondary{color:#d29922;}
+.v53-risk-text{font-size:12.3px;line-height:1.38;color:#edf2f7;}
+.v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
+.v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
+.v53-summary-evidence span{display:inline-block;margin-right:5px;}
 
 </style></head><body>
   <h1>🔍 Opportunity-Vorschau</h1>
@@ -10958,6 +11037,28 @@ function generateKundePDF(aid, cust){
   .cockpit-economic-label{font-size:11.6px !important;}
 }
 
+
+
+/* v5.3 Executive Intelligence: Task-, KPI- und Insight-Polish */
+.v53-task-list{display:flex;flex-direction:column;gap:9px;}
+.v53-task{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.055);}
+.v53-task-primary{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.38);}
+.v53-task-box{width:17px;height:17px;border:1.5px solid rgba(230,237,243,.48);border-radius:4px;flex:0 0 auto;margin-top:2px;}
+.v53-task-text{font-size:12.7px;line-height:1.36;color:#f3f6fb;font-weight:760;}
+.v53-task-primary .v53-task-text{font-weight:900;}
+.v53-bc-value{font-size:28px;line-height:1.02;font-weight:950;letter-spacing:-.7px;color:#fff;margin:2px 0 7px;}
+.v53-bc-sub{font-size:9.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#56d390;margin-bottom:10px;}
+.v53-bc-divider{height:1px;background:rgba(139,148,158,.18);margin:9px 0;}
+.v53-bc-benefit{display:flex;gap:8px;align-items:flex-start;font-size:11.8px;line-height:1.35;color:#e6edf3;margin:7px 0;}
+.v53-bc-benefit::before{content:'✓';color:#56d390;font-weight:950;}
+.v53-risk-group{margin-bottom:10px;}
+.v53-risk-label{font-size:8.8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff7b72;margin-bottom:5px;}
+.v53-risk-label.secondary{color:#d29922;}
+.v53-risk-text{font-size:12.3px;line-height:1.38;color:#edf2f7;}
+.v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
+.v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
+.v53-summary-evidence span{display:inline-block;margin-right:5px;}
+
 </style></head><body>
   <h1>Vertriebsdossier</h1>
   <div class="meta">
@@ -11422,6 +11523,28 @@ function showPDF(title,text,cust){
   color:#ff8a2a !important;
 }
 
+
+
+/* v5.3 Executive Intelligence: Task-, KPI- und Insight-Polish */
+.v53-task-list{display:flex;flex-direction:column;gap:9px;}
+.v53-task{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.055);}
+.v53-task-primary{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.38);}
+.v53-task-box{width:17px;height:17px;border:1.5px solid rgba(230,237,243,.48);border-radius:4px;flex:0 0 auto;margin-top:2px;}
+.v53-task-text{font-size:12.7px;line-height:1.36;color:#f3f6fb;font-weight:760;}
+.v53-task-primary .v53-task-text{font-weight:900;}
+.v53-bc-value{font-size:28px;line-height:1.02;font-weight:950;letter-spacing:-.7px;color:#fff;margin:2px 0 7px;}
+.v53-bc-sub{font-size:9.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#56d390;margin-bottom:10px;}
+.v53-bc-divider{height:1px;background:rgba(139,148,158,.18);margin:9px 0;}
+.v53-bc-benefit{display:flex;gap:8px;align-items:flex-start;font-size:11.8px;line-height:1.35;color:#e6edf3;margin:7px 0;}
+.v53-bc-benefit::before{content:'✓';color:#56d390;font-weight:950;}
+.v53-risk-group{margin-bottom:10px;}
+.v53-risk-label{font-size:8.8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff7b72;margin-bottom:5px;}
+.v53-risk-label.secondary{color:#d29922;}
+.v53-risk-text{font-size:12.3px;line-height:1.38;color:#edf2f7;}
+.v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
+.v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
+.v53-summary-evidence span{display:inline-block;margin-right:5px;}
+
 </style>
 </head><body>
 <div class="header">
@@ -11693,7 +11816,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v5.2 Executive Insight Engine';
+const KI21_VERSION='v5.3 Executive Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -12355,6 +12478,24 @@ try{
   v.style.cssText='position:fixed;bottom:6px;left:8px;font-size:11px;color:#6b7280;font-weight:500;z-index:50;pointer-events:none;';
   document.body.appendChild(v);
 })();
+
+
+// v5.3 Executive Intelligence: sichtbarer Insight-Qualitätstest
+function scoreExecutiveInsightV53(text){
+  text=String(text||'').trim();
+  let score=0;
+  if(/und|durch|solange|während|damit|dadurch/i.test(text))score++; // verbindet Fakten
+  if(/Entscheider|Budget|Einstieg|Risiko|Chance|verzöger|Business Case|Freigabe/i.test(text))score++; // strategisch relevant
+  if(/nicht|offen|trennen|darf|vermeiden|fehlt|noch/i.test(text))score++; // verhindert Vertriebsfehler
+  if(/nächste|jetzt|priorit|zuerst|entscheidend|größt/i.test(text))score++; // priorisiert
+  if(!/bestätigt|genannt|fordert|liegt vor|Mitarbeiter|Jahresumsatz/i.test(text))score++; // nicht bloß Rohfakt
+  return score;
+}
+function isExecutiveInsightV53(text){return scoreExecutiveInsightV53(text)>=3;}
+function truncateWordsV53(text,max){
+  const a=String(text||'').trim().split(/\s+/);
+  return a.length<=max?a.join(' '):a.slice(0,max).join(' ').replace(/[,:;]$/,'')+'…';
+}
 </script>
 </body>
 </html>
