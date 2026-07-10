@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v5.1 Executive Briefing Polish</title>
+<title>KI21 v5.2 Executive Insight Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2161,6 +2161,23 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-v5-workgrid .cockpit-tile{padding:11px 10px 10px!important;border-radius:15px!important;}
   .cockpit-v5-workgrid .cockpit-card-next .cockpit-tile-item{font-size:12.25px!important;}
 }
+
+/* v5.2 Executive Insight Engine: Orange nur für echte Management-Ableitungen; klarer Business Case */
+.cockpit-business-anchor{
+  display:block!important;width:100%!important;text-align:left!important;
+  border:1px solid rgba(86,211,144,.28)!important;
+  background:linear-gradient(135deg,rgba(86,211,144,.10),rgba(255,255,255,.018))!important;
+  border-radius:14px!important;padding:12px 13px!important;margin:0 0 10px!important;
+  cursor:pointer!important;position:relative!important;
+}
+.cockpit-business-anchor::after{content:'›';position:absolute;right:10px;top:12px;color:rgba(230,237,243,.42);font-size:18px;font-weight:900;}
+.cockpit-business-amount{font-size:20px!important;line-height:1.08!important;font-weight:950!important;color:#f3f6fb!important;letter-spacing:-.4px!important;padding-right:20px!important;}
+.cockpit-business-caption{font-size:9px!important;line-height:1.25!important;font-weight:850!important;letter-spacing:.8px!important;text-transform:uppercase!important;color:#56d390!important;margin-top:5px!important;}
+.cockpit-v5-summary-line.executive-insight{color:#f3f6fb!important;}
+.cockpit-v5-workgrid .cockpit-card-value .cockpit-tile-item:not(.cockpit-ki21-inline){color:#e6edf3!important;font-weight:680!important;}
+.cockpit-v5-workgrid .cockpit-card-risk .cockpit-tile-item:not(.cockpit-ki21-inline){color:#e6edf3!important;font-weight:680!important;}
+@media(max-width:390px){.cockpit-business-amount{font-size:18px!important;}.cockpit-business-anchor{padding:11px 12px!important;}}
+
 </style>
 </head>
 <body>
@@ -7513,6 +7530,36 @@ function renderEconomicSummaryCardV4245(aid,deepCase){
   return card;
 }
 
+function executiveWordCountV52(text){
+  return String(text||'').trim().split(/\s+/).filter(Boolean).length;
+}
+function shortenExecutiveInsightV52(text,maxWords){
+  let t=String(text||'').replace(/\s+/g,' ').trim().replace(/[.;]+$/,'');
+  const replacements=[
+    [/Externer Handlungsdruck und freigegebenes Startbudget schaffen eine konkrete Einstiegschance/i,'Quick Check mit guter Einstiegschance: bestätigtes Startbudget und externer Handlungsdruck.'],
+    [/Die Opportunity kann sich verzögern, solange die wirtschaftlichen Entscheider nicht verbindlich eingebunden sind/i,'Größter Engpass: Wirtschaftliche Entscheider sind noch nicht verbindlich eingebunden.'],
+    [/Externer Handlungsdruck trifft auf eine geschäftlich relevante Kundenbeziehung/i,'Externer Handlungsdruck trifft auf eine geschäftlich relevante Kundenbeziehung.'],
+    [/Die Folgeoption ist wirtschaftlich noch nicht freigegeben und darf den aktuellen Einstieg nicht belasten/i,'Folgeoption wirtschaftlich offen: Sie darf den aktuellen Einstieg nicht belasten.']
+  ];
+  replacements.forEach(r=>{if(r[0].test(t))t=r[1];});
+  const words=t.split(/\s+/).filter(Boolean);
+  const limit=maxWords||20;
+  if(words.length>limit)t=words.slice(0,limit).join(' ').replace(/[,;:]$/,'')+'…';
+  if(t&&!/[.!?…]$/.test(t))t+='.';
+  return t;
+}
+function isExecutiveInsightV52(text){
+  const t=String(text||'').trim();
+  if(!t||executiveWordCountV52(t)>24)return false;
+  const hasLink=/\b(durch|solange|deshalb|damit|darf|schafft|erhöht|senkt|verzögert|gefährdet|ermöglicht|trifft auf)\b/i.test(t);
+  const hasDecision=/budget|entscheid|engpass|einstieg|freigabe|risiko|folgeoption|handlungsdruck|business case/i.test(t);
+  return hasLink&&hasDecision;
+}
+function buildBusinessAnchorV52(value){
+  const amount=String(value||'').replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
+  return {text:amount||String(value||''),businessAnchor:true,caption:'Kundenproblem · beziffert'};
+}
+
 function buildV51Summary(chance,risk){
   const box=h('div',{className:'cockpit-v5-summary'});
   box.appendChild(h('div',{className:'cockpit-v5-summary-head'},
@@ -7522,11 +7569,11 @@ function buildV51Summary(chance,risk){
   const body=h('div',{className:'cockpit-v5-summary-grid'});
   if(chance)body.appendChild(h('div',{className:'cockpit-v5-summary-row chance'},
     h('div',{className:'cockpit-v5-summary-label'},'Chance'),
-    h('div',{className:'cockpit-v5-summary-line'},chance)
+    h('div',{className:'cockpit-v5-summary-line executive-insight'},shortenExecutiveInsightV52(chance,20))
   ));
   if(risk)body.appendChild(h('div',{className:'cockpit-v5-summary-row risk'},
     h('div',{className:'cockpit-v5-summary-label'},'Engpass'),
-    h('div',{className:'cockpit-v5-summary-line'},risk)
+    h('div',{className:'cockpit-v5-summary-line executive-insight'},shortenExecutiveInsightV52(risk,20))
   ));
   if(!chance&&!risk)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Die Opportunity ist noch nicht ausreichend verdichtet.'));
   box.appendChild(body);
@@ -7729,12 +7776,12 @@ function renderCockpitSnapshotLiteV4215(){
       const rawText=(it&&typeof it==='object'&&('text' in it))?it.text:it;
       const text=clean(rawText);
       const highlight=!!(it&&typeof it==='object'&&it.highlight)||/Bezifferter?\s+Schmerz/i.test(String(rawText||''));
-      return {text,highlight,ki21:!!(it&&typeof it==='object'&&it.ki21)||(kind==='next'?false:isKi21DashboardInsight(text,kind||'cockpit')),executive:!!(it&&typeof it==='object'&&it.executive),idx:i};
+      return {text,highlight,ki21:!!(it&&typeof it==='object'&&it.ki21)&&isExecutiveInsightV52(text),executive:!!(it&&typeof it==='object'&&it.executive),businessAnchor:!!(it&&typeof it==='object'&&it.businessAnchor),caption:(it&&typeof it==='object'&&it.caption)||'',idx:i};
     }).filter(x=>x.text);
     const sorted=(kind==='value')?normalized:sortCockpitItems(normalized.map(x=>x.text),kind||'cockpit').map((t,i)=>{
       const original=normalized.find(x=>x.text===t)||{};
       const highlight=!!original.highlight||/Bezifferter?\s+Schmerz/i.test(String(t||''));
-      return {text:t,highlight,ki21:!!original.ki21||(kind==='next'?false:isKi21DashboardInsight(t,kind||'cockpit')),executive:!!original.executive,idx:i};
+      return {text:t,highlight,ki21:!!original.ki21&&isExecutiveInsightV52(t),executive:!!original.executive,businessAnchor:!!original.businessAnchor,caption:original.caption||'',idx:i};
     });
     const all=sorted;
     const openList=()=>{
@@ -7749,7 +7796,14 @@ function renderCockpitSnapshotLiteV4215(){
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
-      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+(x.highlight?' cockpit-savings-inline':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
+      if(x.businessAnchor){
+        tile.appendChild(h('button',{type:'button',className:'cockpit-business-anchor',onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget('value',t);}},
+          h('div',{className:'cockpit-business-amount'},t),
+          h('div',{className:'cockpit-business-caption'},x.caption||'Kundenproblem · beziffert')
+        ));
+        return;
+      }
+      const cls='cockpit-tile-item cockpit-tile-link'+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
       const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
       tile.appendChild(item);
     });
@@ -7769,11 +7823,11 @@ function renderCockpitSnapshotLiteV4215(){
   // Wirtschaftlicher Anker plus höchstens zwei echte Nutzenableitungen.
   const valueExecutiveV4263=[];
   const valueAnchorV4263=valueTileItemsV4252.find(x=>/Bezifferter?\s+Schmerz/i.test(clean((x&&x.text)||x)));
-  if(valueAnchorV4263)valueExecutiveV4263.push(valueAnchorV4263);
+  if(valueAnchorV4263)valueExecutiveV4263.push(buildBusinessAnchorV52(clean((valueAnchorV4263&&valueAnchorV4263.text)||valueAnchorV4263)));
   valueTileItemsV4252.filter(x=>x!==valueAnchorV4263).slice(0,2).forEach(x=>valueExecutiveV4263.push(x));
 
-  const summaryChanceV500=clean((executiveInsightsV4263[0]&&executiveInsightsV4263[0].text)||executiveInsightsV4263[0]||'');
-  const summaryRiskV500=clean((executiveRisksV4263[0]&&executiveRisksV4263[0].text)||executiveRisksV4263[0]||'');
+  const summaryChanceV500=shortenExecutiveInsightV52(clean((executiveInsightsV4263[0]&&executiveInsightsV4263[0].text)||executiveInsightsV4263[0]||''),20);
+  const summaryRiskV500=shortenExecutiveInsightV52(clean((executiveRisksV4263[0]&&executiveRisksV4263[0].text)||executiveRisksV4263[0]||''),20);
   wrap.appendChild(buildV51Summary(summaryChanceV500,summaryRiskV500));
 
   const nextStepItemsV4263=[];
@@ -7791,7 +7845,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v5.1 Executive Briefing Polish'));
+  wrap.appendChild(h('div',{className:'tagline'},'v5.2 Executive Insight Engine'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -8059,13 +8113,13 @@ function renderHome(){
       const x=String(t||'').replace(/^[-•\s]+/,'').trim();
       if(x&&!nextItemsV4260.some(y=>y.toLowerCase()===x.toLowerCase()))nextItemsV4260.push(x);
     });
-    const valueTile=mkTile('Nutzen / Potenzial',valueItemsV4260.slice(0,3),'value','Nutzen und Potenzial noch nicht belegt',
-      ()=>showBottomSheet('Nutzen / Potenzial',valueItemsV4260.map(t=>({glyph:'•',text:t,onClick:()=>openCockpitWorkTarget('value',t)})),'Nutzen und Potenzial noch nicht belegt.'),'value');
+    const valueTile=mkTile('Business Case',valueItemsV4260.slice(0,3),'value','Nutzen und Potenzial noch nicht belegt',
+      ()=>showBottomSheet('Business Case',valueItemsV4260.map(t=>({glyph:'•',text:t,onClick:()=>openCockpitWorkTarget('value',t)})),'Nutzen und Potenzial noch nicht belegt.'),'value');
     const nextTile=mkTile('Nächste Schritte',nextItemsV4260.slice(0,4),'question','Noch keine nächsten Schritte',
       ()=>showBottomSheet('Nächste Schritte',nextItemsV4260.map((t,idx)=>({glyph:idx===0?'1':'→',text:t,priority:idx===0,caption:idx===0?'Wichtigster nächster Schritt':'',onClick:()=>openCockpitWorkTarget('question',t)})),'Noch keine nächsten Schritte gespeichert.'),'next');
 
-    const summaryChanceV500=String((pos&&pos[0])||'').replace(/^[-•\s]+/,'').trim();
-    const summaryRiskV500=String((warn&&warn[0])||'').replace(/^[-•\s]+/,'').replace(/→ Strategie:.*/,'').trim();
+    const summaryChanceV500=shortenExecutiveInsightV52(String((pos&&pos[0])||'').replace(/^[-•\s]+/,'').trim(),20);
+    const summaryRiskV500=shortenExecutiveInsightV52(String((warn&&warn[0])||'').replace(/^[-•\s]+/,'').replace(/→ Strategie:.*/,'').trim(),20);
     wrap.appendChild(buildV51Summary(summaryChanceV500,summaryRiskV500));
     const grid=h('div',{className:'cockpit-v5-workgrid'});
     grid.appendChild(nextTile);
@@ -11639,7 +11693,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v5.1 Executive Briefing Polish';
+const KI21_VERSION='v5.2 Executive Insight Engine';
 
 
 function runKi21VersionMigration(){
