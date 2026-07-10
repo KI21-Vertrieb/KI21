@@ -3840,11 +3840,198 @@ async function refreshOpportunityHealth(accId){
       ts:Date.now()
     });
     LS.set('ki21_health_lastError_'+accId,null);
+    try{await refreshOpportunityIntelligenceV620(accId,LS.get('ki21_health_'+accId,null));}catch(e){console.warn('Intelligence refresh skipped',e);}
     renderHealthBadgeIfPresent();
   } else {
     console.warn('refreshOpportunityHealth: Score-Berechnung fehlgeschlagen für',accId,'- alter Score bleibt erhalten.');
     LS.set('ki21_health_lastError_'+accId,{ts:Date.now()});
   }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// v6.2 Opportunity Intelligence — zentrale, strukturierte Cockpit-Intelligenz
+// Alte KI-Ausgaben sind Orientierung, niemals Primärquelle für Fakten/Zahlen.
+// ─────────────────────────────────────────────────────────────────────────────
+function getOpportunityIntelligenceKeyV620(accId){
+  return 'ki21_opportunity_intelligence_'+accId;
+}
+function normalizeIntelligenceTextV620(v,max){
+  let t=String(v||'').replace(/\s+/g,' ').trim();
+  if(!t)return '';
+  if(max&&t.length>max)t=t.slice(0,max).replace(/\s+\S*$/,'').trim()+'…';
+  return t;
+}
+function normalizeOpportunityIntelligenceV620(raw){
+  const x=(raw&&typeof raw==='object')?raw:{};
+  const arr=(v,max)=>Array.isArray(v)?v.map(z=>normalizeIntelligenceTextV620((z&&z.text)||z,max)).filter(Boolean):[];
+  const chance=(x.chance&&typeof x.chance==='object')?x.chance:{};
+  const bottleneck=(x.bottleneck&&typeof x.bottleneck==='object')?x.bottleneck:{};
+  const bc=(x.businessCase&&typeof x.businessCase==='object')?x.businessCase:{};
+  const wo=(x.watchouts&&typeof x.watchouts==='object')?x.watchouts:{};
+  return {
+    dealStatus:normalizeIntelligenceTextV620(x.dealStatus,90),
+    chance:{
+      statement:normalizeIntelligenceTextV620(chance.statement,130),
+      evidence:arr(chance.evidence,80).slice(0,3)
+    },
+    bottleneck:{
+      statement:normalizeIntelligenceTextV620(bottleneck.statement,130),
+      evidence:arr(bottleneck.evidence,80).slice(0,3)
+    },
+    nextSteps:arr(x.nextSteps,130).slice(0,3),
+    businessCase:{
+      quantifiedProblem:normalizeIntelligenceTextV620(bc.quantifiedProblem||bc.value,70),
+      status:normalizeIntelligenceTextV620(bc.status,45),
+      insights:arr(bc.insights,130).slice(0,2)
+    },
+    watchouts:{
+      currentRisk:normalizeIntelligenceTextV620(wo.currentRisk,140),
+      salesStrategy:normalizeIntelligenceTextV620(wo.salesStrategy,140)
+    },
+    meta:{generatedAt:Date.now(),version:'6.2'}
+  };
+}
+function saveOpportunityIntelligenceV620(accId,data){
+  if(!accId)return null;
+  const clean=normalizeOpportunityIntelligenceV620(data);
+  LS.set(getOpportunityIntelligenceKeyV620(accId),clean);
+  return clean;
+}
+function getOpportunityIntelligenceV620(accId){
+  if(!accId)return null;
+  const raw=LS.get(getOpportunityIntelligenceKeyV620(accId),null);
+  if(!raw)return null;
+  const clean=normalizeOpportunityIntelligenceV620(raw);
+  const useful=clean.dealStatus||clean.chance.statement||clean.bottleneck.statement||clean.nextSteps.length||clean.businessCase.quantifiedProblem||clean.businessCase.insights.length||clean.watchouts.currentRisk||clean.watchouts.salesStrategy;
+  return useful?clean:null;
+}
+function collectCurrentOpportunityInputsV620(accId){
+  const lines=[];
+  try{
+    SITS.forEach((sit,i)=>{
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(!d||!d.fv)return;
+      const vals=[];
+      Object.keys(d.fv).forEach(k=>{
+        const v=d.fv[k];
+        if(v===null||v===undefined)return;
+        const txt=String(v).trim();
+        if(!txt)return;
+        vals.push(k+': '+txt.slice(0,1400));
+      });
+      if(vals.length)lines.push('--- '+(sit.title||('Phase '+(i+1)))+' / aktuelle Eingaben ---\n'+vals.join('\n'));
+    });
+  }catch(e){}
+  try{
+    const k=getCurrentUserKnowledgeText(accId);
+    if(k)lines.push('--- Aktuelle globale Ergänzungen ---\n'+String(k).slice(0,5000));
+  }catch(e){}
+  try{
+    const p=getAllPhaseAdditions(accId);
+    if(p)lines.push('--- Aktuelle phasenbezogene Ergänzungen ---\n'+String(p).slice(0,7000));
+  }catch(e){}
+  try{
+    const imp=getImplicationSummaryV4246(accId);
+    if(imp&&imp.filled&&imp.filled.length){
+      lines.push('--- Manuell bezifferter Schmerz ---\n'+imp.filled.map(r=>'- '+r.question+': '+r.value).join('\n'));
+    }
+  }catch(e){}
+  return lines.join('\n\n').trim();
+}
+function buildOpportunityIntelligencePromptV620(cust,currentFacts,olderPhaseResults,health){
+  const healthJson=health?JSON.stringify({score:health.score,positive:health.positive||[],warning:health.warning||[],open:health.open||[]}):'{}';
+  return `Du bist ein sehr erfahrener B2B Sales Director. Erzeuge ein kompaktes Opportunity-Lagebild zur unmittelbaren Vertriebssteuerung.
+
+KUNDE: ${(cust&&cust.firma)||'–'}
+
+=== AKTUELLE PRIMÄRQUELLEN (einzige Faktenbasis) ===
+${currentFacts||'Keine aktuellen Fakten erfasst.'}
+=== ENDE PRIMÄRQUELLEN ===
+
+=== OPPORTUNITY-HEALTH-SNAPSHOT (abgeleitete Orientierung, keine neue Faktenquelle) ===
+${healthJson}
+=== ENDE HEALTH ===
+
+=== FRÜHERE KI-PHASENTEXTE (nur Orientierung; niemals als Faktenquelle, besonders nicht für Zahlen) ===
+${olderPhaseResults||'Keine.'}
+=== ENDE FRÜHERE KI-TEXTE ===
+
+HARTE REGELN:
+1. Verwende ausschließlich Fakten aus den AKTUELLEN PRIMÄRQUELLEN. Frühere KI-Texte dürfen keine Zahl, Rolle, Frist oder Behauptung begründen.
+2. Bestätigte Fakten, Ableitungen und offene Punkte sauber trennen.
+3. Sponsor/Champion ist nicht automatisch wirtschaftlicher Entscheider.
+4. Umsatzrelevanz ist kein bestätigter Umsatzverlust.
+5. Einstiegsangebot und Folgeangebot strikt trennen.
+6. Bezifferter Schmerz ist keine automatisch gesicherte Einsparung und kein ROI.
+7. Geldwerte nie erfinden, nie zwischen Monat/Jahr/einmalig umrechnen.
+8. Genau eine Chance und genau einen größten Engpass liefern.
+9. Maximal drei nächste Schritte; aktiv mit Verb formulieren, priorisiert.
+10. Maximal zwei Business-Case-Insights. Sie müssen eine echte Ableitung sein, nicht bloß Wiederholung.
+11. currentRisk ist ein reales aktuelles Dealrisiko. salesStrategy ist eine strategische Leitplanke, kein fehlender Fakt.
+12. Dealstatus maximal 70 Zeichen nach Muster: "Gute Einstiegschance · Entscheider einbinden".
+13. Keine Floskeln, keine Doppelungen, keine Fantasie.
+
+QUALITÄTSTEST FÜR INSIGHTS: Nur aufnehmen, wenn mindestens drei Punkte erfüllt sind: verbindet mehrere Fakten; beeinflusst Vertriebsstrategie; verhindert typischen Vertriebsfehler; priorisiert Handlung; ist keine Zusammenfassung.
+
+Antworte AUSSCHLIESSLICH mit gültigem JSON:
+{
+  "dealStatus":"",
+  "chance":{"statement":"","evidence":["","" ]},
+  "bottleneck":{"statement":"","evidence":["","" ]},
+  "nextSteps":["",""],
+  "businessCase":{"quantifiedProblem":"","status":"Kundenproblem · beziffert|teilbeziffert|offen","insights":["",""]},
+  "watchouts":{"currentRisk":"","salesStrategy":""}
+}`;
+}
+async function refreshOpportunityIntelligenceV620(accId,healthOverride){
+  if(!accId)return null;
+  const acc=(LS.get('ki21_acc',[])||[]).find(a=>a&&a.id===accId)||{};
+  const cust=acc.cust||{};
+  if(!cust.firma)return null;
+  const currentFacts=collectCurrentOpportunityInputsV620(accId);
+  if(!currentFacts)return null;
+  const older=[];
+  try{
+    SITS.forEach((sit,i)=>{
+      const d=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(d&&d.result)older.push('--- '+(sit.title||('Phase '+(i+1)))+' ---\n'+String(d.result).slice(0,1800));
+    });
+  }catch(e){}
+  const health=healthOverride||LS.get('ki21_health_'+accId,null);
+  const prompt=buildOpportunityIntelligencePromptV620(cust,currentFacts,older.join('\n\n'),health);
+  try{
+    const json=await callClaudeJSON(prompt);
+    if(json&&typeof json==='object'){
+      const clean=saveOpportunityIntelligenceV620(accId,json);
+      LS.set('ki21_opportunity_intelligence_lastError_'+accId,null);
+      return clean;
+    }
+  }catch(e){console.warn('Opportunity Intelligence fehlgeschlagen',e);}
+  LS.set('ki21_opportunity_intelligence_lastError_'+accId,{ts:Date.now()});
+  return null;
+}
+function buildV62Summary(intel,fallbackChance,fallbackRisk){
+  const chance=(intel&&intel.chance)||{};
+  const bottleneck=(intel&&intel.bottleneck)||{};
+  const cStatement=chance.statement||fallbackChance||'';
+  const rStatement=bottleneck.statement||fallbackRisk||'';
+  const cEvidence=(chance.evidence||[]).filter(Boolean).join(' · ');
+  const rEvidence=(bottleneck.evidence||[]).filter(Boolean).join(' · ');
+  const box=h('div',{className:'cockpit-v5-summary cockpit-v54-lagebild'});
+  box.appendChild(h('div',{className:'cockpit-v5-summary-head'},h('div',{className:'cockpit-v5-summary-kicker'},'Lagebild')));
+  const body=h('div',{className:'cockpit-v5-summary-grid'});
+  if(cStatement)body.appendChild(h('div',{className:'cockpit-v5-summary-row chance'},
+    h('div',{className:'cockpit-v5-summary-label'},'Chance'),
+    h('div',{},h('div',{className:'v53-summary-status'},cStatement),cEvidence?h('div',{className:'v53-summary-evidence'},cEvidence):null)
+  ));
+  if(rStatement)body.appendChild(h('div',{className:'cockpit-v5-summary-row risk'},
+    h('div',{className:'cockpit-v5-summary-label'},'Größter Engpass'),
+    h('div',{},h('div',{className:'v53-summary-status'},rStatement),rEvidence?h('div',{className:'v53-summary-evidence'},rEvidence):null)
+  ));
+  if(!cStatement&&!rStatement)body.appendChild(h('div',{className:'cockpit-v5-summary-empty'},'Für ein belastbares Lagebild fehlen noch Informationen.'));
+  box.appendChild(body);
+  return box;
 }
 
 function getHealthManual(accId){
@@ -7889,6 +8076,7 @@ function renderCockpitSnapshotLiteV4215(){
   const cust=(acc&&acc.cust)||{};
   const raw=aid?LS.get('ki21_health_'+aid,null):null; // bewusst nur gespeicherter Snapshot, keine schwere getOpportunityHealth()-Logik
   const score=(raw&&typeof raw.score==='number')?Math.round(raw.score):null;
+  const opportunityIntelligenceV620=getOpportunityIntelligenceV620(aid);
   let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
   let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
   let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
@@ -8068,24 +8256,46 @@ function renderCockpitSnapshotLiteV4215(){
   if(valueAnchorV4263)valueExecutiveV4263.push(buildBusinessAnchorV52(clean((valueAnchorV4263&&valueAnchorV4263.text)||valueAnchorV4263)));
   valueTileItemsV4252.filter(x=>x!==valueAnchorV4263).slice(0,2).forEach(x=>valueExecutiveV4263.push(x));
 
-  const summaryChanceV500=shortenExecutiveInsightV52(clean((executiveInsightsV4263[0]&&executiveInsightsV4263[0].text)||executiveInsightsV4263[0]||''),20);
-  const summaryRiskV500=shortenExecutiveInsightV52(clean((executiveRisksV4263[0]&&executiveRisksV4263[0].text)||executiveRisksV4263[0]||''),20);
+  let summaryChanceV500=shortenExecutiveInsightV52(clean((executiveInsightsV4263[0]&&executiveInsightsV4263[0].text)||executiveInsightsV4263[0]||''),20);
+  let summaryRiskV500=shortenExecutiveInsightV52(clean((executiveRisksV4263[0]&&executiveRisksV4263[0].text)||executiveRisksV4263[0]||''),20);
+  if(opportunityIntelligenceV620){
+    summaryChanceV500=opportunityIntelligenceV620.chance.statement||summaryChanceV500;
+    summaryRiskV500=opportunityIntelligenceV620.bottleneck.statement||summaryRiskV500;
+  }
   setTimeout(()=>{
     const el=document.getElementById('ki21-dealstatus');
     if(el){
-      const chance=/gute|konkrete|vorhanden/i.test(summaryChanceV500)?'Gute Einstiegschance':'Chance prüfen';
-      const action=/entscheid|gf|cfo/i.test(summaryRiskV500)?'Entscheider einbinden':'Engpass bearbeiten';
-      el.textContent='Dealstatus: '+chance+' · '+action;
+      if(opportunityIntelligenceV620&&opportunityIntelligenceV620.dealStatus)el.textContent='Dealstatus: '+opportunityIntelligenceV620.dealStatus;
+      else {
+        const chance=/gute|konkrete|vorhanden/i.test(summaryChanceV500)?'Gute Einstiegschance':'Chance prüfen';
+        const action=/entscheid|gf|cfo/i.test(summaryRiskV500)?'Entscheider einbinden':'Engpass bearbeiten';
+        el.textContent='Dealstatus: '+chance+' · '+action;
+      }
     }
   },0);
-  wrap.appendChild(buildV51Summary(summaryChanceV500,summaryRiskV500));
+  wrap.appendChild(buildV62Summary(opportunityIntelligenceV620,summaryChanceV500,summaryRiskV500));
 
   const nextStepItemsV4263=[];
   [cockpitNextText].concat(open.map(clean)).forEach(t=>{
     const x=makeActionV4262(t);
     if(x&&!nextStepItemsV4263.some(y=>y.toLowerCase()===x.toLowerCase()))nextStepItemsV4263.push(x);
   });
+  if(opportunityIntelligenceV620&&opportunityIntelligenceV620.nextSteps.length){
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,...opportunityIntelligenceV620.nextSteps.map(makeActionV4262).filter(Boolean));
+  }
 
+  // v6.2: Cockpit wird bevorzugt aus der zentralen Intelligence-Struktur gespeist.
+  if(opportunityIntelligenceV620){
+    if(opportunityIntelligenceV620.businessCase.quantifiedProblem){
+      valueExecutiveV4263.splice(0,valueExecutiveV4263.length,buildBusinessAnchorV52(opportunityIntelligenceV620.businessCase.quantifiedProblem));
+    }
+    opportunityIntelligenceV620.businessCase.insights.forEach(x=>valueExecutiveV4263.push({text:x,ki21:true,executive:true}));
+    if(opportunityIntelligenceV620.watchouts.currentRisk||opportunityIntelligenceV620.watchouts.salesStrategy){
+      executiveRisksV4263.splice(0,executiveRisksV4263.length);
+      if(opportunityIntelligenceV620.watchouts.currentRisk)executiveRisksV4263.push({text:opportunityIntelligenceV620.watchouts.currentRisk,ki21:true,executive:true});
+      if(opportunityIntelligenceV620.watchouts.salesStrategy)executiveRisksV4263.push({text:opportunityIntelligenceV620.watchouts.salesStrategy,ki21:true,executive:true});
+    }
+  }
   grid.className='cockpit-v5-workgrid';
   grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
   grid.appendChild(mkTile('Business Case',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
@@ -12310,7 +12520,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.1.4 Header Rebuild';
+const KI21_VERSION='v6.2 Opportunity Intelligence';
 
 
 function runKi21VersionMigration(){
