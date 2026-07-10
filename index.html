@@ -2066,7 +2066,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 
 
-/* v4.264 Variable Height Cards: 2x2-Struktur bleibt, Karten wachsen nur mit ihrem Inhalt */
+/* v4.265 Two Column Masonry: 2x2-Struktur bleibt, Karten wachsen nur mit ihrem Inhalt */
 .cockpit-grid{
   align-items:start !important;
   grid-template-rows:auto auto !important;
@@ -2083,6 +2083,36 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 @media(max-width:390px){
   .cockpit-grid > .cockpit-executive-card{min-height:0 !important;height:auto !important;}
+}
+
+
+/* v4.265 Two Column Masonry: zwei feste Spalten, Karten stapeln sich unabhängig */
+.cockpit-grid.cockpit-masonry{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:12px !important;
+  align-items:start !important;
+  margin-bottom:16px !important;
+}
+.cockpit-masonry-column{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:12px !important;
+  min-width:0 !important;
+}
+.cockpit-grid.cockpit-masonry .cockpit-tile{
+  width:100% !important;
+  min-height:0 !important;
+  height:auto !important;
+  align-self:stretch !important;
+}
+.cockpit-grid.cockpit-masonry .cockpit-card-insight{color:#58a6ff !important;border-color:rgba(88,166,255,.22) !important;background:linear-gradient(145deg,rgba(19,31,45,.92),rgba(17,22,29,.78)) !important;}
+.cockpit-grid.cockpit-masonry .cockpit-card-risk{color:#ff7b72 !important;border-color:rgba(255,123,114,.22) !important;background:linear-gradient(145deg,rgba(44,24,27,.78),rgba(17,22,29,.78)) !important;}
+.cockpit-grid.cockpit-masonry .cockpit-card-value{color:#56d390 !important;border-color:rgba(86,211,144,.20) !important;background:linear-gradient(145deg,rgba(17,39,34,.72),rgba(17,22,29,.78)) !important;}
+.cockpit-grid.cockpit-masonry .cockpit-card-next{color:#a78bfa !important;border-color:rgba(167,139,250,.22) !important;background:linear-gradient(145deg,rgba(34,27,55,.76),rgba(17,22,29,.78)) !important;}
+@media(max-width:390px){
+  .cockpit-grid.cockpit-masonry{gap:9px !important;}
+  .cockpit-masonry-column{gap:9px !important;}
 }
 
 </style>
@@ -7648,7 +7678,7 @@ function renderCockpitSnapshotLiteV4215(){
       });
       showBottomSheet(label,rows,empty);
     };
-    const tile=h('div',{className:'cockpit-tile cockpit-tile-linked cockpit-executive-card'});
+    const tile=h('div',{className:'cockpit-tile cockpit-tile-linked cockpit-executive-card cockpit-card-'+(kind||'generic')});
     tile.appendChild(buildCockpitTileHeader(label,openList));
     const arr=all.slice(0,maxItems||4);
     if(arr.length)arr.forEach(x=>{
@@ -7676,21 +7706,26 @@ function renderCockpitSnapshotLiteV4215(){
   if(valueAnchorV4263)valueExecutiveV4263.push(valueAnchorV4263);
   valueTileItemsV4252.filter(x=>x!==valueAnchorV4263).slice(0,2).forEach(x=>valueExecutiveV4263.push(x));
 
-  grid.appendChild(mkTile('Erkenntnisse',executiveInsightsV4263,'Noch keine belastbare Kernerkenntnis.','insight',1));
-  grid.appendChild(mkTile('Risiken / Bremsen',executiveRisksV4263,'Noch kein zentrales Abschlussrisiko erkannt.','risk',1));
-  grid.appendChild(mkTile('Nutzen / Potenzial',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
+  grid.classList.add('cockpit-masonry');
+  const leftColumnV4265=h('div',{className:'cockpit-masonry-column'});
+  const rightColumnV4265=h('div',{className:'cockpit-masonry-column'});
+  leftColumnV4265.appendChild(mkTile('Erkenntnisse',executiveInsightsV4263,'Noch keine belastbare Kernerkenntnis.','insight',1));
+  rightColumnV4265.appendChild(mkTile('Risiken / Bremsen',executiveRisksV4263,'Noch kein zentrales Abschlussrisiko erkannt.','risk',1));
+  leftColumnV4265.appendChild(mkTile('Nutzen / Potenzial',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
 
   const nextStepItemsV4263=[];
   [cockpitNextText].concat(open.map(clean)).forEach(t=>{
     const x=makeActionV4262(t);
     if(x&&!nextStepItemsV4263.some(y=>y.toLowerCase()===x.toLowerCase()))nextStepItemsV4263.push(x);
   });
-  grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
+  rightColumnV4265.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
+  grid.appendChild(leftColumnV4265);
+  grid.appendChild(rightColumnV4265);
   wrap.appendChild(grid);
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v4.264 Variable Height Cards'));
+  wrap.appendChild(h('div',{className:'tagline'},'v4.265 Two Column Masonry'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -7961,9 +7996,15 @@ function renderHome(){
     const nextTile=mkTile('Nächste Schritte',nextItemsV4260.slice(0,4),'question','Noch keine nächsten Schritte',
       ()=>showBottomSheet('Nächste Schritte',nextItemsV4260.map((t,idx)=>({glyph:idx===0?'1':'→',text:t,priority:idx===0,caption:idx===0?'Wichtigster nächster Schritt':'',onClick:()=>openCockpitWorkTarget('question',t)})),'Noch keine nächsten Schritte gespeichert.'),'next');
 
-    const grid=h('div',{className:'cockpit-grid'});
-    grid.appendChild(erkTile);grid.appendChild(riskTile);
-    grid.appendChild(valueTile);grid.appendChild(nextTile);
+    const grid=h('div',{className:'cockpit-grid cockpit-masonry'});
+    const leftColumnV4265=h('div',{className:'cockpit-masonry-column'});
+    const rightColumnV4265=h('div',{className:'cockpit-masonry-column'});
+    leftColumnV4265.appendChild(erkTile);
+    leftColumnV4265.appendChild(valueTile);
+    rightColumnV4265.appendChild(riskTile);
+    rightColumnV4265.appendChild(nextTile);
+    grid.appendChild(leftColumnV4265);
+    grid.appendChild(rightColumnV4265);
     wrap.appendChild(grid);
   }
 
@@ -11532,7 +11573,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v4.264 Variable Height Cards';
+const KI21_VERSION='v4.265 Two Column Masonry';
 
 
 function runKi21VersionMigration(){
