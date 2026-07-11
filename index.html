@@ -11012,6 +11012,17 @@ function showNeuerKunde(initial,accId,initialTab){
   tabRow.appendChild(tabKontext);
   content.appendChild(tabRow);
 
+  // v6.5: Neue Opportunity kann direkt aus Importdaten entstehen.
+  // Ein Firmenname muss dafür nicht vorher manuell eingegeben werden.
+  if(!isEdit){
+    const importFirstBox=h('div',{style:{margin:'0 0 14px',padding:'12px',border:'1px solid rgba(255,107,0,.35)',borderRadius:'12px',background:'rgba(255,107,0,.08)'}},
+      h('div',{style:{fontWeight:'800',fontSize:'14px',marginBottom:'4px',color:'var(--text1)'}},'Opportunity aus vorhandenen Daten anlegen'),
+      h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'var(--text3)',marginBottom:'9px'}},'CRM-Export, Gesprächsnotizen, E-Mails oder Discovery-Ergebnisse einfügen. KI21 erkennt den Kundennamen und vorhandene SPIN-Antworten automatisch.'),
+      h('button',{className:'btn-o',style:{width:'100%'},onclick:()=>{if(m)m.remove();showSmartOpportunityImportV65(null);}},'📥 Opportunity importieren')
+    );
+    content.appendChild(importFirstBox);
+  }
+
   const stammDiv=h('div',{});
   const kontextDiv=h('div',{style:{display:'none'}});
 
@@ -11176,8 +11187,8 @@ function showNeuerKunde(initial,accId,initialTab){
   if(isEdit){
     const crmBtn=h('button',{className:'btn',
       style:{width:'100%',marginTop:'8px'},
-      onclick:()=>{m.remove();showCRMImport(accId);}},
-      '📥 CRM-Text importieren');
+      onclick:()=>{m.remove();showSmartOpportunityImportV65(accId);}},
+      '📥 Opportunity-Daten importieren');
     content.appendChild(crmBtn);
     const pdfBtn=h('button',{className:'btn',
       style:{width:'100%',marginTop:'8px',background:'rgba(255,107,0,.15)',color:'#ff6b00'},
@@ -11193,133 +11204,7 @@ function showNeuerKunde(initial,accId,initialTab){
 
 
 async function showCRMImport(accId){
-  const ta=h('textarea',{
-    placeholder:'CRM-Text, LinkedIn-Profil oder beliebige Kundeninformationen hier einfügen...',
-    style:{minHeight:'120px',width:'100%'}
-  });
-  const statusDiv=h('div',{style:{fontSize:'12px',color:'#8b949e',marginTop:'8px'}});
-  
-  const analyzeBtn=h('button',{className:'btn-o',style:{width:'100%',marginTop:'8px'},
-    onclick:async()=>{
-      const apiKey=LS.get('ki21_apikey','');
-      if(!apiKey){alert('Bitte API Key hinterlegen.');return;}
-      if(!ta.value.trim()){alert('Bitte Text einfügen.');return;}
-      
-      analyzeBtn.textContent='⏳ Analysiere...';
-      analyzeBtn.disabled=true;
-      
-      try{
-        const prompt=`Du extrahierst Informationen aus einem Text für ein B2B-Vertriebssystem.
-
-Text:
-${ta.value}
-
-WICHTIG: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Markdown. Keine Erklärung. Kein Text davor oder danach. Nur das JSON-Objekt.
-
-{"firma":"","ap":"","branche":"","ma":"","um":"","kontext":"","persoenlich":"","herausforderungen":""}
-
-Fülle die Felder mit den gefundenen Informationen. Leere Felder bleiben leer.
-
-WICHTIG zur Unterscheidung von "kontext" und "herausforderungen":
-- "kontext": dauerhafte, strukturelle Informationen über das Unternehmen (Branche, Aufbau, Standorte, Teamgröße, allgemeine Beschreibung der Lage) – Dinge, die über viele Monate gültig bleiben.
-- "herausforderungen": konkrete, aktuelle Herausforderungen, Probleme oder Kauftrigger, die JETZT die Vertriebssituation antreiben (z.B. "Forecast-Qualität schlecht", "neues CRM eingeführt aber kaum genutzt", "Geschäftsführer fordert Verbesserung"). Das sind die Dinge, die direkt eine Qualifizierungsfrage auslösen würden.
-Ein Text kann Anteile in beiden Feldern haben – verteile sinnvoll, dopple nicht alles in beide Felder.`;
-
-        const resp=await fetch('https://api.anthropic.com/v1/messages',{
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json',
-            'x-api-key':apiKey,
-            'anthropic-version':'2023-06-01',
-            'anthropic-dangerous-direct-browser-access':'true'
-          },
-          body:JSON.stringify({
-            model:'claude-haiku-4-5-20251001',
-            max_tokens:1024,
-            messages:[{role:'user',content:prompt}]
-          })
-        });
-        
-        const data=await resp.json();
-        let txt=data.content[0].text.trim();
-        // Strip markdown code blocks if present
-        txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-        // Extract JSON object if wrapped in other text
-        const jsonMatch=txt.match(/\{[\s\S]*\}/);
-        if(!jsonMatch)throw new Error('Kein JSON gefunden');
-        const parsed=JSON.parse(jsonMatch[0]);
-        
-        // Update customer data
-        const acc=state.accounts.find(a=>a.id===accId);
-        if(acc){
-          if(parsed.firma)acc.cust.firma=parsed.firma;
-          if(parsed.ap)acc.cust.ap=parsed.ap;
-          if(parsed.branche)acc.cust.branche=parsed.branche;
-          if(parsed.ma)acc.cust.ma=parsed.ma;
-          if(parsed.um){
-            // Normalize umsatz to readable format
-            const rawUm=String(parsed.um).replace(/[^0-9.]/g,'');
-            const numUm=parseFloat(rawUm);
-            if(numUm>=1000000)acc.cust.um=(numUm/1000000).toFixed(0)+' Mio. €';
-            else if(numUm>=1000)acc.cust.um=(numUm/1000).toFixed(0)+' Tsd. €';
-            else acc.cust.um=parsed.um;
-          }
-          LS.set('ki21_acc',state.accounts);
-          
-          // Update kontext
-          if(parsed.kontext||parsed.persoenlich){
-            let kk=LS.get('ki21_kk_'+accId,'')||'';
-            if(parsed.kontext)kk+=(kk?'\n\n':'')+parsed.kontext;
-            if(parsed.persoenlich)kk+=(kk?'\n\nPERSÖNLICH:\n':'')+parsed.persoenlich;
-            LS.set('ki21_kk_'+accId,kk);
-            refreshOpportunityHealth(accId);
-          }
-
-          // Update Phase 1 "Bekannte Herausforderungen / Vermutungen" (mergen, nicht überschreiben)
-          if(parsed.herausforderungen){
-            const st0=LS.get('ki21_st_'+accId+'_0',{fv:{},result:''});
-            if(!st0.fv)st0.fv={};
-            st0.fv.info=(st0.fv.info?st0.fv.info+'\n\n':'')+parsed.herausforderungen;
-            LS.set('ki21_st_'+accId+'_0',st0);
-          }
-        }
-        
-        // Build confirmation
-        const lines=[];
-        if(parsed.firma)lines.push('✅ Firma: '+parsed.firma);
-        if(parsed.ap)lines.push('✅ Ansprechpartner: '+parsed.ap);
-        if(parsed.branche)lines.push('✅ Branche: '+parsed.branche);
-        if(parsed.ma)lines.push('✅ Mitarbeiter: '+parsed.ma);
-        if(parsed.um)lines.push('✅ Umsatz: '+parsed.um);
-        if(parsed.kontext)lines.push('✅ Kontext: importiert');
-        if(parsed.herausforderungen)lines.push('✅ Herausforderungen (Phase 1): importiert');
-        if(parsed.persoenlich)lines.push('✅ Persönliche Infos: importiert');
-
-        statusDiv.innerHTML='<div style="margin-top:10px;padding:10px;background:rgba(46,160,67,.1);border-radius:6px;border:1px solid rgba(46,160,67,.3);">'+
-          '<div style="font-size:11px;font-weight:700;color:#2ea043;margin-bottom:6px;letter-spacing:.5px;">IMPORTIERT:</div>'+
-          lines.map(l=>'<div style="font-size:12px;color:#e6edf3;padding:2px 0;">'+l+'</div>').join('')+
-          '</div>';
-        analyzeBtn.textContent='✓ Schließen';
-        analyzeBtn.onclick=()=>{if(modalRef)modalRef.remove();};
-        
-      }catch(e){
-        statusDiv.textContent='Fehler: '+e.message;
-        analyzeBtn.textContent='CRM-Text analysieren';
-        analyzeBtn.disabled=false;
-      }
-    }
-  },'CRM-Text analysieren');
-  
-  const content=h('div',{},
-    h('p',{style:{fontSize:'12px',color:'#8b949e',marginBottom:'8px'}},
-      'Fügen Sie beliebigen Text ein – CRM-Export, LinkedIn-Profil, E-Mail oder Notizen. Claude erkennt und verteilt die Informationen automatisch.'),
-    ta,
-    analyzeBtn,
-    statusDiv
-  );
-  let modalRef=null;
-  const m=modal('📥 CRM-Text importieren',content,null);
-  modalRef=m;
+  return showSmartOpportunityImportV65(accId||null);
 }
 
 function generateKundePDF(aid, cust){
@@ -12857,7 +12742,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.4.1 Company Intelligence Sync';
+const KI21_VERSION='v6.5 Smart Opportunity Import';
 
 
 function runKi21VersionMigration(){
@@ -13540,6 +13425,208 @@ function truncateWordsV53(text,max){
   const a=String(text||'').trim().split(/\s+/);
   return a.length<=max?a.join(' '):a.slice(0,max).join(' ').replace(/[,:;]$/,'')+'…';
 }
+
+
+// ─────────────────────────────────────────────────────────────
+// v6.5 SMART OPPORTUNITY IMPORT
+// Kombinierter Import aus CRM-Daten, Notizen, E-Mails und vorhandener Discovery.
+// Keine Opportunity und kein Firmenname müssen vorher angelegt werden.
+// ─────────────────────────────────────────────────────────────
+function ki21EscV65(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});
+}
+function ki21NormalizeJsonV65(txt){
+  txt=String(txt||'').trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+  const m=txt.match(/\{[\s\S]*\}/);
+  if(!m)throw new Error('Keine strukturierte JSON-Antwort erhalten.');
+  return JSON.parse(m[0]);
+}
+function ki21ImportPromptV65(raw,companyCtx){
+  return `Du bist KI21 und strukturierst vorhandene Daten für eine B2B-Opportunity.\n\n`+
+`GRUNDSÄTZE:\n`+
+`- Nutze ausschließlich Informationen aus dem Importtext.\n`+
+`- Erfinde keine Firmen, Rollen, Beträge, Zeiträume, Probleme oder SPIN-Antworten.\n`+
+`- Sponsor/Champion ist nicht automatisch wirtschaftlicher Entscheider.\n`+
+`- Umsatzrelevanz ist kein bestätigter Umsatzverlust.\n`+
+`- Einstiegsangebot und Folgeangebot strikt trennen.\n`+
+`- Wenn eine Information nur teilweise vorhanden ist, kennzeichne sie als teilweise.\n`+
+`- Wenn Aussagen widersprüchlich sind, kennzeichne sie als widersprüchlich.\n`+
+`- Formuliere Antworten kurz, konkret und ohne Marketing-Sprache.\n\n`+
+`Antworte AUSSCHLIESSLICH als valides JSON in exakt dieser Struktur:\n`+
+`{\n`+
+` "customer":{"company":"","contact":"","industry":"","employees":"","revenue":"","owner":"","expectedClose":"","potential":""},\n`+
+` "opportunity":{"context":"","challenges":"","need":"","budget":"","timing":"","offer":"","competition":""},\n`+
+` "stakeholders":[{"name":"","role":"","classification":"Sponsor|Champion|Entscheider|Nutzer|Kritiker|Rolle offen","status":"bestätigt|abgeleitet|offen","evidence":""}],\n`+
+` "spin":[{"category":"S|P|I|N","question":"","answer":"","status":"beantwortet|teilweise|nicht beantwortet|widersprüchlich","evidence":""}],\n`+
+` "openPoints":[""],\n`+
+` "conflicts":[""],\n`+
+` "summary":""\n`+
+`}\n\n`+
+`SPIN-ZUORDNUNG:\n`+
+`S = bestätigte Ist-Situation.\n`+
+`P = konkretes Problem oder Engpass.\n`+
+`I = Auswirkung oder Konsequenz des Problems.\n`+
+`N = gewünschter Nutzen oder Zielzustand.\n`+
+`Erzeuge nur SPIN-Einträge, wenn der Importtext dafür eine echte Antwort enthält. Die Frage darf die vorhandene Antwort präzise benennen, aber keine neue Information einführen.\n\n`+
+`Kontext des anbietenden Unternehmens (nur zur Einordnung, niemals als Kundenfakt verwenden):\n${companyCtx||'–'}\n\n`+
+`IMPORTTEXT:\n${raw}`;
+}
+function ki21GetCompanyContextV65(){
+  try{
+    const ck=LS.get('ki21_company_knowledge',{})||{};
+    const profile=LS.get('ki21_company_profile',{})||{};
+    return [profile.name,profile.positioning,profile.products,profile.targetCustomers,ck.structuredSummary,ck.rawKnowledge].filter(Boolean).join('\n').slice(0,6000);
+  }catch(e){return '';}
+}
+function ki21MakeCheckRowV65(label,value,checked,kind,index){
+  const row=h('label',{style:{display:'flex',gap:'9px',alignItems:'flex-start',padding:'9px 10px',border:'1px solid var(--border)',borderRadius:'10px',background:'var(--bg3)',cursor:'pointer'}},
+    h('input',{type:'checkbox',checked:checked!==false,style:{marginTop:'3px',width:'18px',height:'18px',flex:'0 0 auto'}}),
+    h('div',{style:{minWidth:0}},
+      h('div',{style:{fontSize:'11px',fontWeight:'800',letterSpacing:'.6px',textTransform:'uppercase',color:'var(--text3)',marginBottom:'3px'}},label),
+      h('div',{style:{fontSize:'13px',lineHeight:'1.4',whiteSpace:'pre-wrap',color:'var(--text1)'}},String(value||''))
+    )
+  );
+  row.dataset.kind=kind||'';
+  row.dataset.index=String(index==null?'':index);
+  return row;
+}
+function ki21BuildImportedFactTextV65(data,selected){
+  const lines=[];
+  const o=data.opportunity||{};
+  const labels={context:'Kontext',challenges:'Herausforderungen',need:'Bedarf',budget:'Budget',timing:'Timing',offer:'Angebot',competition:'Wettbewerb'};
+  Object.keys(labels).forEach(k=>{if(selected['opp_'+k]&&o[k])lines.push(labels[k]+': '+o[k]);});
+  const sts=(data.stakeholders||[]).filter((x,i)=>selected['stake_'+i]);
+  if(sts.length){
+    lines.push('Stakeholder:');
+    sts.forEach(x=>lines.push('- '+[x.name,x.role,x.classification,x.status].filter(Boolean).join(' · ')));
+  }
+  const ops=(data.openPoints||[]).filter((x,i)=>selected['open_'+i]);
+  if(ops.length){lines.push('Offene Punkte:');ops.forEach(x=>lines.push('- '+x));}
+  const cfs=(data.conflicts||[]).filter((x,i)=>selected['conflict_'+i]);
+  if(cfs.length){lines.push('Widersprüche:');cfs.forEach(x=>lines.push('- '+x));}
+  return lines.join('\n').trim();
+}
+function ki21ApplySmartImportV65(data,raw,selected,existingAccId){
+  const c=data.customer||{};
+  let id=existingAccId||('acc_'+Date.now());
+  let acc=existingAccId?state.accounts.find(a=>a.id===existingAccId):null;
+  const existing=acc&&acc.cust?acc.cust:{};
+  const cust={...existing};
+  const map={company:'firma',contact:'ap',industry:'branche',employees:'ma',revenue:'um',owner:'verantwortlich',expectedClose:'abschluss',potential:'potenzial'};
+  Object.keys(map).forEach(k=>{if(selected['cust_'+k]&&c[k])cust[map[k]]=String(c[k]).trim();});
+  if(!String(cust.firma||'').trim())throw new Error('Im Import wurde kein Kundenname erkannt. Bitte im Vorschaufenster ergänzen oder im Text klar benennen.');
+  if(existingAccId){
+    state.accounts=state.accounts.map(a=>a.id===existingAccId?{...a,cust:{...cust}}:a);
+  }else{
+    acc={id,cust:{...cust},ts:Date.now()};
+    state.accounts=[acc,...state.accounts].slice(0,10);
+    state.activeId=id;
+    LS.set('ki21_aid',id);
+  }
+  LS.set('ki21_acc',state.accounts);
+  LS.set('ki21_import_raw_'+id,String(raw||''));
+  LS.set('ki21_import_structured_'+id,{data,selected,importedAt:Date.now()});
+
+  // Phase 1: bestätigte importierte Opportunity-Informationen als Ausgangslage.
+  const st0=LS.get('ki21_st_'+id+'_0',{fv:{},result:''});st0.fv=st0.fv||{};
+  const factText=ki21BuildImportedFactTextV65(data,selected);
+  if(factText){
+    const old=String(st0.fv.info||'').trim();
+    st0.fv.info=old?(old+'\n\nIMPORTIERTE INFORMATIONEN:\n'+factText):factText;
+  }
+  LS.set('ki21_st_'+id+'_0',st0);
+
+  // Phase 2: vorhandene SPIN-Antworten samt Status und Evidenz übernehmen.
+  const spin=(data.spin||[]).filter((x,i)=>selected['spin_'+i]&&x&&String(x.answer||'').trim());
+  if(spin.length){
+    const st1=LS.get('ki21_st_'+id+'_1',{fv:{},result:''});st1.fv=st1.fv||{};
+    const qLines=spin.map(x=>String(x.category||'').toUpperCase()+': '+String(x.question||'').trim());
+    const aLines=spin.map((x,i)=>`${i+1}. Frage: ${String(x.answer||'').trim()}`);
+    // Für neue Opportunities direkt setzen; bei bestehender Opportunity nur ergänzen, wenn noch leer.
+    if(!String(st1.fv.spin||'').trim())st1.fv.spin=qLines.join('\n');
+    if(!String(st1.fv.antworten||'').trim())st1.fv.antworten=aLines.join('\n');
+    LS.set('ki21_spin_import_meta_'+id,spin.map((x,i)=>({index:i+1,category:x.category,status:x.status,evidence:x.evidence,question:x.question,answer:x.answer})));
+    LS.set('ki21_st_'+id+'_1',st1);
+  }
+
+  // Originalquelle bleibt getrennt von KI-Ableitungen und ist nachvollziehbar.
+  appendAdditionEntryV623(id,0,String(raw||'').trim(),null);
+  LS.set('ki21_health_'+id,null);LS.set('ki21_health_lastError_'+id,null);
+  return id;
+}
+function showSmartOpportunityImportV65(existingAccId){
+  const ta=h('textarea',{placeholder:'CRM-Export, Gesprächsnotizen, E-Mails oder bereits vorhandene Discovery-/SPIN-Antworten hier einfügen …',style:{minHeight:'210px',width:'100%'}});
+  const status=h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'var(--text3)',marginTop:'8px'}});
+  const preview=h('div',{style:{display:'none',marginTop:'12px',gap:'8px',flexDirection:'column'}});
+  let parsed=null;
+  const selected={};
+  let modalRef=null;
+
+  function addSection(title,rows){
+    if(!rows.length)return;
+    preview.appendChild(h('div',{style:{fontSize:'12px',fontWeight:'900',letterSpacing:'.7px',textTransform:'uppercase',color:'var(--text2)',margin:'8px 0 0'}},title));
+    rows.forEach(r=>preview.appendChild(r));
+  }
+  function renderPreview(){
+    preview.innerHTML='';
+    const c=parsed.customer||{},o=parsed.opportunity||{};
+    const cr=[];
+    const cm={company:'Kunde',contact:'Ansprechpartner',industry:'Branche',employees:'Mitarbeitende',revenue:'Umsatz',owner:'Verantwortlich',expectedClose:'Erwarteter Abschluss',potential:'Potenzial'};
+    Object.keys(cm).forEach(k=>{if(c[k]){selected['cust_'+k]=true;const r=ki21MakeCheckRowV65(cm[k],c[k],true,'cust_'+k);r.querySelector('input').onchange=e=>selected['cust_'+k]=e.target.checked;cr.push(r);}});
+    addSection('Kundendaten',cr);
+    const or=[];const om={context:'Kontext',challenges:'Herausforderungen',need:'Bedarf',budget:'Budget',timing:'Timing',offer:'Angebot',competition:'Wettbewerb / Alternativen'};
+    Object.keys(om).forEach(k=>{if(o[k]){selected['opp_'+k]=true;const r=ki21MakeCheckRowV65(om[k],o[k],true,'opp_'+k);r.querySelector('input').onchange=e=>selected['opp_'+k]=e.target.checked;or.push(r);}});
+    addSection('Opportunity',or);
+    const sr=(parsed.stakeholders||[]).filter(x=>x&&(x.name||x.role)).map((x,i)=>{selected['stake_'+i]=true;const v=[x.name,x.role,x.classification,x.status,x.evidence&&('Quelle: '+x.evidence)].filter(Boolean).join('\n');const r=ki21MakeCheckRowV65('Stakeholder',v,true,'stake_'+i);r.querySelector('input').onchange=e=>selected['stake_'+i]=e.target.checked;return r;});
+    addSection('Stakeholder',sr);
+    const spr=(parsed.spin||[]).filter(x=>x&&x.answer).map((x,i)=>{selected['spin_'+i]=true;const v=`${x.category||''}: ${x.question||''}\n${x.answer}\nStatus: ${x.status||'offen'}${x.evidence?'\nQuelle: '+x.evidence:''}`;const r=ki21MakeCheckRowV65('SPIN-Antwort',v,true,'spin_'+i);r.querySelector('input').onchange=e=>selected['spin_'+i]=e.target.checked;return r;});
+    addSection('Vorhandene SPIN-Antworten',spr);
+    const opr=(parsed.openPoints||[]).filter(Boolean).map((x,i)=>{selected['open_'+i]=true;const r=ki21MakeCheckRowV65('Offen',x,true,'open_'+i);r.querySelector('input').onchange=e=>selected['open_'+i]=e.target.checked;return r;});
+    addSection('Offene Punkte',opr);
+    const cfr=(parsed.conflicts||[]).filter(Boolean).map((x,i)=>{selected['conflict_'+i]=true;const r=ki21MakeCheckRowV65('Widerspruch',x,true,'conflict_'+i);r.querySelector('input').onchange=e=>selected['conflict_'+i]=e.target.checked;return r;});
+    addSection('Widersprüche',cfr);
+    preview.style.display='flex';
+  }
+
+  const analyze=h('button',{className:'btn-o',style:{width:'100%',marginTop:'10px'},onclick:async()=>{
+    const raw=String(ta.value||'').trim();
+    if(!raw){status.textContent='Bitte zuerst Importdaten einfügen.';return;}
+    const key=LS.get('ki21_apikey','');if(!key){status.textContent='Bitte zuerst den API Key in den Einstellungen hinterlegen.';return;}
+    analyze.disabled=true;confirmBtn.disabled=true;analyze.textContent='⏳ KI21 strukturiert …';status.textContent='Kundendaten, Stakeholder und vorhandene SPIN-Antworten werden erkannt.';
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3500,messages:[{role:'user',content:ki21ImportPromptV65(raw,ki21GetCompanyContextV65())}]})});
+      const data=await resp.json();
+      if(!resp.ok)throw new Error((data&&data.error&&data.error.message)||'API-Fehler');
+      parsed=ki21NormalizeJsonV65(data&&data.content&&data.content[0]&&data.content[0].text);
+      renderPreview();
+      status.textContent='Vorschau erstellt. Nur aktivierte Punkte werden übernommen.';
+      confirmBtn.disabled=false;analyze.textContent='↻ Erneut analysieren';
+    }catch(e){status.textContent='Import konnte nicht strukturiert werden: '+e.message;analyze.textContent='Mit KI strukturieren';}
+    analyze.disabled=false;
+  }},'Mit KI strukturieren');
+
+  const confirmBtn=h('button',{className:'btn-o',disabled:true,style:{width:'100%',marginTop:'10px'},onclick:async()=>{
+    if(!parsed)return;
+    confirmBtn.disabled=true;analyze.disabled=true;confirmBtn.textContent=existingAccId?'⏳ Opportunity wird aktualisiert …':'⏳ Opportunity wird angelegt …';
+    try{
+      const id=ki21ApplySmartImportV65(parsed,ta.value,selected,existingAccId);
+      if(modalRef)modalRef.remove();
+      state.activeId=id;LS.set('ki21_aid',id);LS.set('ki21_view','cockpit-lite');
+      try{await refreshOpportunityHealth(id);}catch(e){console.warn(e);}
+      renderCockpitSnapshotLiteV4215();
+      setTimeout(()=>{const n=document.createElement('div');n.textContent=existingAccId?'✓ Opportunity-Daten und SPIN-Antworten übernommen.':'✓ Opportunity aus Importdaten angelegt.';n.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#173b27;color:#d9ffe8;border:1px solid #2f8f58;border-radius:12px;padding:12px 16px;font-weight:700;max-width:88%;text-align:center';document.body.appendChild(n);setTimeout(()=>n.remove(),2600);},100);
+    }catch(e){status.textContent=e.message;confirmBtn.disabled=false;analyze.disabled=false;confirmBtn.textContent=existingAccId?'Auswahl übernehmen':'Opportunity anlegen';}
+  }},existingAccId?'Auswahl übernehmen':'Opportunity anlegen');
+
+  const content=h('div',{},
+    h('p',{className:'modal-desc'},existingAccId?'Importiere zusätzliche CRM-, Gesprächs- oder Discovery-Daten. Bestehende manuelle Angaben werden nicht still überschrieben.':'Du musst keinen Kundennamen vorab eingeben. KI21 erkennt ihn aus den Importdaten und zeigt vor dem Anlegen eine Auswahl.'),
+    ta,analyze,status,preview,confirmBtn,
+    h('button',{className:'btn',style:{width:'100%',marginTop:'8px'},onclick:()=>modalRef&&modalRef.remove()},'Abbrechen')
+  );
+  modalRef=modal(existingAccId?'📥 Opportunity-Daten importieren':'📥 Neue Opportunity importieren',content,null);
+  setTimeout(()=>ta.focus(),50);
+}
+
 </script>
 </body>
 </html>
