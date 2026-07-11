@@ -2741,6 +2741,8 @@ function buildCtx(cust,mu,kk,stk,currentSitId){
     }
   }
   if(mu&&mu.profil)s+='\nMein Unternehmen:\n'+mu.profil+'\n';
+  const ck=LS.get('ki21_company_knowledge',{});
+  if(ck&&ck.raw)s+='\nZusätzliches Unternehmenswissen (vom Nutzer importiert):\n'+ck.raw+'\n';
   if(mu&&mu.bausteine)s+='\nAngebotsbausteine:\n'+mu.bausteine+'\n';
   try{
     const aidEco=LS.get('ki21_aid',null);
@@ -12472,8 +12474,9 @@ function showMeinUnternehmen(initialTab){
   const tabRow=h('div',{className:'tab-row'});
   const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmen');
   const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Bausteine');
-  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'🧠 KI21 Intelligence');
-  tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);
+  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'🧠 Intelligence');
+  const t4=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('import')},'📥 Wissen importieren');
+  tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);tabRow.appendChild(t4);
 
   const d1=h('div',{});
   const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...\nMitbewerber/Alternativen: ... (z.B. auch Inhouse-Lösungen oder Module großer ERP-Anbieter, nicht nur direkte Wettbewerber)'});
@@ -12651,17 +12654,136 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   d3.appendChild(intelBtn);
   d3.appendChild(intelResult);
 
+  // Unternehmenswissen-Import (v6.4)
+  const d4=h('div',{style:{display:'none'}});
+  let companyKnowledge=LS.get('ki21_company_knowledge',{})||{};
+  let rawKnowledge=companyKnowledge.raw||'';
+
+  const importStatus=h('div',{style:{marginBottom:'10px'}});
+  const setImportStatus=(text,ok=true)=>{
+    importStatus.innerHTML='';
+    if(!text)return;
+    importStatus.appendChild(h('div',{style:{padding:'9px 11px',borderRadius:'6px',fontSize:'11px',lineHeight:'1.4',background:ok?'rgba(46,160,67,.10)':'rgba(248,81,73,.10)',border:'1px solid '+(ok?'rgba(46,160,67,.30)':'rgba(248,81,73,.30)'),color:ok?'#2ea043':'#f85149'}},text));
+  };
+  if(companyKnowledge.updatedAt)setImportStatus('✅ Unternehmenswissen gespeichert · '+companyKnowledge.updatedAt,true);
+
+  const rawTa=h('textarea',{placeholder:'Unternehmenspräsentation, Produktbeschreibung, Website-Texte, Preisübersicht oder anderes Wissen hier einfügen …'});
+  rawTa.style.minHeight='220px';
+  rawTa.value=rawKnowledge;
+  rawTa.addEventListener('input',e=>rawKnowledge=e.target.value);
+
+  const fileInput=h('input',{type:'file',accept:'.txt,.md,.csv,.json,.html,.htm,.pdf,.docx'});
+  fileInput.style.marginTop='8px';
+  fileInput.addEventListener('change',async e=>{
+    const f=e.target.files&&e.target.files[0];
+    if(!f)return;
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    if(['pdf','docx'].includes(ext)){
+      setImportStatus('PDF/DOCX können in dieser Beta noch nicht direkt ausgelesen werden. Bitte den Text aus dem Dokument kopieren und hier einfügen.',false);
+      return;
+    }
+    try{
+      const txt=await f.text();
+      rawKnowledge=(rawKnowledge?rawKnowledge+'\n\n':'')+txt;
+      rawTa.value=rawKnowledge;
+      setImportStatus('✅ Datei „'+f.name+'“ eingelesen.',true);
+    }catch(err){setImportStatus('Datei konnte nicht gelesen werden.',false);}
+  });
+
+  const sampleText=`Unternehmen: KI21
+Branche: B2B SaaS / Sales Intelligence
+Positionierung: CRM dokumentiert Opportunities. KI21 hilft, sie zu gewinnen.
+Zielkunden: Software-, SaaS- und IT-Unternehmen mit ca. 30–250 Mitarbeitenden.
+Zielrollen: Head of Sales, Sales Director, Vertriebsleiter, Account Executives, New-Business-Teams.
+Kernnutzen: bessere Qualifizierung, geführte Discovery, Opportunity Intelligence, Opportunity Health, belastbares Lagebild, priorisierte nächste Schritte und Business-Case-Unterstützung.
+Produktprinzipien: CRM-unabhängig; ergänzt das CRM; Fakten, Ableitungen und offene Punkte werden getrennt; alte KI-Ergebnisse sind nie Faktenquelle; Sponsor ist nicht automatisch Entscheider; bezifferter Schmerz ist nicht automatisch Einsparung.
+Einstiegsangebot: KI21 Discovery Sprint, 9.900 € einmalig.
+Folgeangebot: KI21 SaaS, 49 € pro Nutzer und Monat.
+Typische Probleme: uneinheitliche Discovery, unzuverlässiger Forecast, schwache Opportunity-Qualifizierung, fehlender Business Case, CRM dokumentiert statt zu steuern.
+Wettbewerb/Alternativen: CRM-eigene KI, Microsoft Dynamics, Salesforce, allgemeine KI-Tools, manuelle CRM-Arbeit, Excel und interne Sales-Methodik.
+Arbeitsweise: Cockpit öffnen → Lage verstehen → nächsten Schritt sehen → neue Erkenntnis ergänzen → KI21 aktualisiert die Opportunity.`;
+
+  const sampleBtn=h('button',{className:'btn',style:{marginTop:'8px',width:'100%'},onclick:()=>{
+    rawKnowledge=sampleText;rawTa.value=rawKnowledge;setImportStatus('KI21-Beispieldaten geladen. Jetzt strukturieren oder direkt speichern.',true);
+  }},'KI21-Beispieldaten laden');
+
+  const saveRawBtn=h('button',{className:'btn',style:{flex:'1'},onclick:()=>{
+    if(!rawKnowledge.trim()){setImportStatus('Bitte zuerst Wissen einfügen.',false);return;}
+    companyKnowledge={...companyKnowledge,raw:rawKnowledge,updatedAt:new Date().toLocaleString('de-DE')};
+    LS.set('ki21_company_knowledge',companyKnowledge);
+    setImportStatus('✅ Rohwissen gespeichert und für Opportunity-Prompts verfügbar.',true);
+  }},'Rohwissen speichern');
+
+  const structureBtn=h('button',{className:'btn-o',style:{flex:'1'},onclick:async()=>{
+    if(!rawKnowledge.trim()){setImportStatus('Bitte zuerst Wissen einfügen.',false);return;}
+    if(!LS.get('ki21_apikey','')){setImportStatus('Für die Strukturierung wird ein API Key benötigt. Rohwissen kann trotzdem gespeichert werden.',false);return;}
+    structureBtn.disabled=true;structureBtn.textContent='⏳ Wird strukturiert …';
+    setImportStatus('KI21 strukturiert das Unternehmenswissen …',true);
+    const prompt=`Du bist der KI21 Company Knowledge Builder. Strukturiere ausschließlich die folgenden vom Nutzer gelieferten Unternehmensinformationen. Erfinde nichts. Trenne Produkte, Preise, Zielkunden, Nutzen, typische Probleme, Wettbewerber/Alternativen, Referenzen und Vertriebsmethodik.
+
+Gib NUR gültiges JSON zurück, ohne Markdown:
+{
+  "companyName":"",
+  "industry":"",
+  "positioning":"",
+  "targetCustomers":[],
+  "targetRoles":[],
+  "products":[{"name":"","role":"","price":"","description":""}],
+  "typicalProblems":[],
+  "benefits":[],
+  "competitors":[],
+  "references":[],
+  "salesMethod":"",
+  "principles":[]
+}
+
+QUELLE:
+${rawKnowledge}`;
+    try{
+      const result=await callClaude(prompt);
+      const cleaned=String(result||'').replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();
+      const structured=JSON.parse(cleaned);
+      companyKnowledge={raw:rawKnowledge,structured,updatedAt:new Date().toLocaleString('de-DE')};
+      LS.set('ki21_company_knowledge',companyKnowledge);
+      const products=(structured.products||[]).map(p=>`${p.name}${p.role?' ('+p.role+')':''}${p.price?' – '+p.price:''}${p.description?'\n'+p.description:''}`).join('\n\n');
+      profil=[`Unternehmen: ${structured.companyName||''}`,`Branche: ${structured.industry||''}`,`Positionierung: ${structured.positioning||''}`,`Zielkunden: ${(structured.targetCustomers||[]).join('; ')}`,`Zielrollen: ${(structured.targetRoles||[]).join('; ')}`,`Typische Probleme: ${(structured.typicalProblems||[]).join('; ')}`,`Nutzen: ${(structured.benefits||[]).join('; ')}`,`Wettbewerber/Alternativen: ${(structured.competitors||[]).join('; ')}`,`Referenzen: ${(structured.references||[]).join('; ')}`,`Prinzipien: ${(structured.principles||[]).join('; ')}`].filter(x=>!/: $/.test(x)).join('\n');
+      bausteine=[products,structured.salesMethod?`Vertriebsmethodik / Vorgehen:
+${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
+      ta1.value=profil;ta2.value=bausteine;
+      LS.set('ki21_mu',{profil,bausteine});
+      setImportStatus('✅ Unternehmenswissen strukturiert, gespeichert und in Profil/Bausteine übernommen.',true);
+    }catch(err){
+      console.error(err);setImportStatus('Strukturierung fehlgeschlagen. Das Rohwissen wurde nicht verändert.',false);
+    }
+    structureBtn.disabled=false;structureBtn.textContent='Mit KI strukturieren';
+  }},'Mit KI strukturieren');
+
+  const preview=h('div',{style:{marginTop:'10px',fontSize:'11px',lineHeight:'1.5',color:'#8b949e',background:'#0d1117',border:'1px solid #30363d',borderRadius:'6px',padding:'10px'}},
+    companyKnowledge.structured?'Strukturiertes Profil vorhanden: '+(companyKnowledge.structured.companyName||'Unternehmen'):'Noch kein strukturiertes Unternehmensprofil vorhanden.');
+
+  d4.appendChild(h('p',{className:'modal-desc'},'Füge Unternehmenswissen einmalig ein. Es wird getrennt von Opportunities gespeichert und künftig als Kontext verwendet.'));
+  d4.appendChild(importStatus);
+  d4.appendChild(h('div',{className:'field-label'},'Unternehmenswissen'));
+  d4.appendChild(rawTa);
+  d4.appendChild(fileInput);
+  d4.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginTop:'5px',lineHeight:'1.4'}},'Direkt lesbar: TXT, MD, CSV, JSON, HTML. PDF/DOCX: Text bitte in dieser Beta kopieren und einfügen.'));
+  d4.appendChild(sampleBtn);
+  d4.appendChild(h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}},saveRawBtn,structureBtn));
+  d4.appendChild(preview);
+
   function sw(t){
     tab=t;
     d1.style.display=t==='profil'?'block':'none';
     d2.style.display=t==='bausteine'?'block':'none';
     d3.style.display=t==='bw'?'block':'none';
+    d4.style.display=t==='import'?'block':'none';
     t1.style.background=t==='profil'?'#ff6b00':'#1c2333';t1.style.color=t==='profil'?'#fff':'#8b949e';
     t2.style.background=t==='bausteine'?'#ff6b00':'#1c2333';t2.style.color=t==='bausteine'?'#fff':'#8b949e';
     t3.style.background=t==='bw'?'#ff6b00':'#1c2333';t3.style.color=t==='bw'?'#fff':'#8b949e';
+    t4.style.background=t==='import'?'#ff6b00':'#1c2333';t4.style.color=t==='import'?'#fff':'#8b949e';
   }
 
-  const content=h('div',{},tabRow,d1,d2,d3,
+  const content=h('div',{},tabRow,d1,d2,d3,d4,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
       h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set('ki21_mu',{profil,bausteine});m.remove();}},
         'Speichern'),
@@ -12672,7 +12794,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.3 State Safe Baseline';
+const KI21_VERSION='v6.4 Company Knowledge Beta';
 
 
 function runKi21VersionMigration(){
@@ -13018,7 +13140,7 @@ function showExport(){
   const activeCust=(state.accounts.find(a=>a.id===aid)||{}).cust;
 
   // ── VOLLSTÄNDIGES BACKUP (alle Accounts, alles) ──────────────────
-  const backupData={accounts:state.accounts,activeId:aid,mu:LS.get('ki21_mu',{}),stationData:{},kontextData:{}};
+  const backupData={accounts:state.accounts,activeId:aid,mu:LS.get('ki21_mu',{}),companyKnowledge:LS.get('ki21_company_knowledge',{}),stationData:{},kontextData:{}};
   state.accounts.forEach(acc=>{
     for(let i=0;i<5;i++){
       const sval=LS.get('ki21_st_'+acc.id+'_'+i,null);
@@ -13041,6 +13163,7 @@ function showExport(){
     exportedAt:new Date().toISOString(),
     cust:activeCust||{},
     mu:LS.get('ki21_mu',{}),
+    companyKnowledge:LS.get('ki21_company_knowledge',{}),
     inputs:{},
     kk:{},
     manual:{}
@@ -13132,6 +13255,7 @@ function showImport(){
             LS.set('ki21_acc',state.accounts);
             LS.set('ki21_aid',newId);
             if(d.mu)LS.set('ki21_mu',d.mu);
+            if(d.companyKnowledge)LS.set('ki21_company_knowledge',d.companyKnowledge);
             if(d.inputs)Object.keys(d.inputs).forEach(k=>{
               const idx=parseInt(k.replace('slot_',''));
               if(!isNaN(idx))LS.set('ki21_st_'+newId+'_'+idx,d.inputs[k]);
@@ -13148,6 +13272,7 @@ function showImport(){
             if(d.accounts){state.accounts=d.accounts;LS.set('ki21_acc',d.accounts);}
             if(d.activeId){state.activeId=d.activeId;LS.set('ki21_aid',d.activeId);}
             if(d.mu)LS.set('ki21_mu',d.mu);
+            if(d.companyKnowledge)LS.set('ki21_company_knowledge',d.companyKnowledge);
             if(d.stationData)Object.keys(d.stationData).forEach(k=>LS.set(k,d.stationData[k]));
             if(d.kontextData)Object.keys(d.kontextData).forEach(k=>LS.set(k,d.kontextData[k]));
             m.remove();renderHome();
