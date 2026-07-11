@@ -12496,6 +12496,13 @@ function showMeinUnternehmen(initialTab){
   const d3=h('div',{style:{display:'none'}});
 
   let intel=LS.get('ki21_intelligence',{});
+  const companyKnowledgeForIntel=LS.get('ki21_company_knowledge',{})||{};
+  const companyIntelSource=JSON.stringify(companyKnowledgeForIntel.structured||{});
+  const companyIntelHash=companyIntelSource?simpleHash(companyIntelSource):'';
+  // v6.4.1: Alte, nicht zum aktuellen Unternehmenswissen passende Intelligence niemals anzeigen.
+  if(companyIntelHash && intel.sourceHash!==companyIntelHash){
+    intel={};
+  }
 
   const intelStatus=h('div',{style:{marginBottom:'12px'}});
   const updateIntelStatus=(msg)=>{
@@ -12714,6 +12721,60 @@ Arbeitsweise: Cockpit öffnen → Lage verstehen → nächsten Schritt sehen →
     setImportStatus('✅ Rohwissen gespeichert und für Opportunity-Prompts verfügbar.',true);
   }},'Rohwissen speichern');
 
+  async function rebuildCompanyIntelligence(structured){
+    const sourceJson=JSON.stringify(structured||{});
+    const sourceHash=simpleHash(sourceJson);
+    // Sofort alte Intelligence verwerfen, bevor eine neue erzeugt wird.
+    LS.set('ki21_intelligence',{});
+    const products=(structured.products||[]).map(p=>p.name).filter(Boolean).join(', ');
+    const prompt=`Du bist der KI21 Company Intelligence Builder. Erzeuge ausschließlich aus dem folgenden strukturierten Unternehmenswissen eine kompakte, anonymisierte Vertriebs-Intelligence. Keine Webrecherche, keine fremden Unternehmen, keine erfundenen Fakten. Das Unternehmenswissen ist die einzige Quelle.
+
+Gib NUR gültiges JSON zurück, ohne Markdown:
+{
+  "summary":"",
+  "salesPatterns":[],
+  "discoveryQuestions":[],
+  "stakeholders":[],
+  "objections":[],
+  "successFactors":[]
+}
+
+REGELN:
+- Maximal 6 Einträge je Array.
+- Formuliere generisch für die Zielkunden des Anbieters.
+- Trenne bestätigtes Anbieterwissen von vertrieblichen Ableitungen.
+- Preise, Produktrollen und Zielgruppen exakt übernehmen, nicht verändern.
+- Keine Benchmarks, Zahlen oder Referenzen erfinden.
+
+UNTERNEHMENSWISSEN:
+${JSON.stringify(structured,null,2)}`;
+    const result=await callClaude(prompt);
+    const cleaned=String(result||'').replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();
+    const derived=JSON.parse(cleaned);
+    const lines=[];
+    if(derived.summary)lines.push('KERNPROFIL:\nInsight: '+derived.summary+'\nStatus: Aus Unternehmenswissen abgeleitet');
+    const add=(title,label,arr)=>{if(arr&&arr.length){lines.push(title+':');arr.forEach(x=>lines.push(label+': '+x+'\nStatus: Aus Unternehmenswissen abgeleitet'));}};
+    add('VERTRIEBSMUSTER','Pattern',derived.salesPatterns);
+    add('DISCOVERY-FRAGEN','Frage',derived.discoveryQuestions);
+    add('STAKEHOLDER','Rolle',derived.stakeholders);
+    add('EINWÄNDE','Einwand',derived.objections);
+    add('ERFOLGSFAKTOREN','Pattern',derived.successFactors);
+    const newIntel={
+      branche:structured.industry||'',
+      produkte:products,
+      ziel:(structured.targetCustomers||[]).join('; '),
+      region:structured.region||'DACH',
+      inhalt:lines.join('\n\n'),
+      erstellt:true,
+      datum:new Date().toLocaleDateString('de-DE'),
+      source:'companyKnowledge',
+      sourceHash,
+      derived
+    };
+    LS.set('ki21_intelligence',newIntel);
+    return newIntel;
+  }
+
   const structureBtn=h('button',{className:'btn-o',style:{flex:'1'},onclick:async()=>{
     if(!rawKnowledge.trim()){setImportStatus('Bitte zuerst Wissen einfügen.',false);return;}
     if(!LS.get('ki21_apikey','')){setImportStatus('Für die Strukturierung wird ein API Key benötigt. Rohwissen kann trotzdem gespeichert werden.',false);return;}
@@ -12751,7 +12812,9 @@ ${rawKnowledge}`;
 ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
       ta1.value=profil;ta2.value=bausteine;
       LS.set('ki21_mu',{profil,bausteine});
-      setImportStatus('✅ Unternehmenswissen strukturiert, gespeichert und in Profil/Bausteine übernommen.',true);
+      setImportStatus('⏳ Unternehmensprofil gespeichert. Intelligence wird neu erzeugt …',true);
+      await rebuildCompanyIntelligence(structured);
+      setImportStatus('✅ Unternehmenswissen gespeichert. Alte Intelligence ersetzt und aus dem aktuellen Profil neu erzeugt.',true);
     }catch(err){
       console.error(err);setImportStatus('Strukturierung fehlgeschlagen. Das Rohwissen wurde nicht verändert.',false);
     }
@@ -12794,7 +12857,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.4 Company Knowledge Beta';
+const KI21_VERSION='v6.4.1 Company Intelligence Sync';
 
 
 function runKi21VersionMigration(){
