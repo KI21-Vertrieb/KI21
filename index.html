@@ -3850,7 +3850,7 @@ async function refreshOpportunityHealth(accId){
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// v6.2.1 Intelligence Output Polish — zentrale, strukturierte Cockpit-Intelligenz
+// v6.2.2 Hotfix Selection Workflow — zentrale, strukturierte Cockpit-Intelligenz
 // Alte KI-Ausgaben sind Orientierung, niemals Primärquelle für Fakten/Zahlen.
 // ─────────────────────────────────────────────────────────────────────────────
 function getOpportunityIntelligenceKeyV620(accId){
@@ -8335,7 +8335,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v6.2.1 Intelligence Output Polish'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.2.2 Hotfix Selection Workflow'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -10655,7 +10655,7 @@ ${note}`;
 }
 function showConversationNoteParserV4227(args){
   args=args||{};
-  var accId=args.accId, cust=args.cust, kkTa=args.kkTa, getCurrent=args.getCurrent, setCurrent=args.setCurrent;
+  var accId=args.accId, cust=args.cust, kkTa=args.kkTa, getCurrent=args.getCurrent, setCurrent=args.setCurrent, onCommit=args.onCommit;
   var noteFromField=String((typeof getCurrent==='function'?getCurrent():kkTa.value)||'').trim();
   var content=h('div',{});
   content.appendChild(h('div',{className:'note-parser-intro'},
@@ -10855,15 +10855,49 @@ function showConversationNoteParserV4227(args){
   content.appendChild(row);
 
   var applyRow=h('div',{className:'modal-row',style:{marginTop:'8px'}});
-  var applyAdd=h('button',{className:'btn-o',style:{display:'none',flex:'1'},onclick:function(){
+  var applyAdd=h('button',{className:'btn-o',style:{display:'none',flex:'1'},onclick:async function(){
     if(!parsed)return;
     var clean=buildSelectedAdditionV4230();
     if(!clean){status.textContent='Keine aktiven Punkte ausgewählt.';return;}
     var old=String((typeof getCurrent==='function'?getCurrent():kkTa.value)||'').trim();
-    var val=(old?old+'\\n\\n':'')+clean;
+    var val=(old?old+'\n\n':'')+clean;
     kkTa.value=val;
     if(typeof setCurrent==='function')setCurrent(val);
-    status.textContent='Ausgewählte Punkte wurden ins Feld übernommen. Zum Speichern unten „Speichern“ drücken.';
+
+    applyAdd.disabled=true;
+    applySpin.disabled=true;
+    cancel.disabled=true;
+    applyAdd.textContent='⏳ Opportunity wird aktualisiert...';
+    status.textContent='Erkenntnisse werden gespeichert und das Lagebild wird neu berechnet.';
+
+    try{
+      if(typeof onCommit==='function'){
+        await onCommit(val);
+      }else{
+        LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,val);
+        LS.set('ki21_health_'+accId,null);
+        LS.set('ki21_health_lastError_'+accId,null);
+        await refreshOpportunityHealth(accId);
+        if(val.trim())runSmartImpactAnalysis(accId,val);
+        LS.set('ki21_acc',state.accounts);
+        if(bg)bg.remove();
+        renderHome();
+      }
+      setTimeout(function(){
+        var note=document.createElement('div');
+        note.textContent='✓ Erkenntnisse übernommen. Opportunity wurde aktualisiert.';
+        note.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#173b27;color:#d9ffe8;border:1px solid #2f8f58;border-radius:12px;padding:12px 16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:88%;text-align:center';
+        document.body.appendChild(note);
+        setTimeout(function(){note.remove();},2600);
+      },80);
+    }catch(e){
+      console.warn(e);
+      status.textContent='Erkenntnisse konnten nicht übernommen werden.';
+      applyAdd.disabled=false;
+      applySpin.disabled=false;
+      cancel.disabled=false;
+      applyAdd.textContent='Ausgewählte Punkte übernehmen';
+    }
   }},'Ausgewählte Punkte übernehmen');
 
   var applySpin=h('button',{className:'btn',style:{display:'none',flex:'1'},onclick:function(){
@@ -10997,7 +11031,22 @@ function showNeuerKunde(initial,accId,initialTab){
       cust:f,
       kkTa,
       getCurrent:()=>currentKkSlot,
-      setCurrent:(v)=>{currentKkSlot=v;kkTa.value=v;}
+      setCurrent:(v)=>{currentKkSlot=v;kkTa.value=v;},
+      onCommit:async(v)=>{
+        currentKkSlot=v;
+        kkTa.value=v;
+        state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
+        LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
+        LS.set('ki21_health_'+accId,null);
+        LS.set('ki21_health_lastError_'+accId,null);
+        LS.set('ki21_acc',state.accounts);
+        await refreshOpportunityHealth(accId);
+        if(currentKkSlot.trim())runSmartImpactAnalysis(accId,currentKkSlot);
+        else markOpportunityPending(accId);
+        if(bg)bg.remove();
+        if(m)m.remove();
+        renderHome();
+      }
     })
   },'Gesprächsnotiz aufbereiten'));
 
@@ -12550,7 +12599,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.2.1 Intelligence Output Polish';
+const KI21_VERSION='v6.2.2 Hotfix Selection Workflow';
 
 
 function runKi21VersionMigration(){
