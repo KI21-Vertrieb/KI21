@@ -8129,8 +8129,37 @@ function isExecutiveInsightV52(text){
   const hasDecision=/budget|entscheid|engpass|einstieg|freigabe|risiko|folgeoption|handlungsdruck|business case/i.test(t);
   return hasLink&&hasDecision;
 }
+function formatBusinessCaseDisplayV659(value){
+  let text=String(value||'')
+    .replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'')
+    .trim();
+
+  const numberMatch=text.match(/(\d[\d.\s,]*)/);
+  if(!numberMatch)return text;
+
+  const numeric=Number(
+    numberMatch[1]
+      .replace(/\s/g,'')
+      .replace(/\./g,'')
+      .replace(',','.')
+  );
+
+  if(!Number.isFinite(numeric))return text;
+
+  const formatted=Math.round(numeric).toLocaleString('de-DE');
+  const isMonthly=/monat|monthly|\/\s*monat/i.test(text);
+  const isYearly=/jahr|jährlich|yearly|\/\s*jahr/i.test(text);
+  const isWeekly=/woche|wöchentlich|weekly|\/\s*woche/i.test(text);
+  const isOneTime=/einmalig|one[-\s]?time/i.test(text);
+
+  if(isMonthly)return formatted+' EUR/Monat';
+  if(isYearly)return formatted+' EUR/Jahr';
+  if(isWeekly)return formatted+' EUR/Woche';
+  if(isOneTime)return formatted+' EUR einmalig';
+  return formatted+' EUR';
+}
 function buildBusinessAnchorV52(value){
-  const amount=String(value||'').replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
+  const amount=formatBusinessCaseDisplayV659(value);
   return {text:amount||String(value||''),businessAnchor:true,caption:'Kundenproblem (beziffert)'};
 }
 
@@ -8645,7 +8674,7 @@ function renderHome(){
       if(kind==='value'){
         const anchor=items.find(it=>/Bezifferter?\s+Schmerz/i.test(String(it||'')));
         if(anchor){
-          const amount=String(anchor).replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
+          const amount=formatBusinessCaseDisplayV659(String(anchor));
           tile.appendChild(h('div',{className:'v53-bc-value'},amount));
           tile.appendChild(h('div',{className:'v53-bc-sub'},'Kundenproblem · beziffert'));
           tile.appendChild(h('div',{className:'v53-bc-divider'}));
@@ -12385,6 +12414,32 @@ function showPDF(title,text,cust){
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
 </style>
+
+<style>
+/* v6.5.10 Cockpit Wording Fix */
+.cockpit-business-amount,
+.v53-bc-value{
+  font-size:22px !important;
+  line-height:1.08 !important;
+  letter-spacing:-.35px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  word-break:normal !important;
+  overflow-wrap:normal !important;
+}
+.cockpit-business-anchor{
+  padding-right:30px !important;
+}
+@media(max-width:390px){
+  .cockpit-business-amount,
+  .v53-bc-value{
+    font-size:19px !important;
+    letter-spacing:-.25px !important;
+  }
+}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -13910,11 +13965,11 @@ function showSmartOpportunityImportV65(existingAccId){
 </script>
 
 <script>
-/* v6.5.8a Decision Role Consistency Fix
+/* v6.5.10 Cockpit Wording Fix
    Entscheider = wirtschaftlich entscheidungsbefugt.
    Sponsor/Champion wird niemals automatisch zum Entscheider. */
 (function(){
-  const VERSION_LABEL='v6.5.8a Decision Role Consistency Fix';
+  const VERSION_LABEL='v6.5.10 Cockpit Wording Fix';
 
   function activeAccountIdV658(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14036,6 +14091,90 @@ function showSmartOpportunityImportV65(existingAccId){
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV658);
   else startV658();
+})();
+</script>
+
+
+<script>
+/* v6.5.10 Cockpit wording consistency */
+(function(){
+  function normalizeCockpitWordingV6510(text){
+    let x=String(text||'');
+
+    x=x.replace(
+      /\bGF wird vermutet als Entscheider\b/gi,
+      'Geschäftsführer als möglicher Entscheider identifiziert – Bestätigung noch ausstehend'
+    );
+
+    x=x.replace(
+      /\bGeschäftsführer wird vermutet als Entscheider\b/gi,
+      'Geschäftsführer als möglicher Entscheider identifiziert – Bestätigung noch ausstehend'
+    );
+
+    x=x.replace(
+      /\bGF als Entscheider vermutet\b/gi,
+      'Geschäftsführer als möglicher Entscheider identifiziert – Bestätigung noch ausstehend'
+    );
+
+    x=x.replace(
+      /\bBudgetfreigabe für\s*9\.?900\s*€\s*noch nicht signalisiert\b/gi,
+      'Budget und Freigabeprozess für den Discovery Sprint sind noch nicht bestätigt'
+    );
+
+    x=x.replace(
+      /\bKonkrete Budgetfreigabe für\s*9\.?900\s*€\s*noch nicht signalisiert\b/gi,
+      'Budget und Freigabeprozess für den Discovery Sprint sind noch nicht bestätigt'
+    );
+
+    x=x.replace(
+      /\bBudgetfreigabe für den Discovery Sprint noch nicht signalisiert\b/gi,
+      'Budget und Freigabeprozess für den Discovery Sprint sind noch nicht bestätigt'
+    );
+
+    return x;
+  }
+
+  if(typeof window.sanitizeCockpitTextFinal==='function'){
+    const previous=window.sanitizeCockpitTextFinal;
+    window.sanitizeCockpitTextFinal=function(accId,text,kind,opts){
+      return normalizeCockpitWordingV6510(previous(accId,text,kind,opts));
+    };
+  }
+
+  function repairVisibleCockpitWordingV6510(){
+    if(!document.body)return;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    for(const node of nodes){
+      const old=node.nodeValue;
+      const neu=normalizeCockpitWordingV6510(old);
+      if(neu!==old)node.nodeValue=neu;
+    }
+  }
+
+  let queued=false;
+  function scheduleRepairV6510(){
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(function(){
+      queued=false;
+      repairVisibleCockpitWordingV6510();
+    });
+  }
+
+  const observer=new MutationObserver(scheduleRepairV6510);
+
+  function startV6510(){
+    repairVisibleCockpitWordingV6510();
+    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',startV6510);
+  }else{
+    startV6510();
+  }
 })();
 </script>
 
