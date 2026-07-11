@@ -9405,7 +9405,140 @@ function exportAutopilotPDF(cust,dossierResults){
   dossierResults.forEach(d=>{
     html+=`<div class="phase"><div class="phase-title">${d.title}</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(d.result||'')}</div></div>`;
   });
-  html+=`</body></html>`;
+  html+=`
+<script>
+/* v6.5.8 Decision Role Consistency
+   KI21-Regel: "Entscheider" bedeutet immer wirtschaftlich entscheidungsbefugt.
+   Sponsor/Champion darf niemals automatisch als Entscheider erscheinen. */
+(function(){
+  const VERSION_LABEL='v6.5.8 Decision Role Consistency';
+
+  function activeAccountIdV658(){
+    try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
+  }
+
+  function validatedInputV658(accId){
+    try{return String(getValidatedBusinessInputText(accId)||'');}catch(e){return '';}
+  }
+
+  function explicitNonDecisionAuthorityV658(accId){
+    const raw=validatedInputV658(accId);
+    return /(?:sponsor(?:in)?|champion|treibt.{0,50}(?:intern|projekt)|fachlich(?:e|er)?\s+sponsor(?:in)?).{0,160}(?:nicht|keine|noch nicht).{0,100}(?:entscheider|entscheidungsbefugt|budgetverantwortlich|entscheidet)/i.test(raw)
+      || /(?:nicht|keine|noch nicht).{0,100}(?:entscheider|entscheidungsbefugt|budgetverantwortlich).{0,160}(?:sponsor(?:in)?|champion|ansprechpartner(?:in)?)/i.test(raw)
+      || /(?:entscheider|entscheidung|entscheidet).{0,120}(?:noch offen|nicht bestätigt|nicht bekannt|voraussichtlich|vermutlich)/i.test(raw);
+  }
+
+  function explicitDecisionAuthorityV658(accId){
+    const raw=validatedInputV658(accId);
+    if(!raw.trim() || explicitNonDecisionAuthorityV658(accId))return false;
+    return /(?:\b[A-ZÄÖÜ][a-zäöüß]{2,}(?:\s+[A-ZÄÖÜ][a-zäöüß]{2,})?\b|geschäftsführer(?:in)?|cfo|ceo|vertriebsleiter(?:in)?).{0,140}(?:ist\s+(?:allein\s+|voll\s+)?entscheidungsbefugt|ist\s+entscheider(?:in)?|entscheidet\s+(?:über\s+)?(?:budget|investition|start|beauftragung)|darf.{0,60}(?:budget|betrag|projekt|start|beauftragung).{0,50}(?:freigeben|beauftragen|entscheiden)|kann.{0,60}(?:budget|betrag|projekt|start|beauftragung).{0,50}(?:freigeben|beauftragen|entscheiden))/i.test(raw);
+  }
+
+  window.ki21IsConfirmedDecisionMakerV658=function(accId){
+    return explicitDecisionAuthorityV658(accId) && !explicitNonDecisionAuthorityV658(accId);
+  };
+
+  window.hasExplicitAuthorityText=function(accId){
+    return window.ki21IsConfirmedDecisionMakerV658(accId);
+  };
+  window.hasConfirmedFullDecisionAuthority=function(accId){
+    return window.ki21IsConfirmedDecisionMakerV658(accId);
+  };
+
+  function stakeholderNameV658(accId){
+    try{
+      const acc=(window.state&&state.accounts||[]).find(a=>a&&a.id===accId);
+      const ap=acc&&acc.cust&&String(acc.cust.ap||'').trim();
+      if(ap){
+        const m=ap.match(/^([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)/);
+        if(m)return m[1];
+      }
+    }catch(e){}
+    const raw=validatedInputV658(accId);
+    const m=raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{2,}\s+[A-ZÄÖÜ][a-zäöüß]{2,})\b.{0,100}(?:Sponsorin|Sponsor|Champion|treibt)/i);
+    return m?m[1]:'Die Sponsorin';
+  }
+
+  function normalizeDecisionTextV658(accId,text){
+    let x=String(text||'');
+    if(!x)return x;
+
+    x=x.replace(/\bwirtschaftliche(?:r|n|m|s)?\s+Entscheider(?:in|innen)?\b/gi,'Entscheider');
+    x=x.replace(/\bwirtschaftlich(?:e|en|er|em|es)?\s+entscheidungsbefugt\b/gi,'entscheidungsbefugt');
+    x=x.replace(/Pilot[-\s]?Deals/gi,'Beispiel-Opportunities');
+    x=x.replace(/Pilot[-\s]?Deal/gi,'Beispiel-Opportunity');
+
+    if(explicitNonDecisionAuthorityV658(accId)){
+      const name=stakeholderNameV658(accId);
+      if(/\ballein\s+entscheidungsbefugt\b|\bEntscheidungsbefugnis\s+bestätigt\b/i.test(x)){
+        return name+' treibt das Projekt intern voran.';
+      }
+      x=x.replace(/\bEntscheider\s+sind\s+noch\s+nicht\s+verbindlich\s+eingebunden\b/gi,'Der Entscheider ist noch nicht verbindlich eingebunden');
+      x=x.replace(/\bEntscheider\s+fehlen\b/gi,'Der Entscheider ist noch nicht bestätigt');
+    }else if(explicitDecisionAuthorityV658(accId)){
+      x=x.replace(/\b([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\s+allein\s+entscheidungsbefugt\b/g,'$1 ist Entscheider');
+      x=x.replace(/\bEntscheider\s+allein\s+entscheidungsbefugt\b/gi,'Entscheider bestätigt');
+    }
+    return x;
+  }
+
+  if(typeof window.sanitizeCockpitTextFinal==='function'){
+    const previous=window.sanitizeCockpitTextFinal;
+    window.sanitizeCockpitTextFinal=function(accId,text,kind,opts){
+      return normalizeDecisionTextV658(accId,previous(accId,text,kind,opts));
+    };
+  }
+
+  if(typeof window.extractKnownBusinessFacts==='function'){
+    const previousExtract=window.extractKnownBusinessFacts;
+    window.extractKnownBusinessFacts=function(accId){
+      const facts=previousExtract(accId)||{};
+      if(!window.ki21IsConfirmedDecisionMakerV658(accId))facts.authority='';
+      else if(facts.authority)facts.authority=normalizeDecisionTextV658(accId,facts.authority);
+      return facts;
+    };
+  }
+
+  function repairVisibleDecisionTextV658(){
+    const accId=activeAccountIdV658();
+    if(!accId || !document.body)return;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(node=>{
+      const old=node.nodeValue;
+      const neu=normalizeDecisionTextV658(accId,old);
+      if(neu!==old)node.nodeValue=neu;
+    });
+  }
+
+  let scheduled=false;
+  function scheduleRepairV658(){
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(function(){
+      scheduled=false;
+      repairVisibleDecisionTextV658();
+    });
+  }
+
+  const observer=new MutationObserver(scheduleRepairV658);
+  function startV658(){
+    repairVisibleDecisionTextV658();
+    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length===0 && /^v6\.\d/.test(String(el.textContent||'').trim())){
+        el.textContent=VERSION_LABEL;
+      }
+    });
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV658);
+  else startV658();
+})();
+</script>
+
+</body></html>`;
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 }
 
