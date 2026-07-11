@@ -3850,7 +3850,7 @@ async function refreshOpportunityHealth(accId){
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// v6.2 Opportunity Intelligence — zentrale, strukturierte Cockpit-Intelligenz
+// v6.2.1 Intelligence Output Polish — zentrale, strukturierte Cockpit-Intelligenz
 // Alte KI-Ausgaben sind Orientierung, niemals Primärquelle für Fakten/Zahlen.
 // ─────────────────────────────────────────────────────────────────────────────
 function getOpportunityIntelligenceKeyV620(accId){
@@ -3889,12 +3889,42 @@ function normalizeOpportunityIntelligenceV620(raw){
       currentRisk:normalizeIntelligenceTextV620(wo.currentRisk,140),
       salesStrategy:normalizeIntelligenceTextV620(wo.salesStrategy,140)
     },
-    meta:{generatedAt:Date.now(),version:'6.2'}
+    meta:{generatedAt:Date.now(),version:'6.2.1'}
   };
+}
+function polishOpportunityIntelligenceV621(data){
+  const clean=normalizeOpportunityIntelligenceV620(data);
+  const words=(v,n)=>{
+    let t=String(v||'').replace(/^(Chance|Größter Engpass|Zentraler Engpass)\s*:\s*/i,'').trim();
+    const a=t.split(/\s+/).filter(Boolean);
+    if(a.length>n)t=a.slice(0,n).join(' ');
+    return t.replace(/[,:;\-]+$/,'').trim();
+  };
+  const splitChance=String(clean.chance.statement||'').match(/^(.*?(?:Einstiegschance|Chance))(?:\s*[:–-]\s*|\s+durch\s+)(.+)$/i);
+  if(splitChance){
+    clean.chance.statement=words(splitChance[1],7);
+    if(!clean.chance.evidence.length)clean.chance.evidence=[normalizeIntelligenceTextV620(splitChance[2],90)];
+  }
+  if(/Quick Check.*(?:gute|hohe).*Einstiegschance/i.test(clean.chance.statement))clean.chance.statement='Quick Check hat hohe Einstiegschance';
+  clean.chance.statement=words(clean.chance.statement,8);
+
+  const rawB=String(clean.bottleneck.statement||'').replace(/^Größter Engpass\s*:\s*/i,'').trim();
+  const splitB=rawB.match(/^(.{1,70}?)(?:\s+sind\s+noch|\s+ist\s+noch|\s+fehlen,?\s+weil|\s*[:–-]\s*)(.+)$/i);
+  if(splitB){
+    clean.bottleneck.statement=words(splitB[1],7);
+    if(!clean.bottleneck.evidence.length)clean.bottleneck.evidence=[normalizeIntelligenceTextV620(splitB[2],90)];
+  } else clean.bottleneck.statement=words(rawB,8);
+  if(/wirtschaftliche Entscheider/i.test(rawB))clean.bottleneck.statement='Wirtschaftliche Entscheider fehlen';
+
+  clean.dealStatus=normalizeIntelligenceTextV620(clean.dealStatus,70);
+  clean.nextSteps=clean.nextSteps.map(x=>normalizeIntelligenceTextV620(x,105)).slice(0,3);
+  clean.businessCase.status=clean.businessCase.status||'Kundenproblem (beziffert)';
+  clean.meta={generatedAt:Date.now(),version:'6.2.1'};
+  return clean;
 }
 function saveOpportunityIntelligenceV620(accId,data){
   if(!accId)return null;
-  const clean=normalizeOpportunityIntelligenceV620(data);
+  const clean=polishOpportunityIntelligenceV621(data);
   LS.set(getOpportunityIntelligenceKeyV620(accId),clean);
   return clean;
 }
@@ -3902,7 +3932,7 @@ function getOpportunityIntelligenceV620(accId){
   if(!accId)return null;
   const raw=LS.get(getOpportunityIntelligenceKeyV620(accId),null);
   if(!raw)return null;
-  const clean=normalizeOpportunityIntelligenceV620(raw);
+  const clean=polishOpportunityIntelligenceV621(raw);
   const useful=clean.dealStatus||clean.chance.statement||clean.bottleneck.statement||clean.nextSteps.length||clean.businessCase.quantifiedProblem||clean.businessCase.insights.length||clean.watchouts.currentRisk||clean.watchouts.salesStrategy;
   return useful?clean:null;
 }
@@ -3965,11 +3995,11 @@ HARTE REGELN:
 5. Einstiegsangebot und Folgeangebot strikt trennen.
 6. Bezifferter Schmerz ist keine automatisch gesicherte Einsparung und kein ROI.
 7. Geldwerte nie erfinden, nie zwischen Monat/Jahr/einmalig umrechnen.
-8. Genau eine Chance und genau einen größten Engpass liefern.
+8. Genau eine Chance und genau einen größten Engpass liefern. statement ist jeweils nur eine Management-Headline mit höchstens 8 Wörtern; Begründungen gehören ausschließlich in evidence.
 9. Maximal drei nächste Schritte; aktiv mit Verb formulieren, priorisiert.
 10. Maximal zwei Business-Case-Insights. Sie müssen eine echte Ableitung sein, nicht bloß Wiederholung.
 11. currentRisk ist ein reales aktuelles Dealrisiko. salesStrategy ist eine strategische Leitplanke, kein fehlender Fakt.
-12. Dealstatus maximal 70 Zeichen nach Muster: "Gute Einstiegschance · Entscheider einbinden".
+12. Dealstatus maximal 70 Zeichen nach Muster: "Gute Einstiegschance · Entscheider einbinden". Keine Vorsätze wie "Chance:" oder "Größter Engpass:" im statement.
 13. Keine Floskeln, keine Doppelungen, keine Fantasie.
 
 QUALITÄTSTEST FÜR INSIGHTS: Nur aufnehmen, wenn mindestens drei Punkte erfüllt sind: verbindet mehrere Fakten; beeinflusst Vertriebsstrategie; verhindert typischen Vertriebsfehler; priorisiert Handlung; ist keine Zusammenfassung.
@@ -7979,7 +8009,7 @@ function isExecutiveInsightV52(text){
 }
 function buildBusinessAnchorV52(value){
   const amount=String(value||'').replace(/^Bezifferter?\s+Schmerz\s*:\s*/i,'').trim();
-  return {text:amount||String(value||''),businessAnchor:true,caption:'Kundenproblem · beziffert'};
+  return {text:amount||String(value||''),businessAnchor:true,caption:'Kundenproblem (beziffert)'};
 }
 
 function buildV51Summary(chance,risk){
@@ -8299,13 +8329,13 @@ function renderCockpitSnapshotLiteV4215(){
   grid.className='cockpit-v5-workgrid';
   grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
   grid.appendChild(mkTile('Business Case',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
-  const riskDetailV51=allExecutiveRisksV4263.filter(x=>clean((x&&x.text)||x).toLowerCase()!==summaryRiskV500.toLowerCase()).slice(0,2);
+  const riskDetailV51=executiveRisksV4263.filter(x=>clean((x&&x.text)||x).toLowerCase()!==summaryRiskV500.toLowerCase()).slice(0,2);
   grid.appendChild(mkTile('Darauf achten',riskDetailV51,'Aktuell sind keine weiteren Hinweise erkennbar.','risk',2));
   wrap.appendChild(grid);
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v6.1.2 Navigation Compact'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.2.1 Intelligence Output Polish'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -12520,7 +12550,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.2 Opportunity Intelligence';
+const KI21_VERSION='v6.2.1 Intelligence Output Polish';
 
 
 function runKi21VersionMigration(){
