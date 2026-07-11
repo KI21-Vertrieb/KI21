@@ -3850,7 +3850,7 @@ async function refreshOpportunityHealth(accId){
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// v6.2.3 Separate Addition Entries — zentrale, strukturierte Cockpit-Intelligenz
+// v6.3 State Safe Baseline — zentrale, strukturierte Cockpit-Intelligenz
 // Alte KI-Ausgaben sind Orientierung, niemals Primärquelle für Fakten/Zahlen.
 // ─────────────────────────────────────────────────────────────────────────────
 function getOpportunityIntelligenceKeyV620(accId){
@@ -3889,7 +3889,7 @@ function normalizeOpportunityIntelligenceV620(raw){
       currentRisk:normalizeIntelligenceTextV620(wo.currentRisk,140),
       salesStrategy:normalizeIntelligenceTextV620(wo.salesStrategy,140)
     },
-    meta:{generatedAt:Date.now(),version:'6.2.1'}
+    meta:{generatedAt:Date.now(),version:'6.3'}
   };
 }
 function polishOpportunityIntelligenceV621(data){
@@ -3919,12 +3919,36 @@ function polishOpportunityIntelligenceV621(data){
   clean.dealStatus=normalizeIntelligenceTextV620(clean.dealStatus,70);
   clean.nextSteps=clean.nextSteps.map(x=>normalizeIntelligenceTextV620(x,105)).slice(0,3);
   clean.businessCase.status=clean.businessCase.status||'Kundenproblem (beziffert)';
-  clean.meta={generatedAt:Date.now(),version:'6.2.1'};
+  clean.meta={generatedAt:Date.now(),version:'6.3'};
   return clean;
 }
-function saveOpportunityIntelligenceV620(accId,data){
+function stableHashV63(text){
+  const s=String(text||''); let h=2166136261;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  return (h>>>0).toString(16);
+}
+function getManualQuantifiedProblemV63(accId){
+  try{
+    const imp=getImplicationSummaryV4246(accId);
+    if(!imp||!Array.isArray(imp.filled)||!imp.filled.length)return '';
+    if(Array.isArray(imp.monthly)&&imp.monthly.length){
+      if(imp.monthly.length===1)return String(imp.monthly[0].value||'').trim();
+      if(imp.sum>0)return formatMonthlyEffectV4240(imp.sum);
+    }
+    if(imp.filled.length===1)return String(imp.filled[0].value||'').trim();
+    return '';
+  }catch(e){return '';}
+}
+function getPrimarySourceHashV63(accId){
+  return stableHashV63(collectCurrentOpportunityInputsV620(accId));
+}
+function saveOpportunityIntelligenceV620(accId,data,sourceHash){
   if(!accId)return null;
   const clean=polishOpportunityIntelligenceV621(data);
+  // v6.3: Geld-KPI kommt ausschließlich aus manueller Eingabe, niemals aus KI-Text.
+  clean.businessCase.quantifiedProblem=getManualQuantifiedProblemV63(accId);
+  clean.businessCase.status=clean.businessCase.quantifiedProblem?'Kundenproblem (beziffert)':'offen';
+  clean.meta={generatedAt:Date.now(),version:'6.3',sourceHash:sourceHash||getPrimarySourceHashV63(accId)};
   LS.set(getOpportunityIntelligenceKeyV620(accId),clean);
   return clean;
 }
@@ -3932,7 +3956,13 @@ function getOpportunityIntelligenceV620(accId){
   if(!accId)return null;
   const raw=LS.get(getOpportunityIntelligenceKeyV620(accId),null);
   if(!raw)return null;
+  const currentHash=getPrimarySourceHashV63(accId);
+  // Abgeleitete Intelligence ist nur gültig, wenn sie exakt zum aktuellen Primärquellenstand gehört.
+  if(!raw.meta||!raw.meta.sourceHash||raw.meta.sourceHash!==currentHash)return null;
   const clean=polishOpportunityIntelligenceV621(raw);
+  clean.businessCase.quantifiedProblem=getManualQuantifiedProblemV63(accId);
+  clean.businessCase.status=clean.businessCase.quantifiedProblem?'Kundenproblem (beziffert)':'offen';
+  clean.meta=raw.meta;
   const useful=clean.dealStatus||clean.chance.statement||clean.bottleneck.statement||clean.nextSteps.length||clean.businessCase.quantifiedProblem||clean.businessCase.insights.length||clean.watchouts.currentRisk||clean.watchouts.salesStrategy;
   return useful?clean:null;
 }
@@ -3994,13 +4024,13 @@ HARTE REGELN:
 4. Umsatzrelevanz ist kein bestätigter Umsatzverlust.
 5. Einstiegsangebot und Folgeangebot strikt trennen.
 6. Bezifferter Schmerz ist keine automatisch gesicherte Einsparung und kein ROI.
-7. Geldwerte nie erfinden, nie zwischen Monat/Jahr/einmalig umrechnen.
+7. Geldwerte nie erfinden, nie zwischen Monat/Jahr/einmalig umrechnen. quantifiedProblem immer leer lassen; der Wert wird ausschließlich aus manueller Eingabe gesetzt.
 8. Genau eine Chance und genau einen größten Engpass liefern. statement ist jeweils nur eine Management-Headline mit höchstens 8 Wörtern; Begründungen gehören ausschließlich in evidence.
-9. Maximal drei nächste Schritte; aktiv mit Verb formulieren, priorisiert.
+9. Maximal drei nächste Schritte; aktiv mit Verb formulieren, priorisiert. Keine bereits bestätigte oder erledigte Handlung erneut als nächsten Schritt nennen.
 10. Maximal zwei Business-Case-Insights. Sie müssen eine echte Ableitung sein, nicht bloß Wiederholung.
 11. currentRisk ist ein reales aktuelles Dealrisiko. salesStrategy ist eine strategische Leitplanke, kein fehlender Fakt.
 12. Dealstatus maximal 70 Zeichen nach Muster: "Gute Einstiegschance · Entscheider einbinden". Keine Vorsätze wie "Chance:" oder "Größter Engpass:" im statement.
-13. Keine Floskeln, keine Doppelungen, keine Fantasie.
+13. Neueste bestätigte Originalinformation ersetzt ältere widersprüchliche Information. Keine Floskeln, keine Doppelungen, keine Fantasie.
 
 QUALITÄTSTEST FÜR INSIGHTS: Nur aufnehmen, wenn mindestens drei Punkte erfüllt sind: verbindet mehrere Fakten; beeinflusst Vertriebsstrategie; verhindert typischen Vertriebsfehler; priorisiert Handlung; ist keine Zusammenfassung.
 
@@ -4010,7 +4040,7 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON:
   "chance":{"statement":"","evidence":["","" ]},
   "bottleneck":{"statement":"","evidence":["","" ]},
   "nextSteps":["",""],
-  "businessCase":{"quantifiedProblem":"","status":"Kundenproblem · beziffert|teilbeziffert|offen","insights":["",""]},
+  "businessCase":{"quantifiedProblem":"","status":"offen","insights":["",""]},
   "watchouts":{"currentRisk":"","salesStrategy":""}
 }`;
 }
@@ -4033,7 +4063,7 @@ async function refreshOpportunityIntelligenceV620(accId,healthOverride){
   try{
     const json=await callClaudeJSON(prompt);
     if(json&&typeof json==='object'){
-      const clean=saveOpportunityIntelligenceV620(accId,json);
+      const clean=saveOpportunityIntelligenceV620(accId,json,getPrimarySourceHashV63(accId));
       LS.set('ki21_opportunity_intelligence_lastError_'+accId,null);
       return clean;
     }
@@ -8314,9 +8344,14 @@ function renderCockpitSnapshotLiteV4215(){
     nextStepItemsV4263.splice(0,nextStepItemsV4263.length,...opportunityIntelligenceV620.nextSteps.map(makeActionV4262).filter(Boolean));
   }
 
+  // v6.3 KPI-Guard: manuell erfasster wirtschaftlicher Wert hat immer Vorrang.
+  const manualKpiV63=getManualQuantifiedProblemV63(aid);
+  if(manualKpiV63){
+    valueExecutiveV4263.splice(0,valueExecutiveV4263.length,buildBusinessAnchorV52(manualKpiV63));
+  }
   // v6.2: Cockpit wird bevorzugt aus der zentralen Intelligence-Struktur gespeist.
   if(opportunityIntelligenceV620){
-    if(opportunityIntelligenceV620.businessCase.quantifiedProblem){
+    if(!manualKpiV63&&opportunityIntelligenceV620.businessCase.quantifiedProblem){
       valueExecutiveV4263.splice(0,valueExecutiveV4263.length,buildBusinessAnchorV52(opportunityIntelligenceV620.businessCase.quantifiedProblem));
     }
     opportunityIntelligenceV620.businessCase.insights.forEach(x=>valueExecutiveV4263.push({text:x,ki21:true,executive:true}));
@@ -8335,7 +8370,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v6.2.3 Separate Addition Entries'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.3 State Safe Baseline'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -12637,7 +12672,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.2.3 Separate Addition Entries';
+const KI21_VERSION='v6.3 State Safe Baseline';
 
 
 function runKi21VersionMigration(){
