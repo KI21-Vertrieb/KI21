@@ -12743,7 +12743,11 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
 
   const content=h('div',{},tabRow,d1,d2,d3,d4,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:()=>{LS.set('ki21_mu',{profil,bausteine});m.remove();}},
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:(e)=>{
+        LS.set('ki21_mu',{profil,bausteine});
+        const btn=e&&e.currentTarget;
+        if(btn){const oldText=btn.textContent;btn.textContent='✓ Gespeichert';btn.disabled=true;setTimeout(()=>{btn.textContent=oldText;btn.disabled=false;},1200);}
+      }},
         'Speichern'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
@@ -12752,7 +12756,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.3 Company Open Runtime Fix';
+const KI21_VERSION='v6.5.4 Import Field Mapping Fix';
 
 
 function runKi21VersionMigration(){
@@ -13475,6 +13479,44 @@ function ki21NormalizeJsonV65(txt){
   if(!m)throw new Error('Keine strukturierte JSON-Antwort erhalten.');
   return JSON.parse(m[0]);
 }
+
+function ki21NormalizeParsedImportV654(parsed,raw){
+  parsed=parsed&&typeof parsed==='object'?parsed:{};
+  const src=String(raw||'');
+  const lc=(o)=>o&&typeof o==='object'?o:{};
+  const root=lc(parsed);
+  const c0=lc(root.customer||root.kunde||root.kundendaten||root.company||root.account);
+  const pick=(...vals)=>{for(const v of vals){if(v!==undefined&&v!==null&&String(v).trim())return String(v).trim();}return '';};
+  const label=(labels)=>{
+    for(const lab of labels){
+      const esc=lab.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const re=new RegExp('(?:^|\n)\s*'+esc+'\s*[:\-]\s*([^\n]+)','i');
+      const m=src.match(re);if(m&&m[1])return m[1].trim();
+    }
+    return '';
+  };
+  const companyFallback=label(['Unternehmen','Firma','Kunde','Firmenname','Company']);
+  const contactFallback=label(['Ansprechpartner','Kontakt','Contact']);
+  const industryFallback=label(['Branche','Industry']);
+  const employeesFallback=label(['Mitarbeitende','Mitarbeiter','Unternehmensgröße','Employees']);
+  const revenueFallback=label(['Jahresumsatz','Umsatz','Revenue']);
+  root.customer={
+    company:pick(c0.company,c0.companyName,c0.name,c0.firma,c0.unternehmen,c0.kunde,companyFallback),
+    contact:pick(c0.contact,c0.contactName,c0.ansprechpartner,c0.kontakt,contactFallback),
+    industry:pick(c0.industry,c0.branche,industryFallback),
+    employees:pick(c0.employees,c0.employeeCount,c0.mitarbeiter,c0.mitarbeitende,c0.ma,employeesFallback),
+    revenue:pick(c0.revenue,c0.annualRevenue,c0.umsatz,c0.jahresumsatz,c0.um,revenueFallback),
+    owner:pick(c0.owner,c0.verantwortlich,c0.accountOwner),
+    expectedClose:pick(c0.expectedClose,c0.closeDate,c0.abschluss,c0.erwarteterAbschluss),
+    potential:pick(c0.potential,c0.potenzial,c0.opportunityValue)
+  };
+  root.opportunity=lc(root.opportunity||root.opportunitaet||root.opportunityData||root.chance);
+  root.stakeholders=Array.isArray(root.stakeholders)?root.stakeholders:[];
+  root.spin=Array.isArray(root.spin)?root.spin:[];
+  root.openPoints=Array.isArray(root.openPoints)?root.openPoints:(Array.isArray(root.offenePunkte)?root.offenePunkte:[]);
+  root.conflicts=Array.isArray(root.conflicts)?root.conflicts:(Array.isArray(root.widersprueche)?root.widersprueche:[]);
+  return root;
+}
 function ki21ImportPromptV65(raw,companyCtx){
   return `Du bist KI21 und strukturierst vorhandene Daten für eine B2B-Opportunity.\n\n`+
 `GRUNDSÄTZE:\n`+
@@ -13485,7 +13527,9 @@ function ki21ImportPromptV65(raw,companyCtx){
 `- Einstiegsangebot und Folgeangebot strikt trennen.\n`+
 `- Wenn eine Information nur teilweise vorhanden ist, kennzeichne sie als teilweise.\n`+
 `- Wenn Aussagen widersprüchlich sind, kennzeichne sie als widersprüchlich.\n`+
-`- Formuliere Antworten kurz, konkret und ohne Marketing-Sprache.\n\n`+
+`- Formuliere Antworten kurz, konkret und ohne Marketing-Sprache.\n`+
+`- Übernimm Kundenname, Branche, Mitarbeitendenzahl und Umsatz IMMER in customer, wenn sie im Importtext ausdrücklich genannt sind.\n`+
+`- Verwende dafür exakt die Schlüssel company, industry, employees und revenue; niemals deutsche oder alternative Schlüsselnamen.\n\n`+
 `Antworte AUSSCHLIESSLICH als valides JSON in exakt dieser Struktur:\n`+
 `{\n`+
 ` "customer":{"company":"","contact":"","industry":"","employees":"","revenue":"","owner":"","expectedClose":"","potential":""},\n`+
@@ -13631,7 +13675,7 @@ function showSmartOpportunityImportV65(existingAccId){
       const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3500,messages:[{role:'user',content:ki21ImportPromptV65(raw,ki21GetCompanyContextV65())}]})});
       const data=await resp.json();
       if(!resp.ok)throw new Error((data&&data.error&&data.error.message)||'API-Fehler');
-      parsed=ki21NormalizeJsonV65(data&&data.content&&data.content[0]&&data.content[0].text);
+      parsed=ki21NormalizeParsedImportV654(ki21NormalizeJsonV65(data&&data.content&&data.content[0]&&data.content[0].text),raw);
       renderPreview();
       status.textContent='Vorschau erstellt. Nur aktivierte Punkte werden übernommen.';
       confirmBtn.disabled=false;analyze.textContent='↻ Erneut analysieren';
