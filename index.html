@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.1.2 Navigation Compact</title>
+<title>KI21 v6.5.5 Company Knowledge Sync</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -12609,12 +12609,214 @@ Arbeitsweise: Cockpit öffnen → Lage verstehen → nächsten Schritt sehen →
     rawKnowledge=sampleText;rawTa.value=rawKnowledge;setImportStatus('KI21-Beispieldaten geladen. Jetzt strukturieren oder direkt speichern.',true);
   }},'KI21-Beispieldaten laden');
 
+  function cleanCompanyLinesV655(text){
+    return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  }
+
+  function splitCompanyListV655(value){
+    return String(value||'').split(/(?:;|\n|\u2022|^-\s+)/m).map(x=>x.replace(/^[-*•]\s*/,'').trim()).filter(Boolean);
+  }
+
+  function parseCompanyKnowledgeLocallyV655(raw){
+    const text=String(raw||'').replace(/\r/g,'');
+    const lines=text.split('\n');
+    const result={companyName:'',industry:'',positioning:'',targetCustomers:[],targetRoles:[],products:[],typicalProblems:[],benefits:[],competitors:[],references:[],salesMethod:'',principles:[],mission:'',workflow:[]};
+    const aliases={
+      companyName:['unternehmen','firma','anbieter'],
+      industry:['branche','industrie'],
+      positioning:['positionierung','kurzbeschreibung','kernaussage'],
+      mission:['mission','leitidee'],
+      targetCustomers:['zielkunden','zielgruppe','zielkundengruppe'],
+      targetRoles:['zielrollen','rollen','ansprechpartner'],
+      typicalProblems:['typische herausforderungen','herausforderungen','typische probleme','probleme'],
+      benefits:['typischer nutzen','nutzen','kernnutzen','mehrwert'],
+      competitors:['wettbewerber und alternativen','wettbewerber','alternativen','mitbewerber'],
+      principles:['produktprinzipien','prinzipien'],
+      workflow:['typischer workflow','workflow','arbeitsweise'],
+      salesMethod:['vertriebsmethodik','vorgehen','prozess']
+    };
+    const keyForHeading=(heading)=>{
+      const norm=String(heading||'').toLowerCase().replace(/[:：]$/,'').trim();
+      for(const [key,vals] of Object.entries(aliases)){
+        if(vals.some(v=>norm===v || norm.startsWith(v+' ')))return key;
+      }
+      return '';
+    };
+    const isSectionHeading=(line)=>{
+      const t=String(line||'').trim();
+      if(!t)return false;
+      if(/^angebot\s*\d+/i.test(t))return true;
+      if(keyForHeading(t))return true;
+      return /^(produktvision|kernfunktionen|differenzierung|time-to-value|langfristiger produktwert|wichtig|hinweis|leistungsumfang)$/i.test(t.replace(/[:：]$/,''));
+    };
+    let section='';
+    let offer=null;
+    const flushOffer=()=>{
+      if(!offer)return;
+      const p={name:offer.name||'',role:offer.role||'',price:offer.price||'',description:(offer.description||[]).join('\n').trim()};
+      if(p.name||p.role||p.price||p.description)result.products.push(p);
+      offer=null;
+    };
+    for(let i=0;i<lines.length;i++){
+      const rawLine=lines[i];
+      const t=rawLine.trim();
+      if(!t)continue;
+      if(/^angebot\s*\d+/i.test(t)){flushOffer();offer={name:'',role:'',price:'',description:[]};section='offer';continue;}
+      const explicit=t.match(/^([^:：]{2,50})[:：]\s*(.*)$/);
+      if(explicit){
+        const label=explicit[1].trim(); const value=explicit[2].trim(); const k=keyForHeading(label);
+        if(offer){
+          const ln=label.toLowerCase();
+          if(ln==='name'){offer.name=value;continue;}
+          if(ln==='rolle'){offer.role=value;continue;}
+          if(ln==='preis'){offer.price=value;continue;}
+          if(['leistungsumfang','beschreibung','hinweis','wichtig'].includes(ln)){if(value)offer.description.push(value);continue;}
+        }
+        if(k){
+          section=k;
+          if(value){
+            if(Array.isArray(result[k]))result[k].push(...splitCompanyListV655(value));
+            else result[k]=(result[k]?result[k]+'\n':'')+value;
+          }
+          continue;
+        }
+      }
+      if(isSectionHeading(t)){
+        const k=keyForHeading(t);
+        if(k){flushOffer();section=k;continue;}
+      }
+      if(offer){
+        const lower=t.toLowerCase();
+        if(lower==='name:'||lower==='rolle:'||lower==='preis:'||lower==='leistungsumfang:')continue;
+        const next=(lines[i+1]||'').trim();
+        if(lower==='name' && next){offer.name=next;i++;continue;}
+        if(lower==='rolle' && next){offer.role=next;i++;continue;}
+        if(lower==='preis' && next){offer.price=next;i++;continue;}
+        if(!offer.name && !/^[-*•]/.test(t) && !/^(rolle|preis|leistungsumfang|hinweis|wichtig)$/i.test(t)){offer.name=t;continue;}
+        if(!offer.role && /(?:einstieg|folgeangebot|saas|startpaket|pilot)/i.test(t)){offer.role=t;continue;}
+        if(!offer.price && /€|eur|pro nutzer|monat|einmalig/i.test(t)){offer.price=t;continue;}
+        offer.description.push(t.replace(/^[-*•]\s*/,''));
+        continue;
+      }
+      if(section){
+        const val=t.replace(/^[-*•]\s*/,'').trim();
+        if(!val)continue;
+        if(Array.isArray(result[section]))result[section].push(val);
+        else result[section]=(result[section]?result[section]+'\n':'')+val;
+      } else if(!result.companyName && /^KI21$/i.test(t)){result.companyName=t;}
+    }
+    flushOffer();
+    for(const k of ['targetCustomers','targetRoles','typicalProblems','benefits','competitors','references','principles','workflow']){
+      result[k]=[...new Set((result[k]||[]).map(x=>x.trim()).filter(Boolean))];
+    }
+    return result;
+  }
+
+  function buildCompanyProfileAndBlocksV655(structured){
+    const products=(structured.products||[]).map(p=>`${p.name||'Angebot'}${p.role?' ('+p.role+')':''}${p.price?' – '+p.price:''}${p.description?'\n'+p.description:''}`).join('\n\n');
+    const profile=[
+      structured.companyName?`Unternehmen: ${structured.companyName}`:'',
+      structured.industry?`Branche: ${structured.industry}`:'',
+      structured.positioning?`Positionierung: ${structured.positioning}`:'',
+      structured.mission?`Mission / Leitidee: ${structured.mission}`:'',
+      (structured.targetCustomers||[]).length?`Zielkunden: ${structured.targetCustomers.join('; ')}`:'',
+      (structured.targetRoles||[]).length?`Zielrollen: ${structured.targetRoles.join('; ')}`:'',
+      (structured.typicalProblems||[]).length?`Typische Probleme: ${structured.typicalProblems.join('; ')}`:'',
+      (structured.benefits||[]).length?`Nutzen: ${structured.benefits.join('; ')}`:'',
+      (structured.competitors||[]).length?`Wettbewerber/Alternativen: ${structured.competitors.join('; ')}`:'',
+      (structured.references||[]).length?`Referenzen: ${structured.references.join('; ')}`:'',
+      (structured.principles||[]).length?`Prinzipien: ${structured.principles.join('; ')}`:''
+    ].filter(Boolean).join('\n');
+    const method=[structured.salesMethod,(structured.workflow||[]).length?'Typischer Workflow:\n- '+structured.workflow.join('\n- '):''].filter(Boolean).join('\n\n');
+    return {profil:profile,bausteine:[products,method].filter(Boolean).join('\n\n')};
+  }
+
+  function buildLocalCompanyIntelligenceV655(structured){
+    const sourceJson=JSON.stringify(structured||{});
+    const lines=[];
+    const target=(structured.targetCustomers||[]).slice(0,3);
+    const problems=(structured.typicalProblems||[]).slice(0,6);
+    const benefits=(structured.benefits||[]).slice(0,6);
+    const roles=(structured.targetRoles||[]).slice(0,6);
+    const competitors=(structured.competitors||[]).slice(0,4);
+    if(structured.positioning)lines.push(`KERNPROFIL:
+Insight: ${structured.positioning}
+Status: Aus Unternehmenswissen abgeleitet`);
+    if(problems.length){
+      lines.push('VERTRIEBSMUSTER:');
+      problems.forEach(x=>lines.push(`Pattern: ${x}
+Status: Im Unternehmenswissen bestätigt`));
+    }
+    const questions=[];
+    problems.forEach(x=>questions.push('Wie zeigt sich „'+x.replace(/[.]+$/,'')+'“ heute konkret?'));
+    if(!questions.length)questions.push('Welche geschäftliche Herausforderung soll zuerst verbessert werden?');
+    lines.push('DISCOVERY-FRAGEN:');
+    questions.slice(0,6).forEach(x=>lines.push(`Frage: ${x}
+Status: Aus Unternehmenswissen abgeleitet`));
+    if(roles.length){
+      lines.push('STAKEHOLDER:');
+      roles.forEach(x=>lines.push(`Rolle: ${x}
+Status: Zielrolle aus Unternehmenswissen`));
+    }
+    if(competitors.length){
+      lines.push('ALTERNATIVEN:');
+      competitors.forEach(x=>lines.push(`Einwand: Bestehende Alternative „${x}“ wird als ausreichend angesehen.
+Status: Aus Unternehmenswissen abgeleitet`));
+    }
+    if(benefits.length){
+      lines.push('ERFOLGSFAKTOREN:');
+      benefits.forEach(x=>lines.push(`Pattern: ${x}
+Status: Nutzenversprechen aus Unternehmenswissen`));
+    }
+    return {
+      branche:structured.industry||'',
+      produkte:(structured.products||[]).map(p=>p.name).filter(Boolean).join(', '),
+      ziel:target.join('; '),
+      region:structured.region||'DACH',
+      inhalt:lines.join('\n\n'),
+      erstellt:true,
+      datum:new Date().toLocaleDateString('de-DE'),
+      source:'companyKnowledge-local',
+      sourceHash:simpleHash(sourceJson),
+      derivedLocal:true
+    };
+  }
+
+  function refreshCompanyDerivedUiV655(newIntel){
+    intel=newIntel||LS.get('ki21_intelligence',{})||{};
+    intelBranche.value=intel.branche||'';
+    intelProdukte.value=intel.produkte||'';
+    intelZiel.value=intel.ziel||'';
+    intelRegion.value=intel.region||'';
+    intelBody.innerHTML=renderBranchenwissen(intel.inhalt||'');
+    intelResult.style.display=intel.inhalt?'block':'none';
+    updateIntelStatus();
+    preview.textContent='Strukturiertes Profil vorhanden: '+((companyKnowledge.structured&&companyKnowledge.structured.companyName)||'Unternehmen');
+  }
+
+  function saveAndDeriveCompanyKnowledgeV655(){
+    const structured=parseCompanyKnowledgeLocallyV655(rawKnowledge);
+    const derived=buildCompanyProfileAndBlocksV655(structured);
+    companyKnowledge={raw:rawKnowledge,structured,updatedAt:new Date().toLocaleString('de-DE')};
+    profil=derived.profil; bausteine=derived.bausteine;
+    ta1.value=profil; ta2.value=bausteine;
+    LS.set('ki21_company_knowledge',companyKnowledge);
+    LS.set('ki21_mu',{profil,bausteine});
+    const localIntel=buildLocalCompanyIntelligenceV655(structured);
+    LS.set('ki21_intelligence',localIntel);
+    refreshCompanyDerivedUiV655(localIntel);
+    return {structured,localIntel};
+  }
+
   const saveRawBtn=h('button',{className:'btn',style:{flex:'1'},onclick:()=>{
     if(!rawKnowledge.trim()){setImportStatus('Bitte zuerst Wissen einfügen.',false);return;}
-    companyKnowledge={...companyKnowledge,raw:rawKnowledge,updatedAt:new Date().toLocaleString('de-DE')};
-    LS.set('ki21_company_knowledge',companyKnowledge);
-    setImportStatus('✅ Rohwissen gespeichert und für Opportunity-Prompts verfügbar.',true);
-  }},'Rohwissen speichern');
+    try{
+      saveAndDeriveCompanyKnowledgeV655();
+      setImportStatus('✅ Unternehmenswissen gespeichert. Bausteine und Intelligence wurden automatisch aktualisiert.',true);
+    }catch(err){
+      console.error(err);setImportStatus('Speichern fehlgeschlagen. Bitte Eingabetext prüfen.',false);
+    }
+  }},'Wissen speichern');
 
   async function rebuildCompanyIntelligence(structured){
     const sourceJson=JSON.stringify(structured||{});
@@ -12672,7 +12874,13 @@ ${JSON.stringify(structured,null,2)}`;
 
   const structureBtn=h('button',{className:'btn-o',style:{flex:'1'},onclick:async()=>{
     if(!rawKnowledge.trim()){setImportStatus('Bitte zuerst Wissen einfügen.',false);return;}
-    if(!LS.get('ki21_apikey','')){setImportStatus('Für die Strukturierung wird ein API Key benötigt. Rohwissen kann trotzdem gespeichert werden.',false);return;}
+    if(!LS.get('ki21_apikey','')){
+      try{
+        saveAndDeriveCompanyKnowledgeV655();
+        setImportStatus('✅ Ohne API Key lokal strukturiert. Bausteine und Intelligence wurden automatisch aktualisiert.',true);
+      }catch(err){console.error(err);setImportStatus('Lokale Strukturierung fehlgeschlagen.',false);}
+      return;
+    }
     structureBtn.disabled=true;structureBtn.textContent='⏳ Wird strukturiert …';
     setImportStatus('KI21 strukturiert das Unternehmenswissen …',true);
     const prompt=`Du bist der KI21 Company Knowledge Builder. Strukturiere ausschließlich die folgenden vom Nutzer gelieferten Unternehmensinformationen. Erfinde nichts. Trenne Produkte, Preise, Zielkunden, Nutzen, typische Probleme, Wettbewerber/Alternativen, Referenzen und Vertriebsmethodik.
@@ -12708,10 +12916,23 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
       ta1.value=profil;ta2.value=bausteine;
       LS.set('ki21_mu',{profil,bausteine});
       setImportStatus('⏳ Unternehmensprofil gespeichert. Intelligence wird neu erzeugt …',true);
-      await rebuildCompanyIntelligence(structured);
-      setImportStatus('✅ Unternehmenswissen gespeichert. Alte Intelligence ersetzt und aus dem aktuellen Profil neu erzeugt.',true);
+      let newIntel;
+      try{newIntel=await rebuildCompanyIntelligence(structured);}
+      catch(intelErr){
+        console.warn('AI Intelligence fallback',intelErr);
+        newIntel=buildLocalCompanyIntelligenceV655(structured);
+        LS.set('ki21_intelligence',newIntel);
+      }
+      refreshCompanyDerivedUiV655(newIntel);
+      setImportStatus('✅ Unternehmenswissen gespeichert. Bausteine und Intelligence wurden aus dem aktuellen Profil neu erzeugt.',true);
     }catch(err){
-      console.error(err);setImportStatus('Strukturierung fehlgeschlagen. Das Rohwissen wurde nicht verändert.',false);
+      console.error(err);
+      try{
+        const fallback=saveAndDeriveCompanyKnowledgeV655();
+        setImportStatus('✅ Unternehmenswissen lokal strukturiert. Bausteine und Intelligence wurden aktualisiert.',true);
+      }catch(fallbackErr){
+        console.error(fallbackErr);setImportStatus('Strukturierung fehlgeschlagen. Das Rohwissen wurde nicht verändert.',false);
+      }
     }
     structureBtn.disabled=false;structureBtn.textContent='Mit KI strukturieren';
   }},'Mit KI strukturieren');
@@ -12719,7 +12940,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   const preview=h('div',{style:{marginTop:'10px',fontSize:'11px',lineHeight:'1.5',color:'#8b949e',background:'#0d1117',border:'1px solid #30363d',borderRadius:'6px',padding:'10px'}},
     companyKnowledge.structured?'Strukturiertes Profil vorhanden: '+(companyKnowledge.structured.companyName||'Unternehmen'):'Noch kein strukturiertes Unternehmensprofil vorhanden.');
 
-  d4.appendChild(h('p',{className:'modal-desc'},'Füge Unternehmenswissen einmalig ein. Es wird getrennt von Opportunities gespeichert und künftig als Kontext verwendet.'));
+  d4.appendChild(h('p',{className:'modal-desc'},'Füge Unternehmenswissen einmalig ein. Beim Speichern werden Unternehmensprofil, Bausteine und Intelligence automatisch synchronisiert.'));
   d4.appendChild(importStatus);
   d4.appendChild(h('div',{className:'field-label'},'Unternehmenswissen'));
   d4.appendChild(rawTa);
@@ -12756,7 +12977,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.4 Import Field Mapping Fix';
+const KI21_VERSION='v6.5.5 Company Knowledge Sync';
 
 
 function runKi21VersionMigration(){
