@@ -12742,7 +12742,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.1 Company Navigation Fix';
+const KI21_VERSION='v6.5.2 Company Navigation Tap Guard';
 
 
 function runKi21VersionMigration(){
@@ -13014,14 +13014,38 @@ function showSettings(){
     h('div',{style:{fontSize:'11px',color:'#8b949e',marginTop:'2px'}},
       'Claude Haiku · ~0,02 € / Anfrage')
   );
+  let companyNavLocked=false;
+  const openCompanySafely=(e,initialTab)=>{
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+    }
+    if(companyNavLocked)return false;
+    companyNavLocked=true;
+    // Wichtig auf iOS: Zieldialog öffnen, solange der Einstellungsdialog den darunterliegenden
+    // Cockpit-Inhalt noch abdeckt. Erst danach den alten Dialog entfernen. So kann der Tap
+    // nicht auf ein darunterliegendes Cockpit-Element "durchfallen".
+    showMeinUnternehmen(initialTab||null);
+    requestAnimationFrame(()=>{
+      if(m&&m.isConnected)m.remove();
+      setTimeout(()=>{companyNavLocked=false;},250);
+    });
+    return false;
+  };
+  const companyBtn=h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
+    onclick:(e)=>openCompanySafely(e,null)},'🏢  Mein Unternehmen');
+  const buildingBlocksBtn=h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
+    onclick:(e)=>openCompanySafely(e,'bausteine')},'📦  Angebotsbausteine');
+  // Zusätzlicher Pointer-Guard verhindert synthetische Folge-Klicks auf Touch-Geräten.
+  [companyBtn,buildingBlocksBtn].forEach(b=>{
+    b.addEventListener('pointerdown',e=>{e.stopPropagation();});
+    b.addEventListener('touchstart',e=>{e.stopPropagation();},{passive:true});
+  });
   const menuItems=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'14px'}},
     h('div',{className:'settings-group-title'},'Unternehmen & Daten'),
-    h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
-      onclick:(e)=>{e.preventDefault();e.stopPropagation();m.remove();setTimeout(()=>showMeinUnternehmen(),0);}},
-      '🏢  Mein Unternehmen'),
-    h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
-      onclick:(e)=>{e.preventDefault();e.stopPropagation();m.remove();setTimeout(()=>showMeinUnternehmen('bausteine'),0);}},
-      '📦  Angebotsbausteine'),
+    companyBtn,
+    buildingBlocksBtn,
     h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
       onclick:()=>{m.remove();showExport();}},
       '↑  Backup erstellen'),
