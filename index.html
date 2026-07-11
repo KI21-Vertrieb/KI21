@@ -3850,7 +3850,7 @@ async function refreshOpportunityHealth(accId){
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// v6.2.2 Hotfix Selection Workflow — zentrale, strukturierte Cockpit-Intelligenz
+// v6.2.3 Separate Addition Entries — zentrale, strukturierte Cockpit-Intelligenz
 // Alte KI-Ausgaben sind Orientierung, niemals Primärquelle für Fakten/Zahlen.
 // ─────────────────────────────────────────────────────────────────────────────
 function getOpportunityIntelligenceKeyV620(accId){
@@ -8335,7 +8335,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v6.2.2 Hotfix Selection Workflow'));
+  wrap.appendChild(h('div',{className:'tagline'},'v6.2.3 Separate Addition Entries'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -10653,13 +10653,57 @@ ${(spinQuestions||[]).map((q,i)=>`${i+1}. ${(spinLetters&&spinLetters[i])||''}: 
 Gesprächsnotiz:
 ${note}`;
 }
+
+function getAdditionEntriesV623(accId,phaseId){
+  if(!accId)return [];
+  var key='ki21_additions_'+accId+'_'+phaseId;
+  var entries=LS.get(key,[]);
+  if(!Array.isArray(entries))entries=[];
+  // Einmalige, verlustfreie Migration des bisherigen reinen Text-Slots als Historieneintrag.
+  var migratedKey=key+'_migrated';
+  if(!LS.get(migratedKey,false)){
+    var legacy=String(LS.get('ki21_kk_'+accId+'_'+phaseId,'')||'').trim();
+    if(legacy && !entries.length){
+      entries.push({id:'legacy_'+Date.now(),ts:Date.now(),text:legacy,source:'legacy',analysis:null});
+      LS.set(key,entries);
+    }
+    LS.set(migratedKey,true);
+  }
+  return entries;
+}
+function saveAdditionEntriesV623(accId,phaseId,entries){
+  LS.set('ki21_additions_'+accId+'_'+phaseId,Array.isArray(entries)?entries:[]);
+}
+function appendAdditionEntryV623(accId,phaseId,text,analysis){
+  var clean=String(text||'').trim();
+  if(!accId||!clean)return null;
+  var entries=getAdditionEntriesV623(accId,phaseId).slice();
+  var entry={id:'add_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),ts:Date.now(),text:clean,source:'user',analysis:analysis||null};
+  entries.push(entry);
+  saveAdditionEntriesV623(accId,phaseId,entries);
+  // Rückwärtskompatible Faktenbasis: ausschließlich Originalnotizen, niemals KI-Auswertungen.
+  var aggregate=entries.map(function(e){return String(e&&e.text||'').trim();}).filter(Boolean).join('\n\n');
+  LS.set('ki21_kk_'+accId+'_'+phaseId,aggregate);
+  return entry;
+}
+function formatAdditionDateV623(ts){
+  try{return new Date(ts||Date.now()).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}
+}
+function buildSelectedAnalysisV623(parsed,selectableItems){
+  if(!parsed)return null;
+  var grouped={summary:[],confirmed:[],interpretations:[],openPoints:[],signals:[]};
+  (selectableItems||[]).filter(function(i){return i.active;}).forEach(function(i){
+    if(grouped[i.section])grouped[i.section].push(i.section==='signals'?{type:i.meta||'Signal',text:i.text}:i.text);
+  });
+  return grouped;
+}
 function showConversationNoteParserV4227(args){
   args=args||{};
   var accId=args.accId, cust=args.cust, kkTa=args.kkTa, getCurrent=args.getCurrent, setCurrent=args.setCurrent, onCommit=args.onCommit;
-  var noteFromField=String((typeof getCurrent==='function'?getCurrent():kkTa.value)||'').trim();
+  var noteFromField='';
   var content=h('div',{});
   content.appendChild(h('div',{className:'note-parser-intro'},
-    'Füge eine längere Gesprächsnotiz ein. KI21 bereitet sie als Vorschau auf. Tippe einzelne Punkte an, um sie auszuschließen. Es wird nichts automatisch überschrieben.'));
+    'Füge die neue Gesprächsnotiz ein. Das Feld ist bewusst leer. KI21 analysiert nur diese neue Notiz; frühere Ergänzungen bleiben getrennt in der Historie.'));
   var ta=h('textarea',{className:'note-parser-ta',placeholder:'Gesprächsnotiz einfügen ...'});
   ta.value=noteFromField;
   content.appendChild(ta);
@@ -10857,12 +10901,11 @@ function showConversationNoteParserV4227(args){
   var applyRow=h('div',{className:'modal-row',style:{marginTop:'8px'}});
   var applyAdd=h('button',{className:'btn-o',style:{display:'none',flex:'1'},onclick:async function(){
     if(!parsed)return;
-    var clean=buildSelectedAdditionV4230();
-    if(!clean){status.textContent='Keine aktiven Punkte ausgewählt.';return;}
-    var old=String((typeof getCurrent==='function'?getCurrent():kkTa.value)||'').trim();
-    var val=(old?old+'\n\n':'')+clean;
-    kkTa.value=val;
-    if(typeof setCurrent==='function')setCurrent(val);
+    var originalNote=String(ta.value||'').trim();
+    if(!originalNote){status.textContent='Die ursprüngliche Gesprächsnotiz fehlt.';return;}
+    var selectedAnalysis=buildSelectedAnalysisV623(parsed,selectableItems);
+    var hasSelected=Object.keys(selectedAnalysis||{}).some(function(k){return Array.isArray(selectedAnalysis[k])&&selectedAnalysis[k].length;});
+    if(!hasSelected){status.textContent='Keine aktiven Punkte ausgewählt.';return;}
 
     applyAdd.disabled=true;
     applySpin.disabled=true;
@@ -10872,20 +10915,20 @@ function showConversationNoteParserV4227(args){
 
     try{
       if(typeof onCommit==='function'){
-        await onCommit(val);
+        await onCommit(originalNote,selectedAnalysis);
       }else{
-        LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,val);
+        appendAdditionEntryV623(accId,currentPhaseForKk,originalNote,selectedAnalysis);
         LS.set('ki21_health_'+accId,null);
         LS.set('ki21_health_lastError_'+accId,null);
         await refreshOpportunityHealth(accId);
-        if(val.trim())runSmartImpactAnalysis(accId,val);
+        runSmartImpactAnalysis(accId,originalNote);
         LS.set('ki21_acc',state.accounts);
         if(bg)bg.remove();
         renderHome();
       }
       setTimeout(function(){
         var note=document.createElement('div');
-        note.textContent='✓ Erkenntnisse übernommen. Opportunity wurde aktualisiert.';
+        note.textContent='✓ Neue Ergänzung gespeichert. Opportunity wurde aktualisiert.';
         note.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#173b27;color:#d9ffe8;border:1px solid #2f8f58;border-radius:12px;padding:12px 16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:88%;text-align:center';
         document.body.appendChild(note);
         setTimeout(function(){note.remove();},2600);
@@ -10982,45 +11025,21 @@ function showNeuerKunde(initial,accId,initialTab){
   verantFw.appendChild(verantInp);
   stammDiv.appendChild(verantFw);
 
-  // Ergänzungen-Tab: phasenbezogene Notizen
-  // currentSitId aus State ableiten (welche Phase ist gerade aktiv?)
+  // Ergänzungen-Tab: jede neue Gesprächsnotiz ist ein eigener Originaleintrag.
   const isFromHome=LS.get('ki21_view','home')==='home';
   const currentPhaseForKk=isFromHome?0:(state.pendingSit!==null?state.pendingSit:(state.currentSitId!==undefined?state.currentSitId:0));
   const phaseNames5=['Phase 1 · Qualifizierung','Phase 2 · Bedarfsanalyse & Demo','Phase 3 · Termin nachbereiten','Phase 4 · Wirtschaftlicher Nutzen','Phase 5 · Angebot & Abschluss'];
 
-  // Migration: alter globaler Key → Slot 0 (einmalig)
-  const legacyKk=LS.get('ki21_kk_'+accId,'');
-  if(legacyKk&&!LS.get('ki21_kk_'+accId+'_migrated',false)){
-    LS.set('ki21_kk_'+accId+'_0',legacyKk);
-    LS.set('ki21_kk_'+accId+'_migrated',true);
-    LS.set('ki21_kk_'+accId,''); // Legacy-Key leeren nach Migration
-  }
+  // Bestehende Slots werden einmalig als Historieneinträge migriert.
+  if(accId){for(let i=0;i<5;i++)getAdditionEntriesV623(accId,i);}
 
-  // Bisheriger Wissensstand (Phasen 0..currentPhaseForKk-1) — nur lesen
-  let historyText='';
-  for(let i=0;i<currentPhaseForKk;i++){
-    const slotVal=LS.get('ki21_kk_'+accId+'_'+i,'');
-    if(slotVal&&slotVal.trim()){
-      historyText+=(historyText?'\n\n':'')+phaseNames5[i]+':\n'+slotVal.trim();
-    }
-  }
-  // Aktueller Phasen-Slot — bearbeitbar
-  let currentKkSlot=LS.get('ki21_kk_'+accId+'_'+currentPhaseForKk,'');
+  let currentKkSlot=''; // bewusst leer: jede Ergänzung startet neu
 
-  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Neue Erkenntnisse werden als qualifizierte Signale genutzt: Entscheider, Budget, Nutzen, Timing, Risiko oder offener Punkt.'));
-
-  if(historyText){
-    kontextDiv.appendChild(h('div',{className:'field-label',style:{marginBottom:'4px'}},'Bisheriger Wissensstand (nur lesen)'));
-    const histArea=h('textarea',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'8px',padding:'8px',fontSize:'12px',color:'var(--text2)',fontFamily:'inherit',width:'100%',resize:'none',minHeight:'80px',marginBottom:'10px'}});
-    histArea.value=historyText;
-    histArea.readOnly=true;
-    kontextDiv.appendChild(histArea);
-  }
-
+  kontextDiv.appendChild(h('p',{className:'modal-desc'},'Neue Gesprächsinformationen werden als eigener Eintrag gespeichert. KI-Auswertungen bleiben getrennt und werden nie in die Originalnotiz geschrieben.'));
   kontextDiv.appendChild(h('div',{className:'field-label',style:{marginBottom:'4px'}},
-    'Neue Erkenntnisse — '+(phaseNames5[currentPhaseForKk]||'Aktuell')));
-  const kkTa=h('textarea',{placeholder:'Neue Gesprächsnotiz oder Erkenntnis einfügen. Beispiel: Wer entscheidet? Was ist bestätigt? Was bleibt offen?'});
-  kkTa.value=currentKkSlot;
+    'Neue Ergänzung — '+(phaseNames5[currentPhaseForKk]||'Aktuell')));
+  const kkTa=h('textarea',{placeholder:'Neue Gesprächsnotiz oder Erkenntnis einfügen ...'});
+  kkTa.value='';
   kkTa.addEventListener('input',e=>{currentKkSlot=e.target.value;});
   kontextDiv.appendChild(kkTa);
   kontextDiv.appendChild(h('button',{
@@ -11032,23 +11051,42 @@ function showNeuerKunde(initial,accId,initialTab){
       kkTa,
       getCurrent:()=>currentKkSlot,
       setCurrent:(v)=>{currentKkSlot=v;kkTa.value=v;},
-      onCommit:async(v)=>{
-        currentKkSlot=v;
-        kkTa.value=v;
+      onCommit:async(originalNote,selectedAnalysis)=>{
+        appendAdditionEntryV623(accId,currentPhaseForKk,originalNote,selectedAnalysis);
+        currentKkSlot='';
+        kkTa.value='';
         state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
-        LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
         LS.set('ki21_health_'+accId,null);
         LS.set('ki21_health_lastError_'+accId,null);
         LS.set('ki21_acc',state.accounts);
         await refreshOpportunityHealth(accId);
-        if(currentKkSlot.trim())runSmartImpactAnalysis(accId,currentKkSlot);
-        else markOpportunityPending(accId);
+        runSmartImpactAnalysis(accId,originalNote);
         if(bg)bg.remove();
         if(m)m.remove();
         renderHome();
       }
     })
   },'Gesprächsnotiz aufbereiten'));
+
+  // Getrennte, nur lesbare Historie unterhalb des leeren Eingabefelds.
+  if(accId){
+    const allEntries=[];
+    for(let i=0;i<5;i++){
+      getAdditionEntriesV623(accId,i).forEach(function(e){allEntries.push({...e,phaseId:i});});
+    }
+    allEntries.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+    if(allEntries.length){
+      kontextDiv.appendChild(h('div',{className:'field-label',style:{marginTop:'16px',marginBottom:'6px'}},'Bisherige Ergänzungen ('+allEntries.length+')'));
+      const historyWrap=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',maxHeight:'280px',overflowY:'auto'}});
+      allEntries.forEach(function(e){
+        historyWrap.appendChild(h('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'10px',padding:'10px'}},
+          h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'5px'}},formatAdditionDateV623(e.ts)+' · '+(phaseNames5[e.phaseId]||'Ergänzung')),
+          h('div',{style:{fontSize:'13px',lineHeight:'1.45',whiteSpace:'pre-wrap',color:'var(--text1)'}},String(e.text||''))
+        ));
+      });
+      kontextDiv.appendChild(historyWrap);
+    }
+  }
 
   content.appendChild(stammDiv);
   content.appendChild(kontextDiv);
@@ -11069,8 +11107,8 @@ function showNeuerKunde(initial,accId,initialTab){
     saveB.disabled=true;
     if(isEdit){
       state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
-      // Phasenbezogenen Slot speichern (nicht mehr globaler Key)
-      LS.set('ki21_kk_'+accId+'_'+currentPhaseForKk,currentKkSlot);
+      // Neue Ergänzung als eigenen Originaleintrag speichern.
+      if(currentKkSlot.trim())appendAdditionEntryV623(accId,currentPhaseForKk,currentKkSlot,null);
       // Harte neue Erkenntnisse müssen alte Health-/Dashboard-Ableitungen überschreiben.
       // Deshalb alten Health-Cache vor der Neuberechnung invalidieren.
       LS.set('ki21_health_'+accId,null);
@@ -11085,7 +11123,7 @@ function showNeuerKunde(initial,accId,initialTab){
       state.accounts=[{id,cust:{...f},ts:Date.now()},...state.accounts].slice(0,10);
       state.activeId=id;
       LS.set('ki21_aid',id);
-      if(currentKkSlot.trim())LS.set('ki21_kk_'+id+'_'+currentPhaseForKk,currentKkSlot);
+      if(currentKkSlot.trim())appendAdditionEntryV623(id,currentPhaseForKk,currentKkSlot,null);
     }
     LS.set('ki21_acc',state.accounts);
     m.remove();
@@ -12599,7 +12637,7 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.2.2 Hotfix Selection Workflow';
+const KI21_VERSION='v6.2.3 Separate Addition Entries';
 
 
 function runKi21VersionMigration(){
