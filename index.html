@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.27 Explainable Intelligence Test Candidate</title>
+<title>KI21 v6.5.28 Explainable Intelligence Test Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2408,6 +2408,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 </style>
 <!-- v6.5.6: Zentraler Opportunity Health Score, synchron in Hauptmenü/Cockpit/Phasen; lokale semantische Fallback-Bewertung und automatische Aktualisierung nach Eingaben. -->
+<!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -8372,7 +8373,7 @@ function normalizeDecisionTextV6518(text,confirmed){
 
   return value
     .replace(/Einstiegsphase\s*[·\-–]\s*(?:Wirtschaftlicher )?Entscheider noch zu identifizieren/gi,
-      'Discovery-Phase · Entscheidungsgespräch vorbereiten')
+      'Discovery-Phase · Erfolgskriterien vereinbaren')
     .replace(/(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,
       'Budgetfreigabe für Discovery Sprint steht aus')
     .replace(/Geschäftsführer als Entscheider bestätigt/gi,
@@ -8676,7 +8677,7 @@ function buildBusinessCaseValueDetailV6527(accId,preview){
 
   return [
     'Was dieser Wert bedeutet',
-    'Der Wert von '+value+' beschreibt den vom Kunden bezifferten wirtschaftlichen Aufwand des Problems.',
+    'Der Wert von '+value+' beschreibt den aktuell bezifferten wirtschaftlichen Aufwand des Kundenproblems.',
     'Er ist keine garantierte Einsparung, kein automatischer Nutzen und noch kein ROI.',
     '',
     'Bestätigter Wert',
@@ -8696,6 +8697,14 @@ function buildBusinessCaseValueDetailV6527(accId,preview){
     calculationConfirmed
       ? '• Problemwert und Berechnungsgrundlage sind dokumentiert.'
       : '• Problemwert bestätigt; rechnerische Herleitung noch zu validieren.',
+    '',
+    'Wenn nichts geschieht',
+    '• Der operative Aufwand bleibt bestehen.',
+    '• Der wirtschaftliche Nutzen eines Discovery Sprints bleibt unbelegt.',
+    '• Eine spätere Fortführungsentscheidung kann subjektiv statt anhand vereinbarter Kriterien getroffen werden.',
+    '',
+    'Jetzt konkret tun',
+    '• Beeinflussbaren Anteil, Baseline und Erfolgskriterien mit dem Geschäftsführer vereinbaren.',
     '',
     'Noch zu klären',
     ...missing.map(x=>'• '+x)
@@ -8804,7 +8813,7 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
     'Budgetfreigabe für den Discovery Sprint herbeiführen.'
   );
   copy.nextSteps.unshift(
-    'Entscheidungsgespräch vorbereiten: Baseline, Zielwerte und Messung festlegen.'
+    'Entscheidungsgespräch vorbereiten und Erfolgskriterien verbindlich vereinbaren.'
   );
 
   copy.businessCase.insights=copy.businessCase.insights.filter(item=>
@@ -8817,15 +8826,15 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
   );
   if(bcFacts.length){
     copy.businessCase.insights.unshift(
-      'Beeinflussbaren Anteil der 8.000 € und Erfolgsmessung mit dem Geschäftsführer validieren.'
+      'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     );
     copy.businessCase.insights.unshift(
       'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.'
     );
   }
 
-  copy.watchouts.currentRisk='Ohne vorab vereinbarte Erfolgskriterien und Baseline droht später eine subjektive Erfolgsbewertung.';
-  copy.watchouts.salesStrategy='Discovery Sprint als risikoarmen Einstieg positionieren, Erfolgskriterien vorab vereinbaren und Budgetfreigabe vorbereiten.';
+  copy.watchouts.currentRisk='Aktuell fehlen verbindliche Erfolgskriterien und eine dokumentierte Baseline.';
+  copy.watchouts.salesStrategy='Erfolgskriterien und Baseline vor dem Discovery Sprint gemeinsam festlegen.';
   return copy;
 }
 
@@ -8856,7 +8865,13 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
   }
 
   if(confirmed){
-    copy.dealStatus='Discovery-Phase · Entscheidungsgespräch vorbereiten';
+    copy.dealStatus='Discovery-Phase · Erfolgskriterien vereinbaren';
+    copy.chance=copy.chance||{};
+    copy.chance.statement='Gute Voraussetzungen für einen erfolgreichen Discovery Sprint';
+    copy.chance.evidence=[
+      'Aktiver operativer Sponsor und klarer operativer Schmerz stützen den Einstieg',
+      'Die wirtschaftliche Entscheidung und die Erfolgskriterien stehen noch aus'
+    ];
     copy.bottleneck=copy.bottleneck||{};
     copy.bottleneck.statement='Budgetfreigabe für Discovery Sprint steht aus';
     copy.bottleneck.evidence=[
@@ -8864,16 +8879,16 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
       'Freigabe der 9.900 € im Entscheidungsgespräch noch ausstehend'
     ];
     copy.nextSteps=[
-      'Entscheidungsgespräch vorbereiten: Baseline, Zielwerte und Messung festlegen.',
+      'Entscheidungsgespräch vorbereiten und Erfolgskriterien verbindlich vereinbaren.',
       'Budgetfreigabe für den Discovery Sprint herbeiführen.'
     ];
     copy.watchouts=copy.watchouts||{};
-    copy.watchouts.currentRisk='Ohne vorab vereinbarte Erfolgskriterien und Baseline droht später eine subjektive Erfolgsbewertung.';
-    copy.watchouts.salesStrategy='Discovery Sprint als risikoarmen Einstieg positionieren, Erfolgskriterien vorab vereinbaren und Budgetfreigabe vorbereiten.';
+    copy.watchouts.currentRisk='Aktuell fehlen verbindliche Erfolgskriterien und eine dokumentierte Baseline.';
+    copy.watchouts.salesStrategy='Erfolgskriterien und Baseline vor dem Discovery Sprint gemeinsam festlegen.';
     copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
     copy.businessCase.insights=[
       'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.',
-      'Beeinflussbaren Anteil der 8.000 € und Erfolgsmessung mit dem Geschäftsführer validieren.'
+      'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     ];
   }
   return enrichOpportunityWithActionableIntelligenceV6520(copy,accId);
@@ -9098,7 +9113,7 @@ function renderCockpitSnapshotLiteV4215(){
     const el=document.getElementById('ki21-dealstatus');
     if(el){
       if(decisionConfirmedV6518){
-        el.textContent='Dealstatus: Discovery-Phase · Entscheidungsgespräch vorbereiten';
+        el.textContent='Dealstatus: Discovery-Phase · Erfolgskriterien vereinbaren';
       }else if(opportunityIntelligenceV620&&opportunityIntelligenceV620.dealStatus){
         el.textContent='Dealstatus: '+opportunityIntelligenceV620.dealStatus;
       }else {
@@ -13647,7 +13662,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.27 Explainable Intelligence Test Candidate';
+const KI21_VERSION='v6.5.28 Explainable Intelligence Test Release';
 
 
 function runKi21VersionMigration(){
@@ -14802,7 +14817,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.27 Explainable Intelligence Test Candidate';
+  const VERSION='v6.5.28 Explainable Intelligence Test Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14846,7 +14861,7 @@ body{
     return value
       .replace(
         /Einstiegsphase\s*[·\-–]\s*(?:Wirtschaftlicher )?Entscheider noch zu identifizieren/gi,
-        'Discovery-Phase · Entscheidungsgespräch vorbereiten'
+        'Discovery-Phase · Erfolgskriterien vereinbaren'
       )
       .replace(
         /(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,
@@ -14893,7 +14908,7 @@ body{
 
     const deal=document.getElementById('ki21-dealstatus');
     if(deal&&confirmed){
-      deal.textContent='Dealstatus: Discovery-Phase · Entscheidungsgespräch vorbereiten';
+      deal.textContent='Dealstatus: Discovery-Phase · Erfolgskriterien vereinbaren';
     }
 
     [
