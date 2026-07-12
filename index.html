@@ -8152,11 +8152,11 @@ function formatBusinessCaseDisplayV659(value){
   const isWeekly=/woche|wöchentlich|weekly|\/\s*woche/i.test(text);
   const isOneTime=/einmalig|one[-\s]?time/i.test(text);
 
-  if(isMonthly)return formatted+' EUR/Monat';
-  if(isYearly)return formatted+' EUR/Jahr';
-  if(isWeekly)return formatted+' EUR/Woche';
-  if(isOneTime)return formatted+' EUR einmalig';
-  return formatted+' EUR';
+  if(isMonthly)return formatted+' €/Monat';
+  if(isYearly)return formatted+' €/Jahr';
+  if(isWeekly)return formatted+' €/Woche';
+  if(isOneTime)return formatted+' € einmalig';
+  return formatted+' €';
 }
 function buildBusinessAnchorV52(value){
   const amount=formatBusinessCaseDisplayV659(value);
@@ -10848,6 +10848,19 @@ function appendAdditionEntryV623(accId,phaseId,text,analysis){
   LS.set('ki21_kk_'+accId+'_'+phaseId,aggregate);
   return entry;
 }
+function deleteAdditionEntryV6511(accId,phaseId,entryId){
+  if(!accId||entryId===undefined||entryId===null)return false;
+  var entries=getAdditionEntriesV623(accId,phaseId).slice();
+  var next=entries.filter(function(e){return String(e&&e.id)!==String(entryId);});
+  if(next.length===entries.length)return false;
+  saveAdditionEntriesV623(accId,phaseId,next);
+  LS.set('ki21_kk_'+accId+'_'+phaseId,
+    next.map(function(e){return String(e&&e.text||'').trim();}).filter(Boolean).join('\n\n')
+  );
+  LS.set('ki21_health_'+accId,null);
+  LS.set('ki21_health_lastError_'+accId,null);
+  return true;
+}
 function formatAdditionDateV623(ts){
   try{return new Date(ts||Date.now()).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}
 }
@@ -10863,9 +10876,17 @@ function showConversationNoteParserV4227(args){
   args=args||{};
   var accId=args.accId, cust=args.cust, kkTa=args.kkTa, getCurrent=args.getCurrent, setCurrent=args.setCurrent, onCommit=args.onCommit;
   var noteFromField='';
+  try{
+    noteFromField=String(
+      (typeof getCurrent==='function' ? getCurrent() : '') ||
+      (kkTa && kkTa.value ? kkTa.value : '')
+    ).trim();
+  }catch(e){noteFromField='';}
   var content=h('div',{});
   content.appendChild(h('div',{className:'note-parser-intro'},
-    'Füge die neue Gesprächsnotiz ein. Das Feld ist bewusst leer. KI21 analysiert nur diese neue Notiz; frühere Ergänzungen bleiben getrennt in der Historie.'));
+    noteFromField
+      ? 'KI21 analysiert die bereits eingegebene Gesprächsnotiz. Frühere Ergänzungen bleiben getrennt in der Historie.'
+      : 'Füge die neue Gesprächsnotiz ein. KI21 analysiert nur diese neue Notiz; frühere Ergänzungen bleiben getrennt in der Historie.'));
   var ta=h('textarea',{className:'note-parser-ta',placeholder:'Gesprächsnotiz einfügen ...'});
   ta.value=noteFromField;
   content.appendChild(ta);
@@ -11252,10 +11273,25 @@ function showNeuerKunde(initial,accId,initialTab){
       kontextDiv.appendChild(h('div',{className:'field-label',style:{marginTop:'16px',marginBottom:'6px'}},'Bisherige Ergänzungen ('+allEntries.length+')'));
       const historyWrap=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',maxHeight:'280px',overflowY:'auto'}});
       allEntries.forEach(function(e){
-        historyWrap.appendChild(h('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'10px',padding:'10px'}},
-          h('div',{style:{fontSize:'11px',color:'var(--text3)',marginBottom:'5px'}},formatAdditionDateV623(e.ts)+' · '+(phaseNames5[e.phaseId]||'Ergänzung')),
-          h('div',{style:{fontSize:'13px',lineHeight:'1.45',whiteSpace:'pre-wrap',color:'var(--text1)'}},String(e.text||''))
-        ));
+        var card=h('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'10px',padding:'10px'}});
+        var head=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',marginBottom:'5px'}});
+        head.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)'}},formatAdditionDateV623(e.ts)+' · '+(phaseNames5[e.phaseId]||'Ergänzung')));
+        head.appendChild(h('button',{
+          type:'button',
+          className:'btn',
+          style:{padding:'3px 7px',fontSize:'10px',color:'#ff7b72',borderColor:'rgba(248,81,73,.35)'},
+          onclick:async function(){
+            if(!confirm('Diese Gesprächsnotiz wirklich löschen?'))return;
+            if(!deleteAdditionEntryV6511(accId,e.phaseId,e.id))return;
+            try{await refreshOpportunityHealth(accId);}catch(err){console.warn(err);}
+            LS.set('ki21_acc',state.accounts);
+            if(m)m.remove();
+            showNeuerKunde(f,accId,'kontext');
+          }
+        },'Löschen'));
+        card.appendChild(head);
+        card.appendChild(h('div',{style:{fontSize:'13px',lineHeight:'1.45',whiteSpace:'pre-wrap',color:'var(--text1)'}},String(e.text||'')));
+        historyWrap.appendChild(card);
       });
       kontextDiv.appendChild(historyWrap);
     }
@@ -12416,7 +12452,7 @@ function showPDF(title,text,cust){
 </style>
 
 <style>
-/* v6.5.10 Cockpit Wording Fix */
+/* v6.5.11 Addition Workflow & Decision Confirmation */
 .cockpit-business-amount,
 .v53-bc-value{
   font-size:22px !important;
@@ -13965,11 +14001,11 @@ function showSmartOpportunityImportV65(existingAccId){
 </script>
 
 <script>
-/* v6.5.10 Cockpit Wording Fix
+/* v6.5.11 Addition Workflow & Decision Confirmation
    Entscheider = wirtschaftlich entscheidungsbefugt.
    Sponsor/Champion wird niemals automatisch zum Entscheider. */
 (function(){
-  const VERSION_LABEL='v6.5.10 Cockpit Wording Fix';
+  const VERSION_LABEL='v6.5.11 Addition Workflow & Decision Confirmation';
 
   function activeAccountIdV658(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14175,6 +14211,91 @@ function showSmartOpportunityImportV65(existingAccId){
   }else{
     startV6510();
   }
+})();
+</script>
+
+
+<script>
+(function(){
+  function inputV6511(accId){
+    try{return String(getValidatedBusinessInputText(accId)||'').replace(/\s+/g,' ');}catch(e){return '';}
+  }
+  function gfConfirmedV6511(accId){
+    const raw=inputV6511(accId);
+    return /geschäftsführer(?:in)?.{0,100}entscheidet.{0,120}(?:start|discovery sprint|projekt|beauftragung)/i.test(raw)
+      && /geschäftsführer(?:in)?.{0,160}(?:kann|darf).{0,90}(?:9\.?900|budget|betrag|discovery sprint).{0,90}(?:freigeben|genehmigen|beauftragen)/i.test(raw);
+  }
+
+  window.ki21IsConfirmedDecisionMakerV658=function(accId){
+    return gfConfirmedV6511(accId);
+  };
+  window.hasExplicitAuthorityText=function(accId){
+    return gfConfirmedV6511(accId);
+  };
+  window.hasConfirmedFullDecisionAuthority=function(accId){
+    return gfConfirmedV6511(accId);
+  };
+
+  function normalizeV6511(accId,text){
+    let x=String(text||'');
+    if(!gfConfirmedV6511(accId))return x;
+
+    x=x.replace(/Entscheider\s+identifizieren\s+erforderlich/gi,'Entscheider bestätigt');
+    x=x.replace(/Entscheider\s+erforderlich/gi,'Entscheider bestätigt');
+    x=x.replace(/Entscheider\s+nicht\s+bestätigt/gi,'Entscheider bestätigt');
+    x=x.replace(/Entscheider\s+und\s+Budget(?:freigabe)?\s+ungeklärt/gi,'Entscheider bestätigt · Entscheidungsgespräch ausstehend');
+    x=x.replace(/Sabine Keller fragen[^.]*wirtschaftliche Entscheidung[^.]*\.?/gi,'Entscheidungsgespräch mit dem Geschäftsführer vorbereiten.');
+    x=x.replace(/wer\s+(?:die\s+)?wirtschaftliche\s+Entscheidung\s+trifft[^.]*\.?/gi,'Entscheidungsgespräch mit dem Geschäftsführer vorbereiten.');
+    x=x.replace(/Geschäftsführer als möglicher Entscheider identifiziert[^.]*\.?/gi,'Geschäftsführer als Entscheider bestätigt.');
+    x=x.replace(/Möglicher Entscheider identifiziert\s*[–-]\s*Bestätigung ausstehend\.?/gi,'Geschäftsführer als Entscheider bestätigt.');
+    x=x.replace(/Budget und Freigabeprozess für den Discovery Sprint sind noch nicht bestätigt/gi,'Budgetfreigabe im Entscheidungsgespräch vorbereiten');
+    x=x.replace(/Konkrete Budgetfreiheit für den Discovery Sprint[^.]*\.?/gi,'Budgetfreigabe im Entscheidungsgespräch bestätigen.');
+    x=x.replace(/Sponsor\s*≠\s*Entscheider[-–]Falle[^.]*\.?/gi,'Sponsor und Entscheider sind klar getrennt.');
+    return x;
+  }
+
+  if(typeof window.sanitizeCockpitTextFinal==='function'){
+    const previous=window.sanitizeCockpitTextFinal;
+    window.sanitizeCockpitTextFinal=function(accId,text,kind,opts){
+      return normalizeV6511(accId,previous(accId,text,kind,opts));
+    };
+  }
+
+  if(typeof window.extractKnownBusinessFacts==='function'){
+    const previousFacts=window.extractKnownBusinessFacts;
+    window.extractKnownBusinessFacts=function(accId){
+      const facts=previousFacts(accId)||{};
+      if(gfConfirmedV6511(accId))facts.authority='Geschäftsführer als Entscheider bestätigt';
+      return facts;
+    };
+  }
+
+  function repairV6511(){
+    let accId=null;
+    try{accId=(window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){}
+    if(!accId||!document.body)return;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(function(node){
+      const neu=normalizeV6511(accId,node.nodeValue);
+      if(neu!==node.nodeValue)node.nodeValue=neu;
+    });
+  }
+
+  let queued=false;
+  function scheduleV6511(){
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(function(){queued=false;repairV6511();});
+  }
+  const observer=new MutationObserver(scheduleV6511);
+  function startV6511(){
+    repairV6511();
+    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6511);
+  else startV6511();
 })();
 </script>
 
