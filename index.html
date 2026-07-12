@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.26 Explainable Business Case</title>
+<title>KI21 v6.5.27 Explainable Intelligence Test Candidate</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8614,6 +8614,7 @@ function buildActionableInsightV6524(config){
   }
 
   addSection('Mögliche Auswirkungen',config.impacts);
+  addSection('Wenn nichts geschieht',config.inaction);
   addSection('Jetzt konkret tun',config.actions);
   addSection('Bereits bekannte Informationen',config.known);
   addSection('Noch zu klären',config.missing);
@@ -8631,7 +8632,7 @@ function buildActionableInsightV6524(config){
 }
 
 
-function buildBusinessCaseValueDetailV6526(accId,preview){
+function buildBusinessCaseValueDetailV6527(accId,preview){
   const source=(typeof getOpportunityOnlySourceV6522==='function')
     ? String(getOpportunityOnlySourceV6522(accId)||'')
     : '';
@@ -8640,36 +8641,26 @@ function buildBusinessCaseValueDetailV6526(accId,preview){
   const match=displayed.match(
     /(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*(?:€|EUR)\s*(?:pro|\/)\s*(Monat|Jahr|Woche|Fall)/i
   );
-
   const value=match
-    ? match[1]+' EUR/'+match[2].toLowerCase()
-    : displayed;
+    ? match[1]+' € pro '+match[2].charAt(0).toUpperCase()+match[2].slice(1).toLowerCase()
+    : displayed.replace(/\bEUR\b/g,'€').replace(/\/monat/ig,' pro Monat');
 
-  const basis=[];
-  const open=[];
+  const drivers=[];
+  const missing=[];
   const add=(arr,text)=>{if(text&&!arr.includes(text))arr.push(text);};
-
-  if(/\b8\.?000\s*(?:€|EUR)\s*(?:pro|\/)\s*monat\b/i.test(source)){
-    add(basis,'Der Kunde beziffert den operativen Problemaufwand mit 8.000 EUR pro Monat.');
-  }
 
   const effort=source.match(/\b(16\s*(?:bis|–|-)\s*24)\s*stunden\s*(?:pro|je)\s*woche\b/i);
   if(effort){
-    add(
-      basis,
-      'Dokumentierter Nacharbeitsaufwand: '+
-      effort[1].replace(/\s*(?:bis|–|-)\s*/,'–')+
-      ' Stunden pro Woche.'
-    );
+    add(drivers,'Dokumentierter Nacharbeitsaufwand: '+
+      effort[1].replace(/\s*(?:bis|–|-)\s*/,'–')+' Stunden pro Woche.');
   }
 
-  const users=source.match(/\b8\s+account manager.{0,140}\b2\s+vertriebsmitarbeitende\b/i);
-  if(users){
-    add(basis,'Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende.');
+  if(/\b8\s+account manager.{0,140}\b2\s+vertriebsmitarbeitende\b/i.test(source)){
+    add(drivers,'Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende.');
   }
 
   if(/wiederholungsgespräch/i.test(source)){
-    add(basis,'Wiederholungsgespräche und manuelle Nacharbeit sind als Kostentreiber benannt.');
+    add(drivers,'Wiederholungsgespräche und manuelle Nacharbeit sind als Kostentreiber benannt.');
   }
 
   const calculationConfirmed=
@@ -8677,22 +8668,23 @@ function buildBusinessCaseValueDetailV6526(accId,preview){
     /8\.?000\s*(?:€|EUR).{0,220}(?:stundensatz|kosten je stunde|kosten pro stunde|personalkostensatz|vollkostensatz|berechnet|herleitung)/i.test(source);
 
   if(!calculationConfirmed){
-    add(open,'Die genaue rechnerische Herleitung der 8.000 EUR dokumentieren.');
-    add(open,'Den zugrunde gelegten Stunden- oder Personalkostensatz bestätigen.');
+    add(missing,'Die genaue rechnerische Herleitung der 8.000 € dokumentieren.');
+    add(missing,'Den zugrunde gelegten Stunden- oder Personalkostensatz bestätigen.');
   }
-
-  add(open,'Festlegen, welcher Anteil des Problems durch KI21 realistisch beeinflussbar ist.');
-  add(open,'Messmethode und Vergleichszeitraum für die spätere Validierung vereinbaren.');
+  add(missing,'Den realistisch beeinflussbaren Anteil der 8.000 € festlegen.');
+  add(missing,'Messmethode und Vergleichszeitraum vereinbaren.');
 
   return [
     'Was dieser Wert bedeutet',
-    value+' beschreibt den aktuell bezifferten wirtschaftlichen Aufwand des Kundenproblems.',
-    'Der Wert ist keine garantierte Einsparung, kein automatischer Nutzen und noch kein ROI.',
+    'Der Wert von '+value+' beschreibt den vom Kunden bezifferten wirtschaftlichen Aufwand des Problems.',
+    'Er ist keine garantierte Einsparung, kein automatischer Nutzen und noch kein ROI.',
     '',
-    'Worauf der Wert basiert',
-    ...(basis.length
-      ? basis.map(x=>'• '+x)
-      : ['• Der Wert wurde als Problemaufwand dokumentiert; die Berechnungsgrundlagen sind noch zu ergänzen.']),
+    'Bestätigter Wert',
+    '• Vom Kunden bezifferter Problemaufwand: '+value+'.',
+    '',
+    'Dokumentierte Kostentreiber',
+    ...(drivers.length ? drivers.map(x=>'• '+x) :
+      ['• Operative Kostentreiber sind dokumentiert; die rechnerische Verbindung zum Problemwert ist noch zu bestätigen.']),
     '',
     'Wie der Wert im Verkauf genutzt werden kann',
     '• Als wirtschaftliche Ausgangsbasis für das Gespräch mit dem Entscheider.',
@@ -8702,11 +8694,11 @@ function buildBusinessCaseValueDetailV6526(accId,preview){
     '',
     'Wie belastbar der Wert aktuell ist',
     calculationConfirmed
-      ? '• Berechnungsgrundlage dokumentiert.'
-      : '• Problemwert bestätigt, rechnerische Herleitung noch zu validieren.',
+      ? '• Problemwert und Berechnungsgrundlage sind dokumentiert.'
+      : '• Problemwert bestätigt; rechnerische Herleitung noch zu validieren.',
     '',
     'Noch zu klären',
-    ...open.map(x=>'• '+x)
+    ...missing.map(x=>'• '+x)
   ].join('\n');
 }
 
@@ -8773,6 +8765,12 @@ function buildOutcomeValidationInsightV6520(accId){
       'Eine spätere Budgetfreigabe oder Ausweitung wird unnötig erschwert.',
       'Die Entscheidung basiert auf Meinungen statt auf belastbaren Ergebnissen.'
     ],
+    inaction:[
+      'Der Projekterfolg kann später subjektiv bewertet werden.',
+      'Eine tatsächliche Verbesserung bleibt möglicherweise unbelegt.',
+      'Sponsor und Geschäftsführer können zu unterschiedlichen Bewertungen kommen.',
+      'Die Freigabe für Fortführung oder Ausbau wird schwieriger.'
+    ],
     actions:[
       'Gemeinsam mit Sponsor und wirtschaftlichem Entscheider die relevanten Kennzahlen auswählen.',
       'Ausgangswerte vor dem Start dokumentieren.',
@@ -8798,16 +8796,31 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
   copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
 
   const exists=(arr,text)=>arr.some(x=>String(x||'').toLowerCase().includes(text.toLowerCase()));
-  if(!exists(copy.nextSteps,'Erfolgskriterien und Ausgangswerte'))copy.nextSteps.unshift(insight.summary);
+
+  copy.nextSteps=copy.nextSteps.filter(item=>
+    !/erfolgskriterien|ausgangswerte|entscheidungsgespräch|budgetfreigabe/i.test(String(item||''))
+  );
+  copy.nextSteps.unshift(
+    'Budgetfreigabe für den Discovery Sprint herbeiführen.'
+  );
+  copy.nextSteps.unshift(
+    'Entscheidungsgespräch vorbereiten: Baseline, Zielwerte und Messung festlegen.'
+  );
 
   copy.businessCase.insights=copy.businessCase.insights.filter(item=>
     !/erfolgskriterien|ausgangswerte|baseline/i.test(String(item||''))
   );
 
   const bcFacts=opportunityBusinessCaseFactsV6525(accId);
-  if(bcFacts.length&&!exists(copy.businessCase.insights,'8.000 €')){
+  copy.businessCase.insights=copy.businessCase.insights.filter(item=>
+    !/wirtschaftliche wirkung|operativer schmerz|8\.000 €/i.test(String(item||''))
+  );
+  if(bcFacts.length){
     copy.businessCase.insights.unshift(
-      'Die 8.000 € monatlicher Problemaufwand können als wirtschaftliche Ausgangsbasis dienen, sind aber noch nicht automatisch mit dem Nutzen von KI21 gleichzusetzen.'
+      'Beeinflussbaren Anteil der 8.000 € und Erfolgsmessung mit dem Geschäftsführer validieren.'
+    );
+    copy.businessCase.insights.unshift(
+      'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.'
     );
   }
 
@@ -8851,16 +8864,16 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
       'Freigabe der 9.900 € im Entscheidungsgespräch noch ausstehend'
     ];
     copy.nextSteps=[
-      'Entscheidungsgespräch mit dem Geschäftsführer vorbereiten.',
-      'Wirtschaftliche Wirkung anhand konkreter Opportunities validieren.'
+      'Entscheidungsgespräch vorbereiten: Baseline, Zielwerte und Messung festlegen.',
+      'Budgetfreigabe für den Discovery Sprint herbeiführen.'
     ];
     copy.watchouts=copy.watchouts||{};
-    copy.watchouts.currentRisk='Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.';
-    copy.watchouts.salesStrategy='Discovery Sprint (9.900 €) als risikoarmen Einstieg positionieren und Budgetfreigabe vorbereiten.';
+    copy.watchouts.currentRisk='Ohne vorab vereinbarte Erfolgskriterien und Baseline droht später eine subjektive Erfolgsbewertung.';
+    copy.watchouts.salesStrategy='Discovery Sprint als risikoarmen Einstieg positionieren, Erfolgskriterien vorab vereinbaren und Budgetfreigabe vorbereiten.';
     copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
     copy.businessCase.insights=[
-      'Operativer Schmerz bestätigt. Wirtschaftliche Wirkung im Geschäftsführergespräch validieren.',
-      'Forecast-Qualität und Abschlussrate erst nach dem Start mit echten Opportunities messen.'
+      'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.',
+      'Beeinflussbaren Anteil der 8.000 € und Erfolgsmessung mit dem Geschäftsführer validieren.'
     ];
   }
   return enrichOpportunityWithActionableIntelligenceV6520(copy,accId);
@@ -13634,7 +13647,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.26 Explainable Business Case';
+const KI21_VERSION='v6.5.27 Explainable Intelligence Test Candidate';
 
 
 function runKi21VersionMigration(){
@@ -14789,7 +14802,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.26 Explainable Business Case';
+  const VERSION='v6.5.27 Explainable Intelligence Test Candidate';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14971,8 +14984,8 @@ body{
       let full='';
 
       if(element.closest('.cockpit-business-anchor') &&
-         typeof buildBusinessCaseValueDetailV6526==='function'){
-        full=buildBusinessCaseValueDetailV6526(accId,preview);
+         typeof buildBusinessCaseValueDetailV6527==='function'){
+        full=buildBusinessCaseValueDetailV6527(accId,preview);
       }
 
       if(!full &&
