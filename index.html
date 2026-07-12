@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.18 Canonical Decision State</title>
+<title>KI21 v6.5.19 Fast Interaction</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -5171,7 +5171,12 @@ function cleanCockpitQuestionPreviewText(q){
 function normalizePreviewKeyV6513(text){
   return String(text||'').replace(/[…]+/g,'').replace(/\.{2,}/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 }
+const ki21FullTextCacheV6519=new Map();
 function collectFullTextCandidatesV6513(accId){
+  const cacheKey=String(accId||'');
+  const cached=ki21FullTextCacheV6519.get(cacheKey);
+  if(cached && (Date.now()-cached.ts)<30000)return cached.items;
+
   const out=[];
   const add=(value)=>{
     if(value===undefined||value===null)return;
@@ -5193,7 +5198,15 @@ function collectFullTextCandidatesV6513(accId){
   try{add(buildCockpitMatrixData(accId,getOpportunityHealth(accId)||{}));}catch(e){}
   try{add(getAllPhaseAdditions(accId));}catch(e){}
   try{add(getCurrentUserKnowledgeText(accId));}catch(e){}
-  return [...new Set(out.map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>b.length-a.length);
+
+  const items=[...new Set(out.map(x=>String(x).trim()).filter(Boolean))]
+    .sort((a,b)=>b.length-a.length);
+  ki21FullTextCacheV6519.set(cacheKey,{ts:Date.now(),items});
+  return items;
+}
+function invalidateFullTextCacheV6519(accId){
+  if(accId)ki21FullTextCacheV6519.delete(String(accId));
+  else ki21FullTextCacheV6519.clear();
 }
 function resolveFullCockpitTextV6513(accId,preview){
   const original=String(preview||'').trim();
@@ -8588,14 +8601,11 @@ function renderCockpitSnapshotLiteV4215(){
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
       if(x.businessAnchor){
-        const fullBusinessText=(typeof resolveFullCockpitTextV6513==='function')
-          ? resolveFullCockpitTextV6513(aid,t)
-          : t;
         tile.appendChild(h('button',{
             type:'button',
             className:'cockpit-business-anchor',
-            'data-full-text':fullBusinessText,
-            onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget('value',fullBusinessText);}
+            'data-preview-text':t,
+            onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget('value',t);}
           },
           h('div',{className:'cockpit-business-amount'},t),
           h('div',{className:'cockpit-business-caption'},x.caption||'Kundenproblem · beziffert')
@@ -8606,14 +8616,11 @@ function renderCockpitSnapshotLiteV4215(){
         tile.appendChild(h('div',{className:'cockpit-v61-insights-title'},'KI21 Insights'));
       }
       const cls='cockpit-tile-item cockpit-tile-link'+(kind==='next'?' cockpit-v61-task':'')+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
-      const fullText=(typeof resolveFullCockpitTextV6513==='function')
-        ? resolveFullCockpitTextV6513(aid,t)
-        : t;
       const item=h('button',{
         type:'button',
         className:cls,
-        'data-full-text':fullText,
-        onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',fullText);}
+        'data-preview-text':t,
+        onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}
       },t);
       tile.appendChild(item);
     });
@@ -12697,6 +12704,21 @@ function showPDF(title,text,cust){
 }
 </style>
 
+
+<style>
+/* v6.5.19 – schnelle Interaktion auf iOS/Brave */
+button,
+[role="button"],
+.cockpit-tile-item,
+.cockpit-tile-link,
+.v53-task,
+.v53-bc-benefit,
+.v53-risk-text{
+  touch-action:manipulation !important;
+  -webkit-tap-highlight-color:transparent;
+}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -13154,7 +13176,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.18 Canonical Decision State';
+const KI21_VERSION='v6.5.19 Fast Interaction';
 
 
 function runKi21VersionMigration(){
@@ -14309,7 +14331,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.18 Canonical Decision State';
+  const VERSION='v6.5.19 Fast Interaction';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14469,20 +14491,34 @@ body{
     );
     if(!element)return;
 
-    const preview=String(element.textContent||'').trim();
+    const preview=String(
+      element.getAttribute('data-preview-text') ||
+      element.getAttribute('data-full-text') ||
+      element.textContent ||
+      ''
+    ).trim();
     if(!preview)return;
-
-    const accId=activeId();
-    let full=String(element.getAttribute('data-full-text')||'').trim();
-    if(!full&&typeof resolveFullCockpitTextV6513==='function'){
-      full=resolveFullCockpitTextV6513(accId,preview);
-    }
-    if(!full)full=preview;
 
     event.preventDefault();
     event.stopPropagation();
     if(typeof event.stopImmediatePropagation==='function')event.stopImmediatePropagation();
-    showDetail(detailTitle(element),full);
+
+    /* Sichtbare Reaktion sofort. */
+    showDetail(detailTitle(element),preview);
+
+    /* Teure Volltextsuche erst nach dem Öffnen. */
+    requestAnimationFrame(function(){
+      const accId=activeId();
+      let full=String(element.getAttribute('data-full-text')||'').trim();
+      if(!full&&typeof resolveFullCockpitTextV6513==='function'){
+        full=resolveFullCockpitTextV6513(accId,preview);
+      }
+      if(!full||full===preview)return;
+      const overlays=document.querySelectorAll('.ki21-detail-overlay');
+      const overlay=overlays[overlays.length-1];
+      const body=overlay&&overlay.querySelector('.ki21-detail-body');
+      if(body)body.textContent=full;
+    });
   },true);
 
   function afterRender(){
@@ -14504,6 +14540,22 @@ body{
     afterRender();
   }
   window.addEventListener('pageshow',afterRender);
+})();
+</script>
+
+
+<script>
+/* v6.5.19 – Volltextcache nur bei echten Datenänderungen leeren */
+(function(){
+  if(!window.LS||typeof LS.set!=='function')return;
+  const originalSetV6519=LS.set.bind(LS);
+  LS.set=function(key,value){
+    const result=originalSetV6519(key,value);
+    if(/^ki21_(kk_|st_|health_|acc|opp_intelligence_)/.test(String(key||''))){
+      try{invalidateFullTextCacheV6519();}catch(e){}
+    }
+    return result;
+  };
 })();
 </script>
 
