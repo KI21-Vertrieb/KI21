@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.14 Stable Loading & Scroll</title>
+<title>KI21 v6.5.16 Cockpit Stability & Live Decision Update</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -12527,7 +12527,7 @@ function showPDF(title,text,cust){
 </style>
 
 <style>
-/* v6.5.14 Stable Loading & Scroll */
+/* v6.5.16 Cockpit Stability & Live Decision Update */
 .cockpit-business-amount,
 .v53-bc-value{
   font-size:22px !important;
@@ -13016,7 +13016,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.4 Import Field Mapping Fix';
+const KI21_VERSION='v6.5.16 Cockpit Stability & Live Decision Update';
 
 
 function runKi21VersionMigration(){
@@ -14084,11 +14084,11 @@ function showSmartOpportunityImportV65(existingAccId){
 </script>
 
 <script>
-/* v6.5.14 Stable Loading & Scroll
+/* v6.5.16 Cockpit Stability & Live Decision Update
    Entscheider = wirtschaftlich entscheidungsbefugt.
    Sponsor/Champion wird niemals automatisch zum Entscheider. */
 (function(){
-  const VERSION_LABEL='v6.5.14 Stable Loading & Scroll';
+  const VERSION_LABEL='v6.5.16 Cockpit Stability & Live Decision Update';
 
   function activeAccountIdV658(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14674,7 +14674,7 @@ body{
 <script>
 /* v6.5.14 – einmalige, gezielte Nachbearbeitung statt permanenter DOM-Vollscans */
 (function(){
-  const VERSION_LABEL='v6.5.14 Stable Loading & Scroll';
+  const VERSION_LABEL='v6.5.16 Cockpit Stability & Live Decision Update';
 
   function activeAccV6514(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14722,6 +14722,257 @@ body{
   },true);
 
   window.addEventListener('pageshow',applyOnceV6514);
+})();
+</script>
+
+
+<style>
+/* v6.5.15 – stabiler normaler Seitenfluss auf iOS/Brave */
+.cockpit-header{
+  position:relative !important;
+  top:auto !important;
+  z-index:20 !important;
+  transform:none !important;
+  -webkit-transform:none !important;
+  contain:none !important;
+  isolation:auto !important;
+  background:#080c12 !important;
+}
+.cockpit-header::before{display:none !important;}
+html,body,#app{
+  overflow-anchor:none !important;
+}
+</style>
+
+<script>
+/* v6.5.15 – gezielte Render-Nachbearbeitung ohne globale DOM-Vollscans */
+(function(){
+  const VERSION_LABEL='v6.5.16 Cockpit Stability & Live Decision Update';
+
+  function activeAccV6515(){
+    try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
+  }
+
+  function fullOpportunityInputV6515(accId){
+    const parts=[];
+    try{parts.push(String(getValidatedBusinessInputText(accId)||''));}catch(e){}
+    try{parts.push(String(getAllPhaseAdditions(accId)||''));}catch(e){}
+    try{parts.push(String(getCurrentUserKnowledgeText(accId)||''));}catch(e){}
+    try{
+      for(let i=0;i<5;i++){
+        const v=LS.get('ki21_kk_'+accId+'_'+i,'');
+        if(v)parts.push(String(v));
+      }
+      const legacy=LS.get('ki21_kk_'+accId,'');
+      if(legacy)parts.push(String(legacy));
+    }catch(e){}
+    return parts.join('\n').replace(/\s+/g,' ');
+  }
+
+  function confirmedGfV6515(accId){
+    const raw=fullOpportunityInputV6515(accId);
+    const decides=/geschäftsführer(?:in)?.{0,140}entscheidet.{0,160}(?:start|discovery sprint|projekt|beauftragung)/i.test(raw);
+    const releases=/geschäftsführer(?:in)?.{0,220}(?:kann|darf).{0,120}(?:9\.?900|budget|betrag|discovery sprint).{0,120}(?:freigeben|genehmigen|beauftragen)/i.test(raw);
+    return decides && releases;
+  }
+
+  function normalizeTextV6515(text,confirmed){
+    let x=String(text||'');
+
+    x=x.replace(/Sponsor[-\s]?Fallacy/gi,'Sponsor und Budgetentscheider sind getrennt');
+    x=x.replace(
+      /Einstiegsangebot\s*\(Discovery Sprint\s*9\.?900\s*€\)\s*als Lösungsansatz positionieren[^.]*\.?/gi,
+      'Discovery Sprint (9.900 €) als risikoarmen Einstieg positionieren und Budgetfreigabe vorbereiten.'
+    );
+    x=x.replace(/8\.000\s*€\/\s*Monat/gi,'8.000 € pro Monat');
+
+    if(confirmed){
+      x=x.replace(
+        /Einstiegsphase\s*[·\-–]\s*Wirtschaftlicher Entscheider noch zu identifizieren/gi,
+        'Discovery-Phase · Entscheidungsgespräch vorbereiten'
+      );
+      x=x.replace(
+        /Einstiegsphase\s*[·\-–]\s*Entscheider noch zu identifizieren/gi,
+        'Discovery-Phase · Entscheidungsgespräch vorbereiten'
+      );
+      x=x.replace(
+        /Geschäftsführer als wirtschaftlicher Entscheider nicht bestätigt/gi,
+        'Budgetfreigabe für Discovery Sprint steht aus'
+      );
+      x=x.replace(
+        /Geschäftsführer als Entscheider bestätigt/gi,
+        'Budgetfreigabe für Discovery Sprint steht aus'
+      );
+      x=x.replace(
+        /Sabine Keller fragen[^.]*wirtschaftliche Entscheidung[^.]*\.?/gi,
+        'Entscheidungsgespräch mit dem Geschäftsführer vorbereiten.'
+      );
+      x=x.replace(
+        /Sabine Keller treibt an,\s*aber ohne GF-Freigabe und wirtschaftliche Entscheidung bleibt Deal in Schleife/gi,
+        'Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.'
+      );
+      x=x.replace(
+        /Sabine Keller treibt das Projekt intern voran;\s*die Budgetentscheidung liegt beim Geschäftsführer/gi,
+        'Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.'
+      );
+      x=x.replace(
+        /Schmerz ist operativ klar\s*\([^)]*\),\s*aber noch nicht mit Umsatz[^.]*\.?/gi,
+        'Operativer Schmerz bestätigt. Wirtschaftliche Wirkung im Geschäftsführergespräch validieren.'
+      );
+    }
+    return x;
+  }
+
+  function applyScoreV6515(accId){
+    if(!accId || !confirmedGfV6515(accId))return;
+    const key='ki21_health_'+accId;
+    const health=LS.get(key,null);
+    if(!health || typeof health.score!=='number')return;
+
+    const checklist={...(health.checklist||{})};
+    let delta=0;
+    if(!checklist.economicBuyer){checklist.economicBuyer=true;delta+=10;}
+    if(!checklist.decisionProcess){checklist.decisionProcess=true;delta+=5;}
+
+    const cleanArr=(arr)=>(arr||[]).filter(item=>{
+      const t=String(item&&item.text?item.text:item||'');
+      return !/(wirtschaftlicher entscheider.*(?:nicht bestätigt|offen|identifizieren)|entscheider noch zu identifizieren|wer entscheidet)/i.test(t);
+    });
+
+    const positive=cleanArr(health.positive);
+    if(!positive.some(item=>/entscheider.*bestätigt|entscheidungsprozess.*bestätigt/i.test(String(item&&item.text?item.text:item||'')))){
+      positive.unshift({text:'Wirtschaftlicher Entscheider und Entscheidungsprozess bestätigt',origin:'REGEL',type:'positive'});
+    }
+
+    if(delta>0 || cleanArr(health.open).length!==(health.open||[]).length || cleanArr(health.warning).length!==(health.warning||[]).length){
+      LS.set(key,{
+        ...health,
+        checklist,
+        score:Math.max(0,Math.min(100,Math.round(Number(health.score)+delta))),
+        positive,
+        open:cleanArr(health.open),
+        warning:cleanArr(health.warning),
+        ts:Date.now()
+      });
+    }
+  }
+
+  function postProcessCockpitV6515(){
+    const accId=activeAccV6515();
+    const confirmed=!!(accId&&confirmedGfV6515(accId));
+
+    applyScoreV6515(accId);
+
+    const selectors=[
+      '#ki21-dealstatus',
+      '.cockpit-v5-summary-row.risk .v53-summary-status',
+      '.cockpit-v5-summary-row.risk .v53-summary-evidence',
+      '.v53-task-text',
+      '.v53-risk-text',
+      '.cockpit-tile-item',
+      '.cockpit-business-amount',
+      '.v53-bc-value',
+      '.tagline'
+    ].join(',');
+
+    document.querySelectorAll(selectors).forEach(function(el){
+      const old=String(el.textContent||'');
+      let neu=normalizeTextV6515(old,confirmed);
+
+      if(el.matches('.tagline') && /^v6\.\d/i.test(old.trim())){
+        neu=VERSION_LABEL;
+      }
+      if(el.id==='ki21-dealstatus' && confirmed){
+        neu='Dealstatus: Discovery-Phase · Entscheidungsgespräch vorbereiten';
+      }
+
+      if(neu!==old)el.textContent=neu;
+
+      if(typeof resolveFullCockpitTextV6513==='function' &&
+         el.matches('.v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link')){
+        const preview=String(el.textContent||'').trim();
+        const full=resolveFullCockpitTextV6513(accId,preview);
+        if(full)el.setAttribute('data-full-text',full);
+      }
+    });
+
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.children.length===0 && /^v6\.\d/i.test(String(el.textContent||'').trim())){
+        el.textContent=VERSION_LABEL;
+      }
+    });
+
+    const badge=document.querySelector('.cockpit-score-badge,.cockpit-score-click');
+    const health=accId?LS.get('ki21_health_'+accId,null):null;
+    if(badge&&health&&typeof health.score==='number'){
+      badge.textContent=Math.round(health.score)+'/100';
+    }
+  }
+
+  function schedulePostV6515(){
+    requestAnimationFrame(function(){
+      postProcessCockpitV6515();
+      setTimeout(postProcessCockpitV6515,60);
+    });
+  }
+
+  if(typeof window.renderCockpitSnapshotLiteV4215==='function'){
+    const original=window.renderCockpitSnapshotLiteV4215;
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const result=original.apply(this,arguments);
+      schedulePostV6515();
+      return result;
+    };
+  }
+
+  if(typeof window.renderHomeLiteV4211==='function'){
+    const originalHome=window.renderHomeLiteV4211;
+    window.renderHomeLiteV4211=function(){
+      const result=originalHome.apply(this,arguments);
+      schedulePostV6515();
+      return result;
+    };
+  }
+
+  document.addEventListener('click',function(){
+    setTimeout(postProcessCockpitV6515,40);
+  },true);
+
+  window.addEventListener('pageshow',schedulePostV6515);
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',schedulePostV6515,{once:true});
+  }else{
+    schedulePostV6515();
+  }
+})();
+</script>
+
+
+<style>
+/* v6.5.16 final stability override */
+html,body,#app{overflow-x:hidden!important;overflow-anchor:none!important;background:#070b12!important;}
+body{-webkit-overflow-scrolling:touch!important;}
+.cockpit-header{position:relative!important;top:auto!important;z-index:20!important;transform:none!important;-webkit-transform:none!important;contain:none!important;isolation:auto!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#080c12!important;}
+.cockpit-header::before{display:none!important;}
+.ki21-mode-tabs{position:relative!important;top:auto!important;z-index:2!important;background:#0d1117!important;}
+.cockpit-business-amount,.v53-bc-value{font-size:26px!important;line-height:1.04!important;white-space:normal!important;overflow:visible!important;}
+.ki21-fulltext-body{white-space:pre-wrap!important;overflow-wrap:anywhere!important;}
+</style>
+<script>
+(function(){
+ const VERSION='v6.5.16 Cockpit Stability & Live Decision Update';
+ function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}}
+ function allText(a){const p=[];try{p.push(String(getValidatedBusinessInputText(a)||''));}catch(e){};try{p.push(String(getAllPhaseAdditions(a)||''));}catch(e){};try{for(let i=0;i<5;i++){const v=LS.get('ki21_kk_'+a+'_'+i,'');if(v)p.push(v);if(typeof getAdditionEntriesV623==='function')(getAdditionEntriesV623(a,i)||[]).forEach(x=>p.push(String(x&&x.text||'')));}}catch(e){};return p.join(' ').replace(/\s+/g,' ');}
+ function confirmed(a){const s=allText(a);return /geschäftsführer(?:in)?.{0,180}entscheidet.{0,200}(?:start|discovery sprint|projekt|beauftragung)/i.test(s)&&/geschäftsführer(?:in)?.{0,260}(?:kann|darf).{0,160}(?:9\.?900|budget|betrag|discovery sprint).{0,160}(?:freigeben|genehmigen|beauftragen)/i.test(s);}
+ window.ki21IsConfirmedDecisionMakerV658=function(a){return confirmed(a);};window.hasExplicitAuthorityText=function(a){return confirmed(a);};window.hasConfirmedFullDecisionAuthority=function(a){return confirmed(a);};
+ function norm(t,c){let x=String(t||'');x=x.replace(/8\.000\s*€\s*\/\s*Monat/gi,'8.000 € pro Monat').replace(/Sponsor[-\s]?Fallacy/gi,'Sponsor und Budgetentscheider sind getrennt');if(!c)return x;x=x.replace(/Einstiegsphase\s*[·\-–]\s*(?:Wirtschaftlicher )?Entscheider noch zu identifizieren/gi,'Discovery-Phase · Entscheidungsgespräch vorbereiten').replace(/(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,'Budgetfreigabe für Discovery Sprint steht aus').replace(/Geschäftsführer als Entscheider bestätigt/gi,'Budgetfreigabe für Discovery Sprint steht aus').replace(/Sabine Keller treibt an,\s*aber ohne GF-Freigabe und wirtschaftliche Entscheidung bleibt Deal in Schleife/gi,'Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.').replace(/Schmerz ist operativ klar\s*\([^)]*\),\s*aber noch nicht mit Umsatz[^.]*\.?/gi,'Operativer Schmerz bestätigt. Wirtschaftliche Wirkung im Geschäftsführergespräch validieren.');return x;}
+ function score(a){if(!a||!confirmed(a))return;const k='ki21_health_'+a,h=LS.get(k,null);if(!h||typeof h.score!=='number')return;const c={...(h.checklist||{})};let d=0;if(!c.economicBuyer){c.economicBuyer=true;d+=10;}if(!c.decisionProcess){c.decisionProcess=true;d+=5;}if(!d)return;LS.set(k,{...h,checklist:c,score:Math.min(100,Math.round(Number(h.score)+d)),ts:Date.now()});}
+ function apply(){const a=aid(),c=!!(a&&confirmed(a));score(a);document.querySelectorAll('.tagline').forEach(e=>e.textContent=VERSION);const ds=document.querySelector('#ki21-dealstatus,.cockpit-dealstatus');if(ds&&c)ds.textContent='Dealstatus: Discovery-Phase · Entscheidungsgespräch vorbereiten';document.querySelectorAll('.v53-summary-status,.v53-summary-evidence,.v53-task-text,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link,.cockpit-business-amount,.v53-bc-value').forEach(e=>{const old=e.textContent||'',neu=norm(old,c);if(old!==neu)e.textContent=neu;const p=String(e.textContent||'').trim();if(p&&typeof resolveFullCockpitTextV6513==='function'){const f=resolveFullCockpitTextV6513(a,p);if(f)e.setAttribute('data-full-text',f);}});const b=document.querySelector('.cockpit-score-badge,.cockpit-score-click'),h=a?LS.get('ki21_health_'+a,null):null;if(b&&h&&typeof h.score==='number')b.textContent=Math.round(h.score)+'/100';}
+ function later(){requestAnimationFrame(()=>{apply();setTimeout(apply,80);});}
+ if(typeof window.renderCockpitSnapshotLiteV4215==='function'){const o=window.renderCockpitSnapshotLiteV4215;window.renderCockpitSnapshotLiteV4215=function(){const r=o.apply(this,arguments);later();return r;};}
+ if(typeof window.renderHomeLiteV4211==='function'){const o=window.renderHomeLiteV4211;window.renderHomeLiteV4211=function(){const r=o.apply(this,arguments);later();return r;};}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',later,{once:true});else later();window.addEventListener('pageshow',later);
 })();
 </script>
 
