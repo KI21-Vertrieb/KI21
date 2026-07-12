@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.25 Insight Prioritization &amp; Business Case Link</title>
+<title>KI21 v6.5.26 Explainable Business Case</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8630,6 +8630,86 @@ function buildActionableInsightV6524(config){
   };
 }
 
+
+function buildBusinessCaseValueDetailV6526(accId,preview){
+  const source=(typeof getOpportunityOnlySourceV6522==='function')
+    ? String(getOpportunityOnlySourceV6522(accId)||'')
+    : '';
+
+  const displayed=String(preview||'').replace(/\s+/g,' ').trim();
+  const match=displayed.match(
+    /(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*(?:€|EUR)\s*(?:pro|\/)\s*(Monat|Jahr|Woche|Fall)/i
+  );
+
+  const value=match
+    ? match[1]+' EUR/'+match[2].toLowerCase()
+    : displayed;
+
+  const basis=[];
+  const open=[];
+  const add=(arr,text)=>{if(text&&!arr.includes(text))arr.push(text);};
+
+  if(/\b8\.?000\s*(?:€|EUR)\s*(?:pro|\/)\s*monat\b/i.test(source)){
+    add(basis,'Der Kunde beziffert den operativen Problemaufwand mit 8.000 EUR pro Monat.');
+  }
+
+  const effort=source.match(/\b(16\s*(?:bis|–|-)\s*24)\s*stunden\s*(?:pro|je)\s*woche\b/i);
+  if(effort){
+    add(
+      basis,
+      'Dokumentierter Nacharbeitsaufwand: '+
+      effort[1].replace(/\s*(?:bis|–|-)\s*/,'–')+
+      ' Stunden pro Woche.'
+    );
+  }
+
+  const users=source.match(/\b8\s+account manager.{0,140}\b2\s+vertriebsmitarbeitende\b/i);
+  if(users){
+    add(basis,'Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende.');
+  }
+
+  if(/wiederholungsgespräch/i.test(source)){
+    add(basis,'Wiederholungsgespräche und manuelle Nacharbeit sind als Kostentreiber benannt.');
+  }
+
+  const calculationConfirmed=
+    /(?:stundensatz|kosten je stunde|kosten pro stunde|personalkostensatz|vollkostensatz|berechnet|herleitung).{0,220}8\.?000\s*(?:€|EUR)/i.test(source) ||
+    /8\.?000\s*(?:€|EUR).{0,220}(?:stundensatz|kosten je stunde|kosten pro stunde|personalkostensatz|vollkostensatz|berechnet|herleitung)/i.test(source);
+
+  if(!calculationConfirmed){
+    add(open,'Die genaue rechnerische Herleitung der 8.000 EUR dokumentieren.');
+    add(open,'Den zugrunde gelegten Stunden- oder Personalkostensatz bestätigen.');
+  }
+
+  add(open,'Festlegen, welcher Anteil des Problems durch KI21 realistisch beeinflussbar ist.');
+  add(open,'Messmethode und Vergleichszeitraum für die spätere Validierung vereinbaren.');
+
+  return [
+    'Was dieser Wert bedeutet',
+    value+' beschreibt den aktuell bezifferten wirtschaftlichen Aufwand des Kundenproblems.',
+    'Der Wert ist keine garantierte Einsparung, kein automatischer Nutzen und noch kein ROI.',
+    '',
+    'Worauf der Wert basiert',
+    ...(basis.length
+      ? basis.map(x=>'• '+x)
+      : ['• Der Wert wurde als Problemaufwand dokumentiert; die Berechnungsgrundlagen sind noch zu ergänzen.']),
+    '',
+    'Wie der Wert im Verkauf genutzt werden kann',
+    '• Als wirtschaftliche Ausgangsbasis für das Gespräch mit dem Entscheider.',
+    '• Als Baseline vor dem Start des Discovery Sprints.',
+    '• Als Vergleichswert für die spätere Wirkungsmessung.',
+    '• Nicht als pauschale Einsparungs- oder Nutzenzusage.',
+    '',
+    'Wie belastbar der Wert aktuell ist',
+    calculationConfirmed
+      ? '• Berechnungsgrundlage dokumentiert.'
+      : '• Problemwert bestätigt, rechnerische Herleitung noch zu validieren.',
+    '',
+    'Noch zu klären',
+    ...open.map(x=>'• '+x)
+  ].join('\n');
+}
+
 function opportunityBusinessCaseFactsV6525(accId){
   const facts=[];
   const add=(text)=>{if(text&&!facts.includes(text))facts.push(text);};
@@ -13554,7 +13634,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.25 Insight Prioritization & Business Case Link';
+const KI21_VERSION='v6.5.26 Explainable Business Case';
 
 
 function runKi21VersionMigration(){
@@ -14709,7 +14789,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.25 Insight Prioritization & Business Case Link';
+  const VERSION='v6.5.26 Explainable Business Case';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14828,6 +14908,7 @@ body{
   }
 
   function detailTitle(el){
+    if(el.closest('.cockpit-business-anchor'))return 'Business Case';
     if(el.closest('.cockpit-card-next'))return 'Nächster Schritt';
     if(el.closest('.cockpit-card-value'))return 'KI21 Insight';
     if(el.closest('.cockpit-card-risk'))return 'Darauf achten';
@@ -14865,7 +14946,7 @@ body{
 
   document.addEventListener('click',function(event){
     const element=event.target.closest(
-      '.v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link'
+      '.v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link,.cockpit-business-anchor'
     );
     if(!element)return;
 
@@ -14889,7 +14970,13 @@ body{
       const accId=activeId();
       let full='';
 
-      if(/erfolgskriterien|ausgangswerte|baseline|zielwerte/i.test(preview) &&
+      if(element.closest('.cockpit-business-anchor') &&
+         typeof buildBusinessCaseValueDetailV6526==='function'){
+        full=buildBusinessCaseValueDetailV6526(accId,preview);
+      }
+
+      if(!full &&
+         /erfolgskriterien|ausgangswerte|baseline|zielwerte/i.test(preview) &&
          typeof buildOutcomeValidationInsightV6520==='function'){
         const actionable=buildOutcomeValidationInsightV6520(accId);
         if(actionable)full=actionable.detail;
