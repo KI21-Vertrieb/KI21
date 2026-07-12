@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.19 Fast Interaction</title>
+<title>KI21 v6.5.20 Actionable Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8384,6 +8384,83 @@ function normalizeDecisionTextV6518(text,confirmed){
     .replace(/Einstiegsangebot\s*\(Discovery Sprint\s*9\.?900\s*€\)\s*als Lösungsansatz positionieren[^.]*\.?/gi,
       'Discovery Sprint (9.900 €) als risikoarmen Einstieg positionieren und Budgetfreigabe vorbereiten.');
 }
+
+function detectOutcomeValidationNeedV6520(accId){
+  const raw=getCanonicalOpportunitySourceV6518(accId).toLowerCase();
+  if(!raw)return false;
+  const hasLimitedStart=/(pilot|proof of concept|poc|test|einstieg|startangebot|discovery sprint|quick check|workshop|assessment|einführungsprojekt|startpaket)/i.test(raw);
+  const hasOutcomeDependency=/(fortführung|weiterführung|folgeauftrag|entscheidung|freigabe|verlängerung|beauftragung|ausrollen|rollout|anschlussauftrag|weitermachen)/i.test(raw);
+  const hasResultExpectation=/(ergebnis|wirkung|erfolg|mess|kennzahl|kpi|baseline|ausgangswert|zielwert|nachweis|validier|belegen)/i.test(raw);
+  return hasLimitedStart && (hasOutcomeDependency || hasResultExpectation);
+}
+function buildOutcomeValidationInsightV6520(accId){
+  if(!detectOutcomeValidationNeedV6520(accId))return null;
+
+  const raw=getCanonicalOpportunitySourceV6518(accId);
+  const known=[];
+
+  const money=raw.match(/\b\d{1,3}(?:\.\d{3})*(?:,\d+)?\s*€(?:\s*(?:pro|je)\s*(?:monat|jahr|woche|fall))?/i);
+  if(money)known.push('Bekannter wirtschaftlicher Wert: '+money[0]);
+
+  const time=raw.match(/\b\d+(?:[–-]\d+)?\s*(?:stunden|tage|wochen|monate)\b/i);
+  if(time)known.push('Bekannter Zeitraum/Aufwand: '+time[0]);
+
+  const people=raw.match(/\b\d+(?:[–-]\d+)?\s*(?:verkäufer|account manager|mitarbeitende|personen|nutzer)\b/i);
+  if(people)known.push('Bekannter Nutzer-/Beteiligtenumfang: '+people[0]);
+
+  return {
+    summary:'Erfolgskriterien und Ausgangswerte vor dem Start verbindlich festlegen.',
+    detail:[
+      'Warum dieser Hinweis wichtig ist',
+      'Ohne vorab vereinbarte Kriterien kann später nicht objektiv bewertet werden, ob der Start, Pilot oder das Einstiegsangebot erfolgreich war.',
+      '',
+      'Vor dem Start festlegen',
+      '• Welche Kennzahlen gemessen werden.',
+      '• Welche Ausgangswerte heute gelten.',
+      '• Welche Zielwerte erreicht werden sollen.',
+      '• Wie und durch wen gemessen wird.',
+      '• Wann die Bewertung stattfindet.',
+      '• Wer die Ergebnisse bestätigt.',
+      '• Welche Entscheidung an die Ergebnisse geknüpft ist.',
+      '',
+      'Empfohlene Kriterien für diese Opportunity',
+      '• Vollständigkeit der Opportunity-Qualifizierung.',
+      '• Klarheit zu Sponsor, Entscheider und Einflussnehmern.',
+      '• Qualität und Verbindlichkeit der nächsten Schritte.',
+      '• Zahl der Wiederholungsgespräche oder Nacharbeiten.',
+      '• Forecast-Konsistenz bzw. Bewertungsqualität.',
+      '• Zeitaufwand pro Opportunity oder Verkäufer.',
+      ...(known.length ? ['', 'Bereits vorhandene Anhaltspunkte', ...known.map(x=>'• '+x)] : []),
+      '',
+      'Noch zu definieren',
+      '• Baseline vor Projektstart.',
+      '• Zielwerte nach dem vereinbarten Zeitraum.',
+      '• Verantwortliche Person für die Messung.',
+      '• Entscheidungskriterium für Fortführung oder Ausbau.'
+    ].join('\n')
+  };
+}
+function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
+  if(!intel||typeof intel!=='object')return intel;
+  const insight=buildOutcomeValidationInsightV6520(accId);
+  if(!insight)return intel;
+
+  const copy=JSON.parse(JSON.stringify(intel));
+  copy.nextSteps=Array.isArray(copy.nextSteps)?copy.nextSteps:[];
+  copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
+  copy.businessCase.insights=Array.isArray(copy.businessCase.insights)?copy.businessCase.insights:[];
+  copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
+
+  const exists=(arr,text)=>arr.some(x=>String(x||'').toLowerCase().includes(text.toLowerCase()));
+  if(!exists(copy.nextSteps,'Erfolgskriterien und Ausgangswerte'))copy.nextSteps.unshift(insight.summary);
+  if(!exists(copy.businessCase.insights,'Erfolgskriterien und Ausgangswerte'))copy.businessCase.insights.unshift(insight.summary);
+
+  if(!copy.watchouts.currentRisk || /budget|entscheider/i.test(copy.watchouts.currentRisk)){
+    copy.watchouts.currentRisk='Erfolgskriterien und Baseline sind vor dem Start noch nicht verbindlich festgelegt.';
+  }
+  return copy;
+}
+
 function normalizeOpportunityIntelligenceV6518(intel,accId){
   if(!intel||typeof intel!=='object')return intel;
   const confirmed=isManagingDirectorConfirmedV6518(accId);
@@ -8431,7 +8508,7 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
       'Forecast-Qualität und Abschlussrate erst nach dem Start mit echten Opportunities messen.'
     ];
   }
-  return copy;
+  return enrichOpportunityWithActionableIntelligenceV6520(copy,accId);
 }
 
 function renderCockpitSnapshotLiteV4215(){
@@ -12719,6 +12796,12 @@ button,
 }
 </style>
 
+
+<style>
+/* v6.5.20 – Actionable Intelligence */
+.ki21-detail-body{font-size:16px !important;line-height:1.55 !important;}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -13176,7 +13259,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.19 Fast Interaction';
+const KI21_VERSION='v6.5.20 Actionable Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -14331,7 +14414,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.19 Fast Interaction';
+  const VERSION='v6.5.20 Actionable Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14509,7 +14592,15 @@ body{
     /* Teure Volltextsuche erst nach dem Öffnen. */
     requestAnimationFrame(function(){
       const accId=activeId();
-      let full=String(element.getAttribute('data-full-text')||'').trim();
+      let full='';
+
+      if(/erfolgskriterien|ausgangswerte|baseline|zielwerte/i.test(preview) &&
+         typeof buildOutcomeValidationInsightV6520==='function'){
+        const actionable=buildOutcomeValidationInsightV6520(accId);
+        if(actionable)full=actionable.detail;
+      }
+
+      if(!full)full=String(element.getAttribute('data-full-text')||'').trim();
       if(!full&&typeof resolveFullCockpitTextV6513==='function'){
         full=resolveFullCockpitTextV6513(accId,preview);
       }
