@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.17 Load Performance Rollback</title>
+<title>KI21 v6.5.18 Canonical Decision State</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8227,7 +8227,7 @@ function formatBusinessCaseDisplayV659(value){
   const isWeekly=/woche|wöchentlich|weekly|\/\s*woche/i.test(text);
   const isOneTime=/einmalig|one[-\s]?time/i.test(text);
 
-  if(isMonthly)return formatted+' €/Monat';
+  if(isMonthly)return formatted+' € pro Monat';
   if(isYearly)return formatted+' €/Jahr';
   if(isWeekly)return formatted+' €/Woche';
   if(isOneTime)return formatted+' € einmalig';
@@ -8322,6 +8322,105 @@ function renderHomeLiteV4211(){
 
 
 
+
+function getCanonicalOpportunitySourceV6518(accId){
+  const parts=[];
+  try{parts.push(String(getValidatedBusinessInputText(accId)||''));}catch(e){}
+  try{parts.push(String(getAllPhaseAdditions(accId)||''));}catch(e){}
+  try{parts.push(String(getCurrentUserKnowledgeText(accId)||''));}catch(e){}
+  try{
+    for(let i=0;i<5;i++){
+      const raw=LS.get('ki21_kk_'+accId+'_'+i,'');
+      if(raw)parts.push(String(raw));
+      if(typeof getAdditionEntriesV623==='function'){
+        (getAdditionEntriesV623(accId,i)||[]).forEach(entry=>{
+          if(entry&&entry.text)parts.push(String(entry.text));
+        });
+      }
+    }
+    const legacy=LS.get('ki21_kk_'+accId,'');
+    if(legacy)parts.push(String(legacy));
+  }catch(e){}
+  return parts.join('\n').replace(/\s+/g,' ').trim();
+}
+function isManagingDirectorConfirmedV6518(accId){
+  const raw=getCanonicalOpportunitySourceV6518(accId);
+  if(!raw)return false;
+  const decides=/geschäftsführer(?:in)?.{0,180}entscheidet.{0,220}(?:start|discovery sprint|projekt|beauftragung)/i.test(raw);
+  const releases=/geschäftsführer(?:in)?.{0,260}(?:kann|darf).{0,180}(?:9\.?900|budget|betrag|discovery sprint).{0,180}(?:freigeben|genehmigen|beauftragen)/i.test(raw);
+  return decides&&releases;
+}
+function normalizeDecisionTextV6518(text,confirmed){
+  let value=String(text||'')
+    .replace(/Sponsor[-\s]?Fallacy/gi,'Sponsor und Budgetentscheider sind getrennt')
+    .replace(/8\.000\s*€\s*\/\s*Monat/gi,'8.000 € pro Monat');
+
+  if(!confirmed)return value;
+
+  return value
+    .replace(/Einstiegsphase\s*[·\-–]\s*(?:Wirtschaftlicher )?Entscheider noch zu identifizieren/gi,
+      'Discovery-Phase · Entscheidungsgespräch vorbereiten')
+    .replace(/(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,
+      'Budgetfreigabe für Discovery Sprint steht aus')
+    .replace(/Geschäftsführer als Entscheider bestätigt/gi,
+      'Budgetfreigabe für Discovery Sprint steht aus')
+    .replace(/Sabine Keller treibt an,\s*aber ohne GF-Freigabe und wirtschaftliche Entscheidung bleibt Deal in Schleife/gi,
+      'Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.')
+    .replace(/Schmerz ist operativ klar\s*\([^)]*\),\s*aber noch nicht mit Umsatz[^.]*\.?/gi,
+      'Operativer Schmerz bestätigt. Wirtschaftliche Wirkung im Geschäftsführergespräch validieren.')
+    .replace(/Einstiegsangebot\s*\(Discovery Sprint\s*9\.?900\s*€\)\s*als Lösungsansatz positionieren[^.]*\.?/gi,
+      'Discovery Sprint (9.900 €) als risikoarmen Einstieg positionieren und Budgetfreigabe vorbereiten.');
+}
+function normalizeOpportunityIntelligenceV6518(intel,accId){
+  if(!intel||typeof intel!=='object')return intel;
+  const confirmed=isManagingDirectorConfirmedV6518(accId);
+  const copy=JSON.parse(JSON.stringify(intel));
+
+  const norm=v=>normalizeDecisionTextV6518(v,confirmed);
+
+  if(copy.dealStatus)copy.dealStatus=norm(copy.dealStatus);
+  if(copy.chance){
+    copy.chance.statement=norm(copy.chance.statement);
+    copy.chance.evidence=(copy.chance.evidence||[]).map(norm);
+  }
+  if(copy.bottleneck){
+    copy.bottleneck.statement=norm(copy.bottleneck.statement);
+    copy.bottleneck.evidence=(copy.bottleneck.evidence||[]).map(norm);
+  }
+  copy.nextSteps=(copy.nextSteps||[]).map(norm);
+  if(copy.businessCase){
+    copy.businessCase.quantifiedProblem=norm(copy.businessCase.quantifiedProblem);
+    copy.businessCase.insights=(copy.businessCase.insights||[]).map(norm);
+  }
+  if(copy.watchouts){
+    copy.watchouts.currentRisk=norm(copy.watchouts.currentRisk);
+    copy.watchouts.salesStrategy=norm(copy.watchouts.salesStrategy);
+  }
+
+  if(confirmed){
+    copy.dealStatus='Discovery-Phase · Entscheidungsgespräch vorbereiten';
+    copy.bottleneck=copy.bottleneck||{};
+    copy.bottleneck.statement='Budgetfreigabe für Discovery Sprint steht aus';
+    copy.bottleneck.evidence=[
+      'Geschäftsführer als wirtschaftlicher Entscheider bestätigt',
+      'Freigabe der 9.900 € im Entscheidungsgespräch noch ausstehend'
+    ];
+    copy.nextSteps=[
+      'Entscheidungsgespräch mit dem Geschäftsführer vorbereiten.',
+      'Wirtschaftliche Wirkung anhand konkreter Opportunities validieren.'
+    ];
+    copy.watchouts=copy.watchouts||{};
+    copy.watchouts.currentRisk='Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.';
+    copy.watchouts.salesStrategy='Discovery Sprint (9.900 €) als risikoarmen Einstieg positionieren und Budgetfreigabe vorbereiten.';
+    copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
+    copy.businessCase.insights=[
+      'Operativer Schmerz bestätigt. Wirtschaftliche Wirkung im Geschäftsführergespräch validieren.',
+      'Forecast-Qualität und Abschlussrate erst nach dem Start mit echten Opportunities messen.'
+    ];
+  }
+  return copy;
+}
+
 function renderCockpitSnapshotLiteV4215(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -8332,10 +8431,19 @@ function renderCockpitSnapshotLiteV4215(){
   const cust=(acc&&acc.cust)||{};
   const raw=aid?(getOpportunityHealth(aid)||LS.get('ki21_health_'+aid,null)):null; // zentrale Score-Quelle
   const score=(raw&&typeof raw.score==='number')?Math.round(raw.score):null;
-  const opportunityIntelligenceV620=getOpportunityIntelligenceV620(aid);
+  const decisionConfirmedV6518=isManagingDirectorConfirmedV6518(aid);
+  const opportunityIntelligenceV620=normalizeOpportunityIntelligenceV6518(getOpportunityIntelligenceV620(aid),aid);
   let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
   let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
   let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
+
+  if(decisionConfirmedV6518){
+    const obsolete=/(wirtschaftlicher entscheider.*(?:nicht bestätigt|offen|identifizieren)|entscheider noch zu identifizieren|wer entscheidet|sponsor[-\s]?fallacy)/i;
+    pos=pos.filter(x=>!obsolete.test(String((x&&x.text)||x||'')));
+    warn=warn.filter(x=>!obsolete.test(String((x&&x.text)||x||'')));
+    open=open.filter(x=>!obsolete.test(String((x&&x.text)||x||'')));
+    pos.unshift({text:'Wirtschaftlicher Entscheider und Entscheidungsprozess bestätigt',origin:'ERGÄNZUNG',type:'positive'});
+  }
   // v4.252: Bezifferter Schmerz wird nicht mehr als normale Erkenntnis einsortiert,
   // sondern in der eigenen Cockpit-Kachel "Nutzen / Potenzial" geführt.
   pos=pos.filter(x=>!/Beziffertes\s+Schmerz/i.test(String((x&&x.text)||x||'')));
@@ -8480,7 +8588,15 @@ function renderCockpitSnapshotLiteV4215(){
     if(arr.length)arr.forEach(x=>{
       const t=x.text;
       if(x.businessAnchor){
-        tile.appendChild(h('button',{type:'button',className:'cockpit-business-anchor',onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget('value',t);}},
+        const fullBusinessText=(typeof resolveFullCockpitTextV6513==='function')
+          ? resolveFullCockpitTextV6513(aid,t)
+          : t;
+        tile.appendChild(h('button',{
+            type:'button',
+            className:'cockpit-business-anchor',
+            'data-full-text':fullBusinessText,
+            onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget('value',fullBusinessText);}
+          },
           h('div',{className:'cockpit-business-amount'},t),
           h('div',{className:'cockpit-business-caption'},x.caption||'Kundenproblem · beziffert')
         ));
@@ -8490,7 +8606,15 @@ function renderCockpitSnapshotLiteV4215(){
         tile.appendChild(h('div',{className:'cockpit-v61-insights-title'},'KI21 Insights'));
       }
       const cls='cockpit-tile-item cockpit-tile-link'+(kind==='next'?' cockpit-v61-task':'')+(x.ki21?' cockpit-ki21-inline':'')+(x.executive?' cockpit-executive-insight':'')+((kind==='next'&&x.idx===0)?' cockpit-next-primary':'');
-      const item=h('button',{type:'button',className:cls,onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',t);}},t);
+      const fullText=(typeof resolveFullCockpitTextV6513==='function')
+        ? resolveFullCockpitTextV6513(aid,t)
+        : t;
+      const item=h('button',{
+        type:'button',
+        className:cls,
+        'data-full-text':fullText,
+        onclick:(e)=>{e.preventDefault();e.stopPropagation();openCockpitWorkTarget(kind||'cockpit',fullText);}
+      },t);
       tile.appendChild(item);
     });
     else tile.appendChild(h('div',{className:'cockpit-empty'},empty));
@@ -8521,8 +8645,11 @@ function renderCockpitSnapshotLiteV4215(){
   setTimeout(()=>{
     const el=document.getElementById('ki21-dealstatus');
     if(el){
-      if(opportunityIntelligenceV620&&opportunityIntelligenceV620.dealStatus)el.textContent='Dealstatus: '+opportunityIntelligenceV620.dealStatus;
-      else {
+      if(decisionConfirmedV6518){
+        el.textContent='Dealstatus: Discovery-Phase · Entscheidungsgespräch vorbereiten';
+      }else if(opportunityIntelligenceV620&&opportunityIntelligenceV620.dealStatus){
+        el.textContent='Dealstatus: '+opportunityIntelligenceV620.dealStatus;
+      }else {
         const chance=/gute|konkrete|vorhanden/i.test(summaryChanceV500)?'Gute Einstiegschance':'Chance prüfen';
         const action=/entscheid|gf|cfo/i.test(summaryRiskV500)?'Entscheider einbinden':'Engpass bearbeiten';
         el.textContent='Dealstatus: '+chance+' · '+action;
@@ -12559,6 +12686,17 @@ function showPDF(title,text,cust){
 .v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link{cursor:pointer;}
 </style>
 
+
+<style>
+/* v6.5.18 */
+.cockpit-business-amount,.v53-bc-value{
+  font-size:24px !important;
+  line-height:1.05 !important;
+  letter-spacing:-.35px !important;
+  overflow-wrap:anywhere !important;
+}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -13016,7 +13154,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.17 Load Performance Rollback';
+const KI21_VERSION='v6.5.18 Canonical Decision State';
 
 
 function runKi21VersionMigration(){
@@ -14171,7 +14309,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.17 Load Performance Rollback';
+  const VERSION='v6.5.18 Canonical Decision State';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
