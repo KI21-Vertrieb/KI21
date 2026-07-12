@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.24 Actionable Sales Intelligence</title>
+<title>KI21 v6.5.25 Insight Prioritization &amp; Business Case Link</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8630,6 +8630,24 @@ function buildActionableInsightV6524(config){
   };
 }
 
+function opportunityBusinessCaseFactsV6525(accId){
+  const facts=[];
+  const add=(text)=>{if(text&&!facts.includes(text))facts.push(text);};
+  const scan=(value)=>{
+    if(!value)return;
+    const raw=typeof value==='string'?value:JSON.stringify(value);
+    if(/\b8\.?000\s*€\s*(?:pro|\/)\s*monat\b/i.test(raw))add('Bezifferter operativer Problemwert: 8.000 € pro Monat.');
+  };
+  try{
+    scan(LS.get('ki21_economic_effects_v4240_'+accId,null));
+    scan(LS.get('ki21_implication_values_v4246_'+accId,null));
+    scan(LS.get('ki21_intel_'+accId,null));
+    scan(LS.get('ki21_opportunity_intelligence_'+accId,null));
+    scan(getOpportunityOnlySourceV6522(accId));
+  }catch(e){}
+  return facts;
+}
+
 function opportunityStakeholderFactsV6524(accId){
   const raw=getOpportunityOnlySourceV6522(accId);
   const facts=[];
@@ -8650,8 +8668,9 @@ function buildOutcomeValidationInsightV6520(accId){
   const stakeholderFacts=opportunityStakeholderFactsV6524(accId);
 
   const known=[
-    ...roles.confirmed,
-    ...stakeholderFacts
+    ...opportunityBusinessCaseFactsV6525(accId),
+    ...stakeholderFacts,
+    ...roles.confirmed
   ];
 
   const missing=[
@@ -8662,6 +8681,8 @@ function buildOutcomeValidationInsightV6520(accId){
     'Entscheidungskriterium für Fortführung, Ausbau oder Abbruch vereinbaren.',
     ...roles.validate
   ];
+
+  const uniqueKnown=[...new Set(known)];
 
   return buildActionableInsightV6524({
     summary:'Erfolgskriterien und Ausgangswerte vor dem Start verbindlich festlegen.',
@@ -8679,7 +8700,7 @@ function buildOutcomeValidationInsightV6520(accId){
       'Messmethode, Verantwortliche und Bewertungszeitpunkt bestimmen.',
       'Vorab festlegen, welche Entscheidung an das Ergebnis geknüpft ist.'
     ],
-    known,
+    known:uniqueKnown,
     missing,
     guardrails:roles.excluded
   });
@@ -8698,11 +8719,20 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
 
   const exists=(arr,text)=>arr.some(x=>String(x||'').toLowerCase().includes(text.toLowerCase()));
   if(!exists(copy.nextSteps,'Erfolgskriterien und Ausgangswerte'))copy.nextSteps.unshift(insight.summary);
-  if(!exists(copy.businessCase.insights,'Erfolgskriterien und Ausgangswerte'))copy.businessCase.insights.unshift(insight.summary);
 
-  if(!copy.watchouts.currentRisk || /budget|entscheider/i.test(copy.watchouts.currentRisk)){
-    copy.watchouts.currentRisk='Erfolgskriterien und Baseline sind vor dem Start noch nicht verbindlich festgelegt.';
+  copy.businessCase.insights=copy.businessCase.insights.filter(item=>
+    !/erfolgskriterien|ausgangswerte|baseline/i.test(String(item||''))
+  );
+
+  const bcFacts=opportunityBusinessCaseFactsV6525(accId);
+  if(bcFacts.length&&!exists(copy.businessCase.insights,'8.000 €')){
+    copy.businessCase.insights.unshift(
+      'Die 8.000 € monatlicher Problemaufwand können als wirtschaftliche Ausgangsbasis dienen, sind aber noch nicht automatisch mit dem Nutzen von KI21 gleichzusetzen.'
+    );
   }
+
+  copy.watchouts.currentRisk='Ohne vorab vereinbarte Erfolgskriterien und Baseline droht später eine subjektive Erfolgsbewertung.';
+  copy.watchouts.salesStrategy='Discovery Sprint als risikoarmen Einstieg positionieren, Erfolgskriterien vorab vereinbaren und Budgetfreigabe vorbereiten.';
   return copy;
 }
 
@@ -13524,7 +13554,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.24 Actionable Sales Intelligence';
+const KI21_VERSION='v6.5.25 Insight Prioritization & Business Case Link';
 
 
 function runKi21VersionMigration(){
@@ -14679,7 +14709,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.24 Actionable Sales Intelligence';
+  const VERSION='v6.5.25 Insight Prioritization & Business Case Link';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
