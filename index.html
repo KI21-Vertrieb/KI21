@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.22 Source Separation & Semantic Deduplication</title>
+<title>KI21 v6.5.23 Strict Source Whitelist</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8393,31 +8393,100 @@ function detectOutcomeValidationNeedV6520(accId){
   const hasResultExpectation=/(ergebnis|wirkung|erfolg|mess|kennzahl|kpi|baseline|ausgangswert|zielwert|nachweis|validier|belegen)/i.test(raw);
   return hasLimitedStart && (hasOutcomeDependency || hasResultExpectation);
 }
+function collectUserEnteredPhaseValuesV6523(value,keyPath=''){
+  const out=[];
+  const blocked=/(^|\.)(result|prompt|system|context|details|generatedat|score|analysis|summary|questions?|spin|leitfragen?|kiresult|airesult)(\.|$)/i;
+
+  const walk=(v,path)=>{
+    if(v===null||v===undefined)return;
+    if(blocked.test(path))return;
+
+    if(typeof v==='string'){
+      const text=v.trim();
+      if(text)out.push(text);
+      return;
+    }
+    if(typeof v==='number'||typeof v==='boolean'){
+      out.push(String(v));
+      return;
+    }
+    if(Array.isArray(v)){
+      v.forEach((item,i)=>walk(item,path+'.'+i));
+      return;
+    }
+    if(typeof v==='object'){
+      Object.keys(v).forEach(k=>walk(v[k],path?path+'.'+k:k));
+    }
+  };
+  walk(value,keyPath);
+  return out;
+}
+
 function getOpportunityOnlySourceV6522(accId){
   const parts=[];
+
   try{
     const current=(state.accounts||[]).find(a=>String(a.id)===String(accId));
     if(current){
-      [current.rawImport,current.importText,current.crmText,current.context,current.notes,current.description]
-        .forEach(v=>{if(v)parts.push(String(v));});
-      if(current.cust)parts.push(JSON.stringify(current.cust));
+      [
+        current.rawImport,
+        current.importText,
+        current.crmText,
+        current.context,
+        current.notes,
+        current.description
+      ].forEach(v=>{if(v)parts.push(String(v));});
+
+      if(current.cust){
+        ['firma','ap','branche','ma','um','budget','timing','angebot','wettbewerb']
+          .forEach(k=>{if(current.cust[k])parts.push(String(current.cust[k]));});
+      }
     }
   }catch(e){}
+
   try{
     for(let i=0;i<5;i++){
       const phase=LS.get('ki21_st_'+accId+'_'+i,null);
-      if(phase)parts.push(typeof phase==='string'?phase:JSON.stringify(phase));
+
+      // Ausschließlich echte Eingabefelder übernehmen.
+      // Niemals KI-Ergebnisse, Prompts, generierte Fragen oder alte Analysen.
+      if(phase&&phase.fv){
+        collectUserEnteredPhaseValuesV6523(phase.fv,'fv')
+          .forEach(text=>parts.push(text));
+      }
+
       const addition=LS.get('ki21_kk_'+accId+'_'+i,'');
       if(addition)parts.push(String(addition));
+
       if(typeof getAdditionEntriesV623==='function'){
-        (getAdditionEntriesV623(accId,i)||[]).forEach(entry=>{if(entry&&entry.text)parts.push(String(entry.text));});
+        (getAdditionEntriesV623(accId,i)||[]).forEach(entry=>{
+          if(entry&&entry.text)parts.push(String(entry.text));
+        });
       }
     }
+
     const legacy=LS.get('ki21_kk_'+accId,'');
     if(legacy)parts.push(String(legacy));
+
+    const economicEffects=LS.get('ki21_economic_effects_v4240_'+accId,null);
+    if(economicEffects){
+      collectUserEnteredPhaseValuesV6523(economicEffects,'economicEffects')
+        .forEach(text=>parts.push(text));
+    }
+
+    const implicationValues=LS.get('ki21_implication_values_v4246_'+accId,null);
+    if(implicationValues){
+      collectUserEnteredPhaseValuesV6523(implicationValues,'implicationValues')
+        .forEach(text=>parts.push(text));
+    }
   }catch(e){}
-  return parts.join('\n').replace(/\s+/g,' ').trim();
+
+  return [...new Set(parts.map(x=>String(x).trim()).filter(Boolean))]
+    .join('\n')
+    .replace(/\s+/g,' ')
+    .trim();
 }
+
 function getCompanyKnowledgeOnlySourceV6522(){
   const parts=[];
   try{
@@ -8455,7 +8524,9 @@ function semanticValueRolesV6521(accId){
       }else if(/schaden|nacharbeit|aufwand|kosten|verlust|verschwendung|wirtschaftliche auswirkung|problemwert|beziffert/i.test(sentence)){
         addUnique(confirmed,'Bezifferter Problemwert: '+value);
       }else{
-        addUnique(validate,value+' – wirtschaftliche Rolle noch bestätigen');
+        // Unklare Geldwerte nicht als einzelne Rohzahl ausgeben.
+        // Nur als allgemeine Prüffrage führen.
+        addUnique(validate,'Unklare Geldbeträge: Rolle und Zeitraum bestätigen');
       }
     });
 
@@ -8479,7 +8550,10 @@ function semanticValueRolesV6521(accId){
         addUnique(confirmed,'Aktueller Aufwand: '+value+(unit?' '+unit:''));
       }else if(/projektstart|start|laufzeit|innerhalb|nach .*wochen|bewertung|messzeitraum/i.test(sentence)){
         addUnique(confirmed,'Mess- oder Projektzeitraum: '+value);
-      }else addUnique(validate,value+' – Bedeutung und Bezugsgröße noch klären');
+      }else{
+        // Unklare Zeitangaben nicht ungefiltert ausgeben.
+        addUnique(validate,'Unklare Zeitangaben: Bedeutung und Bezugsgröße bestätigen');
+      }
     });
 
     if(/wiederholungsgespräch/i.test(sentence))addUnique(validate,'Anzahl vermeidbarer Wiederholungsgespräche als Baseline erfassen');
@@ -8501,7 +8575,16 @@ function semanticValueRolesV6521(accId){
     finalConfirmed.push('Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende');
   }
   if(finalConfirmed.some(x=>/16–24 Stunden pro Woche/i.test(x))){
-    finalConfirmed=finalConfirmed.filter(x=>!/^Aktueller Aufwand:\s*(?:3|24) Stunden pro Woche$/i.test(x));
+    finalConfirmed=finalConfirmed.filter(x=>
+      !/^Aktueller Aufwand:\s*(?:3|8|24) Stunden(?: pro Woche)?$/i.test(x)
+    );
+  }
+
+  // Mehrere konkurrierende Projektzeiträume nicht als bestätigt ausgeben.
+  const projectPeriods=finalConfirmed.filter(x=>/^Mess- oder Projektzeitraum:/i.test(x));
+  if(projectPeriods.length>1){
+    finalConfirmed=finalConfirmed.filter(x=>!/^Mess- oder Projektzeitraum:/i.test(x));
+    validate.push('Messzeitraum vor Projektstart verbindlich festlegen');
   }
   if(finalConfirmed.some(x=>/Bezifferter operativer Problemwert:\s*8\.000 € pro Monat/i.test(x))){
     finalConfirmed=finalConfirmed.filter(x=>!/^Bezifferter Problemwert:\s*8\.000 € pro Monat$/i.test(x));
@@ -13387,7 +13470,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.22 Source Separation & Semantic Deduplication';
+const KI21_VERSION='v6.5.23 Strict Source Whitelist';
 
 
 function runKi21VersionMigration(){
@@ -14542,7 +14625,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.22 Source Separation & Semantic Deduplication';
+  const VERSION='v6.5.23 Strict Source Whitelist';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
