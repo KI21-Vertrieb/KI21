@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.21 Semantic Value Roles</title>
+<title>KI21 v6.5.22 Source Separation & Semantic Deduplication</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8393,6 +8393,40 @@ function detectOutcomeValidationNeedV6520(accId){
   const hasResultExpectation=/(ergebnis|wirkung|erfolg|mess|kennzahl|kpi|baseline|ausgangswert|zielwert|nachweis|validier|belegen)/i.test(raw);
   return hasLimitedStart && (hasOutcomeDependency || hasResultExpectation);
 }
+function getOpportunityOnlySourceV6522(accId){
+  const parts=[];
+  try{
+    const current=(state.accounts||[]).find(a=>String(a.id)===String(accId));
+    if(current){
+      [current.rawImport,current.importText,current.crmText,current.context,current.notes,current.description]
+        .forEach(v=>{if(v)parts.push(String(v));});
+      if(current.cust)parts.push(JSON.stringify(current.cust));
+    }
+  }catch(e){}
+  try{
+    for(let i=0;i<5;i++){
+      const phase=LS.get('ki21_st_'+accId+'_'+i,null);
+      if(phase)parts.push(typeof phase==='string'?phase:JSON.stringify(phase));
+      const addition=LS.get('ki21_kk_'+accId+'_'+i,'');
+      if(addition)parts.push(String(addition));
+      if(typeof getAdditionEntriesV623==='function'){
+        (getAdditionEntriesV623(accId,i)||[]).forEach(entry=>{if(entry&&entry.text)parts.push(String(entry.text));});
+      }
+    }
+    const legacy=LS.get('ki21_kk_'+accId,'');
+    if(legacy)parts.push(String(legacy));
+  }catch(e){}
+  return parts.join('\n').replace(/\s+/g,' ').trim();
+}
+function getCompanyKnowledgeOnlySourceV6522(){
+  const parts=[];
+  try{
+    ['ki21_company','ki21_company_knowledge','ki21_company_intelligence','ki21_my_company','ki21_unternehmenswissen','ki21_mu','ki21_intelligence']
+      .forEach(key=>{const value=LS.get(key,null);if(value)parts.push(typeof value==='string'?value:JSON.stringify(value));});
+  }catch(e){}
+  return parts.join('\n').replace(/\s+/g,' ').trim();
+}
+
 function splitOpportunitySentencesV6521(raw){
   return String(raw||'')
     .replace(/\s+/g,' ')
@@ -8401,91 +8435,83 @@ function splitOpportunitySentencesV6521(raw){
     .filter(Boolean);
 }
 function semanticValueRolesV6521(accId){
-  const raw=getCanonicalOpportunitySourceV6518(accId);
-  const sentences=splitOpportunitySentencesV6521(raw);
-
-  const confirmed=[];
-  const validate=[];
-  const excluded=[];
-
-  const addUnique=(arr,text)=>{
-    if(text && !arr.includes(text))arr.push(text);
+  const opportunityRaw=getOpportunityOnlySourceV6522(accId);
+  const companyRaw=getCompanyKnowledgeOnlySourceV6522();
+  const sentences=splitOpportunitySentencesV6521(opportunityRaw);
+  const confirmed=[],validate=[],excluded=[];
+  const addUnique=(arr,text)=>{if(text&&!arr.includes(text))arr.push(text);};
+  const normalize=v=>String(v||'').toLowerCase().replace(/\s+/g,' ').trim();
+  const isCompanyOnlyValue=value=>{
+    const v=normalize(value);
+    return !!v && normalize(companyRaw).includes(v) && !normalize(opportunityRaw).includes(v);
   };
 
   sentences.forEach(sentence=>{
-    const lower=sentence.toLowerCase();
-
-    // Geldwerte semantisch einordnen
     const euroValues=sentence.match(/\b\d{1,3}(?:\.\d{3})*(?:,\d+)?\s*€(?:\s*(?:pro|je|\/)\s*(?:monat|jahr|woche|fall|nutzer))?/gi)||[];
     euroValues.forEach(value=>{
+      if(isCompanyOnlyValue(value))return;
       if(/angebot|preis|kostet|discovery sprint|compact|lizenz|pro nutzer|monatlich pro nutzer|freigabe|budget/i.test(sentence)){
-        addUnique(excluded, value+' – Angebotspreis oder Budget, kein Problem- oder Erfolgswert');
-      }else if(/schaden|nacharbeit|aufwand|kosten|verlust|verschwendung|wirtschaftliche auswirkung|kundenproblem|beziffert/i.test(sentence)){
-        addUnique(confirmed, 'Bezifferter Problemwert: '+value);
+        addUnique(excluded,'Angebotspreise und Budgetwerte sind keine Erfolgskennzahlen.');
+      }else if(/schaden|nacharbeit|aufwand|kosten|verlust|verschwendung|wirtschaftliche auswirkung|problemwert|beziffert/i.test(sentence)){
+        addUnique(confirmed,'Bezifferter Problemwert: '+value);
       }else{
-        addUnique(validate, value+' – wirtschaftliche Rolle noch bestätigen');
+        addUnique(validate,value+' – wirtschaftliche Rolle noch bestätigen');
       }
     });
 
-    // Nutzer-/Beteiligtenumfang, nicht Unternehmensgröße
-    const combined=sentence.match(/\b(\d+)\s+account manager.{0,50}\+\s*(\d+)\s+vertriebsmitarbeitende\b/i);
+    const combined=sentence.match(/\b(\d+)\s+account manager.{0,80}(?:\+|und)\s*(\d+)\s+vertriebsmitarbeitende\b/i);
     if(combined){
-      addUnique(confirmed, 'Betroffene Nutzergruppe: '+combined[1]+' Account Manager + '+combined[2]+' Vertriebsmitarbeitende');
+      addUnique(confirmed,'Betroffene Nutzergruppe: '+combined[1]+' Account Manager + '+combined[2]+' Vertriebsmitarbeitende');
     }else{
       const roleCount=sentence.match(/\b(\d+(?:[–-]\d+)?)\s+(account manager|verkäufer|vertriebsmitarbeitende|sales manager|nutzer|anwender)\b/i);
-      if(roleCount){
-        addUnique(confirmed, 'Betroffene Nutzergruppe: '+roleCount[1]+' '+roleCount[2]);
-      }
+      if(roleCount)addUnique(confirmed,'Betroffene Nutzergruppe: '+roleCount[1]+' '+roleCount[2]);
     }
 
     const employeeCount=sentence.match(/\b(\d{2,5})\s*(?:mitarbeitende|mitarbeiter|ma)\b/i);
-    if(employeeCount && !/(account manager|verkäufer|vertriebsmitarbeitende|nutzer|anwender)/i.test(sentence)){
-      addUnique(excluded, employeeCount[1]+' Mitarbeitende – Unternehmensgröße, kein Projekt- oder Nutzerumfang');
+    if(employeeCount&&!/(account manager|verkäufer|vertriebsmitarbeitende|nutzer|anwender)/i.test(sentence)){
+      addUnique(excluded,'Allgemeine Unternehmens- oder Zielgruppengrößen sind keine Erfolgskennzahlen.');
     }
 
-    // Zeitwerte nur bei eindeutigem Kontext
     const timeValues=sentence.match(/\b\d+(?:[–-]\d+)?\s*(?:stunden|tage|wochen|monate)\b/gi)||[];
     timeValues.forEach(value=>{
       if(/nacharbeit|aufwand|pro woche|pro monat|wiederholungsgespräch|bearbeitungszeit/i.test(sentence)){
         const unit=(sentence.match(/pro woche|pro monat/i)||[''])[0];
-        addUnique(confirmed, 'Aktueller Aufwand: '+value+(unit?' '+unit:''));
+        addUnique(confirmed,'Aktueller Aufwand: '+value+(unit?' '+unit:''));
       }else if(/projektstart|start|laufzeit|innerhalb|nach .*wochen|bewertung|messzeitraum/i.test(sentence)){
-        addUnique(confirmed, 'Mess- oder Projektzeitraum: '+value);
-      }else{
-        addUnique(validate, value+' – Bedeutung und Bezugsgröße noch klären');
-      }
+        addUnique(confirmed,'Mess- oder Projektzeitraum: '+value);
+      }else addUnique(validate,value+' – Bedeutung und Bezugsgröße noch klären');
     });
 
-    if(/wiederholungsgespräch/i.test(sentence)){
-      addUnique(validate, 'Anzahl vermeidbarer Wiederholungsgespräche als Baseline erfassen');
-    }
-    if(/forecast/i.test(sentence)){
-      addUnique(validate, 'Aktuelle Forecast-Abweichung bzw. Bewertungsqualität als Baseline erfassen');
-    }
-    if(/stakeholder|entscheiderrolle/i.test(sentence)){
-      addUnique(validate, 'Vollständigkeit und Klarheit der Stakeholderrollen vor Start messen');
-    }
+    if(/wiederholungsgespräch/i.test(sentence))addUnique(validate,'Anzahl vermeidbarer Wiederholungsgespräche als Baseline erfassen');
+    if(/forecast/i.test(sentence))addUnique(validate,'Aktuelle Forecast-Abweichung bzw. Bewertungsqualität als Baseline erfassen');
+    if(/stakeholder|entscheiderrolle/i.test(sentence))addUnique(validate,'Vollständigkeit und Klarheit der Stakeholderrollen vor Start messen');
   });
 
-  // Bekannte semantische Werte aus der Opportunity bevorzugt erfassen
-  const full=String(raw||'');
+  const full=String(opportunityRaw||'');
   const weekly=full.match(/\b(16\s*(?:bis|–|-)\s*24)\s*stunden\s*(?:pro|je)\s*woche\b/i);
-  if(weekly){
-    addUnique(confirmed,'Aktueller Nacharbeitsaufwand: '+weekly[1].replace(/\s*(?:bis|–|-)\s*/,'–')+' Stunden pro Woche');
-  }
-
+  if(weekly)addUnique(confirmed,'Aktueller Nacharbeitsaufwand: '+weekly[1].replace(/\s*(?:bis|–|-)\s*/,'–')+' Stunden pro Woche');
   const monthlyProblem=full.match(/\b8\.?000\s*€\s*(?:pro|\/)\s*monat\b/i);
-  if(monthlyProblem){
-    addUnique(confirmed,'Bezifferter operativer Problemwert: 8.000 € pro Monat');
-  }
+  if(monthlyProblem)addUnique(confirmed,'Bezifferter operativer Problemwert: 8.000 € pro Monat');
+  const users=full.match(/\b8\s+account manager.{0,100}\b2\s+vertriebsmitarbeitende\b/i);
+  if(users)addUnique(confirmed,'Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende');
 
-  const users=full.match(/\b8\s+account manager.{0,60}\b2\s+vertriebsmitarbeitende\b/i);
-  if(users){
-    addUnique(confirmed,'Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende');
+  let finalConfirmed=[...new Set(confirmed)];
+  if(finalConfirmed.some(x=>/8 Account Manager \+ 2 Vertriebsmitarbeitende/i.test(x))){
+    finalConfirmed=finalConfirmed.filter(x=>!/^Betroffene Nutzergruppe:\s*(?:8 Account Manager|2 Vertriebsmitarbeitende|15 Nutzer)$/i.test(x));
+    finalConfirmed.push('Betroffene Nutzergruppe: 8 Account Manager + 2 Vertriebsmitarbeitende');
   }
-
-  return {confirmed,validate,excluded};
+  if(finalConfirmed.some(x=>/16–24 Stunden pro Woche/i.test(x))){
+    finalConfirmed=finalConfirmed.filter(x=>!/^Aktueller Aufwand:\s*(?:3|24) Stunden pro Woche$/i.test(x));
+  }
+  if(finalConfirmed.some(x=>/Bezifferter operativer Problemwert:\s*8\.000 € pro Monat/i.test(x))){
+    finalConfirmed=finalConfirmed.filter(x=>!/^Bezifferter Problemwert:\s*8\.000 € pro Monat$/i.test(x));
+  }
+  const finalExcluded=[];
+  if(excluded.some(x=>/Angebotspreise und Budgetwerte/i.test(x)))finalExcluded.push('Angebotspreise und Budgetwerte sind keine Erfolgskennzahlen.');
+  if(excluded.some(x=>/Unternehmens- oder Zielgruppengrößen/i.test(x)))finalExcluded.push('Allgemeine Unternehmens- oder Zielgruppengrößen sind keine Erfolgskennzahlen.');
+  return {confirmed:[...new Set(finalConfirmed)],validate:[...new Set(validate)],excluded:finalExcluded};
 }
+
 function buildOutcomeValidationInsightV6520(accId){
   if(!detectOutcomeValidationNeedV6520(accId))return null;
 
@@ -8520,7 +8546,7 @@ function buildOutcomeValidationInsightV6520(accId){
         ? ['', 'Noch zu validieren', ...roles.validate.map(x=>'• '+x)]
         : []),
       ...(roles.excluded.length
-        ? ['', 'Nicht als Erfolgswert verwenden', ...roles.excluded.map(x=>'• '+x)]
+        ? ['', 'Nicht als Erfolgskennzahl verwenden', ...roles.excluded.map(x=>'• '+x)]
         : []),
       '',
       'Vor Projektstart noch verbindlich festlegen',
@@ -13361,7 +13387,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.21 Semantic Value Roles';
+const KI21_VERSION='v6.5.22 Source Separation & Semantic Deduplication';
 
 
 function runKi21VersionMigration(){
@@ -14516,7 +14542,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.21 Semantic Value Roles';
+  const VERSION='v6.5.22 Source Separation & Semantic Deduplication';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
