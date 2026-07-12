@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.7a Business Case Consistency Fix</title>
+<title>KI21 v6.5.13 Full Bullet Text & Score Update</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -3878,8 +3878,38 @@ function buildLocalOpportunityHealthV656(accId){
   const structuralOpenCount=open.length;
   return {score,label:score<35?'Kritisch':(score<70?'Stabil':'Gesund'),structuralOpenCount,positive,warning,open,checklist,local:true,ts:Date.now()};
 }
+
+function hasConfirmedDecisionAuthorityV6513(accId){
+  try{
+    const raw=String(getValidatedBusinessInputText(accId)||'').replace(/\s+/g,' ');
+    const decision=/(?:geschäftsführer(?:in)?|cfo|ceo).{0,140}entscheidet.{0,150}(?:start|projekt|discovery sprint|beauftragung)/i.test(raw);
+    const authority=/(?:geschäftsführer(?:in)?|cfo|ceo).{0,180}(?:kann|darf).{0,110}(?:budget|betrag|9\.?900|angebot|discovery sprint).{0,110}(?:freigeben|genehmigen|beauftragen)/i.test(raw);
+    return decision&&authority;
+  }catch(e){return false;}
+}
+function applyConfirmedDecisionScoreV6513(accId,health){
+  if(!health||!hasConfirmedDecisionAuthorityV6513(accId))return health;
+  const copy={...health};
+  copy.checklist={...(copy.checklist||{})};
+  let delta=0;
+  if(!copy.checklist.economicBuyer){copy.checklist.economicBuyer=true;delta+=10;}
+  if(!copy.checklist.decisionProcess){copy.checklist.decisionProcess=true;delta+=5;}
+  copy.score=Math.max(0,Math.min(100,Math.round((Number(copy.score)||0)+delta)));
+  const removeObsolete=(arr)=>(arr||[]).filter(item=>{
+    const txt=String(item&&item.text?item.text:item||'');
+    return !/(entscheider.*(?:offen|unklar|identifizieren|nicht bestätigt)|wer entscheidet|wirtschaftlichen entscheider klären)/i.test(txt);
+  });
+  copy.open=removeObsolete(copy.open);
+  copy.warning=removeObsolete(copy.warning);
+  copy.positive=removeObsolete(copy.positive);
+  if(!copy.positive.some(item=>/entscheider.*bestätigt|entscheidungsprozess.*bestätigt/i.test(String(item&&item.text?item.text:item||'')))){
+    copy.positive.unshift({text:'Entscheider und Entscheidungsprozess bestätigt',origin:'REGEL',type:'positive'});
+  }
+  return copy;
+}
 function storeCentralOpportunityHealthV656(accId,health){
   if(!accId||!health||typeof health.score!=='number')return null;
+  health=applyConfirmedDecisionScoreV6513(accId,health);
   const normalized={...health,score:Math.max(0,Math.min(100,Math.round(health.score))),ts:Date.now()};
   LS.set('ki21_health_'+accId,normalized);
   LS.set('ki21_score_'+accId,Math.round(normalized.score/10));
@@ -5137,6 +5167,51 @@ function cleanCockpitQuestionPreviewText(q){
     .trim();
 }
 
+
+function normalizePreviewKeyV6513(text){
+  return String(text||'').replace(/[…]+/g,'').replace(/\.{2,}/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+}
+function collectFullTextCandidatesV6513(accId){
+  const out=[];
+  const add=(value)=>{
+    if(value===undefined||value===null)return;
+    if(Array.isArray(value)){value.forEach(add);return;}
+    if(typeof value==='object'){Object.keys(value).forEach(k=>add(value[k]));return;}
+    const raw=String(value||'').trim();
+    if(!raw)return;
+    out.push(raw);
+    raw.split(/\n+/).forEach(line=>{
+      const t=line.replace(/^[\s•\-–—▪▫○◦✅⚠️❓❗]+/u,'').trim();
+      if(t.length>15)out.push(t);
+    });
+  };
+  try{add(buildCanonicalDashboardQuestionsV4190(accId));}catch(e){}
+  for(let i=0;i<5;i++){
+    try{add(LS.get('ki21_st_'+accId+'_'+i,null));}catch(e){}
+  }
+  try{add(getOpportunityHealth(accId));}catch(e){}
+  try{add(buildCockpitMatrixData(accId,getOpportunityHealth(accId)||{}));}catch(e){}
+  try{add(getAllPhaseAdditions(accId));}catch(e){}
+  try{add(getCurrentUserKnowledgeText(accId));}catch(e){}
+  return [...new Set(out.map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>b.length-a.length);
+}
+function resolveFullCockpitTextV6513(accId,preview){
+  const original=String(preview||'').trim();
+  if(!original)return original;
+  const key=normalizePreviewKeyV6513(original);
+  if(!key)return original;
+  const candidates=collectFullTextCandidatesV6513(accId);
+  const prefix=key.slice(0,Math.min(72,key.length));
+  let best='';
+  for(const candidate of candidates){
+    const norm=normalizePreviewKeyV6513(candidate);
+    if(!norm||candidate===original)continue;
+    if(norm.startsWith(prefix)||norm.includes(prefix)||prefix.startsWith(norm.slice(0,Math.min(48,norm.length)))){
+      if(candidate.length>best.length)best=candidate;
+    }
+  }
+  return (best||original).replace(/^[\s•\-–—▪▫○◦✅⚠️❓❗]+/u,'').trim();
+}
 function getDashboardQuestions(accId,maxItems,forPreview){
   const canonical=buildCanonicalDashboardQuestionsV4190(accId);
   const sources=[];
@@ -12476,6 +12551,14 @@ function showPDF(title,text,cust){
 }
 </style>
 
+
+<style>
+/* v6.5.13 */
+.v53-bc-value,.cockpit-business-amount{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:21px!important;line-height:1.12!important;}
+.ki21-fulltext-body{overflow-wrap:anywhere;white-space:pre-wrap;}
+.v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link{cursor:pointer;}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -14402,13 +14485,17 @@ function showSmartOpportunityImportV65(existingAccId){
     );
     if(!el)return;
 
-    const text=String(el.textContent||'').trim();
-    if(!text)return;
+    const preview=String(el.textContent||'').trim();
+    if(!preview)return;
+    let accId=null;
+    try{accId=(window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(err){}
+    const stored=String(el.getAttribute('data-full-text')||'').trim();
+    const fullText=stored||resolveFullCockpitTextV6513(accId,preview);
 
     e.preventDefault();
     e.stopPropagation();
     if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-    showFullTextV6512(bulletTitleV6512(el),text);
+    showFullTextV6512(bulletTitleV6512(el),fullText);
   },true);
 
   function currentInputV6512(accId){
@@ -14489,6 +14576,48 @@ function showSmartOpportunityImportV65(existingAccId){
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6512);
   else startV6512();
+})();
+</script>
+
+
+<script>
+/* v6.5.13 – Full bullet text, consistent score and wording */
+(function(){
+  function activeAccV6513(){try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}}
+  function hydrateFullTextsV6513(){
+    const accId=activeAccV6513();
+    if(!accId||typeof resolveFullCockpitTextV6513!=='function')return;
+    document.querySelectorAll('.cockpit-tile-item,.cockpit-tile-link,.v53-task,.v53-bc-benefit,.v53-risk-text').forEach(el=>{
+      const preview=String(el.textContent||'').trim();
+      if(!preview)return;
+      const full=resolveFullCockpitTextV6513(accId,preview);
+      if(full)el.setAttribute('data-full-text',full);
+    });
+  }
+  function normalizeVisibleV6513(){
+    const accId=activeAccV6513();
+    const confirmed=accId&&typeof hasConfirmedDecisionAuthorityV6513==='function'&&hasConfirmedDecisionAuthorityV6513(accId);
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(node=>{
+      let x=String(node.nodeValue||'');
+      x=x.replace(/Sponsor[-\s]?Fallacy/gi,'Sponsor ist nicht Budgetentscheider');
+      x=x.replace(/Budgetentscheidung liegt beim Geschäftsführer/gi,'Budgetfreigabe erfolgt durch den Geschäftsführer');
+      x=x.replace(/8\.000\s*€\/Monat/gi,'8.000 € pro Monat');
+      if(confirmed){
+        x=x.replace(/Einstiegsphase\s*[·\-–]\s*Entscheider noch zu identifizieren/gi,'Discovery-Phase · Entscheidungsgespräch vorbereiten');
+        x=x.replace(/Entscheider noch zu identifizieren/gi,'Entscheidungsgespräch vorbereiten');
+        x=x.replace(/Geschäftsführer als Entscheider bestätigt/gi,'Budgetfreigabe für Discovery Sprint steht aus');
+        x=x.replace(/Möglicher Entscheider identifiziert\s*[–-]\s*Bestätigung ausstehend\.?/gi,'Geschäftsführer als Entscheider bestätigt.');
+      }
+      if(x!==node.nodeValue)node.nodeValue=x;
+    });
+  }
+  let queued=false;
+  function runV6513(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;hydrateFullTextsV6513();normalizeVisibleV6513();});}
+  const observer=new MutationObserver(runV6513);
+  function startV6513(){runV6513();observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6513);else startV6513();
 })();
 </script>
 
