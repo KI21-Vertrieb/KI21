@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.23 Strict Source Whitelist</title>
+<title>KI21 v6.5.24 Actionable Sales Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -8595,50 +8595,94 @@ function semanticValueRolesV6521(accId){
   return {confirmed:[...new Set(finalConfirmed)],validate:[...new Set(validate)],excluded:finalExcluded};
 }
 
+
+function buildActionableInsightV6524(config){
+  const sections=[];
+
+  const addSection=(title,items)=>{
+    const clean=(items||[]).map(x=>String(x||'').trim()).filter(Boolean);
+    if(!clean.length)return;
+    sections.push(title);
+    clean.forEach(item=>sections.push('• '+item.replace(/^•\s*/,'').trim()));
+    sections.push('');
+  };
+
+  if(config.why){
+    sections.push('Warum dieser Hinweis wichtig ist');
+    sections.push(String(config.why).trim());
+    sections.push('');
+  }
+
+  addSection('Mögliche Auswirkungen',config.impacts);
+  addSection('Jetzt konkret tun',config.actions);
+  addSection('Bereits bekannte Informationen',config.known);
+  addSection('Noch zu klären',config.missing);
+
+  if(config.guardrails&&config.guardrails.length){
+    addSection('Nicht als Grundlage verwenden',config.guardrails);
+  }
+
+  while(sections.length && !sections[sections.length-1])sections.pop();
+
+  return {
+    summary:String(config.summary||'').trim(),
+    detail:sections.join('\n')
+  };
+}
+
+function opportunityStakeholderFactsV6524(accId){
+  const raw=getOpportunityOnlySourceV6522(accId);
+  const facts=[];
+
+  if(/geschäftsführer.{0,80}(wirtschaftlicher )?entscheider|wirtschaftlicher entscheider.{0,80}geschäftsführer/i.test(raw)){
+    facts.push('Der Geschäftsführer ist als wirtschaftlicher Entscheider bestätigt.');
+  }
+  if(/sabine keller.{0,80}sponsor/i.test(raw)){
+    facts.push('Sabine Keller ist als fachliche Sponsorin bestätigt.');
+  }
+  return facts;
+}
+
 function buildOutcomeValidationInsightV6520(accId){
   if(!detectOutcomeValidationNeedV6520(accId))return null;
 
   const roles=semanticValueRolesV6521(accId);
+  const stakeholderFacts=opportunityStakeholderFactsV6524(accId);
 
-  return {
+  const known=[
+    ...roles.confirmed,
+    ...stakeholderFacts
+  ];
+
+  const missing=[
+    'Baseline für jede ausgewählte Kennzahl verbindlich festlegen.',
+    'Zielwerte nach dem vereinbarten Messzeitraum definieren.',
+    'Verantwortliche Person für Erhebung und Dokumentation benennen.',
+    'Bewertungszeitpunkt und Teilnehmer festlegen.',
+    'Entscheidungskriterium für Fortführung, Ausbau oder Abbruch vereinbaren.',
+    ...roles.validate
+  ];
+
+  return buildActionableInsightV6524({
     summary:'Erfolgskriterien und Ausgangswerte vor dem Start verbindlich festlegen.',
-    detail:[
-      'Warum dieser Hinweis wichtig ist',
-      'Ohne vorab vereinbarte Kriterien kann später nicht objektiv bewertet werden, ob der Start, Pilot oder das Einstiegsangebot erfolgreich war.',
-      '',
-      'Vor dem Start festlegen',
-      '• Welche Kennzahlen gemessen werden.',
-      '• Welche Ausgangswerte heute gelten.',
-      '• Welche Zielwerte erreicht werden sollen.',
-      '• Wie und durch wen gemessen wird.',
-      '• Wann die Bewertung stattfindet.',
-      '• Wer die Ergebnisse bestätigt.',
-      '• Welche Entscheidung an die Ergebnisse geknüpft ist.',
-      '',
-      'Empfohlene Kriterien für diese Opportunity',
-      '• Vollständigkeit der Opportunity-Qualifizierung.',
-      '• Klarheit zu Sponsor, Entscheider und Einflussnehmern.',
-      '• Qualität und Verbindlichkeit der nächsten Schritte.',
-      '• Zahl der Wiederholungsgespräche oder Nacharbeiten.',
-      '• Forecast-Konsistenz bzw. Bewertungsqualität.',
-      '• Zeitaufwand pro Opportunity oder Verkäufer.',
-      ...(roles.confirmed.length
-        ? ['', 'Bereits bestätigte Ausgangswerte', ...roles.confirmed.map(x=>'• '+x)]
-        : []),
-      ...(roles.validate.length
-        ? ['', 'Noch zu validieren', ...roles.validate.map(x=>'• '+x)]
-        : []),
-      ...(roles.excluded.length
-        ? ['', 'Nicht als Erfolgskennzahl verwenden', ...roles.excluded.map(x=>'• '+x)]
-        : []),
-      '',
-      'Vor Projektstart noch verbindlich festlegen',
-      '• Baseline je ausgewählter Kennzahl.',
-      '• Zielwerte nach dem vereinbarten Zeitraum.',
-      '• Verantwortliche Person für die Messung.',
-      '• Entscheidungskriterium für Fortführung oder Ausbau.'
-    ].join('\n')
-  };
+    why:'Ohne vorher vereinbarte Erfolgskriterien entscheidet später die subjektive Wahrnehmung statt messbarer Ergebnisse. Dann kann selbst ein fachlich guter Start als „nicht erfolgreich“ bewertet werden.',
+    impacts:[
+      'Der Kunde erkennt den Nutzen möglicherweise nicht eindeutig.',
+      'Sponsor, Entscheider und Nutzer bewerten den Erfolg unterschiedlich.',
+      'Eine spätere Budgetfreigabe oder Ausweitung wird unnötig erschwert.',
+      'Die Entscheidung basiert auf Meinungen statt auf belastbaren Ergebnissen.'
+    ],
+    actions:[
+      'Gemeinsam mit Sponsor und wirtschaftlichem Entscheider die relevanten Kennzahlen auswählen.',
+      'Ausgangswerte vor dem Start dokumentieren.',
+      'Konkrete Zielwerte für den vereinbarten Zeitraum festlegen.',
+      'Messmethode, Verantwortliche und Bewertungszeitpunkt bestimmen.',
+      'Vorab festlegen, welche Entscheidung an das Ergebnis geknüpft ist.'
+    ],
+    known,
+    missing,
+    guardrails:roles.excluded
+  });
 }
 
 function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
@@ -13013,6 +13057,16 @@ button,
 }
 </style>
 
+
+<style>
+/* v6.5.24 – Actionable Sales Intelligence */
+.ki21-detail-body{
+  font-size:16px !important;
+  line-height:1.58 !important;
+  white-space:pre-wrap !important;
+}
+</style>
+
 </head><body>
 <div class="header">
   <h1>KI21 – ${title}</h1>
@@ -13470,7 +13524,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.23 Strict Source Whitelist';
+const KI21_VERSION='v6.5.24 Actionable Sales Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -14625,7 +14679,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.23 Strict Source Whitelist';
+  const VERSION='v6.5.24 Actionable Sales Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
