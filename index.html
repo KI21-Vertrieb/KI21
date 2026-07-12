@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.13a Full Bullet Text & Score Update</title>
+<title>KI21 v6.5.14 Stable Loading & Scroll</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -12527,7 +12527,7 @@ function showPDF(title,text,cust){
 </style>
 
 <style>
-/* v6.5.13a Full Bullet Text & Score Update */
+/* v6.5.14 Stable Loading & Scroll */
 .cockpit-business-amount,
 .v53-bc-value{
   font-size:22px !important;
@@ -14084,11 +14084,11 @@ function showSmartOpportunityImportV65(existingAccId){
 </script>
 
 <script>
-/* v6.5.13a Full Bullet Text & Score Update
+/* v6.5.14 Stable Loading & Scroll
    Entscheider = wirtschaftlich entscheidungsbefugt.
    Sponsor/Champion wird niemals automatisch zum Entscheider. */
 (function(){
-  const VERSION_LABEL='v6.5.13a Full Bullet Text & Score Update';
+  const VERSION_LABEL='v6.5.14 Stable Loading & Scroll';
 
   function activeAccountIdV658(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14202,7 +14202,7 @@ function showSmartOpportunityImportV65(existingAccId){
   const observer=new MutationObserver(scheduleRepairV658);
   function startV658(){
     repairVisibleDecisionTextV658();
-    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    /* v6.5.14: globalen DOM-Beobachter bewusst deaktiviert */
     document.querySelectorAll('body *').forEach(function(el){
       if(el.children.length===0 && /^v6\.\d/.test(String(el.textContent||'').trim()))el.textContent=VERSION_LABEL;
     });
@@ -14286,7 +14286,7 @@ function showSmartOpportunityImportV65(existingAccId){
 
   function startV6510(){
     repairVisibleCockpitWordingV6510();
-    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    /* v6.5.14: globalen DOM-Beobachter bewusst deaktiviert */
   }
 
   if(document.readyState==='loading'){
@@ -14375,7 +14375,7 @@ function showSmartOpportunityImportV65(existingAccId){
   const observer=new MutationObserver(scheduleV6511);
   function startV6511(){
     repairV6511();
-    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    /* v6.5.14: globalen DOM-Beobachter bewusst deaktiviert */
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6511);
   else startV6511();
@@ -14571,7 +14571,7 @@ function showSmartOpportunityImportV65(existingAccId){
   const observer=new MutationObserver(scheduleRepairV6512);
   function startV6512(){
     repairVisibleV6512();
-    observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    /* v6.5.14: globalen DOM-Beobachter bewusst deaktiviert */
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6512);
@@ -14616,8 +14616,112 @@ function showSmartOpportunityImportV65(existingAccId){
   let queued=false;
   function runV6513(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;hydrateFullTextsV6513();normalizeVisibleV6513();});}
   const observer=new MutationObserver(runV6513);
-  function startV6513(){runV6513();observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
+  function startV6513(){runV6513();/* v6.5.14: globalen DOM-Beobachter bewusst deaktiviert */}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startV6513);else startV6513();
+})();
+</script>
+
+
+<style>
+/* v6.5.14 – stabiles Laden und Scrollen auf iOS/Brave */
+html{
+  overflow-x:hidden !important;
+  background:#070b12 !important;
+}
+body{
+  overflow-x:hidden !important;
+  background:#070b12 !important;
+  -webkit-overflow-scrolling:touch;
+}
+#app{
+  min-height:100dvh !important;
+  overflow:visible !important;
+  background:#070b12 !important;
+}
+.cockpit-header{
+  position:sticky !important;
+  top:0 !important;
+  z-index:1000 !important;
+  background:#080c12 !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  isolation:isolate;
+  contain:layout style;
+}
+.cockpit-header::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:#080c12;
+}
+.ki21-mode-tabs{
+  position:relative !important;
+  z-index:1 !important;
+  background:#0d1117 !important;
+}
+/* Keine Transparenz-/Blur-Effekte, die Safari beim Scrollen neu zusammensetzt. */
+.cockpit-v54-lagebild,
+.cockpit-v5-workgrid,
+.cockpit-tile,
+.cockpit-v5-summary{
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+}
+</style>
+<script>
+/* v6.5.14 – einmalige, gezielte Nachbearbeitung statt permanenter DOM-Vollscans */
+(function(){
+  const VERSION_LABEL='v6.5.14 Stable Loading & Scroll';
+
+  function activeAccV6514(){
+    try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
+  }
+
+  function applyOnceV6514(){
+    const accId=activeAccV6514();
+
+    /* Versionslabels nur gezielt aktualisieren. */
+    document.querySelectorAll('.tagline, body div').forEach(function(el){
+      if(el.children.length===0 && /^v6\.\d/.test(String(el.textContent||'').trim())){
+        el.textContent=VERSION_LABEL;
+      }
+    });
+
+    /* Volltexte nur an den tatsächlich sichtbaren Cockpit-Punkten ergänzen. */
+    if(accId && typeof resolveFullCockpitTextV6513==='function'){
+      document.querySelectorAll(
+        '.cockpit-tile-item,.cockpit-tile-link,.v53-task,.v53-bc-benefit,.v53-risk-text'
+      ).forEach(function(el){
+        const preview=String(el.textContent||'').trim();
+        if(!preview)return;
+        const full=resolveFullCockpitTextV6513(accId,preview);
+        if(full)el.setAttribute('data-full-text',full);
+      });
+    }
+  }
+
+  function scheduleOnceV6514(){
+    requestAnimationFrame(function(){
+      applyOnceV6514();
+      setTimeout(applyOnceV6514,120);
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',scheduleOnceV6514,{once:true});
+  }else{
+    scheduleOnceV6514();
+  }
+
+  /* Nach Navigation/Ansichtswechsel gezielt aktualisieren, ohne MutationObserver. */
+  document.addEventListener('click',function(){
+    setTimeout(applyOnceV6514,80);
+  },true);
+
+  window.addEventListener('pageshow',applyOnceV6514);
 })();
 </script>
 
