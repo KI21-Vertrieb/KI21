@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.28 Explainable Intelligence Test Release</title>
+<title>KI21 v6.5.29 Management Assessments & Addition Flow</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2409,6 +2409,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 </style>
 <!-- v6.5.6: Zentraler Opportunity Health Score, synchron in Hauptmenü/Cockpit/Phasen; lokale semantische Fallback-Bewertung und automatische Aktualisierung nach Eingaben. -->
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
+<!-- v6.5.29: Management-Aussagen im Cockpit; Gesprächsnotiz wird ohne zweiten Bestätigungsklick automatisch aufbereitet; eindeutiger Erfolgsabschluss mit Okay. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -8375,9 +8376,9 @@ function normalizeDecisionTextV6518(text,confirmed){
     .replace(/Einstiegsphase\s*[·\-–]\s*(?:Wirtschaftlicher )?Entscheider noch zu identifizieren/gi,
       'Discovery-Phase · Erfolgskriterien vereinbaren')
     .replace(/(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,
-      'Budgetfreigabe für Discovery Sprint steht aus')
+      'Kommerzielle Entscheidung blockiert den Projektstart')
     .replace(/Geschäftsführer als Entscheider bestätigt/gi,
-      'Budgetfreigabe für Discovery Sprint steht aus')
+      'Kommerzielle Entscheidung blockiert den Projektstart')
     .replace(/Sabine Keller treibt an,\s*aber ohne GF-Freigabe und wirtschaftliche Entscheidung bleibt Deal in Schleife/gi,
       'Sabine Keller treibt das Projekt intern voran; die Budgetfreigabe erfolgt durch den Geschäftsführer.')
     .replace(/Schmerz ist operativ klar\s*\([^)]*\),\s*aber noch nicht mit Umsatz[^.]*\.?/gi,
@@ -8829,11 +8830,11 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
       'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     );
     copy.businessCase.insights.unshift(
-      'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.'
+      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.'
     );
   }
 
-  copy.watchouts.currentRisk='Aktuell fehlen verbindliche Erfolgskriterien und eine dokumentierte Baseline.';
+  copy.watchouts.currentRisk='Der Projekterfolg ist derzeit nicht objektiv messbar.';
   copy.watchouts.salesStrategy='Erfolgskriterien und Baseline vor dem Discovery Sprint gemeinsam festlegen.';
   return copy;
 }
@@ -8867,13 +8868,13 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
   if(confirmed){
     copy.dealStatus='Discovery-Phase · Erfolgskriterien vereinbaren';
     copy.chance=copy.chance||{};
-    copy.chance.statement='Gute Voraussetzungen für einen erfolgreichen Discovery Sprint';
+    copy.chance.statement='Hohe Erfolgschance für einen Discovery Sprint';
     copy.chance.evidence=[
       'Aktiver operativer Sponsor und klarer operativer Schmerz stützen den Einstieg',
       'Die wirtschaftliche Entscheidung und die Erfolgskriterien stehen noch aus'
     ];
     copy.bottleneck=copy.bottleneck||{};
-    copy.bottleneck.statement='Budgetfreigabe für Discovery Sprint steht aus';
+    copy.bottleneck.statement='Kommerzielle Entscheidung blockiert den Projektstart';
     copy.bottleneck.evidence=[
       'Geschäftsführer als wirtschaftlicher Entscheider bestätigt',
       'Freigabe der 9.900 € im Entscheidungsgespräch noch ausstehend'
@@ -8883,11 +8884,11 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
       'Budgetfreigabe für den Discovery Sprint herbeiführen.'
     ];
     copy.watchouts=copy.watchouts||{};
-    copy.watchouts.currentRisk='Aktuell fehlen verbindliche Erfolgskriterien und eine dokumentierte Baseline.';
+    copy.watchouts.currentRisk='Der Projekterfolg ist derzeit nicht objektiv messbar.';
     copy.watchouts.salesStrategy='Erfolgskriterien und Baseline vor dem Discovery Sprint gemeinsam festlegen.';
     copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
     copy.businessCase.insights=[
-      'Die 8.000 € pro Monat sind eine bestätigte wirtschaftliche Ausgangsbasis, aber noch keine automatische Nutzen- oder Einsparungszusage.',
+      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.',
       'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     ];
   }
@@ -11778,13 +11779,20 @@ function showConversationNoteParserV4227(args){
         if(bg)bg.remove();
         renderHome();
       }
-      setTimeout(function(){
-        var note=document.createElement('div');
-        note.textContent='✓ Neue Ergänzung gespeichert. Opportunity wurde aktualisiert.';
-        note.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#173b27;color:#d9ffe8;border:1px solid #2f8f58;border-radius:12px;padding:12px 16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:88%;text-align:center';
-        document.body.appendChild(note);
-        setTimeout(function(){note.remove();},2600);
-      },80);
+      // Eindeutiger Abschluss statt stiller Rückkehr oder weiter sichtbarem „Abbrechen“.
+      ta.disabled=true;
+      row.style.display='none';
+      preview.innerHTML='';
+      preview.style.display='block';
+      preview.appendChild(h('div',{style:{padding:'18px 14px',border:'1px solid rgba(46,160,67,.42)',borderRadius:'14px',background:'rgba(46,160,67,.10)',textAlign:'center'}},
+        h('div',{style:{fontSize:'30px',lineHeight:'1',marginBottom:'10px',color:'#3fb950'}},'✓'),
+        h('div',{style:{fontSize:'15px',fontWeight:'900',color:'#e6edf3',marginBottom:'6px'}},'Ergänzung erfolgreich übernommen'),
+        h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Die Opportunity wurde aktualisiert. Du kannst dieses Fenster jetzt schließen.')
+      ));
+      status.textContent='';
+      applyRow.innerHTML='';
+      var okButton=h('button',{className:'btn-o',style:{width:'100%'},onclick:function(){if(bg)bg.remove();}},'Okay');
+      applyRow.appendChild(okButton);
     }catch(e){
       console.warn(e);
       status.textContent='Erkenntnisse konnten nicht übernommen werden.';
@@ -11808,7 +11816,14 @@ function showConversationNoteParserV4227(args){
   content.appendChild(applyRow);
 
   bg=modal('Gesprächsnotiz aufbereiten',content);
-  setTimeout(function(){ta.focus();},50);
+  // Die Notiz wurde bereits im Ergänzungsfenster bewusst übergeben. Deshalb startet
+  // die Aufbereitung automatisch; ein zweiter Klick auf „Aufbereiten“ ist unnötig.
+  setTimeout(function(){
+    try{
+      ta.focus();
+      if(String(ta.value||'').trim())analyze.click();
+    }catch(e){console.warn(e);}
+  },80);
 }
 
 function showNeuerKunde(initial,accId,initialTab){
@@ -11924,7 +11939,6 @@ function showNeuerKunde(initial,accId,initialTab){
         LS.set('ki21_acc',state.accounts);
         await refreshOpportunityHealth(accId);
         runSmartImpactAnalysis(accId,originalNote);
-        if(bg)bg.remove();
         if(m)m.remove();
         renderHome();
       }
@@ -13662,7 +13676,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.28 Explainable Intelligence Test Release';
+const KI21_VERSION='v6.5.29 Management Assessments & Addition Flow';
 
 
 function runKi21VersionMigration(){
@@ -14817,7 +14831,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.28 Explainable Intelligence Test Release';
+  const VERSION='v6.5.29 Management Assessments & Addition Flow';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -14865,11 +14879,11 @@ body{
       )
       .replace(
         /(?:Geschäftsführer als )?(?:wirtschaftlicher )?Entscheider (?:nicht bestätigt|noch zu identifizieren|ungeklärt)/gi,
-        'Budgetfreigabe für Discovery Sprint steht aus'
+        'Kommerzielle Entscheidung blockiert den Projektstart'
       )
       .replace(
         /Geschäftsführer als Entscheider bestätigt/gi,
-        'Budgetfreigabe für Discovery Sprint steht aus'
+        'Kommerzielle Entscheidung blockiert den Projektstart'
       )
       .replace(
         /Sabine Keller treibt an,\s*aber ohne GF-Freigabe und wirtschaftliche Entscheidung bleibt Deal in Schleife/gi,
