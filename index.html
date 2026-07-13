@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.6.7-forecast-decision-confidence-20260713 -->
+<!-- KI21_BUILD: v6.6.8-production-startup-forecast-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.7 Forecast & Decision Confidence Release</title>
+<title>KI21 v6.6.8 Production Startup & Forecast Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -14372,7 +14372,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.7 Forecast & Decision Confidence Release';
+const KI21_VERSION='v6.6.8 Production Startup & Forecast Release';
 
 
 function runKi21VersionMigration(){
@@ -14398,7 +14398,7 @@ function runKi21VersionMigration(){
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
         dealState:(detectCurrentDealStateV6532(acc.id)||{}).type||h.dealState,
-        protectedSchema:'v6.6.7',
+        protectedSchema:'v6.6.8',
         migratedAt:Date.now()
       });
     }
@@ -15032,35 +15032,42 @@ function renderKi21SafeStart(){
   app.appendChild(wrap);
 }
 
-// ── START ──────────────────────────────────────────────────
-try{
-  const savedFs=LS.get('ki21_fontsize','small');
-  document.documentElement.style.setProperty('--fs-input',savedFs==='large'?'15px':'12px');
-  const savedTheme=LS.get('ki21_theme','dark');
-  if(savedTheme==='light')document.body.classList.add('light');
-}catch(e){}
+// ── PRODUCTION START v6.6.8 ──────────────────────────────────
+// Der Start wird bis zum Ende des gesamten Skripts verschoben, damit alle
+// Deal-State-, Score- und Forecast-Erweiterungen bereits registriert sind.
+function ki21ProductionBootV668(){
+  try{
+    const savedFs=LS.get('ki21_fontsize','small');
+    document.documentElement.style.setProperty('--fs-input',savedFs==='large'?'15px':'12px');
+    const savedTheme=LS.get('ki21_theme','dark');
+    if(savedTheme==='light')document.body.classList.add('light');
+  }catch(e){}
 
-// v4.232 Selectable SPIN Stable: normaler Start in die leichte Opportunity-Übersicht.
-// Keine automatische Cockpit-/Health-Berechnung beim Start oder Rücksprung.
-try{
-  ki21SafeRemoveBlockingUi();
-  ki21HydrateStateFromStorage();
-  if(state.activeId){
-    state.view='cockpit-lite';
-    LS.set('ki21_view','cockpit-lite');
-    renderCockpitSnapshotLiteV4215();
-  }else{
+  try{ki21SafeRemoveBlockingUi();}catch(e){}
+  try{ki21HydrateStateFromStorage();}catch(e){console.warn('KI21 hydrate skipped',e);}
+
+  // Bevorzugt direkt den aktuellen Cockpit-Snapshot öffnen. Bei beschädigtem
+  // UI-Zustand wird automatisch auf die stabile Opportunity-Übersicht gewechselt.
+  try{
+    if(state&&state.activeId&&typeof renderCockpitSnapshotLiteV4215==='function'){
+      state.view='cockpit-lite';
+      try{LS.set('ki21_view','cockpit-lite');}catch(e){}
+      renderCockpitSnapshotLiteV4215();
+      return;
+    }
+  }catch(e){console.warn('KI21 cockpit start failed; using home',e);}
+
+  try{
     state.view='home-lite';
-    LS.set('ki21_view','home-lite');
-    renderHomeLiteV4211();
-  }
-}catch(e){
-  // Fallback nur im Fehlerfall, nicht als normaler Start.
-  try{renderKi21SafeStart();}catch(e2){
-    const app=document.getElementById('app');
-    if(app)app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht starten</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+String((e&&e.message)||e)+'</div></div>';
-  }
+    try{LS.set('ki21_view','home-lite');}catch(e){}
+    if(typeof renderHomeLiteV4211==='function'){renderHomeLiteV4211();return;}
+    if(typeof renderHome==='function'){renderHome();return;}
+  }catch(e){console.error('KI21 home start failed',e);}
+
+  const app=document.getElementById('app');
+  if(app)app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht vollständig starten</div><div style="font-size:13px;color:#8b949e;line-height:1.5;">Bitte die Seite einmal neu laden. Deine Opportunity-Daten bleiben erhalten.</div></div>';
 }
+
 (function(){
   const v=document.createElement('div');
   v.textContent=KI21_VERSION;
@@ -15533,7 +15540,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.7 Forecast & Decision Confidence Release';
+  const VERSION='v6.6.8 Production Startup & Forecast Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15812,7 +15819,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.6.7 Forecast & Decision Confidence Release';
+  const VERSION='v6.6.8 Production Startup & Forecast Release';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16025,7 +16032,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.6.7 Forecast & Decision Confidence Release';
+  const VERSION='v6.6.8 Production Startup & Forecast Release';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16033,6 +16040,13 @@ function buildScorePairV667(accId,health,extraClass){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(stamp,0),{once:true});else setTimeout(stamp,0);
   window.addEventListener('pageshow',()=>setTimeout(stamp,0));
 })();
+
+// Start erst jetzt: Alle Erweiterungen des Releases sind definiert.
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(ki21ProductionBootV668,0),{once:true});
+}else{
+  setTimeout(ki21ProductionBootV668,0);
+}
 </script>
 </body>
 </html>
