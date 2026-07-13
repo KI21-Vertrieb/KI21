@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.7.7-deal-decision-intelligence-20260713 -->
+<!-- KI21_BUILD: v6.8.0-dynamic-decision-engine-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.7.7 Deal Decision Intelligence</title>
+<title>KI21 v6.8.0 Dynamic Decision Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9731,67 +9731,129 @@ function renderCockpitSnapshotLiteV4215(){
   },0);
   wrap.appendChild(buildV62Summary(opportunityIntelligenceV620,summaryChanceV500,summaryRiskV500));
 
-  // v6.7.7: Deal-Entscheidung mit Belastbarkeit, Gegenposition und Änderungsbedingungen.
-  // Sie wird nicht nachträglich im DOM gesucht oder angehängt und kann daher nicht mehr
-  // durch spätere Cockpit-Renders verloren gehen.
-  const decisionAnalysisV674=(()=>{
+  // v6.8.0: Dynamic Decision Engine.
+  // Die jüngste geschäftskritische Ergänzung hat Vorrang vor älteren Deal-Zuständen.
+  // Explizit gelöste Hürden dürfen nicht erneut aus historischen Texten aktiviert werden.
+  let latestDecisionTextV680='';
+  try{latestDecisionTextV680=(typeof getLatestAdditionFactsV6532==='function'?(getLatestAdditionFactsV6532(aid)||{}).latestText:'')||'';}catch(e){}
+  const latestNormV680=String(latestDecisionTextV680||'').toLowerCase();
+  const hasMeasurementV680=/messlogik|messmethode|messbar|nutzungshäufigkeit|regelmäßig(?:e|en)?\s+(?:nutzung|einsetzen)|forecast[-\s]?(?:begründung|qualität)|ausgangswert|baseline|erfolgsmessung|akzeptanzmessung/.test(latestNormV680);
+  const cfoResolvedV680=/(?:kein|nicht)\s+(?:freigabe|entscheidungs|kaufentscheidungs)[-\s]?(?:kriterium|voraussetzung)|ausschließlich\s+(?:der|zur)\s+(?:vorbereitung|planung)|nur\s+(?:der|zur)\s+(?:vorbereitung|planung)|entscheidungstermin[^.]{0,90}(?:bleibt|besteht|bestätigt)/.test(latestNormV680);
+  const cfoUnresolvedV680=/cfo|rollout|support|einführungsaufwand/.test(latestNormV680) && !cfoResolvedV680;
+
+  const baseDecisionV680=(()=>{
     try{
       if(typeof window.analyzeDecisionV670==='function')return window.analyzeDecisionV670(aid);
     }catch(e){}
-    const currentRisk=String((opportunityIntelligenceV620&&opportunityIntelligenceV620.watchouts&&opportunityIntelligenceV620.watchouts.currentRisk)||summaryRiskV500||'');
-    const cfoContext=/cfo|rollout|support|einführungsaufwand/i.test(currentRisk+' '+JSON.stringify(opportunityIntelligenceV620||{}));
-    return {
-      confidence:cfoContext?'hoch':'mittel',
-      primary:cfoContext?{
-        id:'D-CFO-TIMING',
-        decision:'CFO-Frage vor dem Pilot eingrenzen oder erst mit den Pilotergebnissen beantworten?',
-        rec:'Vor dem Pilot nur Informationsbedarf, Umfang und Entscheidungsrelevanz verbindlich klären. Die belastbare Detailantwort anschließend mit den Pilotergebnissen liefern.',
-        ask:'Soll die Rollout- und Supporteinschätzung bereits über die Einführung entscheiden – oder dient sie nur der Vorbereitung des späteren Rollouts?',
-        risk:'Eine sachlich plausible Zusatzfrage kann nachträglich zur neuen Entscheidungshürde werden.'
-      }:{
-        id:'D-NEXT',
-        decision:'Welche Verkäuferentscheidung bringt die Opportunity jetzt am stärksten voran?',
-        rec:'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.',
-        ask:'Welche konkrete Kundenentscheidung muss als Nächstes verbindlich getroffen werden?',
-        risk:'Aktivität ohne verbindlichen Entscheidungsschritt erzeugt Scheinsicherheit.'
-      }
-    };
+    return {confidence:'mittel',primary:{
+      id:'D-NEXT',
+      decision:'Welche Deal-Entscheidung bringt die Opportunity jetzt am stärksten voran?',
+      rec:'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.',
+      ask:'Welche konkrete Kundenentscheidung muss als Nächstes verbindlich getroffen werden?',
+      risk:'Aktivität ohne verbindlichen Entscheidungsschritt erzeugt Scheinsicherheit.'
+    }};
   })();
+
+  const dynamicDecisionV680=(()=>{
+    if(hasMeasurementV680 && cfoResolvedV680){
+      return {
+        confidence:'hoch',
+        primary:{
+          id:'D-MEASUREMENT-GATE',
+          decision:'Pilot jetzt starten oder zuerst die Erfolgsmessung verbindlich festlegen?',
+          rec:'Pilot starten – aber vor Beginn Nutzungshäufigkeit, Ausgangswert und Messmethode für die Forecast-Qualität schriftlich festlegen.',
+          ask:'Woran erkennen Geschäftsführer und CFO nach zwei Wochen objektiv, dass KI21 regelmäßig genutzt wird und die Forecast-Begründungen messbar besser geworden sind?',
+          risk:'Der Pilot liefert Aktivität und positive Eindrücke, aber keine belastbare Entscheidungsgrundlage für die breitere Einführung.',
+          reasons:[
+            'Die frühere CFO-Hürde ist ausdrücklich gelöst und kein Freigabekriterium mehr.',
+            'Der verbindliche Entscheidungstermin nach dem Pilot bleibt bestehen.',
+            'Der neue Engpass ist nicht mehr die Freigabe, sondern die objektive Nachweisbarkeit des Piloterfolgs.'
+          ],
+          counters:[
+            'Zu viele Kennzahlen können den kurzen Pilot unnötig überfrachten.',
+            'Ein Teil der Qualitätsverbesserung lässt sich möglicherweise erst nach mehreren realen Forecast-Zyklen belastbar messen.'
+          ],
+          changes:[
+            'die Nutzung und Forecast-Qualität bereits mit eindeutigen Ausgangswerten und Messmethoden dokumentiert sind.',
+            'Geschäftsführer und CFO andere oder zusätzliche Erfolgskriterien verbindlich festlegen.',
+            'der Entscheidungstermin nach dem Pilot entfällt oder verschoben wird.'
+          ],
+          next:'Vor Pilotbeginn mit Geschäftsführer und CFO je eine einfache Kennzahl für Nutzung und Forecast-Qualität inklusive Ausgangswert, Zielwert und Datenquelle festlegen.'
+        }
+      };
+    }
+    if(cfoResolvedV680){
+      return {
+        confidence:'hoch',
+        primary:{
+          id:'D-PILOT-EXECUTION',
+          decision:'Pilot wie vereinbart starten oder vorab noch die Erfolgskriterien schärfen?',
+          rec:'Pilot wie vereinbart starten. Nur noch sicherstellen, dass die bereits vereinbarten Erfolgskriterien eindeutig messbar und für den Entscheidungstermin nutzbar sind.',
+          ask:'Welche wenigen Ergebnisse müssen am Entscheidungstermin vorliegen, damit die breitere Einführung entschieden werden kann?',
+          risk:'Eine gelöste Freigabefrage bleibt künstlich im Fokus und verzögert unnötig den Pilotstart.',
+          reasons:[
+            'Die Rollout- und Supportfrage ist ausdrücklich kein Freigabekriterium.',
+            'Der verbindliche Entscheidungstermin nach dem Pilot bleibt bestehen.',
+            'Damit ist die frühere Deal-Entscheidung gelöst und darf nicht weiter priorisiert werden.'
+          ],
+          counters:[
+            'Unklare Messgrößen könnten trotz geklärter Freigabe zu Diskussionen nach dem Pilot führen.',
+            'Der Pilot darf nicht starten, wenn Verantwortliche oder Datenerhebung noch offen sind.'
+          ],
+          changes:[
+            'neue Freigabekriterien oder Entscheider hinzukommen.',
+            'der Entscheidungstermin verschoben oder aufgehoben wird.',
+            'die Erfolgskriterien nicht eindeutig messbar sind.'
+          ],
+          next:'Vor dem Start einmal bestätigen, welche Messergebnisse am Entscheidungstermin vorgelegt werden und wer sie erhebt.'
+        }
+      };
+    }
+    if(cfoUnresolvedV680){
+      return {
+        confidence:'hoch',
+        primary:{
+          id:'D-CFO-TIMING',
+          decision:'Pilot jetzt starten oder zuerst die Entscheidung absichern?',
+          rec:'Pilot jetzt starten – aber nur mit begrenztem Umfang, messbaren Kriterien, klaren Verantwortlichen und einer verbindlichen Kaufentscheidung nach Abschluss.',
+          ask:'Ist die zusätzliche CFO-Anforderung Voraussetzung für die Kaufentscheidung oder erst für die spätere Einführung?',
+          risk:'Der Pilot kann erfolgreich sein und die Kaufentscheidung wird trotzdem verschoben, weil Rollout-Anforderungen erst danach neu definiert werden.',
+          reasons:[
+            'Pilot und Entscheidungstermin sind bereits verbindlich vereinbart.',
+            'Die zusätzliche CFO-Frage kann Vorbereitung oder eine neue Hürde sein.',
+            'Der Zeitpunkt der Klärung entscheidet, ob der Pilot echten Fortschritt erzeugt.'
+          ],
+          counters:[
+            'Der CFO könnte für eine belastbare Einschätzung zunächst echte Pilotdaten benötigen.',
+            'Ein zusätzlicher Termin vor dem Pilot kann unnötige Abstimmung erzeugen, wenn die Frage nur der späteren Rollout-Planung dient.'
+          ],
+          changes:[
+            'der CFO bestätigt, dass die Rollout- und Supporteinschätzung kein Freigabekriterium ist.',
+            'der verbindliche Entscheidungstermin nach dem Pilot entfällt oder verschoben wird.',
+            'neue Entscheider oder zusätzliche Freigabestufen hinzukommen.'
+          ],
+          next:'Vor Pilotbeginn den CFO in einem kurzen Termin fragen, ob seine Anforderung Freigabekriterium oder Rollout-Vorbereitung ist.'
+        }
+      };
+    }
+    return baseDecisionV680;
+  })();
+
+  const decisionAnalysisV674=dynamicDecisionV680;
   const decisionPrimaryV674=decisionAnalysisV674.primary||{};
-  let latestDecisionTextV675='';
-  try{latestDecisionTextV675=(typeof getLatestAdditionFactsV6532==='function'?(getLatestAdditionFactsV6532(aid)||{}).latestText:'')||'';}catch(e){}
-  const decisionTextV675=latestDecisionTextV675+' '+JSON.stringify(opportunityIntelligenceV620||{});
-  const cfoTimingV675=/cfo|rollout|support|einführungsaufwand/i.test(decisionTextV675);
-  const reasonItemsV675=cfoTimingV675?[
-    'Pilot und Managementtermin sind bereits verbindlich vereinbart.',
-    'Die zusätzliche CFO-Frage betrifft nicht mehr den Pilot, sondern die spätere Einführung.',
-    'Der Zeitpunkt der Klärung entscheidet, ob die Frage Vorbereitung oder neue Hürde wird.'
-  ]:[
+  const reasonItemsV675=decisionPrimaryV674.reasons||[
     'Der aktuelle Engpass blockiert den nächsten verbindlichen Kundenschritt.',
     'Weitere Aktivität allein verändert den Deal-State nicht.',
     'Eine klare Kundenentscheidung schafft den größten unmittelbaren Hebel.'
   ];
-  const wrongDecisionV675=cfoTimingV675?
-    'Der Pilot kann erfolgreich sein und die Kaufentscheidung wird trotzdem verschoben, weil Rollout-Anforderungen erst danach neu definiert werden.':
-    (decisionPrimaryV674.risk||'Der nächste Schritt erzeugt Aktivität, aber keinen belastbaren Fortschritt.');
-  const missingInfoV675=cfoTimingV675?
-    'Ob die Rollout- und Supporteinschätzung Voraussetzung für die Kaufentscheidung oder nur Vorbereitung der Umsetzung ist.':
-    (decisionPrimaryV674.ask||'Welche Information entscheidet zwischen den plausiblen Handlungswegen?');
-  const nextActionV675=cfoTimingV675?
-    'Vor Pilotbeginn den CFO in einem kurzen Termin fragen, ob seine Anforderung Freigabekriterium oder Rollout-Vorbereitung ist.':
-    (decisionPrimaryV674.rec||'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.');
-  const counterArgumentsV677=cfoTimingV675?[
-    'Der CFO könnte für eine belastbare Einschätzung zunächst echte Pilotdaten benötigen.',
-    'Ein zusätzlicher Termin vor dem Pilot kann unnötige Abstimmung erzeugen, wenn die Frage nur der späteren Rollout-Planung dient.'
-  ]:[
+  const wrongDecisionV675=decisionPrimaryV674.risk||'Der nächste Schritt erzeugt Aktivität, aber keinen belastbaren Fortschritt.';
+  const missingInfoV675=decisionPrimaryV674.ask||'Welche Information entscheidet zwischen den plausiblen Handlungswegen?';
+  const nextActionV675=decisionPrimaryV674.next||decisionPrimaryV674.rec||'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.';
+  const counterArgumentsV677=decisionPrimaryV674.counters||[
     'Eine zusätzliche Klärung kann den nächsten Kundenschritt verzögern.',
     'Die fehlende Information könnte im bereits geplanten Termin ohnehin beantwortet werden.'
   ];
-  const changeConditionsV677=cfoTimingV675?[
-    'der CFO bestätigt, dass die Rollout- und Supporteinschätzung ein Freigabekriterium für die Kaufentscheidung ist.',
-    'der verbindliche Entscheidungstermin nach dem Pilot entfällt oder verschoben wird.',
-    'neue Entscheider oder zusätzliche Freigabestufen hinzukommen.'
-  ]:[
+  const changeConditionsV677=decisionPrimaryV674.changes||[
     'der Kunde einen verbindlichen Entscheidungsschritt bereits bestätigt.',
     'sich der aktuelle Engpass nachweislich auflöst.',
     'eine neue, geschäftskritische Bedingung entsteht.'
@@ -14486,7 +14548,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.7.7 Deal Decision Intelligence';
+const KI21_VERSION='v6.8.0 Dynamic Decision Engine';
 
 
 function runKi21VersionMigration(){
@@ -15654,7 +15716,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.7.7 Deal Decision Intelligence';
+  const VERSION='v6.8.0 Dynamic Decision Engine';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15933,7 +15995,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.7.7 Deal Decision Intelligence';
+  const VERSION='v6.8.0 Dynamic Decision Engine';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16146,7 +16208,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.7.7 Deal Decision Intelligence';
+  const VERSION='v6.8.0 Dynamic Decision Engine';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
