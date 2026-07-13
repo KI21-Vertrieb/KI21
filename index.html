@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.7.6-sales-manager-decision-language-20260713 -->
+<!-- KI21_BUILD: v6.7.7-deal-decision-intelligence-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.7.6 Sales Manager Decision Language</title>
+<title>KI21 v6.7.7 Deal Decision Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9731,7 +9731,7 @@ function renderCockpitSnapshotLiteV4215(){
   },0);
   wrap.appendChild(buildV62Summary(opportunityIntelligenceV620,summaryChanceV500,summaryRiskV500));
 
-  // v6.7.6: Sales-Manager-Sprache, klare Sales-Entscheidung und natürliche Formulierungen.
+  // v6.7.7: Deal-Entscheidung mit Belastbarkeit, Gegenposition und Änderungsbedingungen.
   // Sie wird nicht nachträglich im DOM gesucht oder angehängt und kann daher nicht mehr
   // durch spätere Cockpit-Renders verloren gehen.
   const decisionAnalysisV674=(()=>{
@@ -9780,22 +9780,46 @@ function renderCockpitSnapshotLiteV4215(){
   const nextActionV675=cfoTimingV675?
     'Vor Pilotbeginn den CFO in einem kurzen Termin fragen, ob seine Anforderung Freigabekriterium oder Rollout-Vorbereitung ist.':
     (decisionPrimaryV674.rec||'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.');
-  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core', 'aria-label':'KI21 Sales-Entscheidung'},
+  const counterArgumentsV677=cfoTimingV675?[
+    'Der CFO könnte für eine belastbare Einschätzung zunächst echte Pilotdaten benötigen.',
+    'Ein zusätzlicher Termin vor dem Pilot kann unnötige Abstimmung erzeugen, wenn die Frage nur der späteren Rollout-Planung dient.'
+  ]:[
+    'Eine zusätzliche Klärung kann den nächsten Kundenschritt verzögern.',
+    'Die fehlende Information könnte im bereits geplanten Termin ohnehin beantwortet werden.'
+  ];
+  const changeConditionsV677=cfoTimingV675?[
+    'der CFO bestätigt, dass die Rollout- und Supporteinschätzung ein Freigabekriterium für die Kaufentscheidung ist.',
+    'der verbindliche Entscheidungstermin nach dem Pilot entfällt oder verschoben wird.',
+    'neue Entscheider oder zusätzliche Freigabestufen hinzukommen.'
+  ]:[
+    'der Kunde einen verbindlichen Entscheidungsschritt bereits bestätigt.',
+    'sich der aktuelle Engpass nachweislich auflöst.',
+    'eine neue, geschäftskritische Bedingung entsteht.'
+  ];
+  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core', 'aria-label':'KI21 Deal-Entscheidung'},
     h('div',{className:'ki21-decision-head'},
       h('div',{},
-        h('div',{className:'ki21-decision-kicker'},'VERKÄUFERENTSCHEIDUNG'),
-        h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Sales-Entscheidung klären')
+        h('div',{className:'ki21-decision-kicker'},'DEAL-ENTSCHEIDUNG'),
+        h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Deal-Entscheidung klären')
       ),
-      h('div',{className:'ki21-decision-confidence'},'Confidence '+String(decisionAnalysisV674.confidence||'mittel'))
+      h('div',{className:'ki21-decision-confidence'},'Belastbarkeit: '+String(decisionAnalysisV674.confidence||'mittel'))
     ),
-    h('div',{className:'ki21-decision-rec'},h('b',{},'Empfehlung: '),decisionPrimaryV674.rec||''),
+    h('div',{className:'ki21-decision-rec'},h('b',{},'KI21 empfiehlt: '),decisionPrimaryV674.rec||''),
     h('div',{className:'ki21-decision-reasoning'},
-      h('div',{className:'ki21-qe-label'},'WARUM GENAU DIESE ENTSCHEIDUNG?'),
+      h('div',{className:'ki21-qe-label'},'DIESE FAKTEN SPRECHEN DAFÜR'),
       ...reasonItemsV675.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
     ),
     h('div',{className:'ki21-decision-grid ki21-decision-grid-v675'},
       h('div',{className:'ki21-decision-mini ki21-decision-mini-risk'},h('b',{},'Wenn wir falsch entscheiden …'),h('span',{},wrongDecisionV675)),
-      h('div',{className:'ki21-decision-mini'},h('b',{},'Was würde die Entscheidung eindeutig machen?'),h('span',{},missingInfoV675))
+      h('div',{className:'ki21-decision-mini'},h('b',{},'Eine Antwort entscheidet jetzt'),h('span',{},missingInfoV675))
+    ),
+    h('div',{className:'ki21-decision-reasoning'},
+      h('div',{className:'ki21-qe-label'},'WAS SPRICHT DAGEGEN?'),
+      ...counterArgumentsV677.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
+    ),
+    h('div',{className:'ki21-decision-reasoning ki21-decision-change-v677'},
+      h('div',{className:'ki21-qe-label'},'DIESE EMPFEHLUNG WÜRDE SICH ÄNDERN, WENN …'),
+      ...changeConditionsV677.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
     ),
     h('div',{className:'ki21-next-action-v675'},
       h('div',{className:'ki21-qe-label'},'NÄCHSTE HANDLUNG'),
@@ -9806,7 +9830,7 @@ function renderCockpitSnapshotLiteV4215(){
         if(typeof window.openDecisionDetails==='function')return window.openDecisionDetails(decisionAnalysisV674);
       }catch(e){}
       try{
-        showBottomSheet('Sales-Entscheidung',[
+        showBottomSheet('Deal-Entscheidung',[
           {glyph:'◆',text:decisionPrimaryV674.decision||'',kind:'ki21'},
           {glyph:'→',text:decisionPrimaryV674.rec||'',kind:'ki21'},
           {glyph:'?',text:missingInfoV675,kind:''},
@@ -14462,7 +14486,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.7.6 Sales Manager Decision Language';
+const KI21_VERSION='v6.7.7 Deal Decision Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -15630,7 +15654,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.7.6 Sales Manager Decision Language';
+  const VERSION='v6.7.7 Deal Decision Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15909,7 +15933,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.7.6 Sales Manager Decision Language';
+  const VERSION='v6.7.7 Deal Decision Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16122,7 +16146,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.7.6 Sales Manager Decision Language';
+  const VERSION='v6.7.7 Deal Decision Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
