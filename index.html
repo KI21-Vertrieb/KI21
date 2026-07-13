@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.2 Dynamic Decision State Engine</title>
+<title>KI21 v6.6.3 Decision Timing & Intent Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2407,7 +2407,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
 
-/* v6.6.2 Dynamic Decision State Engine */
+/* v6.6.3 Decision Timing & Intent Engine */
 .ki21-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px;}
 .ki21-engine-card{border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(17,22,29,.76));border-radius:12px;padding:10px;min-height:88px;}
 .ki21-engine-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;}
@@ -2426,7 +2426,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
 <!-- v6.5.33 Decision Intelligence: Entscheidungslücke vor Aufgabenlogik, Moving-the-Goalposts-Prüfung, explizite Freigabekriterien, strategische Hebel und konkrete Deliverables. -->
-<!-- v6.6.2 Dynamic Decision State Engine: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
+<!-- v6.6.3 Decision Timing & Intent Engine: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
 <!-- v6.6.2: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
 </head>
@@ -3937,6 +3937,7 @@ function applyConfirmedDecisionScoreV6513(accId,health){
 function getDealStateRiskDeltaV661(accId){
   const ds=detectCurrentDealStateV6532(accId);
   if(!ds)return 0;
+  if(ds.type==='pilot_fully_agreed_rollout_open')return 3;
   if(ds.type==='bounded_pilot_conditional')return -4;
   if(ds.type==='free_pilot_uncommitted')return -12;
   if(ds.type==='priority_postponed')return -8;
@@ -3957,6 +3958,7 @@ function storeCentralOpportunityHealthV656(accId,health){
   let adjusted=Math.max(0,Math.min(100,Math.round(rawScore+delta)));
   // v6.6.2: Ein begrenzter Pilot mit Managementtermin ist Fortschritt, aber ohne verbindliche
   // Freigabe kein nahezu sicherer Deal. Damit bleibt der Score nachvollziehbar und moderat.
+  if(currentDealState&&currentDealState.type==='pilot_fully_agreed_rollout_open')adjusted=Math.min(adjusted,84);
   if(currentDealState&&currentDealState.type==='bounded_pilot_conditional')adjusted=Math.min(adjusted,79);
   if(currentDealState&&currentDealState.type==='free_pilot_uncommitted')adjusted=Math.min(adjusted,69);
   const normalized={...health,baseScoreV661:rawScore,score:adjusted,riskDeltaV661:delta,riskAdjustedV661:true,dealState:currentDealState.type,ts:Date.now()};
@@ -9113,7 +9115,7 @@ function detectCurrentDealStateV6532(accId){
 
   // v6.6.2 Dynamic Decision State: Ein nachverhandelter, begrenzter Pilot ist ein eigener Zustand.
   // Er darf nicht weiter als offene Vier-Wochen-Gratisanforderung behandelt werden.
-  const pilotReducedToTwoWeeks=/(?:auf|nur noch|begrenzt auf).{0,35}(?:zwei|2)\s*wochen|(?:zwei|2)\s*wochen.{0,50}(?:begrenzt|pilot|test)/i.test(latest);
+  const pilotReducedToTwoWeeks=/(?:auf|nur noch|begrenzt auf).{0,35}(?:zwei|2)\s*wochen|(?:pilot|test).{0,45}(?:läuft|dauert|ist).{0,25}(?:zwei|2)\s*wochen|(?:zwei|2)\s*wochen.{0,50}(?:begrenzt|pilot|test)/i.test(latest);
   const boundedUseCase=/(?:klar|konkret|eng)\s+(?:abgegrenzt|begrenzt).{0,45}(?:anwendungsfall|use case)|(?:ein|einen)\s+(?:klar\s+)?(?:abgegrenzten|begrenzten)\s+anwendungsfall/i.test(latest);
   const writtenCriteriaAgreed=/(?:erfolgskriterien|messkriterien|kriterien).{0,90}(?:schriftlich).{0,50}(?:vereinbart|festgelegt|vor dem start)|(?:schriftlich).{0,70}(?:erfolgskriterien|messkriterien)/i.test(latest);
   const postPilotDecisionMeeting=/(?:entscheidungstermin|termin).{0,100}(?:geschäftsführer|cfo).{0,80}(?:zugesagt|vereinbart|verbindlich)|(?:geschäftsführer|cfo).{0,120}(?:entscheidungstermin|termin).{0,80}(?:zugesagt|vereinbart|verbindlich)|(?:gemeinsamen?\s+entscheidungstermin).{0,100}(?:nach|unmittelbar nach).{0,40}(?:test|pilot)/i.test(latest);
@@ -9121,8 +9123,31 @@ function detectCurrentDealStateV6532(accId){
   const noBindingApproval=/(?:keine|noch keine|nicht).{0,60}(?:verbindliche\s+)?(?:freigabe|kaufzusage)|(?:verbindliche\s+freigabe).{0,80}(?:nicht|noch nicht)/i.test(latest);
   const boundedPilotConditional=freePilotRequested && pilotReducedToTwoWeeks && boundedUseCase && writtenCriteriaAgreed && postPilotDecisionMeeting;
 
+  // v6.6.3 Decision Timing & Intent Engine: Vollständig vereinbarter Pilot mit klarer
+  // Scorecard und verbindlichem Entscheidungstermin. Zusätzliche Rollout-/Supportfragen
+  // sind ein eigener, neuer Zustand und dürfen nicht als allgemeine Freigabe oder Startlogik
+  // interpretiert werden.
+  const pilotAgreementConfirmed=/(?:pilotvereinbarung|pilot|test).{0,100}(?:bestätigt|verbindlich vereinbart|vereinbart)|(?:geschäftsführer|cfo).{0,120}(?:pilotvereinbarung|pilot|test).{0,80}(?:bestätigt|vereinbart)/i.test(latest);
+  const fiveUsers=/(?:fünf|5)\s+(?:vertriebsmitarbeiter|nutzer|anwender)/i.test(latest);
+  const acceptanceMeasurementFixed=/(?:akzeptanzmessung|vertriebsakzeptanz|akzeptanz).{0,100}(?:schriftlich|festgelegt|vereinbart|messbar)/i.test(latest);
+  const measurablePilotSuccess=/(?:als erfolgreich gilt|pilot.*erfolgreich|erfolgskriterien).{0,220}(?:mindestens|messbar|vollständiger|regelmäßig)/i.test(latest);
+  const immediateDecisionAfterPilot=/(?:entscheidungstermin).{0,120}(?:ersten wer?ktag|unmittelbar|direkt).{0,80}(?:nach pilotende|nach dem pilot|nach dem test)|(?:ersten wer?ktag).{0,100}(?:nach pilotende|nach dem pilot|nach dem test)/i.test(latest);
+  const rolloutEffortRequested=/(?:einführungsaufwand|rollout[- ]?aufwand|implementierungsaufwand)/i.test(latest);
+  const supportNeedRequested=/(?:supportbedarf|support[- ]?bedarf|betreuungsaufwand)/i.test(latest);
+  const rolloutReadinessOpen=rolloutEffortRequested||supportNeedRequested;
+  const fullyAgreedPilot=pilotAgreementConfirmed && pilotReducedToTwoWeeks && (fiveUsers||boundedUseCase) && writtenCriteriaAgreed && acceptanceMeasurementFixed && measurablePilotSuccess && immediateDecisionAfterPilot;
+
   const approvalExplicit=!explicitNoDecision && /(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt)/i.test(latest);
   const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(scan);
+
+  if(fullyAgreedPilot && rolloutReadinessOpen){
+    return {
+      type:'pilot_fully_agreed_rollout_open',latest,budgetAvailable,decisionDate,
+      pilotAgreementConfirmed,pilotReducedToTwoWeeks,fiveUsers,writtenCriteriaAgreed,
+      acceptanceMeasurementFixed,measurablePilotSuccess,immediateDecisionAfterPilot,
+      rolloutEffortRequested,supportNeedRequested,rolloutReadinessOpen,broaderRolloutSignal
+    };
+  }
 
   if(boundedPilotConditional){
     return {
@@ -9172,6 +9197,47 @@ function applyDealStateReassessmentV6532(intel,accId){
   copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
   copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
   const ds=detectCurrentDealStateV6532(accId);
+
+  if(ds.type==='pilot_fully_agreed_rollout_open'){
+    copy.dealStatus='Pilot verbindlich vereinbart · Rollout-Fragen vor Entscheidung klären';
+    copy.chance.statement='Der Pilot ist vollständig vereinbart und führt zu einem verbindlichen Managemententscheid';
+    copy.chance.evidence=[
+      'Dauer, Nutzergruppe, fachliche Messgrößen und Vertriebsakzeptanz sind schriftlich festgelegt',
+      'Geschäftsführer und CFO entscheiden verbindlich am ersten Werktag nach Pilotende'
+    ];
+    copy.bottleneck.statement='Offen ist nicht mehr der Pilot, sondern die belastbare Einordnung von Einführungsaufwand und Supportbedarf';
+    copy.bottleneck.evidence=[
+      'Der CFO möchte vor einer breiteren Einführung Aufwand und Supportmodell verstehen',
+      'Noch ist unklar, ob dies echte Rollout-Vorbereitung oder eine weitere Entscheidungshürde ist'
+    ];
+    copy.nextSteps=[
+      'Vor Pilotstart einen kurzen CFO-Termin ansetzen und verbindlich klären, welche minimale Rollout- und Supporteinschätzung für die Entscheidung benötigt wird.',
+      'Die Detailausarbeitung erst mit den Pilotergebnissen verbinden und im bereits vereinbarten Entscheidungstermin als kompaktes Rollout-Szenario vorlegen.'
+    ];
+    copy.watchouts.currentRisk='Die zusätzliche CFO-Frage ist sachlich plausibel, darf aber weder den Pilotstart verzögern noch den vereinbarten Piloterfolg nachträglich entwerten.';
+    copy.watchouts.salesStrategy='Den CFO vor dem Pilot kurz ausrichten: Informationsbedarf, Umfang und Entscheidungsrelevanz begrenzen. Danach während des Piloten nur die dafür nötigen Daten sammeln.';
+    copy.businessCase.insights=[
+      'Positives Signal möglich: Der CFO denkt möglicherweise bereits über die breitere Einführung nach.',
+      'Kritisches Signal möglich: Wird der Informationsbedarf nachträglich erweitert, droht erneut Moving the Goalposts. Der frühe Klärungstermin macht die Absicht prüfbar.'
+    ];
+    copy.decisionGap={
+      statement:'Welche konkrete Rollout- und Supportinformation benötigt der CFO vor der Entscheidung – und ist sie Ergänzung oder neues Freigabekriterium?',
+      goalpostRisk:true,
+      commitmentRisk:false,
+      requiredOutcome:'Vor Pilotstart begrenzter CFO-Informationsauftrag; nach Pilot unveränderter Managemententscheid'
+    };
+    copy.intentHypotheses=[
+      {label:'Positiv',text:'Der CFO bereitet bereits den Rollout vor und möchte Umsetzbarkeit absichern.'},
+      {label:'Neutral',text:'Der CFO benötigt eine übliche Aufwandsschätzung zur wirtschaftlichen Einordnung.'},
+      {label:'Kritisch',text:'Die Zusatzfrage könnte als nächste Hürde genutzt werden, um die Entscheidung weiter zu verschieben.'}
+    ];
+    copy.sellerDecision={
+      question:'CFO-Fragen vor oder nach dem Pilot klären?',
+      recommendation:'Vor dem Pilot den benötigten Umfang und die Entscheidungsrelevanz klären; die belastbare Antwort nach dem Pilot mit echten Nutzungsdaten liefern.',
+      rationale:'So wird der Pilot nicht verzögert, der CFO erhält Planungssicherheit und eine spätere Ausweitung der Kriterien wird verhindert.'
+    };
+    return copy;
+  }
 
   if(ds.type==='bounded_pilot_conditional'){
     copy.dealStatus='Begrenzter Pilot vereinbart · Freigabelogik noch offen';
@@ -14279,7 +14345,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.2 Dynamic Decision State Engine';
+const KI21_VERSION='v6.6.3 Decision Timing & Intent Engine';
 
 
 function runKi21VersionMigration(){
@@ -15435,7 +15501,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.2 Dynamic Decision State Engine';
+  const VERSION='v6.6.3 Decision Timing & Intent Engine';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
