@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.9.0-explainable-decision-intelligence-20260713 -->
+<!-- KI21_BUILD: v6.9.1-cockpit-runtime-fix-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.9 Explainable Decision Intelligence</title>
+<title>KI21 v6.9.1 Explainable Decision Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9886,10 +9886,12 @@ function renderCockpitSnapshotLiteV4215(){
     }
     LS.set(snapshotKeyV690,currentV690);
   }catch(e){}
+  let manualKpiForTrustV690='';
+  try{manualKpiForTrustV690=(typeof getManualQuantifiedProblemV63==='function'?getManualQuantifiedProblemV63(aid):'')||'';}catch(e){}
   const trustBarsV690=[
     ['Faktenlage',Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2)))],
     ['Entscheiderklarheit',/cfo|geschäftsführer|entscheider/.test(latestNormV680)?4:3],
-    ['Business Case',manualKpiV63?4:3],
+    ['Business Case',manualKpiForTrustV690?4:3],
     ['Erfolgskriterien',hasMeasurementV680?4:2],
     ['Risiken bewertet',counterArgumentsV677.length?4:2]
   ];
@@ -14603,7 +14605,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.9 Explainable Decision Intelligence';
+const KI21_VERSION='v6.9.1 Explainable Decision Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -15771,7 +15773,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.9 Explainable Decision Intelligence';
+  const VERSION='v6.9.1 Explainable Decision Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16050,7 +16052,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.9 Explainable Decision Intelligence';
+  const VERSION='v6.9.1 Explainable Decision Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16263,7 +16265,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.9 Explainable Decision Intelligence';
+  const VERSION='v6.9.1 Explainable Decision Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
