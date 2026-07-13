@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.0 Intelligence Engine Release</title>
+<title>KI21 v6.6.1 Commitment Intelligence Pilot Gate Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2407,7 +2407,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
 
-/* v6.6.0 Intelligence Engine Release */
+/* v6.6.1 Commitment Intelligence Pilot Gate Release */
 .ki21-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px;}
 .ki21-engine-card{border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(17,22,29,.76));border-radius:12px;padding:10px;min-height:88px;}
 .ki21-engine-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;}
@@ -2426,8 +2426,9 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
 <!-- v6.5.33 Decision Intelligence: Entscheidungslücke vor Aufgabenlogik, Moving-the-Goalposts-Prüfung, explizite Freigabekriterien, strategische Hebel und konkrete Deliverables. -->
-<!-- v6.6.0 Intelligence Engine Release: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
+<!-- v6.6.1 Commitment Intelligence Pilot Gate Release: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
+<!-- v6.6.1: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -3933,10 +3934,26 @@ function applyConfirmedDecisionScoreV6513(accId,health){
   }
   return copy;
 }
+function getDealStateRiskDeltaV661(accId){
+  const ds=detectCurrentDealStateV6532(accId);
+  if(!ds)return 0;
+  if(ds.type==='free_pilot_uncommitted')return -12;
+  if(ds.type==='priority_postponed')return -8;
+  if(ds.type==='decision_gap_additional_evidence')return -6;
+  if(ds.type==='showcase_ready')return -5;
+  if(ds.type==='showcase_meeting')return -3;
+  if(ds.type==='baseline_prerequisite')return 2;
+  if(ds.type==='criteria_prerequisite')return 1;
+  if(ds.type==='approved')return 8;
+  return 0;
+}
 function storeCentralOpportunityHealthV656(accId,health){
   if(!accId||!health||typeof health.score!=='number')return null;
   health=applyConfirmedDecisionScoreV6513(accId,health);
-  const normalized={...health,score:Math.max(0,Math.min(100,Math.round(health.score))),ts:Date.now()};
+  const rawScore=Math.max(0,Math.min(100,Math.round(health.score)));
+  const delta=getDealStateRiskDeltaV661(accId);
+  const adjusted=Math.max(0,Math.min(100,Math.round(rawScore+delta)));
+  const normalized={...health,baseScoreV661:rawScore,score:adjusted,riskDeltaV661:delta,riskAdjustedV661:true,dealState:detectCurrentDealStateV6532(accId).type,ts:Date.now()};
   LS.set('ki21_health_'+accId,normalized);
   LS.set('ki21_score_'+accId,Math.round(normalized.score/10));
   LS.set('ki21_health_updated_'+accId,normalized.ts);
@@ -9077,8 +9094,26 @@ function detectCurrentDealStateV6532(accId){
   const cfoInDecision=/(?:gemeinsam mit dem cfo|geschäftsführer und cfo|cfo).{0,80}(?:freigabe|entschieden|entscheidung)/i.test(latest);
   const decisionAfterEvidence=/(?:danach|anschließend|wenn diese|sobald diese).{0,100}(?:freigabe|entschieden|entscheidung)|(?:nach vorlage|nach dokumentation).{0,100}(?:freigabe|entscheidung)/i.test(latest);
 
+  // v6.6.1 Commitment Intelligence: Eine kostenlose Testforderung ist ein neuer dominanter Deal-State.
+  // Sie verdrängt ältere Showcase-/Prioritätslogik und wird nicht als operative Pilot-Aufgabe interpretiert.
+  const freePilotRequested=/(?:vier|4)\s*wochen.{0,80}(?:kostenlos|unentgeltlich|gratis).{0,80}(?:test|pilot)|(?:kostenlos|unentgeltlich|gratis).{0,100}(?:test|pilot)|(?:test|pilot).{0,100}(?:kostenlos|unentgeltlich|gratis)/i.test(latest);
+  const pilotScopePresent=/(?:kleinen?|ausgewählten?)\s+(?:vertriebsteam|team)|(?:umfang|teilnehmer|nutzerzahl|anwender).{0,60}(?:festgelegt|vereinbart|begrenzt)/i.test(latest);
+  const pilotCriteriaMissing=/(?:erfolgskriterien|messkriterien|kriterien).{0,80}(?:noch nicht|nicht).{0,40}(?:vereinbart|festgelegt|definiert)|(?:noch keine|keine).{0,60}(?:erfolgskriterien|messkriterien)/i.test(latest);
+  const pilotResponsibilitiesMissing=/(?:verantwortlichkeiten|verantwortliche|zuständigkeiten).{0,80}(?:noch nicht|nicht).{0,40}(?:vereinbart|festgelegt|geklärt)|(?:noch keine|keine).{0,60}(?:verantwortlichkeiten|zuständigkeiten)/i.test(latest);
+  const pilotDecisionDateMissing=/(?:entscheidungstermin|freigabetermin|entscheidungspunkt).{0,80}(?:noch nicht|nicht).{0,40}(?:vereinbart|festgelegt)|(?:kein|keine|noch kein).{0,60}(?:entscheidungstermin|entscheidungspunkt)/i.test(latest);
+  const broaderRolloutSignal=/(?:erfolgreichen?\s+(?:test|pilot)).{0,100}(?:breitere|größere|weitere)\s+(?:einführung|rollout)|(?:breitere|größere|weitere)\s+(?:einführung|rollout).{0,100}(?:test|pilot)/i.test(latest);
+  const cfoRiskAvoidance=/(?:cfo).{0,120}(?:finanzielle[s]?\s+risiko|risiko).{0,80}(?:vermeiden|reduzieren|ausschließen)/i.test(latest);
+
   const approvalExplicit=!explicitNoDecision && /(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt)/i.test(latest);
   const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(scan);
+
+  if(freePilotRequested){
+    return {
+      type:'free_pilot_uncommitted',latest,budgetAvailable,decisionDate,
+      pilotScopePresent,pilotCriteriaMissing,pilotResponsibilitiesMissing,pilotDecisionDateMissing,
+      broaderRolloutSignal,cfoRiskAvoidance,explicitNoDecision
+    };
+  }
 
   if(moreEvidenceRequested && (firstShowcaseAccepted||repeatabilityQuestion)){
     return {
@@ -9112,6 +9147,37 @@ function applyDealStateReassessmentV6532(intel,accId){
   copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
   copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
   const ds=detectCurrentDealStateV6532(accId);
+
+  if(ds.type==='free_pilot_uncommitted'){
+    copy.dealStatus='Pilotforderung offen · Gegenseitigkeit verhandeln';
+    copy.chance.statement='Breitere Einführung ist möglich – der kostenlose Test ist aber noch nicht entscheidungsfähig vereinbart';
+    copy.chance.evidence=[
+      ds.broaderRolloutSignal?'Der Geschäftsführer stellt bei erfolgreichem Test eine breitere Einführung in Aussicht':'Der Kunde signalisiert grundsätzliches Interesse an einer späteren Einführung',
+      'Der Test ist noch keine Freigabe und enthält bislang keine belastbare Entscheidungslogik'
+    ];
+    copy.bottleneck.statement='Der Kunde fordert weitere Vorleistung ohne verbindliche Erfolgskriterien und Entscheidungspunkt';
+    copy.bottleneck.evidence=[
+      'Vier Wochen kostenloser Test werden als neue Freigabebedingung verlangt',
+      'Erfolgskriterien, Verantwortlichkeiten und ein fester Entscheidungstermin sind noch nicht vereinbart'
+    ];
+    copy.nextSteps=[
+      'Vor jeder Zusage mit Geschäftsführer und CFO Pilotumfang, Erfolgskriterien, Verantwortlichkeiten und den verbindlichen Entscheidungstermin festlegen.',
+      'Den kostenlosen Test nur gegen eine klare Gegenleistung und eine konkrete Freigabelogik anbieten.'
+    ];
+    copy.watchouts.currentRisk='Der Test darf nicht zur nächsten unverbindlichen Entscheidungsschleife und zu offener Gratis-Vorleistung werden.';
+    copy.watchouts.salesStrategy='Nicht den Pilot technisch vorbereiten, sondern zuerst Gegenseitigkeit, Exit-Kriterien und den Entscheidungsmechanismus verhandeln.';
+    copy.businessCase.insights=[
+      'Der Kunde will sein Risiko vollständig reduzieren; dadurch wird das Vorleistungs- und Verzögerungsrisiko auf den Anbieter verlagert.',
+      'Nächstes Deliverable: eine kurze Pilotvereinbarung mit Umfang, Messkriterien, Verantwortlichkeiten, Gegenleistung und verbindlichem Entscheidungspunkt.'
+    ];
+    copy.decisionGap={
+      statement:'Welche verbindliche Kaufentscheidung folgt bei Erreichen der Pilotkriterien?',
+      goalpostRisk:true,
+      commitmentRisk:true,
+      requiredOutcome:'Entscheidungsfähige Pilotvereinbarung mit Gegenseitigkeit und festem Freigabepunkt'
+    };
+    return copy;
+  }
 
   if(ds.type==='decision_gap_additional_evidence'){
     const deadline=ds.evidenceDeadline||'vereinbarten Termin';
@@ -9225,21 +9291,16 @@ const _getOpportunityHealthBeforeV6532=getOpportunityHealth;
 getOpportunityHealth=function(accId){
   const base=_getOpportunityHealthBeforeV6532(accId);
   if(!base)return base;
+  if(base.riskAdjustedV661)return base;
   const out=JSON.parse(JSON.stringify(base));
-  const ds=detectCurrentDealStateV6532(accId);
-  const original=Number(out.score||0);
-  let delta=0;
-  if(ds.type==='priority_postponed')delta=-8;
-  else if(ds.type==='decision_gap_additional_evidence')delta=-6;
-  else if(ds.type==='showcase_ready')delta=-5;
-  else if(ds.type==='showcase_meeting')delta=-3;
-  else if(ds.type==='baseline_prerequisite')delta=2;
-  else if(ds.type==='criteria_prerequisite')delta=1;
-  else if(ds.type==='approved')delta=8;
-  out.score=Math.max(0,Math.min(100,Math.round(original+delta)));
+  const rawScore=Math.max(0,Math.min(100,Math.round(Number(out.score||0))));
+  const delta=getDealStateRiskDeltaV661(accId);
+  out.baseScoreV661=rawScore;
+  out.score=Math.max(0,Math.min(100,Math.round(rawScore+delta)));
+  out.riskDeltaV661=delta;
+  out.riskAdjustedV661=true;
+  out.dealState=detectCurrentDealStateV6532(accId).type;
   out.label=out.score>=85?'Sehr gesund':out.score>=70?'Gesund':out.score>=55?'Stabil':'Kritisch';
-  out.riskAdjusted=true;
-  out.dealState=ds.type;
   return out;
 };
 
@@ -9275,6 +9336,12 @@ async function shortCockpitRefreshV6532(accId){
   try{renderHealthBadgeIfPresent();}catch(e){}
   try{scheduleOpportunityHealthRefreshV656(accId,120);}catch(e){}
   await new Promise(resolve=>setTimeout(resolve,40));
+  // v6.6.1: Cockpit und Phasen verwenden unmittelbar dieselbe zentrale Score-Quelle.
+  try{
+    const canonical=getOpportunityHealth(accId);
+    if(canonical)storeCentralOpportunityHealthV656(accId,{...canonical,score:canonical.baseScoreV661??canonical.score,riskAdjustedV661:false});
+    renderHealthBadgeIfPresent();
+  }catch(e){console.warn('Canonical score sync skipped',e);}
 }
 
 
@@ -14156,7 +14223,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.0 Intelligence Engine Release';
+const KI21_VERSION='v6.6.1 Commitment Intelligence Pilot Gate Release';
 
 
 function runKi21VersionMigration(){
@@ -15312,7 +15379,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.0 Intelligence Engine Release';
+  const VERSION='v6.6.1 Commitment Intelligence Pilot Gate Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
