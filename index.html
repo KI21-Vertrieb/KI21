@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.9.1-cockpit-runtime-fix-20260713 -->
+<!-- KI21_BUILD: v6.9.2-unified-deal-state-cockpit-fix-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.9.1 Explainable Decision Intelligence</title>
+<title>KI21 v6.9.2 Unified Deal-State Cockpit Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9987,6 +9987,46 @@ function renderCockpitSnapshotLiteV4215(){
       if(opportunityIntelligenceV620.watchouts.salesStrategy)executiveRisksV4263.push({text:opportunityIntelligenceV620.watchouts.salesStrategy,ki21:true,executive:true});
     }
   }
+
+  // v6.9.2 Unified Deal-State Cockpit Fix:
+  // Deal-Entscheidung, Nächste Schritte und Darauf achten müssen aus demselben
+  // aktuellen Deal-State stammen. Ältere Showcase-/Prioritäts-Empfehlungen dürfen
+  // nach einer dominanten neueren Ergänzung nicht wieder in das Cockpit gelangen.
+  const activeDecisionIdV692=String(decisionPrimaryV674.id||'');
+  if(activeDecisionIdV692==='D-MEASUREMENT-GATE'){
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
+      'Mit Geschäftsführer und CFO je eine einfache Kennzahl für Nutzung und Forecast-Qualität festlegen.',
+      'Ausgangswert, Zielwert, Datenquelle und Auswertungstermin vor Pilotbeginn schriftlich dokumentieren.'
+    );
+    executiveRisksV4263.splice(0,executiveRisksV4263.length,
+      {text:'Den kurzen Pilot nicht mit zu vielen Kennzahlen überfrachten; je eine belastbare Kennzahl für Nutzung und Forecast-Qualität genügt.',ki21:true,executive:true},
+      {text:'Nur Messgrößen vereinbaren, die nach zwei Wochen tatsächlich erhoben und im Entscheidungstermin ausgewertet werden können.',ki21:true,executive:true}
+    );
+  }else if(activeDecisionIdV692==='D-PILOT-EXECUTION'){
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
+      nextActionV675,
+      'Vor Pilotstart Verantwortliche, Datenerhebung und die für den Entscheidungstermin benötigten Ergebnisse bestätigen.'
+    );
+    executiveRisksV4263.splice(0,executiveRisksV4263.length,
+      {text:'Die bereits gelöste CFO-Freigabefrage nicht erneut zum Engpass machen.',ki21:true,executive:true},
+      {text:'Der Pilot darf nur starten, wenn Messgrößen, Verantwortliche und Auswertung praktisch geklärt sind.',ki21:true,executive:true}
+    );
+  }else if(activeDecisionIdV692==='D-CFO-TIMING'){
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
+      nextActionV675,
+      'Detailausarbeitung erst mit den Pilotergebnissen verbinden und den bestehenden Entscheidungstermin halten.'
+    );
+    executiveRisksV4263.splice(0,executiveRisksV4263.length,
+      {text:'Die zusätzliche CFO-Frage darf weder den Pilotstart verzögern noch den vereinbarten Piloterfolg nachträglich entwerten.',ki21:true,executive:true},
+      {text:'Informationsbedarf, Umfang und Entscheidungsrelevanz vor dem Pilot klar begrenzen.',ki21:true,executive:true}
+    );
+  }else if(nextActionV675){
+    // Allgemeiner Konsistenzschutz: Die wichtigste Handlung der Deal-Entscheidung
+    // steht immer an erster Stelle; historische Schritte folgen nur, wenn sie nicht widersprechen.
+    const normalizedNextV692=clean(nextActionV675).toLowerCase();
+    const retainedV692=nextStepItemsV4263.filter(x=>clean(x).toLowerCase()!==normalizedNextV692).slice(0,1);
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,nextActionV675,...retainedV692);
+  }
   grid.className='cockpit-v5-workgrid';
   grid.appendChild(mkTile('Nächste Schritte',nextStepItemsV4263.slice(0,2),'Noch kein nächster Schritt gespeichert.','next',2));
   grid.appendChild(mkTile('Business Case',valueExecutiveV4263,'Wirtschaftlicher Hebel noch nicht belegt.','value',3));
@@ -14605,7 +14645,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.9.1 Explainable Decision Intelligence';
+const KI21_VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
 
 
 function runKi21VersionMigration(){
@@ -15773,7 +15813,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.9.1 Explainable Decision Intelligence';
+  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16052,7 +16092,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.9.1 Explainable Decision Intelligence';
+  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16265,7 +16305,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.9.1 Explainable Decision Intelligence';
+  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
