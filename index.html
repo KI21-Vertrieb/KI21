@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.6.8-production-startup-forecast-20260713 -->
+<!-- KI21_BUILD: v6.7.0-decision-intelligence-beta-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.8 Production Startup & Forecast Release</title>
+<title>KI21 v6.7.0 Decision Intelligence Beta</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -10705,6 +10705,117 @@ function exportAutopilotPDF(cust,dossierResults){
     html+=`<div class="phase"><div class="phase-title">${d.title}</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7;">${highlightResultHTML(d.result||'')}</div></div>`;
   });
   html+=`
+
+<style id="ki21-decision-beta-css">
+.ki21-decision-card{margin:12px 0 14px;padding:16px;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fb);border:1px solid #dfe5e8;box-shadow:0 6px 18px rgba(29,51,61,.07)}
+.ki21-decision-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ki21-decision-kicker{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#708087;margin-bottom:5px}
+.ki21-decision-title{font-size:18px;font-weight:800;line-height:1.25;color:#20343e}
+.ki21-decision-confidence{white-space:nowrap;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#eaf2f0;color:#35685e}
+.ki21-decision-rec{margin-top:12px;padding:12px 13px;border-left:4px solid #d8683a;border-radius:10px;background:#fff6f1;font-weight:700;line-height:1.4;color:#293a42}
+.ki21-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ki21-decision-mini{background:#fff;border:1px solid #e3e8ea;border-radius:12px;padding:10px 11px}
+.ki21-decision-mini b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#7b8b91;margin-bottom:4px}
+.ki21-decision-mini span{font-size:13px;line-height:1.35;color:#33474f}
+.ki21-decision-more{margin-top:12px;width:100%;border:0;border-radius:12px;padding:11px 12px;background:#20343e;color:#fff;font-weight:800}
+@media(max-width:420px){.ki21-decision-grid{grid-template-columns:1fr}}
+</style>
+<script id="ki21-decision-beta-js">
+(function(){
+'use strict';
+const KI21_DECISION_PATTERNS=[
+ {id:'P001',name:'Zusätzliche Vorleistung',re:/kostenlos|gratis|unentgeltlich|zusätzliche\s+(?:analyse|workshop|test|pilot|referenz|nachweis)/i,decision:'Weitere Vorleistung leisten oder zuerst Gegenseitigkeit absichern?',rec:'Vor zusätzlicher Leistung zuerst Erfolgskriterien, Gegenleistung und verbindlichen Entscheidungspunkt vereinbaren.',ask:'Welche konkrete Unsicherheit soll die Zusatzleistung beseitigen – und welche Entscheidung folgt danach?',risk:'Risikoübertragung und offene Vorleistung'},
+ {id:'P002',name:'Moving the Goalposts',re:/weitere\s+(?:fälle|showcases|tests|nachweise)|noch\s+ein(?:e|en)?\s+(?:test|pilot|referenz)|zusätzlich.*freigab/i,decision:'Neue Bedingung akzeptieren oder Entscheidungskriterien stabilisieren?',rec:'Die neue Forderung nur akzeptieren, wenn klar ist, welche bestehende Entscheidungslücke sie schließt und welche verbindliche Entscheidung danach fällt.',ask:'Ist dies ein legitimer letzter Prüfpunkt oder verschiebt sich die Messlatte erneut?',risk:'Endlosschleife ohne Kaufcommitment'},
+ {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot starten oder zuerst die Entscheidungslogik schließen?',rec:'Pilot nur mit begrenztem Umfang, messbaren Kriterien, Verantwortlichen und festem Managemententscheid nach Abschluss starten.',ask:'Was gilt als Erfolg, wer entscheidet und was passiert bei Zielerreichung?',risk:'Pilot wird Aktivität statt Entscheidung'},
+ {id:'P004',name:'Sponsor verliert Einfluss',re:/sponsor.{0,80}(?:weniger\s+einfluss|überstimmt|nicht\s+mehr|verliert)|champion.{0,80}(?:verlässt|schwach|isoliert)/i,decision:'Sponsor weiter belasten oder direkten Zugang zum Entscheider schaffen?',rec:'Sponsor schützen und parallel direkten Zugang zum wirtschaftlichen Entscheider herstellen.',ask:'Wer kann die Entscheidung intern tatsächlich tragen, wenn der Sponsor ausfällt?',risk:'Scheinsicherheit im Buying Center'},
+ {id:'P005',name:'Neuer Entscheider',re:/neue[rn]?\s+(?:geschäftsführer|cfo|leiter|entscheider)|entscheidungsrolle.{0,60}(?:neu|geändert)/i,decision:'Bestehende Story fortsetzen oder Opportunity neu qualifizieren?',rec:'Entscheidungslogik mit der neuen Person neu aufbauen; frühere Zustimmung nicht übertragen.',ask:'Welche Ziele, Risiken und persönlichen Kriterien hat die neue entscheidende Person?',risk:'Alte Zustimmung wird fälschlich fortgeschrieben'},
+ {id:'P006',name:'CFO / Einkauf greift ein',re:/\bcfo\b|einkauf|procurement|commercial\s+review/i,decision:'Nur Unterlagen liefern oder Entscheidungsabsicht klären?',rec:'Zuerst klären, ob Standardprüfung, Rollout-Vorbereitung oder neue Hürde vorliegt; Umfang der Nachweise begrenzen.',ask:'Welche Entscheidung soll mit den angeforderten Informationen vorbereitet werden?',risk:'Kommerzielle Prüfung wird zur neuen Hürde'},
+ {id:'P007',name:'Budget bestätigt',re:/budget.{0,60}(?:bestätigt|vorhanden|freigegeben|verfügbar)/i,decision:'Direkt auf Abschluss gehen oder verbleibende Freigabelogik schließen?',rec:'Budget nicht mit Kaufentscheidung verwechseln; jetzt Entscheidungsprozess, Kriterien und Termin verbindlich machen.',ask:'Wer gibt final frei und welche Bedingungen müssen noch erfüllt sein?',risk:'Budget wird als Abschlusscommitment missverstanden'},
+ {id:'P008',name:'Budget entfällt',re:/budget.{0,60}(?:gestrichen|entfällt|nicht\s+mehr|eingefroren)/i,decision:'Deal retten, verkleinern oder disqualifizieren?',rec:'Neuen wirtschaftlichen Pfad prüfen: Umfang reduzieren, Startangebot anbieten oder Opportunity konsequent zurückstufen.',ask:'Ist das Problem weiterhin priorisiert und gibt es einen alternativen Finanzierungspfad?',risk:'Künstliches Weiterführen eines nicht finanzierbaren Deals'},
+ {id:'P009',name:'Priorität sinkt',re:/priorität.{0,60}(?:sinkt|gesunken|verliert)|andere\s+projekte.{0,60}(?:vorrang|priorisiert)/i,decision:'Mehr Aktivität erzeugen oder Managementrelevanz neu aufbauen?',rec:'Nicht mit mehr Terminen reagieren; wirtschaftliche Konsequenz des Nicht-Handelns und Managementpriorität neu verankern.',ask:'Was müsste passieren, damit das Thema wieder auf die Managementagenda kommt?',risk:'Aktivität ohne Momentum'},
+ {id:'P010',name:'Terminverschiebung',re:/termin.{0,60}(?:verschoben|vertagt)|entscheidung.{0,60}(?:verschoben|vertagt)/i,decision:'Verschiebung akzeptieren oder Ursache und neue Verbindlichkeit klären?',rec:'Verschiebung nur mit konkreter Ursache, neuem Datum und nächstem Kundencommitment akzeptieren.',ask:'Was hat sich verändert und welcher konkrete Schritt ist bis zum neuen Termin verbindlich?',risk:'Stiller Momentumverlust'},
+ {id:'P011',name:'Wettbewerber kommt hinzu',re:/wettbewerber|konkurrent|alternative\s+anbieter|vergleichsangebot/i,decision:'Featurevergleich liefern oder Entscheidungskriterien beeinflussen?',rec:'Nicht in Funktionsvergleich rutschen; Entscheidungskriterien, Risiko und differenzierenden Geschäftswert schärfen.',ask:'Nach welchen Kriterien wird wirklich entschieden und wer gewichtet sie?',risk:'Commodity-Vergleich und Preisdruck'},
+ {id:'P012',name:'Preisnachlass',re:/rabatt|preisnachlass|discount|günstiger|preis\s+senken/i,decision:'Rabatt geben oder Gegenleistung verhandeln?',rec:'Preisnachlass nur gegen messbare Gegenleistung wie Umfang, Laufzeit, Termin oder Referenzrecht gewähren.',ask:'Welches konkrete Commitment erhält der Anbieter für das Zugeständnis?',risk:'Einseitige Konzession'},
+ {id:'P013',name:'Angebot ohne Discovery',re:/angebot.{0,80}(?:sofort|direkt|ohne)|schicken\s+sie\s+ein\s+angebot/i,decision:'Angebot senden oder Discovery absichern?',rec:'Kein generisches Angebot senden; zuerst Entscheidungskriterien, Problemwirkung und Buying Center qualifizieren.',ask:'Welche Entscheidung soll das Angebot ermöglichen und woran wird es bewertet?',risk:'Preisvergleich ohne Wertverständnis'},
+ {id:'P014',name:'Erfolgskriterien fehlen',re:/erfolgskriterien|messkriterien|zielwerte|baseline|ausgangswerte/i,decision:'Starten oder Messlogik schließen?',rec:'Vor Pilot oder Projektstart Baseline, Zielwerte, Messmethode, Verantwortliche und Bewertungstermin festlegen.',ask:'Wie wird objektiv entschieden, ob der Kunde genug Nutzen sieht?',risk:'Subjektive Bewertung nach Leistungserbringung'},
+ {id:'P015',name:'Business Case angezweifelt',re:/roi.{0,60}(?:unklar|anzweifel|nicht\s+belastbar)|business\s*case.{0,60}(?:offen|anzweifel)|wirtschaftlich.{0,60}(?:unklar|nicht\s+belegt)/i,decision:'Mehr rechnen oder entscheidungsrelevanten Wert validieren?',rec:'Nicht scheinexakt rechnen; bestätigten Problemwert, beeinflussbaren Anteil und zentrale Annahmen gemeinsam validieren.',ask:'Welcher wirtschaftliche Wert ist bestätigt und welcher Anteil ist realistisch beeinflussbar?',risk:'Scheingenauer ROI'},
+ {id:'P016',name:'Implementierungsrisiko',re:/einführungsaufwand|implementierungsrisiko|rollout|supportbedarf|ressourcenbedarf/i,decision:'Vollständig ausarbeiten oder Informationsbedarf begrenzen?',rec:'Zuerst klären, ob Rollout-Vorbereitung oder neue Hürde; dann eine kompakte, entscheidungsfähige Umsetzungsskizze liefern.',ask:'Welche Mindestinformation benötigt der Entscheider für die Freigabe?',risk:'Vorzeitige Detailplanung ohne Entscheidung'},
+ {id:'P017',name:'Interne Ressourcen fehlen',re:/keine\s+(?:internen\s+)?ressourcen|ressourcen.{0,60}(?:fehlen|knapp)|kapazität.{0,60}(?:fehlt|knapp)/i,decision:'Warten oder Startmodell anpassen?',rec:'Ressourcenengpass in Startumfang, Verantwortlichkeiten und externen Unterstützungsbedarf übersetzen.',ask:'Welcher kleinste Start ist mit vorhandenen Ressourcen realistisch?',risk:'Unverbindliches Verschieben'},
+ {id:'P018',name:'Vertrags-/Datenschutzblockade',re:/datenschutz|dsgvo|legal|vertrag.{0,60}(?:blockiert|prüfung|offen)|security\s+review/i,decision:'Abwarten oder Prozess aktiv führen?',rec:'Prüfpfad, Verantwortliche, offene Dokumente und Zieltermin transparent machen; Business-Sponsor eingebunden halten.',ask:'Welche konkrete Prüfung ist offen, wer entscheidet und bis wann?',risk:'Formaler Prozess entkoppelt sich vom Business'},
+ {id:'P019',name:'Positives Rolloutsignal',re:/breitere\s+einführung|rollout\s+vorbereiten|größere\s+einführung|skalierung/i,decision:'Als Kaufsignal werten oder Bedingungen prüfen?',rec:'Positiv werten, aber prüfen, ob die Rolloutfrage echte Vorbereitung oder zusätzliche Freigabebedingung ist.',ask:'Welche Entscheidung ist bereits gefallen und welche Information fehlt nur noch zur Umsetzung?',risk:'Positives Signal wird überschätzt'},
+ {id:'P020',name:'Politische Entscheidung',re:/politisch|interne\s+politik|macht|bereichsinteressen|gesichtsverlust/i,decision:'Sachargumente verstärken oder Stakeholder-Risiken adressieren?',rec:'Persönliche Risiken, Gewinner, Verlierer und interne Legitimation explizit bearbeiten.',ask:'Wer trägt bei Zustimmung oder Ablehnung welches persönliche Risiko?',risk:'Sachlich guter Deal scheitert intern'},
+ {id:'P021',name:'Champion verlässt Unternehmen',re:/champion.{0,80}(?:verlässt|gekündigt)|sponsor.{0,80}(?:verlässt|gekündigt)|ansprechpartner.{0,80}(?:verlässt|wechselt)/i,decision:'Opportunity fortschreiben oder neu aufbauen?',rec:'Deal sofort neu qualifizieren, Wissen sichern und neuen internen Träger identifizieren.',ask:'Wer übernimmt Problem, Nutzen und interne Verantwortung?',risk:'Deal verliert Gedächtnis und Einfluss'},
+ {id:'P022',name:'Weitere Referenzen',re:/weitere\s+referenzen|mehr\s+referenz|kundenbeispiel|vergleichbarer\s+kunde/i,decision:'Weitere Referenzen liefern oder Beweisbedarf präzisieren?',rec:'Zuerst klären, welche konkrete Unsicherheit eine zusätzliche Referenz schließen soll.',ask:'Welche Eigenschaft muss die Referenz belegen, damit danach entschieden werden kann?',risk:'Unbegrenzte Evidenzanforderung'},
+ {id:'P023',name:'Entscheidungsgremium ändert sich',re:/entscheidungsgremium|steering\s+committee|weitere\s+entscheider|zusätzliche\s+stakeholder/i,decision:'Bestehenden Prozess fortsetzen oder Buying Center neu kartieren?',rec:'Neue Rollen, Vetorechte, persönliche Kriterien und Entscheidungsweg vollständig aktualisieren.',ask:'Wer kann jetzt entscheiden, blockieren oder legitimieren?',risk:'Veraltetes Buying-Center-Bild'},
+ {id:'P024',name:'Dealumfang wächst',re:/umfang.{0,60}(?:größer|erweitert|wächst)|zusätzliche\s+(?:bereiche|länder|nutzer|module)/i,decision:'Größeren Deal verfolgen oder Entscheidbarkeit schützen?',rec:'Wert des größeren Umfangs gegen zusätzliche Komplexität abwägen; ggf. gestuften Einstieg sichern.',ask:'Erhöht der größere Scope die Kaufwahrscheinlichkeit oder nur die Zahl der Abhängigkeiten?',risk:'Großer Deal wird unentscheidbar'},
+ {id:'P025',name:'Dealumfang sinkt',re:/umfang.{0,60}(?:kleiner|reduziert)|kleiner\s+start|nur\s+ein\s+bereich/i,decision:'Kleineren Einstieg akzeptieren oder auf Vollumfang bestehen?',rec:'Kleineren Start akzeptieren, wenn er echte Entscheidung, Referenzwert und skalierbaren Folgepfad schafft.',ask:'Welche Erweiterungslogik ist bei Erfolg bereits vereinbart?',risk:'Kleiner Pilot ohne Expansion'},
+ {id:'P026',name:'Zeitdruck steigt',re:/dringend|deadline|frist|bis\s+ende|zeitdruck|muss\s+bis/i,decision:'Beschleunigen oder Qualität schützen?',rec:'Kritischen Pfad verkürzen, aber Entscheidungsqualität, Verantwortliche und Freigabepunkte nicht überspringen.',ask:'Welche Schritte sind wirklich zeitkritisch und welche können parallel laufen?',risk:'Hektik ersetzt Entscheidung'},
+ {id:'P027',name:'Momentumverlust',re:/keine\s+rückmeldung|funkstille|meldet\s+sich\s+nicht|momentum|seit\s+wochen/i,decision:'Nachfassen oder Relevanz neu qualifizieren?',rec:'Nicht nur nachfassen; Priorität, Veränderung und nächstes Kundencommitment neu qualifizieren.',ask:'Was hat sich seit dem letzten verbindlichen Schritt verändert?',risk:'Zombie-Opportunity'},
+ {id:'P028',name:'Scheinkonsens',re:/alle\s+finden|grundsätzlich\s+positiv|klingt\s+gut|interesse\s+ist\s+da/i,decision:'Interesse als Fortschritt werten oder Commitment testen?',rec:'Interesse in konkretes Kundenhandeln übersetzen: Termin, Daten, Zugang, Freigabe oder Ressourcen.',ask:'Welches verbindliche Verhalten zeigt, dass der Kunde wirklich vorankommt?',risk:'Positive Stimmung ohne Kaufbewegung'},
+ {id:'P029',name:'Fehlende Gegenseitigkeit',re:/wir\s+sollen|anbieter\s+soll|noch\s+liefern|vorleistung/i,decision:'Weiter investieren oder Kundencommitment einfordern?',rec:'Jede zusätzliche Anbieterleistung an eine konkrete Kundenleistung und Entscheidung koppeln.',ask:'Welche Gegenleistung erbringt der Kunde jetzt?',risk:'Einseitige Investition'},
+ {id:'P030',name:'Management fordert ROI',re:/management.{0,80}roi|geschäftsführung.{0,80}(?:wirtschaftlich|business\s*case)|cfo.{0,80}(?:roi|wirtschaftlich)/i,decision:'ROI-Modell liefern oder Wertlogik gemeinsam validieren?',rec:'Problemwert, beeinflussbaren Anteil, Investition und Entscheidungsannahmen transparent trennen.',ask:'Welche wirtschaftliche Schwelle muss für die Freigabe erreicht sein?',risk:'ROI wird zur Scheingenauigkeit oder Ausrede'}
+];
+function rawForDecision(accId){
+ try{return String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){return '';}
+}
+function latestAdditionText(accId){
+ try{const f=getLatestAdditionFactsV6532(accId);return String(f&&f.latestText||'');}catch(e){return '';}
+}
+function analyzeDecision(accId){
+ const latest=latestAdditionText(accId);
+ const raw=(latest+'\n'+rawForDecision(accId)).trim();
+ const matches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(raw));
+ let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Verkäuferentscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
+ // Dominanz: neueste Information und spezifischere Patterns bevorzugen
+ const latestMatches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(latest));
+ if(latestMatches.length) primary=latestMatches[0];
+ const ambiguity=matches.length>1;
+ const confirmed=/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben/i.test(latest);
+ const missing=/unklar|offen|noch\s+nicht|keine|fehlt/i.test(latest);
+ const confidence=latest&&confirmed&&!missing?'hoch':latest&&(!ambiguity||confirmed)?'mittel':'niedrig';
+ const scenarios=matches.slice(0,3).map((p,i)=>({label:i===0?'Wahrscheinlich':'Alternative',name:p.name,action:p.rec}));
+ return {primary,matches,confidence,scenarios,latest};
+}
+function openDecisionDetails(a){
+ const rows=[];
+ rows.push({glyph:'◆',text:'Verkäuferentscheidung: '+a.primary.decision,kind:'ki21'});
+ rows.push({glyph:'✓',text:'Empfehlung: '+a.primary.rec,kind:'ki21'});
+ rows.push({glyph:'?',text:'Zu klären: '+a.primary.ask,kind:''});
+ rows.push({glyph:'!',text:'Hauptrisiko: '+a.primary.risk,kind:''});
+ a.scenarios.forEach(s=>rows.push({glyph:'→',text:s.label+': '+s.name+' – '+s.action,kind:''}));
+ try{showBottomSheet('KI21 Entscheidung',rows,'Keine Entscheidungssituation erkannt.');}
+ catch(e){alert(rows.map(r=>r.text).join('\n\n'));}
+}
+function addDecisionCard(){
+ const aid=window.state&&state.activeId;
+ if(!aid)return;
+ const app=document.getElementById('app');
+ if(!app||app.querySelector('.ki21-decision-card'))return;
+ const summary=app.querySelector('.ki21-v62-summary,.cockpit-v62-summary,.cockpit-summary,.cockpit-grid');
+ if(!summary)return;
+ const a=analyzeDecision(aid);
+ const card=document.createElement('section');
+ card.className='ki21-decision-card';
+ card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">KI21 Verkäuferentscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
+ card.querySelector('button').onclick=()=>openDecisionDetails(a);
+ summary.parentNode.insertBefore(card,summary.nextSibling);
+}
+function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+window.KI21_DECISION_PATTERNS=KI21_DECISION_PATTERNS;
+window.analyzeDecisionV670=analyzeDecision;
+function patch(){
+ if(typeof window.renderCockpitSnapshotLiteV4215==='function'&&!window.renderCockpitSnapshotLiteV4215.__ki21v670){
+   const old=window.renderCockpitSnapshotLiteV4215;
+   const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addDecisionCard,40);return r;};
+   wrapped.__ki21v670=true;window.renderCockpitSnapshotLiteV4215=wrapped;
+ }
+ setTimeout(addDecisionCard,80);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch);else patch();
+window.addEventListener('pageshow',()=>setTimeout(addDecisionCard,80));
+})();
+</script>
+
 </body></html>`;
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 }
@@ -13164,6 +13275,117 @@ function generateKundePDF(aid, cust){
   }
 
   html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div>
+
+<style id="ki21-decision-beta-css">
+.ki21-decision-card{margin:12px 0 14px;padding:16px;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fb);border:1px solid #dfe5e8;box-shadow:0 6px 18px rgba(29,51,61,.07)}
+.ki21-decision-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ki21-decision-kicker{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#708087;margin-bottom:5px}
+.ki21-decision-title{font-size:18px;font-weight:800;line-height:1.25;color:#20343e}
+.ki21-decision-confidence{white-space:nowrap;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#eaf2f0;color:#35685e}
+.ki21-decision-rec{margin-top:12px;padding:12px 13px;border-left:4px solid #d8683a;border-radius:10px;background:#fff6f1;font-weight:700;line-height:1.4;color:#293a42}
+.ki21-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ki21-decision-mini{background:#fff;border:1px solid #e3e8ea;border-radius:12px;padding:10px 11px}
+.ki21-decision-mini b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#7b8b91;margin-bottom:4px}
+.ki21-decision-mini span{font-size:13px;line-height:1.35;color:#33474f}
+.ki21-decision-more{margin-top:12px;width:100%;border:0;border-radius:12px;padding:11px 12px;background:#20343e;color:#fff;font-weight:800}
+@media(max-width:420px){.ki21-decision-grid{grid-template-columns:1fr}}
+</style>
+<script id="ki21-decision-beta-js">
+(function(){
+'use strict';
+const KI21_DECISION_PATTERNS=[
+ {id:'P001',name:'Zusätzliche Vorleistung',re:/kostenlos|gratis|unentgeltlich|zusätzliche\s+(?:analyse|workshop|test|pilot|referenz|nachweis)/i,decision:'Weitere Vorleistung leisten oder zuerst Gegenseitigkeit absichern?',rec:'Vor zusätzlicher Leistung zuerst Erfolgskriterien, Gegenleistung und verbindlichen Entscheidungspunkt vereinbaren.',ask:'Welche konkrete Unsicherheit soll die Zusatzleistung beseitigen – und welche Entscheidung folgt danach?',risk:'Risikoübertragung und offene Vorleistung'},
+ {id:'P002',name:'Moving the Goalposts',re:/weitere\s+(?:fälle|showcases|tests|nachweise)|noch\s+ein(?:e|en)?\s+(?:test|pilot|referenz)|zusätzlich.*freigab/i,decision:'Neue Bedingung akzeptieren oder Entscheidungskriterien stabilisieren?',rec:'Die neue Forderung nur akzeptieren, wenn klar ist, welche bestehende Entscheidungslücke sie schließt und welche verbindliche Entscheidung danach fällt.',ask:'Ist dies ein legitimer letzter Prüfpunkt oder verschiebt sich die Messlatte erneut?',risk:'Endlosschleife ohne Kaufcommitment'},
+ {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot starten oder zuerst die Entscheidungslogik schließen?',rec:'Pilot nur mit begrenztem Umfang, messbaren Kriterien, Verantwortlichen und festem Managemententscheid nach Abschluss starten.',ask:'Was gilt als Erfolg, wer entscheidet und was passiert bei Zielerreichung?',risk:'Pilot wird Aktivität statt Entscheidung'},
+ {id:'P004',name:'Sponsor verliert Einfluss',re:/sponsor.{0,80}(?:weniger\s+einfluss|überstimmt|nicht\s+mehr|verliert)|champion.{0,80}(?:verlässt|schwach|isoliert)/i,decision:'Sponsor weiter belasten oder direkten Zugang zum Entscheider schaffen?',rec:'Sponsor schützen und parallel direkten Zugang zum wirtschaftlichen Entscheider herstellen.',ask:'Wer kann die Entscheidung intern tatsächlich tragen, wenn der Sponsor ausfällt?',risk:'Scheinsicherheit im Buying Center'},
+ {id:'P005',name:'Neuer Entscheider',re:/neue[rn]?\s+(?:geschäftsführer|cfo|leiter|entscheider)|entscheidungsrolle.{0,60}(?:neu|geändert)/i,decision:'Bestehende Story fortsetzen oder Opportunity neu qualifizieren?',rec:'Entscheidungslogik mit der neuen Person neu aufbauen; frühere Zustimmung nicht übertragen.',ask:'Welche Ziele, Risiken und persönlichen Kriterien hat die neue entscheidende Person?',risk:'Alte Zustimmung wird fälschlich fortgeschrieben'},
+ {id:'P006',name:'CFO / Einkauf greift ein',re:/\bcfo\b|einkauf|procurement|commercial\s+review/i,decision:'Nur Unterlagen liefern oder Entscheidungsabsicht klären?',rec:'Zuerst klären, ob Standardprüfung, Rollout-Vorbereitung oder neue Hürde vorliegt; Umfang der Nachweise begrenzen.',ask:'Welche Entscheidung soll mit den angeforderten Informationen vorbereitet werden?',risk:'Kommerzielle Prüfung wird zur neuen Hürde'},
+ {id:'P007',name:'Budget bestätigt',re:/budget.{0,60}(?:bestätigt|vorhanden|freigegeben|verfügbar)/i,decision:'Direkt auf Abschluss gehen oder verbleibende Freigabelogik schließen?',rec:'Budget nicht mit Kaufentscheidung verwechseln; jetzt Entscheidungsprozess, Kriterien und Termin verbindlich machen.',ask:'Wer gibt final frei und welche Bedingungen müssen noch erfüllt sein?',risk:'Budget wird als Abschlusscommitment missverstanden'},
+ {id:'P008',name:'Budget entfällt',re:/budget.{0,60}(?:gestrichen|entfällt|nicht\s+mehr|eingefroren)/i,decision:'Deal retten, verkleinern oder disqualifizieren?',rec:'Neuen wirtschaftlichen Pfad prüfen: Umfang reduzieren, Startangebot anbieten oder Opportunity konsequent zurückstufen.',ask:'Ist das Problem weiterhin priorisiert und gibt es einen alternativen Finanzierungspfad?',risk:'Künstliches Weiterführen eines nicht finanzierbaren Deals'},
+ {id:'P009',name:'Priorität sinkt',re:/priorität.{0,60}(?:sinkt|gesunken|verliert)|andere\s+projekte.{0,60}(?:vorrang|priorisiert)/i,decision:'Mehr Aktivität erzeugen oder Managementrelevanz neu aufbauen?',rec:'Nicht mit mehr Terminen reagieren; wirtschaftliche Konsequenz des Nicht-Handelns und Managementpriorität neu verankern.',ask:'Was müsste passieren, damit das Thema wieder auf die Managementagenda kommt?',risk:'Aktivität ohne Momentum'},
+ {id:'P010',name:'Terminverschiebung',re:/termin.{0,60}(?:verschoben|vertagt)|entscheidung.{0,60}(?:verschoben|vertagt)/i,decision:'Verschiebung akzeptieren oder Ursache und neue Verbindlichkeit klären?',rec:'Verschiebung nur mit konkreter Ursache, neuem Datum und nächstem Kundencommitment akzeptieren.',ask:'Was hat sich verändert und welcher konkrete Schritt ist bis zum neuen Termin verbindlich?',risk:'Stiller Momentumverlust'},
+ {id:'P011',name:'Wettbewerber kommt hinzu',re:/wettbewerber|konkurrent|alternative\s+anbieter|vergleichsangebot/i,decision:'Featurevergleich liefern oder Entscheidungskriterien beeinflussen?',rec:'Nicht in Funktionsvergleich rutschen; Entscheidungskriterien, Risiko und differenzierenden Geschäftswert schärfen.',ask:'Nach welchen Kriterien wird wirklich entschieden und wer gewichtet sie?',risk:'Commodity-Vergleich und Preisdruck'},
+ {id:'P012',name:'Preisnachlass',re:/rabatt|preisnachlass|discount|günstiger|preis\s+senken/i,decision:'Rabatt geben oder Gegenleistung verhandeln?',rec:'Preisnachlass nur gegen messbare Gegenleistung wie Umfang, Laufzeit, Termin oder Referenzrecht gewähren.',ask:'Welches konkrete Commitment erhält der Anbieter für das Zugeständnis?',risk:'Einseitige Konzession'},
+ {id:'P013',name:'Angebot ohne Discovery',re:/angebot.{0,80}(?:sofort|direkt|ohne)|schicken\s+sie\s+ein\s+angebot/i,decision:'Angebot senden oder Discovery absichern?',rec:'Kein generisches Angebot senden; zuerst Entscheidungskriterien, Problemwirkung und Buying Center qualifizieren.',ask:'Welche Entscheidung soll das Angebot ermöglichen und woran wird es bewertet?',risk:'Preisvergleich ohne Wertverständnis'},
+ {id:'P014',name:'Erfolgskriterien fehlen',re:/erfolgskriterien|messkriterien|zielwerte|baseline|ausgangswerte/i,decision:'Starten oder Messlogik schließen?',rec:'Vor Pilot oder Projektstart Baseline, Zielwerte, Messmethode, Verantwortliche und Bewertungstermin festlegen.',ask:'Wie wird objektiv entschieden, ob der Kunde genug Nutzen sieht?',risk:'Subjektive Bewertung nach Leistungserbringung'},
+ {id:'P015',name:'Business Case angezweifelt',re:/roi.{0,60}(?:unklar|anzweifel|nicht\s+belastbar)|business\s*case.{0,60}(?:offen|anzweifel)|wirtschaftlich.{0,60}(?:unklar|nicht\s+belegt)/i,decision:'Mehr rechnen oder entscheidungsrelevanten Wert validieren?',rec:'Nicht scheinexakt rechnen; bestätigten Problemwert, beeinflussbaren Anteil und zentrale Annahmen gemeinsam validieren.',ask:'Welcher wirtschaftliche Wert ist bestätigt und welcher Anteil ist realistisch beeinflussbar?',risk:'Scheingenauer ROI'},
+ {id:'P016',name:'Implementierungsrisiko',re:/einführungsaufwand|implementierungsrisiko|rollout|supportbedarf|ressourcenbedarf/i,decision:'Vollständig ausarbeiten oder Informationsbedarf begrenzen?',rec:'Zuerst klären, ob Rollout-Vorbereitung oder neue Hürde; dann eine kompakte, entscheidungsfähige Umsetzungsskizze liefern.',ask:'Welche Mindestinformation benötigt der Entscheider für die Freigabe?',risk:'Vorzeitige Detailplanung ohne Entscheidung'},
+ {id:'P017',name:'Interne Ressourcen fehlen',re:/keine\s+(?:internen\s+)?ressourcen|ressourcen.{0,60}(?:fehlen|knapp)|kapazität.{0,60}(?:fehlt|knapp)/i,decision:'Warten oder Startmodell anpassen?',rec:'Ressourcenengpass in Startumfang, Verantwortlichkeiten und externen Unterstützungsbedarf übersetzen.',ask:'Welcher kleinste Start ist mit vorhandenen Ressourcen realistisch?',risk:'Unverbindliches Verschieben'},
+ {id:'P018',name:'Vertrags-/Datenschutzblockade',re:/datenschutz|dsgvo|legal|vertrag.{0,60}(?:blockiert|prüfung|offen)|security\s+review/i,decision:'Abwarten oder Prozess aktiv führen?',rec:'Prüfpfad, Verantwortliche, offene Dokumente und Zieltermin transparent machen; Business-Sponsor eingebunden halten.',ask:'Welche konkrete Prüfung ist offen, wer entscheidet und bis wann?',risk:'Formaler Prozess entkoppelt sich vom Business'},
+ {id:'P019',name:'Positives Rolloutsignal',re:/breitere\s+einführung|rollout\s+vorbereiten|größere\s+einführung|skalierung/i,decision:'Als Kaufsignal werten oder Bedingungen prüfen?',rec:'Positiv werten, aber prüfen, ob die Rolloutfrage echte Vorbereitung oder zusätzliche Freigabebedingung ist.',ask:'Welche Entscheidung ist bereits gefallen und welche Information fehlt nur noch zur Umsetzung?',risk:'Positives Signal wird überschätzt'},
+ {id:'P020',name:'Politische Entscheidung',re:/politisch|interne\s+politik|macht|bereichsinteressen|gesichtsverlust/i,decision:'Sachargumente verstärken oder Stakeholder-Risiken adressieren?',rec:'Persönliche Risiken, Gewinner, Verlierer und interne Legitimation explizit bearbeiten.',ask:'Wer trägt bei Zustimmung oder Ablehnung welches persönliche Risiko?',risk:'Sachlich guter Deal scheitert intern'},
+ {id:'P021',name:'Champion verlässt Unternehmen',re:/champion.{0,80}(?:verlässt|gekündigt)|sponsor.{0,80}(?:verlässt|gekündigt)|ansprechpartner.{0,80}(?:verlässt|wechselt)/i,decision:'Opportunity fortschreiben oder neu aufbauen?',rec:'Deal sofort neu qualifizieren, Wissen sichern und neuen internen Träger identifizieren.',ask:'Wer übernimmt Problem, Nutzen und interne Verantwortung?',risk:'Deal verliert Gedächtnis und Einfluss'},
+ {id:'P022',name:'Weitere Referenzen',re:/weitere\s+referenzen|mehr\s+referenz|kundenbeispiel|vergleichbarer\s+kunde/i,decision:'Weitere Referenzen liefern oder Beweisbedarf präzisieren?',rec:'Zuerst klären, welche konkrete Unsicherheit eine zusätzliche Referenz schließen soll.',ask:'Welche Eigenschaft muss die Referenz belegen, damit danach entschieden werden kann?',risk:'Unbegrenzte Evidenzanforderung'},
+ {id:'P023',name:'Entscheidungsgremium ändert sich',re:/entscheidungsgremium|steering\s+committee|weitere\s+entscheider|zusätzliche\s+stakeholder/i,decision:'Bestehenden Prozess fortsetzen oder Buying Center neu kartieren?',rec:'Neue Rollen, Vetorechte, persönliche Kriterien und Entscheidungsweg vollständig aktualisieren.',ask:'Wer kann jetzt entscheiden, blockieren oder legitimieren?',risk:'Veraltetes Buying-Center-Bild'},
+ {id:'P024',name:'Dealumfang wächst',re:/umfang.{0,60}(?:größer|erweitert|wächst)|zusätzliche\s+(?:bereiche|länder|nutzer|module)/i,decision:'Größeren Deal verfolgen oder Entscheidbarkeit schützen?',rec:'Wert des größeren Umfangs gegen zusätzliche Komplexität abwägen; ggf. gestuften Einstieg sichern.',ask:'Erhöht der größere Scope die Kaufwahrscheinlichkeit oder nur die Zahl der Abhängigkeiten?',risk:'Großer Deal wird unentscheidbar'},
+ {id:'P025',name:'Dealumfang sinkt',re:/umfang.{0,60}(?:kleiner|reduziert)|kleiner\s+start|nur\s+ein\s+bereich/i,decision:'Kleineren Einstieg akzeptieren oder auf Vollumfang bestehen?',rec:'Kleineren Start akzeptieren, wenn er echte Entscheidung, Referenzwert und skalierbaren Folgepfad schafft.',ask:'Welche Erweiterungslogik ist bei Erfolg bereits vereinbart?',risk:'Kleiner Pilot ohne Expansion'},
+ {id:'P026',name:'Zeitdruck steigt',re:/dringend|deadline|frist|bis\s+ende|zeitdruck|muss\s+bis/i,decision:'Beschleunigen oder Qualität schützen?',rec:'Kritischen Pfad verkürzen, aber Entscheidungsqualität, Verantwortliche und Freigabepunkte nicht überspringen.',ask:'Welche Schritte sind wirklich zeitkritisch und welche können parallel laufen?',risk:'Hektik ersetzt Entscheidung'},
+ {id:'P027',name:'Momentumverlust',re:/keine\s+rückmeldung|funkstille|meldet\s+sich\s+nicht|momentum|seit\s+wochen/i,decision:'Nachfassen oder Relevanz neu qualifizieren?',rec:'Nicht nur nachfassen; Priorität, Veränderung und nächstes Kundencommitment neu qualifizieren.',ask:'Was hat sich seit dem letzten verbindlichen Schritt verändert?',risk:'Zombie-Opportunity'},
+ {id:'P028',name:'Scheinkonsens',re:/alle\s+finden|grundsätzlich\s+positiv|klingt\s+gut|interesse\s+ist\s+da/i,decision:'Interesse als Fortschritt werten oder Commitment testen?',rec:'Interesse in konkretes Kundenhandeln übersetzen: Termin, Daten, Zugang, Freigabe oder Ressourcen.',ask:'Welches verbindliche Verhalten zeigt, dass der Kunde wirklich vorankommt?',risk:'Positive Stimmung ohne Kaufbewegung'},
+ {id:'P029',name:'Fehlende Gegenseitigkeit',re:/wir\s+sollen|anbieter\s+soll|noch\s+liefern|vorleistung/i,decision:'Weiter investieren oder Kundencommitment einfordern?',rec:'Jede zusätzliche Anbieterleistung an eine konkrete Kundenleistung und Entscheidung koppeln.',ask:'Welche Gegenleistung erbringt der Kunde jetzt?',risk:'Einseitige Investition'},
+ {id:'P030',name:'Management fordert ROI',re:/management.{0,80}roi|geschäftsführung.{0,80}(?:wirtschaftlich|business\s*case)|cfo.{0,80}(?:roi|wirtschaftlich)/i,decision:'ROI-Modell liefern oder Wertlogik gemeinsam validieren?',rec:'Problemwert, beeinflussbaren Anteil, Investition und Entscheidungsannahmen transparent trennen.',ask:'Welche wirtschaftliche Schwelle muss für die Freigabe erreicht sein?',risk:'ROI wird zur Scheingenauigkeit oder Ausrede'}
+];
+function rawForDecision(accId){
+ try{return String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){return '';}
+}
+function latestAdditionText(accId){
+ try{const f=getLatestAdditionFactsV6532(accId);return String(f&&f.latestText||'');}catch(e){return '';}
+}
+function analyzeDecision(accId){
+ const latest=latestAdditionText(accId);
+ const raw=(latest+'\n'+rawForDecision(accId)).trim();
+ const matches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(raw));
+ let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Verkäuferentscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
+ // Dominanz: neueste Information und spezifischere Patterns bevorzugen
+ const latestMatches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(latest));
+ if(latestMatches.length) primary=latestMatches[0];
+ const ambiguity=matches.length>1;
+ const confirmed=/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben/i.test(latest);
+ const missing=/unklar|offen|noch\s+nicht|keine|fehlt/i.test(latest);
+ const confidence=latest&&confirmed&&!missing?'hoch':latest&&(!ambiguity||confirmed)?'mittel':'niedrig';
+ const scenarios=matches.slice(0,3).map((p,i)=>({label:i===0?'Wahrscheinlich':'Alternative',name:p.name,action:p.rec}));
+ return {primary,matches,confidence,scenarios,latest};
+}
+function openDecisionDetails(a){
+ const rows=[];
+ rows.push({glyph:'◆',text:'Verkäuferentscheidung: '+a.primary.decision,kind:'ki21'});
+ rows.push({glyph:'✓',text:'Empfehlung: '+a.primary.rec,kind:'ki21'});
+ rows.push({glyph:'?',text:'Zu klären: '+a.primary.ask,kind:''});
+ rows.push({glyph:'!',text:'Hauptrisiko: '+a.primary.risk,kind:''});
+ a.scenarios.forEach(s=>rows.push({glyph:'→',text:s.label+': '+s.name+' – '+s.action,kind:''}));
+ try{showBottomSheet('KI21 Entscheidung',rows,'Keine Entscheidungssituation erkannt.');}
+ catch(e){alert(rows.map(r=>r.text).join('\n\n'));}
+}
+function addDecisionCard(){
+ const aid=window.state&&state.activeId;
+ if(!aid)return;
+ const app=document.getElementById('app');
+ if(!app||app.querySelector('.ki21-decision-card'))return;
+ const summary=app.querySelector('.ki21-v62-summary,.cockpit-v62-summary,.cockpit-summary,.cockpit-grid');
+ if(!summary)return;
+ const a=analyzeDecision(aid);
+ const card=document.createElement('section');
+ card.className='ki21-decision-card';
+ card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">KI21 Verkäuferentscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
+ card.querySelector('button').onclick=()=>openDecisionDetails(a);
+ summary.parentNode.insertBefore(card,summary.nextSibling);
+}
+function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+window.KI21_DECISION_PATTERNS=KI21_DECISION_PATTERNS;
+window.analyzeDecisionV670=analyzeDecision;
+function patch(){
+ if(typeof window.renderCockpitSnapshotLiteV4215==='function'&&!window.renderCockpitSnapshotLiteV4215.__ki21v670){
+   const old=window.renderCockpitSnapshotLiteV4215;
+   const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addDecisionCard,40);return r;};
+   wrapped.__ki21v670=true;window.renderCockpitSnapshotLiteV4215=wrapped;
+ }
+ setTimeout(addDecisionCard,80);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch);else patch();
+window.addEventListener('pageshow',()=>setTimeout(addDecisionCard,80));
+})();
+</script>
+
 </body></html>`;
 
   exportHtmlAsPdf(html,'KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
@@ -13863,6 +14085,117 @@ ${html}
   </button>
 </div>
 
+
+<style id="ki21-decision-beta-css">
+.ki21-decision-card{margin:12px 0 14px;padding:16px;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fb);border:1px solid #dfe5e8;box-shadow:0 6px 18px rgba(29,51,61,.07)}
+.ki21-decision-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ki21-decision-kicker{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#708087;margin-bottom:5px}
+.ki21-decision-title{font-size:18px;font-weight:800;line-height:1.25;color:#20343e}
+.ki21-decision-confidence{white-space:nowrap;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#eaf2f0;color:#35685e}
+.ki21-decision-rec{margin-top:12px;padding:12px 13px;border-left:4px solid #d8683a;border-radius:10px;background:#fff6f1;font-weight:700;line-height:1.4;color:#293a42}
+.ki21-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ki21-decision-mini{background:#fff;border:1px solid #e3e8ea;border-radius:12px;padding:10px 11px}
+.ki21-decision-mini b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#7b8b91;margin-bottom:4px}
+.ki21-decision-mini span{font-size:13px;line-height:1.35;color:#33474f}
+.ki21-decision-more{margin-top:12px;width:100%;border:0;border-radius:12px;padding:11px 12px;background:#20343e;color:#fff;font-weight:800}
+@media(max-width:420px){.ki21-decision-grid{grid-template-columns:1fr}}
+</style>
+<script id="ki21-decision-beta-js">
+(function(){
+'use strict';
+const KI21_DECISION_PATTERNS=[
+ {id:'P001',name:'Zusätzliche Vorleistung',re:/kostenlos|gratis|unentgeltlich|zusätzliche\s+(?:analyse|workshop|test|pilot|referenz|nachweis)/i,decision:'Weitere Vorleistung leisten oder zuerst Gegenseitigkeit absichern?',rec:'Vor zusätzlicher Leistung zuerst Erfolgskriterien, Gegenleistung und verbindlichen Entscheidungspunkt vereinbaren.',ask:'Welche konkrete Unsicherheit soll die Zusatzleistung beseitigen – und welche Entscheidung folgt danach?',risk:'Risikoübertragung und offene Vorleistung'},
+ {id:'P002',name:'Moving the Goalposts',re:/weitere\s+(?:fälle|showcases|tests|nachweise)|noch\s+ein(?:e|en)?\s+(?:test|pilot|referenz)|zusätzlich.*freigab/i,decision:'Neue Bedingung akzeptieren oder Entscheidungskriterien stabilisieren?',rec:'Die neue Forderung nur akzeptieren, wenn klar ist, welche bestehende Entscheidungslücke sie schließt und welche verbindliche Entscheidung danach fällt.',ask:'Ist dies ein legitimer letzter Prüfpunkt oder verschiebt sich die Messlatte erneut?',risk:'Endlosschleife ohne Kaufcommitment'},
+ {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot starten oder zuerst die Entscheidungslogik schließen?',rec:'Pilot nur mit begrenztem Umfang, messbaren Kriterien, Verantwortlichen und festem Managemententscheid nach Abschluss starten.',ask:'Was gilt als Erfolg, wer entscheidet und was passiert bei Zielerreichung?',risk:'Pilot wird Aktivität statt Entscheidung'},
+ {id:'P004',name:'Sponsor verliert Einfluss',re:/sponsor.{0,80}(?:weniger\s+einfluss|überstimmt|nicht\s+mehr|verliert)|champion.{0,80}(?:verlässt|schwach|isoliert)/i,decision:'Sponsor weiter belasten oder direkten Zugang zum Entscheider schaffen?',rec:'Sponsor schützen und parallel direkten Zugang zum wirtschaftlichen Entscheider herstellen.',ask:'Wer kann die Entscheidung intern tatsächlich tragen, wenn der Sponsor ausfällt?',risk:'Scheinsicherheit im Buying Center'},
+ {id:'P005',name:'Neuer Entscheider',re:/neue[rn]?\s+(?:geschäftsführer|cfo|leiter|entscheider)|entscheidungsrolle.{0,60}(?:neu|geändert)/i,decision:'Bestehende Story fortsetzen oder Opportunity neu qualifizieren?',rec:'Entscheidungslogik mit der neuen Person neu aufbauen; frühere Zustimmung nicht übertragen.',ask:'Welche Ziele, Risiken und persönlichen Kriterien hat die neue entscheidende Person?',risk:'Alte Zustimmung wird fälschlich fortgeschrieben'},
+ {id:'P006',name:'CFO / Einkauf greift ein',re:/\bcfo\b|einkauf|procurement|commercial\s+review/i,decision:'Nur Unterlagen liefern oder Entscheidungsabsicht klären?',rec:'Zuerst klären, ob Standardprüfung, Rollout-Vorbereitung oder neue Hürde vorliegt; Umfang der Nachweise begrenzen.',ask:'Welche Entscheidung soll mit den angeforderten Informationen vorbereitet werden?',risk:'Kommerzielle Prüfung wird zur neuen Hürde'},
+ {id:'P007',name:'Budget bestätigt',re:/budget.{0,60}(?:bestätigt|vorhanden|freigegeben|verfügbar)/i,decision:'Direkt auf Abschluss gehen oder verbleibende Freigabelogik schließen?',rec:'Budget nicht mit Kaufentscheidung verwechseln; jetzt Entscheidungsprozess, Kriterien und Termin verbindlich machen.',ask:'Wer gibt final frei und welche Bedingungen müssen noch erfüllt sein?',risk:'Budget wird als Abschlusscommitment missverstanden'},
+ {id:'P008',name:'Budget entfällt',re:/budget.{0,60}(?:gestrichen|entfällt|nicht\s+mehr|eingefroren)/i,decision:'Deal retten, verkleinern oder disqualifizieren?',rec:'Neuen wirtschaftlichen Pfad prüfen: Umfang reduzieren, Startangebot anbieten oder Opportunity konsequent zurückstufen.',ask:'Ist das Problem weiterhin priorisiert und gibt es einen alternativen Finanzierungspfad?',risk:'Künstliches Weiterführen eines nicht finanzierbaren Deals'},
+ {id:'P009',name:'Priorität sinkt',re:/priorität.{0,60}(?:sinkt|gesunken|verliert)|andere\s+projekte.{0,60}(?:vorrang|priorisiert)/i,decision:'Mehr Aktivität erzeugen oder Managementrelevanz neu aufbauen?',rec:'Nicht mit mehr Terminen reagieren; wirtschaftliche Konsequenz des Nicht-Handelns und Managementpriorität neu verankern.',ask:'Was müsste passieren, damit das Thema wieder auf die Managementagenda kommt?',risk:'Aktivität ohne Momentum'},
+ {id:'P010',name:'Terminverschiebung',re:/termin.{0,60}(?:verschoben|vertagt)|entscheidung.{0,60}(?:verschoben|vertagt)/i,decision:'Verschiebung akzeptieren oder Ursache und neue Verbindlichkeit klären?',rec:'Verschiebung nur mit konkreter Ursache, neuem Datum und nächstem Kundencommitment akzeptieren.',ask:'Was hat sich verändert und welcher konkrete Schritt ist bis zum neuen Termin verbindlich?',risk:'Stiller Momentumverlust'},
+ {id:'P011',name:'Wettbewerber kommt hinzu',re:/wettbewerber|konkurrent|alternative\s+anbieter|vergleichsangebot/i,decision:'Featurevergleich liefern oder Entscheidungskriterien beeinflussen?',rec:'Nicht in Funktionsvergleich rutschen; Entscheidungskriterien, Risiko und differenzierenden Geschäftswert schärfen.',ask:'Nach welchen Kriterien wird wirklich entschieden und wer gewichtet sie?',risk:'Commodity-Vergleich und Preisdruck'},
+ {id:'P012',name:'Preisnachlass',re:/rabatt|preisnachlass|discount|günstiger|preis\s+senken/i,decision:'Rabatt geben oder Gegenleistung verhandeln?',rec:'Preisnachlass nur gegen messbare Gegenleistung wie Umfang, Laufzeit, Termin oder Referenzrecht gewähren.',ask:'Welches konkrete Commitment erhält der Anbieter für das Zugeständnis?',risk:'Einseitige Konzession'},
+ {id:'P013',name:'Angebot ohne Discovery',re:/angebot.{0,80}(?:sofort|direkt|ohne)|schicken\s+sie\s+ein\s+angebot/i,decision:'Angebot senden oder Discovery absichern?',rec:'Kein generisches Angebot senden; zuerst Entscheidungskriterien, Problemwirkung und Buying Center qualifizieren.',ask:'Welche Entscheidung soll das Angebot ermöglichen und woran wird es bewertet?',risk:'Preisvergleich ohne Wertverständnis'},
+ {id:'P014',name:'Erfolgskriterien fehlen',re:/erfolgskriterien|messkriterien|zielwerte|baseline|ausgangswerte/i,decision:'Starten oder Messlogik schließen?',rec:'Vor Pilot oder Projektstart Baseline, Zielwerte, Messmethode, Verantwortliche und Bewertungstermin festlegen.',ask:'Wie wird objektiv entschieden, ob der Kunde genug Nutzen sieht?',risk:'Subjektive Bewertung nach Leistungserbringung'},
+ {id:'P015',name:'Business Case angezweifelt',re:/roi.{0,60}(?:unklar|anzweifel|nicht\s+belastbar)|business\s*case.{0,60}(?:offen|anzweifel)|wirtschaftlich.{0,60}(?:unklar|nicht\s+belegt)/i,decision:'Mehr rechnen oder entscheidungsrelevanten Wert validieren?',rec:'Nicht scheinexakt rechnen; bestätigten Problemwert, beeinflussbaren Anteil und zentrale Annahmen gemeinsam validieren.',ask:'Welcher wirtschaftliche Wert ist bestätigt und welcher Anteil ist realistisch beeinflussbar?',risk:'Scheingenauer ROI'},
+ {id:'P016',name:'Implementierungsrisiko',re:/einführungsaufwand|implementierungsrisiko|rollout|supportbedarf|ressourcenbedarf/i,decision:'Vollständig ausarbeiten oder Informationsbedarf begrenzen?',rec:'Zuerst klären, ob Rollout-Vorbereitung oder neue Hürde; dann eine kompakte, entscheidungsfähige Umsetzungsskizze liefern.',ask:'Welche Mindestinformation benötigt der Entscheider für die Freigabe?',risk:'Vorzeitige Detailplanung ohne Entscheidung'},
+ {id:'P017',name:'Interne Ressourcen fehlen',re:/keine\s+(?:internen\s+)?ressourcen|ressourcen.{0,60}(?:fehlen|knapp)|kapazität.{0,60}(?:fehlt|knapp)/i,decision:'Warten oder Startmodell anpassen?',rec:'Ressourcenengpass in Startumfang, Verantwortlichkeiten und externen Unterstützungsbedarf übersetzen.',ask:'Welcher kleinste Start ist mit vorhandenen Ressourcen realistisch?',risk:'Unverbindliches Verschieben'},
+ {id:'P018',name:'Vertrags-/Datenschutzblockade',re:/datenschutz|dsgvo|legal|vertrag.{0,60}(?:blockiert|prüfung|offen)|security\s+review/i,decision:'Abwarten oder Prozess aktiv führen?',rec:'Prüfpfad, Verantwortliche, offene Dokumente und Zieltermin transparent machen; Business-Sponsor eingebunden halten.',ask:'Welche konkrete Prüfung ist offen, wer entscheidet und bis wann?',risk:'Formaler Prozess entkoppelt sich vom Business'},
+ {id:'P019',name:'Positives Rolloutsignal',re:/breitere\s+einführung|rollout\s+vorbereiten|größere\s+einführung|skalierung/i,decision:'Als Kaufsignal werten oder Bedingungen prüfen?',rec:'Positiv werten, aber prüfen, ob die Rolloutfrage echte Vorbereitung oder zusätzliche Freigabebedingung ist.',ask:'Welche Entscheidung ist bereits gefallen und welche Information fehlt nur noch zur Umsetzung?',risk:'Positives Signal wird überschätzt'},
+ {id:'P020',name:'Politische Entscheidung',re:/politisch|interne\s+politik|macht|bereichsinteressen|gesichtsverlust/i,decision:'Sachargumente verstärken oder Stakeholder-Risiken adressieren?',rec:'Persönliche Risiken, Gewinner, Verlierer und interne Legitimation explizit bearbeiten.',ask:'Wer trägt bei Zustimmung oder Ablehnung welches persönliche Risiko?',risk:'Sachlich guter Deal scheitert intern'},
+ {id:'P021',name:'Champion verlässt Unternehmen',re:/champion.{0,80}(?:verlässt|gekündigt)|sponsor.{0,80}(?:verlässt|gekündigt)|ansprechpartner.{0,80}(?:verlässt|wechselt)/i,decision:'Opportunity fortschreiben oder neu aufbauen?',rec:'Deal sofort neu qualifizieren, Wissen sichern und neuen internen Träger identifizieren.',ask:'Wer übernimmt Problem, Nutzen und interne Verantwortung?',risk:'Deal verliert Gedächtnis und Einfluss'},
+ {id:'P022',name:'Weitere Referenzen',re:/weitere\s+referenzen|mehr\s+referenz|kundenbeispiel|vergleichbarer\s+kunde/i,decision:'Weitere Referenzen liefern oder Beweisbedarf präzisieren?',rec:'Zuerst klären, welche konkrete Unsicherheit eine zusätzliche Referenz schließen soll.',ask:'Welche Eigenschaft muss die Referenz belegen, damit danach entschieden werden kann?',risk:'Unbegrenzte Evidenzanforderung'},
+ {id:'P023',name:'Entscheidungsgremium ändert sich',re:/entscheidungsgremium|steering\s+committee|weitere\s+entscheider|zusätzliche\s+stakeholder/i,decision:'Bestehenden Prozess fortsetzen oder Buying Center neu kartieren?',rec:'Neue Rollen, Vetorechte, persönliche Kriterien und Entscheidungsweg vollständig aktualisieren.',ask:'Wer kann jetzt entscheiden, blockieren oder legitimieren?',risk:'Veraltetes Buying-Center-Bild'},
+ {id:'P024',name:'Dealumfang wächst',re:/umfang.{0,60}(?:größer|erweitert|wächst)|zusätzliche\s+(?:bereiche|länder|nutzer|module)/i,decision:'Größeren Deal verfolgen oder Entscheidbarkeit schützen?',rec:'Wert des größeren Umfangs gegen zusätzliche Komplexität abwägen; ggf. gestuften Einstieg sichern.',ask:'Erhöht der größere Scope die Kaufwahrscheinlichkeit oder nur die Zahl der Abhängigkeiten?',risk:'Großer Deal wird unentscheidbar'},
+ {id:'P025',name:'Dealumfang sinkt',re:/umfang.{0,60}(?:kleiner|reduziert)|kleiner\s+start|nur\s+ein\s+bereich/i,decision:'Kleineren Einstieg akzeptieren oder auf Vollumfang bestehen?',rec:'Kleineren Start akzeptieren, wenn er echte Entscheidung, Referenzwert und skalierbaren Folgepfad schafft.',ask:'Welche Erweiterungslogik ist bei Erfolg bereits vereinbart?',risk:'Kleiner Pilot ohne Expansion'},
+ {id:'P026',name:'Zeitdruck steigt',re:/dringend|deadline|frist|bis\s+ende|zeitdruck|muss\s+bis/i,decision:'Beschleunigen oder Qualität schützen?',rec:'Kritischen Pfad verkürzen, aber Entscheidungsqualität, Verantwortliche und Freigabepunkte nicht überspringen.',ask:'Welche Schritte sind wirklich zeitkritisch und welche können parallel laufen?',risk:'Hektik ersetzt Entscheidung'},
+ {id:'P027',name:'Momentumverlust',re:/keine\s+rückmeldung|funkstille|meldet\s+sich\s+nicht|momentum|seit\s+wochen/i,decision:'Nachfassen oder Relevanz neu qualifizieren?',rec:'Nicht nur nachfassen; Priorität, Veränderung und nächstes Kundencommitment neu qualifizieren.',ask:'Was hat sich seit dem letzten verbindlichen Schritt verändert?',risk:'Zombie-Opportunity'},
+ {id:'P028',name:'Scheinkonsens',re:/alle\s+finden|grundsätzlich\s+positiv|klingt\s+gut|interesse\s+ist\s+da/i,decision:'Interesse als Fortschritt werten oder Commitment testen?',rec:'Interesse in konkretes Kundenhandeln übersetzen: Termin, Daten, Zugang, Freigabe oder Ressourcen.',ask:'Welches verbindliche Verhalten zeigt, dass der Kunde wirklich vorankommt?',risk:'Positive Stimmung ohne Kaufbewegung'},
+ {id:'P029',name:'Fehlende Gegenseitigkeit',re:/wir\s+sollen|anbieter\s+soll|noch\s+liefern|vorleistung/i,decision:'Weiter investieren oder Kundencommitment einfordern?',rec:'Jede zusätzliche Anbieterleistung an eine konkrete Kundenleistung und Entscheidung koppeln.',ask:'Welche Gegenleistung erbringt der Kunde jetzt?',risk:'Einseitige Investition'},
+ {id:'P030',name:'Management fordert ROI',re:/management.{0,80}roi|geschäftsführung.{0,80}(?:wirtschaftlich|business\s*case)|cfo.{0,80}(?:roi|wirtschaftlich)/i,decision:'ROI-Modell liefern oder Wertlogik gemeinsam validieren?',rec:'Problemwert, beeinflussbaren Anteil, Investition und Entscheidungsannahmen transparent trennen.',ask:'Welche wirtschaftliche Schwelle muss für die Freigabe erreicht sein?',risk:'ROI wird zur Scheingenauigkeit oder Ausrede'}
+];
+function rawForDecision(accId){
+ try{return String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){return '';}
+}
+function latestAdditionText(accId){
+ try{const f=getLatestAdditionFactsV6532(accId);return String(f&&f.latestText||'');}catch(e){return '';}
+}
+function analyzeDecision(accId){
+ const latest=latestAdditionText(accId);
+ const raw=(latest+'\n'+rawForDecision(accId)).trim();
+ const matches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(raw));
+ let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Verkäuferentscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
+ // Dominanz: neueste Information und spezifischere Patterns bevorzugen
+ const latestMatches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(latest));
+ if(latestMatches.length) primary=latestMatches[0];
+ const ambiguity=matches.length>1;
+ const confirmed=/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben/i.test(latest);
+ const missing=/unklar|offen|noch\s+nicht|keine|fehlt/i.test(latest);
+ const confidence=latest&&confirmed&&!missing?'hoch':latest&&(!ambiguity||confirmed)?'mittel':'niedrig';
+ const scenarios=matches.slice(0,3).map((p,i)=>({label:i===0?'Wahrscheinlich':'Alternative',name:p.name,action:p.rec}));
+ return {primary,matches,confidence,scenarios,latest};
+}
+function openDecisionDetails(a){
+ const rows=[];
+ rows.push({glyph:'◆',text:'Verkäuferentscheidung: '+a.primary.decision,kind:'ki21'});
+ rows.push({glyph:'✓',text:'Empfehlung: '+a.primary.rec,kind:'ki21'});
+ rows.push({glyph:'?',text:'Zu klären: '+a.primary.ask,kind:''});
+ rows.push({glyph:'!',text:'Hauptrisiko: '+a.primary.risk,kind:''});
+ a.scenarios.forEach(s=>rows.push({glyph:'→',text:s.label+': '+s.name+' – '+s.action,kind:''}));
+ try{showBottomSheet('KI21 Entscheidung',rows,'Keine Entscheidungssituation erkannt.');}
+ catch(e){alert(rows.map(r=>r.text).join('\n\n'));}
+}
+function addDecisionCard(){
+ const aid=window.state&&state.activeId;
+ if(!aid)return;
+ const app=document.getElementById('app');
+ if(!app||app.querySelector('.ki21-decision-card'))return;
+ const summary=app.querySelector('.ki21-v62-summary,.cockpit-v62-summary,.cockpit-summary,.cockpit-grid');
+ if(!summary)return;
+ const a=analyzeDecision(aid);
+ const card=document.createElement('section');
+ card.className='ki21-decision-card';
+ card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">KI21 Verkäuferentscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
+ card.querySelector('button').onclick=()=>openDecisionDetails(a);
+ summary.parentNode.insertBefore(card,summary.nextSibling);
+}
+function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+window.KI21_DECISION_PATTERNS=KI21_DECISION_PATTERNS;
+window.analyzeDecisionV670=analyzeDecision;
+function patch(){
+ if(typeof window.renderCockpitSnapshotLiteV4215==='function'&&!window.renderCockpitSnapshotLiteV4215.__ki21v670){
+   const old=window.renderCockpitSnapshotLiteV4215;
+   const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addDecisionCard,40);return r;};
+   wrapped.__ki21v670=true;window.renderCockpitSnapshotLiteV4215=wrapped;
+ }
+ setTimeout(addDecisionCard,80);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch);else patch();
+window.addEventListener('pageshow',()=>setTimeout(addDecisionCard,80));
+})();
+</script>
+
 </body></html>`);
   win.document.close();
 }
@@ -14372,7 +14705,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.8 Production Startup & Forecast Release';
+const KI21_VERSION='v6.7.0 Decision Intelligence Beta';
 
 
 function runKi21VersionMigration(){
@@ -14398,7 +14731,7 @@ function runKi21VersionMigration(){
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
         dealState:(detectCurrentDealStateV6532(acc.id)||{}).type||h.dealState,
-        protectedSchema:'v6.6.8',
+        protectedSchema:'v6.7.0',
         migratedAt:Date.now()
       });
     }
@@ -15540,7 +15873,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.8 Production Startup & Forecast Release';
+  const VERSION='v6.7.0 Decision Intelligence Beta';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15819,7 +16152,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.6.8 Production Startup & Forecast Release';
+  const VERSION='v6.7.0 Decision Intelligence Beta';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16032,7 +16365,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.6.8 Production Startup & Forecast Release';
+  const VERSION='v6.7.0 Decision Intelligence Beta';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16048,5 +16381,116 @@ if(document.readyState==='loading'){
   setTimeout(ki21ProductionBootV668,0);
 }
 </script>
+
+<style id="ki21-decision-beta-css">
+.ki21-decision-card{margin:12px 0 14px;padding:16px;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fb);border:1px solid #dfe5e8;box-shadow:0 6px 18px rgba(29,51,61,.07)}
+.ki21-decision-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ki21-decision-kicker{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#708087;margin-bottom:5px}
+.ki21-decision-title{font-size:18px;font-weight:800;line-height:1.25;color:#20343e}
+.ki21-decision-confidence{white-space:nowrap;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#eaf2f0;color:#35685e}
+.ki21-decision-rec{margin-top:12px;padding:12px 13px;border-left:4px solid #d8683a;border-radius:10px;background:#fff6f1;font-weight:700;line-height:1.4;color:#293a42}
+.ki21-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ki21-decision-mini{background:#fff;border:1px solid #e3e8ea;border-radius:12px;padding:10px 11px}
+.ki21-decision-mini b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#7b8b91;margin-bottom:4px}
+.ki21-decision-mini span{font-size:13px;line-height:1.35;color:#33474f}
+.ki21-decision-more{margin-top:12px;width:100%;border:0;border-radius:12px;padding:11px 12px;background:#20343e;color:#fff;font-weight:800}
+@media(max-width:420px){.ki21-decision-grid{grid-template-columns:1fr}}
+</style>
+<script id="ki21-decision-beta-js">
+(function(){
+'use strict';
+const KI21_DECISION_PATTERNS=[
+ {id:'P001',name:'Zusätzliche Vorleistung',re:/kostenlos|gratis|unentgeltlich|zusätzliche\s+(?:analyse|workshop|test|pilot|referenz|nachweis)/i,decision:'Weitere Vorleistung leisten oder zuerst Gegenseitigkeit absichern?',rec:'Vor zusätzlicher Leistung zuerst Erfolgskriterien, Gegenleistung und verbindlichen Entscheidungspunkt vereinbaren.',ask:'Welche konkrete Unsicherheit soll die Zusatzleistung beseitigen – und welche Entscheidung folgt danach?',risk:'Risikoübertragung und offene Vorleistung'},
+ {id:'P002',name:'Moving the Goalposts',re:/weitere\s+(?:fälle|showcases|tests|nachweise)|noch\s+ein(?:e|en)?\s+(?:test|pilot|referenz)|zusätzlich.*freigab/i,decision:'Neue Bedingung akzeptieren oder Entscheidungskriterien stabilisieren?',rec:'Die neue Forderung nur akzeptieren, wenn klar ist, welche bestehende Entscheidungslücke sie schließt und welche verbindliche Entscheidung danach fällt.',ask:'Ist dies ein legitimer letzter Prüfpunkt oder verschiebt sich die Messlatte erneut?',risk:'Endlosschleife ohne Kaufcommitment'},
+ {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot starten oder zuerst die Entscheidungslogik schließen?',rec:'Pilot nur mit begrenztem Umfang, messbaren Kriterien, Verantwortlichen und festem Managemententscheid nach Abschluss starten.',ask:'Was gilt als Erfolg, wer entscheidet und was passiert bei Zielerreichung?',risk:'Pilot wird Aktivität statt Entscheidung'},
+ {id:'P004',name:'Sponsor verliert Einfluss',re:/sponsor.{0,80}(?:weniger\s+einfluss|überstimmt|nicht\s+mehr|verliert)|champion.{0,80}(?:verlässt|schwach|isoliert)/i,decision:'Sponsor weiter belasten oder direkten Zugang zum Entscheider schaffen?',rec:'Sponsor schützen und parallel direkten Zugang zum wirtschaftlichen Entscheider herstellen.',ask:'Wer kann die Entscheidung intern tatsächlich tragen, wenn der Sponsor ausfällt?',risk:'Scheinsicherheit im Buying Center'},
+ {id:'P005',name:'Neuer Entscheider',re:/neue[rn]?\s+(?:geschäftsführer|cfo|leiter|entscheider)|entscheidungsrolle.{0,60}(?:neu|geändert)/i,decision:'Bestehende Story fortsetzen oder Opportunity neu qualifizieren?',rec:'Entscheidungslogik mit der neuen Person neu aufbauen; frühere Zustimmung nicht übertragen.',ask:'Welche Ziele, Risiken und persönlichen Kriterien hat die neue entscheidende Person?',risk:'Alte Zustimmung wird fälschlich fortgeschrieben'},
+ {id:'P006',name:'CFO / Einkauf greift ein',re:/\bcfo\b|einkauf|procurement|commercial\s+review/i,decision:'Nur Unterlagen liefern oder Entscheidungsabsicht klären?',rec:'Zuerst klären, ob Standardprüfung, Rollout-Vorbereitung oder neue Hürde vorliegt; Umfang der Nachweise begrenzen.',ask:'Welche Entscheidung soll mit den angeforderten Informationen vorbereitet werden?',risk:'Kommerzielle Prüfung wird zur neuen Hürde'},
+ {id:'P007',name:'Budget bestätigt',re:/budget.{0,60}(?:bestätigt|vorhanden|freigegeben|verfügbar)/i,decision:'Direkt auf Abschluss gehen oder verbleibende Freigabelogik schließen?',rec:'Budget nicht mit Kaufentscheidung verwechseln; jetzt Entscheidungsprozess, Kriterien und Termin verbindlich machen.',ask:'Wer gibt final frei und welche Bedingungen müssen noch erfüllt sein?',risk:'Budget wird als Abschlusscommitment missverstanden'},
+ {id:'P008',name:'Budget entfällt',re:/budget.{0,60}(?:gestrichen|entfällt|nicht\s+mehr|eingefroren)/i,decision:'Deal retten, verkleinern oder disqualifizieren?',rec:'Neuen wirtschaftlichen Pfad prüfen: Umfang reduzieren, Startangebot anbieten oder Opportunity konsequent zurückstufen.',ask:'Ist das Problem weiterhin priorisiert und gibt es einen alternativen Finanzierungspfad?',risk:'Künstliches Weiterführen eines nicht finanzierbaren Deals'},
+ {id:'P009',name:'Priorität sinkt',re:/priorität.{0,60}(?:sinkt|gesunken|verliert)|andere\s+projekte.{0,60}(?:vorrang|priorisiert)/i,decision:'Mehr Aktivität erzeugen oder Managementrelevanz neu aufbauen?',rec:'Nicht mit mehr Terminen reagieren; wirtschaftliche Konsequenz des Nicht-Handelns und Managementpriorität neu verankern.',ask:'Was müsste passieren, damit das Thema wieder auf die Managementagenda kommt?',risk:'Aktivität ohne Momentum'},
+ {id:'P010',name:'Terminverschiebung',re:/termin.{0,60}(?:verschoben|vertagt)|entscheidung.{0,60}(?:verschoben|vertagt)/i,decision:'Verschiebung akzeptieren oder Ursache und neue Verbindlichkeit klären?',rec:'Verschiebung nur mit konkreter Ursache, neuem Datum und nächstem Kundencommitment akzeptieren.',ask:'Was hat sich verändert und welcher konkrete Schritt ist bis zum neuen Termin verbindlich?',risk:'Stiller Momentumverlust'},
+ {id:'P011',name:'Wettbewerber kommt hinzu',re:/wettbewerber|konkurrent|alternative\s+anbieter|vergleichsangebot/i,decision:'Featurevergleich liefern oder Entscheidungskriterien beeinflussen?',rec:'Nicht in Funktionsvergleich rutschen; Entscheidungskriterien, Risiko und differenzierenden Geschäftswert schärfen.',ask:'Nach welchen Kriterien wird wirklich entschieden und wer gewichtet sie?',risk:'Commodity-Vergleich und Preisdruck'},
+ {id:'P012',name:'Preisnachlass',re:/rabatt|preisnachlass|discount|günstiger|preis\s+senken/i,decision:'Rabatt geben oder Gegenleistung verhandeln?',rec:'Preisnachlass nur gegen messbare Gegenleistung wie Umfang, Laufzeit, Termin oder Referenzrecht gewähren.',ask:'Welches konkrete Commitment erhält der Anbieter für das Zugeständnis?',risk:'Einseitige Konzession'},
+ {id:'P013',name:'Angebot ohne Discovery',re:/angebot.{0,80}(?:sofort|direkt|ohne)|schicken\s+sie\s+ein\s+angebot/i,decision:'Angebot senden oder Discovery absichern?',rec:'Kein generisches Angebot senden; zuerst Entscheidungskriterien, Problemwirkung und Buying Center qualifizieren.',ask:'Welche Entscheidung soll das Angebot ermöglichen und woran wird es bewertet?',risk:'Preisvergleich ohne Wertverständnis'},
+ {id:'P014',name:'Erfolgskriterien fehlen',re:/erfolgskriterien|messkriterien|zielwerte|baseline|ausgangswerte/i,decision:'Starten oder Messlogik schließen?',rec:'Vor Pilot oder Projektstart Baseline, Zielwerte, Messmethode, Verantwortliche und Bewertungstermin festlegen.',ask:'Wie wird objektiv entschieden, ob der Kunde genug Nutzen sieht?',risk:'Subjektive Bewertung nach Leistungserbringung'},
+ {id:'P015',name:'Business Case angezweifelt',re:/roi.{0,60}(?:unklar|anzweifel|nicht\s+belastbar)|business\s*case.{0,60}(?:offen|anzweifel)|wirtschaftlich.{0,60}(?:unklar|nicht\s+belegt)/i,decision:'Mehr rechnen oder entscheidungsrelevanten Wert validieren?',rec:'Nicht scheinexakt rechnen; bestätigten Problemwert, beeinflussbaren Anteil und zentrale Annahmen gemeinsam validieren.',ask:'Welcher wirtschaftliche Wert ist bestätigt und welcher Anteil ist realistisch beeinflussbar?',risk:'Scheingenauer ROI'},
+ {id:'P016',name:'Implementierungsrisiko',re:/einführungsaufwand|implementierungsrisiko|rollout|supportbedarf|ressourcenbedarf/i,decision:'Vollständig ausarbeiten oder Informationsbedarf begrenzen?',rec:'Zuerst klären, ob Rollout-Vorbereitung oder neue Hürde; dann eine kompakte, entscheidungsfähige Umsetzungsskizze liefern.',ask:'Welche Mindestinformation benötigt der Entscheider für die Freigabe?',risk:'Vorzeitige Detailplanung ohne Entscheidung'},
+ {id:'P017',name:'Interne Ressourcen fehlen',re:/keine\s+(?:internen\s+)?ressourcen|ressourcen.{0,60}(?:fehlen|knapp)|kapazität.{0,60}(?:fehlt|knapp)/i,decision:'Warten oder Startmodell anpassen?',rec:'Ressourcenengpass in Startumfang, Verantwortlichkeiten und externen Unterstützungsbedarf übersetzen.',ask:'Welcher kleinste Start ist mit vorhandenen Ressourcen realistisch?',risk:'Unverbindliches Verschieben'},
+ {id:'P018',name:'Vertrags-/Datenschutzblockade',re:/datenschutz|dsgvo|legal|vertrag.{0,60}(?:blockiert|prüfung|offen)|security\s+review/i,decision:'Abwarten oder Prozess aktiv führen?',rec:'Prüfpfad, Verantwortliche, offene Dokumente und Zieltermin transparent machen; Business-Sponsor eingebunden halten.',ask:'Welche konkrete Prüfung ist offen, wer entscheidet und bis wann?',risk:'Formaler Prozess entkoppelt sich vom Business'},
+ {id:'P019',name:'Positives Rolloutsignal',re:/breitere\s+einführung|rollout\s+vorbereiten|größere\s+einführung|skalierung/i,decision:'Als Kaufsignal werten oder Bedingungen prüfen?',rec:'Positiv werten, aber prüfen, ob die Rolloutfrage echte Vorbereitung oder zusätzliche Freigabebedingung ist.',ask:'Welche Entscheidung ist bereits gefallen und welche Information fehlt nur noch zur Umsetzung?',risk:'Positives Signal wird überschätzt'},
+ {id:'P020',name:'Politische Entscheidung',re:/politisch|interne\s+politik|macht|bereichsinteressen|gesichtsverlust/i,decision:'Sachargumente verstärken oder Stakeholder-Risiken adressieren?',rec:'Persönliche Risiken, Gewinner, Verlierer und interne Legitimation explizit bearbeiten.',ask:'Wer trägt bei Zustimmung oder Ablehnung welches persönliche Risiko?',risk:'Sachlich guter Deal scheitert intern'},
+ {id:'P021',name:'Champion verlässt Unternehmen',re:/champion.{0,80}(?:verlässt|gekündigt)|sponsor.{0,80}(?:verlässt|gekündigt)|ansprechpartner.{0,80}(?:verlässt|wechselt)/i,decision:'Opportunity fortschreiben oder neu aufbauen?',rec:'Deal sofort neu qualifizieren, Wissen sichern und neuen internen Träger identifizieren.',ask:'Wer übernimmt Problem, Nutzen und interne Verantwortung?',risk:'Deal verliert Gedächtnis und Einfluss'},
+ {id:'P022',name:'Weitere Referenzen',re:/weitere\s+referenzen|mehr\s+referenz|kundenbeispiel|vergleichbarer\s+kunde/i,decision:'Weitere Referenzen liefern oder Beweisbedarf präzisieren?',rec:'Zuerst klären, welche konkrete Unsicherheit eine zusätzliche Referenz schließen soll.',ask:'Welche Eigenschaft muss die Referenz belegen, damit danach entschieden werden kann?',risk:'Unbegrenzte Evidenzanforderung'},
+ {id:'P023',name:'Entscheidungsgremium ändert sich',re:/entscheidungsgremium|steering\s+committee|weitere\s+entscheider|zusätzliche\s+stakeholder/i,decision:'Bestehenden Prozess fortsetzen oder Buying Center neu kartieren?',rec:'Neue Rollen, Vetorechte, persönliche Kriterien und Entscheidungsweg vollständig aktualisieren.',ask:'Wer kann jetzt entscheiden, blockieren oder legitimieren?',risk:'Veraltetes Buying-Center-Bild'},
+ {id:'P024',name:'Dealumfang wächst',re:/umfang.{0,60}(?:größer|erweitert|wächst)|zusätzliche\s+(?:bereiche|länder|nutzer|module)/i,decision:'Größeren Deal verfolgen oder Entscheidbarkeit schützen?',rec:'Wert des größeren Umfangs gegen zusätzliche Komplexität abwägen; ggf. gestuften Einstieg sichern.',ask:'Erhöht der größere Scope die Kaufwahrscheinlichkeit oder nur die Zahl der Abhängigkeiten?',risk:'Großer Deal wird unentscheidbar'},
+ {id:'P025',name:'Dealumfang sinkt',re:/umfang.{0,60}(?:kleiner|reduziert)|kleiner\s+start|nur\s+ein\s+bereich/i,decision:'Kleineren Einstieg akzeptieren oder auf Vollumfang bestehen?',rec:'Kleineren Start akzeptieren, wenn er echte Entscheidung, Referenzwert und skalierbaren Folgepfad schafft.',ask:'Welche Erweiterungslogik ist bei Erfolg bereits vereinbart?',risk:'Kleiner Pilot ohne Expansion'},
+ {id:'P026',name:'Zeitdruck steigt',re:/dringend|deadline|frist|bis\s+ende|zeitdruck|muss\s+bis/i,decision:'Beschleunigen oder Qualität schützen?',rec:'Kritischen Pfad verkürzen, aber Entscheidungsqualität, Verantwortliche und Freigabepunkte nicht überspringen.',ask:'Welche Schritte sind wirklich zeitkritisch und welche können parallel laufen?',risk:'Hektik ersetzt Entscheidung'},
+ {id:'P027',name:'Momentumverlust',re:/keine\s+rückmeldung|funkstille|meldet\s+sich\s+nicht|momentum|seit\s+wochen/i,decision:'Nachfassen oder Relevanz neu qualifizieren?',rec:'Nicht nur nachfassen; Priorität, Veränderung und nächstes Kundencommitment neu qualifizieren.',ask:'Was hat sich seit dem letzten verbindlichen Schritt verändert?',risk:'Zombie-Opportunity'},
+ {id:'P028',name:'Scheinkonsens',re:/alle\s+finden|grundsätzlich\s+positiv|klingt\s+gut|interesse\s+ist\s+da/i,decision:'Interesse als Fortschritt werten oder Commitment testen?',rec:'Interesse in konkretes Kundenhandeln übersetzen: Termin, Daten, Zugang, Freigabe oder Ressourcen.',ask:'Welches verbindliche Verhalten zeigt, dass der Kunde wirklich vorankommt?',risk:'Positive Stimmung ohne Kaufbewegung'},
+ {id:'P029',name:'Fehlende Gegenseitigkeit',re:/wir\s+sollen|anbieter\s+soll|noch\s+liefern|vorleistung/i,decision:'Weiter investieren oder Kundencommitment einfordern?',rec:'Jede zusätzliche Anbieterleistung an eine konkrete Kundenleistung und Entscheidung koppeln.',ask:'Welche Gegenleistung erbringt der Kunde jetzt?',risk:'Einseitige Investition'},
+ {id:'P030',name:'Management fordert ROI',re:/management.{0,80}roi|geschäftsführung.{0,80}(?:wirtschaftlich|business\s*case)|cfo.{0,80}(?:roi|wirtschaftlich)/i,decision:'ROI-Modell liefern oder Wertlogik gemeinsam validieren?',rec:'Problemwert, beeinflussbaren Anteil, Investition und Entscheidungsannahmen transparent trennen.',ask:'Welche wirtschaftliche Schwelle muss für die Freigabe erreicht sein?',risk:'ROI wird zur Scheingenauigkeit oder Ausrede'}
+];
+function rawForDecision(accId){
+ try{return String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){return '';}
+}
+function latestAdditionText(accId){
+ try{const f=getLatestAdditionFactsV6532(accId);return String(f&&f.latestText||'');}catch(e){return '';}
+}
+function analyzeDecision(accId){
+ const latest=latestAdditionText(accId);
+ const raw=(latest+'\n'+rawForDecision(accId)).trim();
+ const matches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(raw));
+ let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Verkäuferentscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
+ // Dominanz: neueste Information und spezifischere Patterns bevorzugen
+ const latestMatches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(latest));
+ if(latestMatches.length) primary=latestMatches[0];
+ const ambiguity=matches.length>1;
+ const confirmed=/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben/i.test(latest);
+ const missing=/unklar|offen|noch\s+nicht|keine|fehlt/i.test(latest);
+ const confidence=latest&&confirmed&&!missing?'hoch':latest&&(!ambiguity||confirmed)?'mittel':'niedrig';
+ const scenarios=matches.slice(0,3).map((p,i)=>({label:i===0?'Wahrscheinlich':'Alternative',name:p.name,action:p.rec}));
+ return {primary,matches,confidence,scenarios,latest};
+}
+function openDecisionDetails(a){
+ const rows=[];
+ rows.push({glyph:'◆',text:'Verkäuferentscheidung: '+a.primary.decision,kind:'ki21'});
+ rows.push({glyph:'✓',text:'Empfehlung: '+a.primary.rec,kind:'ki21'});
+ rows.push({glyph:'?',text:'Zu klären: '+a.primary.ask,kind:''});
+ rows.push({glyph:'!',text:'Hauptrisiko: '+a.primary.risk,kind:''});
+ a.scenarios.forEach(s=>rows.push({glyph:'→',text:s.label+': '+s.name+' – '+s.action,kind:''}));
+ try{showBottomSheet('KI21 Entscheidung',rows,'Keine Entscheidungssituation erkannt.');}
+ catch(e){alert(rows.map(r=>r.text).join('\n\n'));}
+}
+function addDecisionCard(){
+ const aid=window.state&&state.activeId;
+ if(!aid)return;
+ const app=document.getElementById('app');
+ if(!app||app.querySelector('.ki21-decision-card'))return;
+ const summary=app.querySelector('.ki21-v62-summary,.cockpit-v62-summary,.cockpit-summary,.cockpit-grid');
+ if(!summary)return;
+ const a=analyzeDecision(aid);
+ const card=document.createElement('section');
+ card.className='ki21-decision-card';
+ card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">KI21 Verkäuferentscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
+ card.querySelector('button').onclick=()=>openDecisionDetails(a);
+ summary.parentNode.insertBefore(card,summary.nextSibling);
+}
+function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+window.KI21_DECISION_PATTERNS=KI21_DECISION_PATTERNS;
+window.analyzeDecisionV670=analyzeDecision;
+function patch(){
+ if(typeof window.renderCockpitSnapshotLiteV4215==='function'&&!window.renderCockpitSnapshotLiteV4215.__ki21v670){
+   const old=window.renderCockpitSnapshotLiteV4215;
+   const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addDecisionCard,40);return r;};
+   wrapped.__ki21v670=true;window.renderCockpitSnapshotLiteV4215=wrapped;
+ }
+ setTimeout(addDecisionCard,80);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch);else patch();
+window.addEventListener('pageshow',()=>setTimeout(addDecisionCard,80));
+})();
+</script>
+
 </body>
 </html>
