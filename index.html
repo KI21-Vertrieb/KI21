@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.6.5-fresh-20260713T1215 -->
+<!-- KI21_BUILD: v6.6.6-deal-state-score-source-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.5 Persistence & Score Normalization Fix</title>
+<title>KI21 v6.6.6 Deal-State Score Source Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -14385,7 +14385,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.5 Persistence & Score Normalization Fix';
+const KI21_VERSION='v6.6.6 Deal-State Score Source Fix';
 
 
 function runKi21VersionMigration(){
@@ -14411,7 +14411,7 @@ function runKi21VersionMigration(){
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
         dealState:(detectCurrentDealStateV6532(acc.id)||{}).type||h.dealState,
-        protectedSchema:'v6.6.5',
+        protectedSchema:'v6.6.6',
         migratedAt:Date.now()
       });
     }
@@ -15546,7 +15546,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.5 Persistence & Score Normalization Fix';
+  const VERSION='v6.6.6 Deal-State Score Source Fix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15816,6 +15816,107 @@ body{
   window.addEventListener('pageshow',()=>setTimeout(enforceV665,0));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(enforceV665,0);});
   setTimeout(enforceV665,350);
+})();
+</script>
+
+
+<script>
+/* v6.6.6 – Deal-State Score Source Fix
+   Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
+   dominanten Deal-State wie das Cockpit abgeleitet. */
+(function(){
+  const VERSION='v6.6.6 Deal-State Score Source Fix';
+  const previousGetOpportunityHealth=window.getOpportunityHealth;
+
+  function itemText(item){
+    return String((item&&item.text)||item||'').trim();
+  }
+  function item(text,type){
+    return {text:text,origin:'DEAL_STATE',type:type||'open',disabled:false};
+  }
+  function unique(items){
+    const seen=new Set();
+    return (items||[]).filter(entry=>{
+      const key=itemText(entry).toLowerCase();
+      if(!key||seen.has(key))return false;
+      seen.add(key);return true;
+    });
+  }
+  function removeObsolete(items){
+    const obsolete=/(sabine.*allein.*entscheidungsbefugt|entscheidung\s+(?:verzögert|gestoppt)|vermeidungsquote|konkrete\s+pilot[-\s]?deals|pilot[-\s]?deals.*messkriterien|starttermin.*offen|discovery\s+sprint\s+ist\s+freigegeben|kickoff.*vereinbaren|schmerz\s+quantifiziert:\s*9\.?900\s*€\s*wirtschaftliche\s+größenordnung)/i;
+    return (items||[]).filter(entry=>!obsolete.test(itemText(entry)));
+  }
+  function canonicalHealth(accId,base){
+    if(!base)return base;
+    let ds=null;
+    try{ds=detectCurrentDealStateV6532(accId);}catch(e){}
+    if(!ds||ds.type!=='pilot_fully_agreed_rollout_open')return base;
+
+    const out=JSON.parse(JSON.stringify(base));
+    out.score=Math.min(84,Math.max(0,Math.round(Number(out.score)||0)));
+    out.label=out.score>=85?'Sehr gesund':out.score>=70?'Gesund':out.score>=55?'Stabil':'Kritisch';
+    out.dealState=ds.type;
+    out.scoreSource='dominant_deal_state_v666';
+
+    let positives=removeObsolete(out.positive);
+    let warnings=removeObsolete(out.warning);
+    let opens=removeObsolete(out.open);
+
+    positives.unshift(
+      item('Pilotvereinbarung schriftlich bestätigt: Dauer, Nutzergruppe und Messkriterien sind festgelegt.','positive'),
+      item('Geschäftsführer und CFO entscheiden verbindlich am ersten Werktag nach Pilotende.','positive'),
+      item('Fachliche Erfolgskriterien und Vertriebsakzeptanz sind messbar definiert.','positive')
+    );
+    warnings.unshift(
+      item('Einführungsaufwand und Supportbedarf sind noch nicht entscheidungsrelevant eingegrenzt.','warning')
+    );
+    opens.unshift(
+      item('Vor Pilotstart mit dem CFO klären, welche minimale Rollout- und Supporteinschätzung für die Entscheidung benötigt wird.','open')
+    );
+
+    out.positive=unique(positives);
+    out.warning=unique(warnings);
+    out.open=unique(opens);
+    return out;
+  }
+
+  window.getOpportunityHealth=function(accId){
+    const base=previousGetOpportunityHealth?previousGetOpportunityHealth.call(this,accId):null;
+    return canonicalHealth(accId,base);
+  };
+
+  const previousShowScoreDetails=window.showScoreDetailsV4224;
+  window.showScoreDetailsV4224=function(raw){
+    const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
+    const canonical=aid?window.getOpportunityHealth(aid):raw;
+    return previousShowScoreDetails.call(this,canonical||raw);
+  };
+
+  function persistAndRender(){
+    try{
+      const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
+      if(!aid)return;
+      const health=window.getOpportunityHealth(aid);
+      if(!health||typeof health.score!=='number')return;
+      const key='ki21_health_'+aid;
+      const stored=LS.get(key,null)||{};
+      LS.set(key,{...stored,...health,scoreSource:'dominant_deal_state_v666',ts:Date.now()});
+      LS.set('ki21_score_'+aid,Math.round(health.score/10));
+      document.querySelectorAll('.cockpit-score-badge,.cockpit-score-click').forEach(badge=>{
+        badge.textContent=Math.round(health.score)+'/100';
+        try{const c=getHealthColor(health.score);badge.style.color=c;badge.style.borderColor=c;}catch(e){}
+      });
+      document.querySelectorAll('.tagline').forEach(el=>{
+        if(/^v6\.\d/i.test(String(el.textContent||'').trim()))el.textContent=VERSION;
+      });
+    }catch(e){console.warn('v6.6.6 canonical score sync skipped',e);}
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(persistAndRender,0),{once:true});
+  else setTimeout(persistAndRender,0);
+  window.addEventListener('pageshow',()=>setTimeout(persistAndRender,0));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(persistAndRender,0);});
+  setTimeout(persistAndRender,400);
 })();
 </script>
 
