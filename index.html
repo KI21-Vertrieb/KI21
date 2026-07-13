@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.7.1-decision-intelligence-beta-20260713 -->
+<!-- KI21_BUILD: v6.7.2-question-evidence-intelligence-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.7.1 Decision Intelligence Render Fix</title>
+<title>KI21 v6.7.2 Question & Evidence Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -14372,7 +14372,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.7.1 Decision Intelligence Render Fix';
+const KI21_VERSION='v6.7.2 Question & Evidence Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -14398,7 +14398,7 @@ function runKi21VersionMigration(){
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
         dealState:(detectCurrentDealStateV6532(acc.id)||{}).type||h.dealState,
-        protectedSchema:'v6.7.1',
+        protectedSchema:'v6.7.2',
         migratedAt:Date.now()
       });
     }
@@ -15540,7 +15540,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.7.1 Decision Intelligence Render Fix';
+  const VERSION='v6.7.2 Question & Evidence Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15819,7 +15819,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.7.1 Decision Intelligence Render Fix';
+  const VERSION='v6.7.2 Question & Evidence Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16032,7 +16032,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.7.1 Decision Intelligence Render Fix';
+  const VERSION='v6.7.2 Question & Evidence Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16156,6 +16156,73 @@ function patch(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch);else patch();
 window.addEventListener('pageshow',()=>setTimeout(addDecisionCard,80));
+})();
+</script>
+
+<style id="ki21-question-evidence-css">
+.ki21-qe-row{margin-top:12px;padding:12px 13px;border-radius:12px;background:rgba(255,255,255,.72);border:1px solid #e3e8ea}
+.ki21-qe-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7b8b91;margin-bottom:5px}
+.ki21-qe-question{font-size:14px;line-height:1.4;font-weight:750;color:#263b44}
+.ki21-evidence-line{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.ki21-evidence-chip{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#edf2f4;color:#52656d}
+.ki21-evidence-chip.good{background:#eaf5ee;color:#2e6a45}.ki21-evidence-chip.warn{background:#fff4e5;color:#8b5d1c}.ki21-evidence-chip.risk{background:#fdeceb;color:#98433e}
+</style>
+<script id="ki21-question-evidence-js">
+(function(){
+'use strict';
+function latestText(){
+ const aid=window.state&&state.activeId;
+ try{const f=getLatestAdditionFactsV6532(aid);return String(f&&f.latestText||'');}catch(e){return '';}
+}
+function evidenceProfile(text){
+ const t=String(text||'');
+ const factHits=(t.match(/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben|zugesagt|festgelegt|terminiert|entschieden/gi)||[]).length;
+ const openHits=(t.match(/unklar|offen|noch nicht|möchte|würde|könnte|befürchtet|signalisiert|grundsätzlich/gi)||[]).length;
+ const contradiction=/(bestätigt|vereinbart).{0,120}(aber|jedoch|allerdings).{0,120}(offen|noch nicht|unklar)/i.test(t);
+ const level=factHits>=3&&openHits<=1&&!contradiction?'hoch':factHits>=1?'mittel':'niedrig';
+ return {factHits,openHits,contradiction,level};
+}
+function strongestQuestion(a,p){
+ if(!a||!a.primary)return 'Welche Kundenentscheidung steht jetzt tatsächlich noch aus?';
+ const id=a.primary.id;
+ const map={
+  P001:'Welche konkrete Gegenleistung und welche verbindliche Entscheidung erhalten wir für die zusätzliche Vorleistung?',
+  P002:'Welche bestehende Entscheidungslücke schließt die neue Forderung – und fällt danach wirklich die Entscheidung?',
+  P003:'Welche objektiven Kriterien lösen nach dem Pilot welche Entscheidung durch wen aus?',
+  P004:'Wer kann die Entscheidung intern tragen, wenn der Sponsor an Einfluss verliert?',
+  P005:'Welche persönlichen Ziele, Risiken und Kriterien hat die neue entscheidende Person?',
+  P006:'Ist die CFO-/Einkaufsfrage Rollout-Vorbereitung, Standardprüfung oder eine neue Freigabehürde?',
+  P009:'Was müsste konkret passieren, damit das Thema wieder Managementpriorität erhält?',
+  P010:'Was ist der wahre Grund der Verschiebung und welches Kundencommitment gilt bis zum neuen Termin?',
+  P011:'Welche drei Kriterien entscheiden den Vergleich wirklich und wer gewichtet sie?',
+  P012:'Welche messbare Gegenleistung erhalten wir für den geforderten Preisnachlass?',
+  P014:'Wie wird vor Start objektiv festgelegt, dass das Ergebnis ausreichend ist?',
+  P016:'Welche minimale Rollout- und Supportinformation braucht der CFO wirklich für seine Entscheidung?',
+  P019:'Welche Entscheidung ist bereits gefallen – und welche Information fehlt nur noch für die Umsetzung?',
+  P027:'Was hat sich seit dem letzten verbindlichen Schritt auf Kundenseite verändert?',
+  P028:'Welches konkrete Kundenverhalten beweist, dass aus Interesse echte Kaufbewegung wird?'
+ };
+ return map[id]||a.primary.ask||'Welche eine Information würde die aktuelle Entscheidungslücke am stärksten schließen?';
+}
+function enrich(){
+ const card=document.querySelector('.ki21-decision-card');
+ if(!card||card.querySelector('.ki21-qe-row'))return;
+ const aid=window.state&&state.activeId;
+ if(!aid||typeof window.analyzeDecisionV670!=='function')return;
+ const a=window.analyzeDecisionV670(aid);
+ const p=evidenceProfile(latestText());
+ const row=document.createElement('div');row.className='ki21-qe-row';
+ const cls=p.level==='hoch'?'good':p.level==='mittel'?'warn':'risk';
+ row.innerHTML='<div class="ki21-qe-label">Stärkste Klärungsfrage</div><div class="ki21-qe-question">'+esc(strongestQuestion(a,p))+'</div><div class="ki21-evidence-line"><span class="ki21-evidence-chip '+cls+'">Beleglage '+p.level+'</span><span class="ki21-evidence-chip">Fakten '+p.factHits+'</span><span class="ki21-evidence-chip">Offene Signale '+p.openHits+'</span>'+(p.contradiction?'<span class="ki21-evidence-chip risk">Widerspruch prüfen</span>':'')+'</div>';
+ const btn=card.querySelector('.ki21-decision-more');card.insertBefore(row,btn||null);
+ }
+ function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function run(){setTimeout(enrich,120);setTimeout(enrich,500);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+ window.addEventListener('pageshow',run);
+ const mo=new MutationObserver(()=>{if(document.querySelector('.ki21-decision-card:not(:has(.ki21-qe-row))'))enrich();});
+ if(document.body)mo.observe(document.body,{childList:true,subtree:true});
+ window.analyzeEvidenceV672=evidenceProfile;
 })();
 </script>
 
