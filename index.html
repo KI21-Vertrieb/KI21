@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.1 Commitment Intelligence Pilot Gate Release</title>
+<title>KI21 v6.6.2 Dynamic Decision State Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2407,7 +2407,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
 
-/* v6.6.1 Commitment Intelligence Pilot Gate Release */
+/* v6.6.2 Dynamic Decision State Engine */
 .ki21-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px;}
 .ki21-engine-card{border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(17,22,29,.76));border-radius:12px;padding:10px;min-height:88px;}
 .ki21-engine-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;}
@@ -2426,9 +2426,9 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
 <!-- v6.5.33 Decision Intelligence: Entscheidungslücke vor Aufgabenlogik, Moving-the-Goalposts-Prüfung, explizite Freigabekriterien, strategische Hebel und konkrete Deliverables. -->
-<!-- v6.6.1 Commitment Intelligence Pilot Gate Release: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
+<!-- v6.6.2 Dynamic Decision State Engine: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
-<!-- v6.6.1: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
+<!-- v6.6.2: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -3937,6 +3937,7 @@ function applyConfirmedDecisionScoreV6513(accId,health){
 function getDealStateRiskDeltaV661(accId){
   const ds=detectCurrentDealStateV6532(accId);
   if(!ds)return 0;
+  if(ds.type==='bounded_pilot_conditional')return -4;
   if(ds.type==='free_pilot_uncommitted')return -12;
   if(ds.type==='priority_postponed')return -8;
   if(ds.type==='decision_gap_additional_evidence')return -6;
@@ -3952,8 +3953,13 @@ function storeCentralOpportunityHealthV656(accId,health){
   health=applyConfirmedDecisionScoreV6513(accId,health);
   const rawScore=Math.max(0,Math.min(100,Math.round(health.score)));
   const delta=getDealStateRiskDeltaV661(accId);
-  const adjusted=Math.max(0,Math.min(100,Math.round(rawScore+delta)));
-  const normalized={...health,baseScoreV661:rawScore,score:adjusted,riskDeltaV661:delta,riskAdjustedV661:true,dealState:detectCurrentDealStateV6532(accId).type,ts:Date.now()};
+  const currentDealState=detectCurrentDealStateV6532(accId);
+  let adjusted=Math.max(0,Math.min(100,Math.round(rawScore+delta)));
+  // v6.6.2: Ein begrenzter Pilot mit Managementtermin ist Fortschritt, aber ohne verbindliche
+  // Freigabe kein nahezu sicherer Deal. Damit bleibt der Score nachvollziehbar und moderat.
+  if(currentDealState&&currentDealState.type==='bounded_pilot_conditional')adjusted=Math.min(adjusted,79);
+  if(currentDealState&&currentDealState.type==='free_pilot_uncommitted')adjusted=Math.min(adjusted,69);
+  const normalized={...health,baseScoreV661:rawScore,score:adjusted,riskDeltaV661:delta,riskAdjustedV661:true,dealState:currentDealState.type,ts:Date.now()};
   LS.set('ki21_health_'+accId,normalized);
   LS.set('ki21_score_'+accId,Math.round(normalized.score/10));
   LS.set('ki21_health_updated_'+accId,normalized.ts);
@@ -9094,7 +9100,7 @@ function detectCurrentDealStateV6532(accId){
   const cfoInDecision=/(?:gemeinsam mit dem cfo|geschäftsführer und cfo|cfo).{0,80}(?:freigabe|entschieden|entscheidung)/i.test(latest);
   const decisionAfterEvidence=/(?:danach|anschließend|wenn diese|sobald diese).{0,100}(?:freigabe|entschieden|entscheidung)|(?:nach vorlage|nach dokumentation).{0,100}(?:freigabe|entscheidung)/i.test(latest);
 
-  // v6.6.1 Commitment Intelligence: Eine kostenlose Testforderung ist ein neuer dominanter Deal-State.
+  // v6.6.2 Commitment Intelligence: Eine kostenlose Testforderung ist ein neuer dominanter Deal-State.
   // Sie verdrängt ältere Showcase-/Prioritätslogik und wird nicht als operative Pilot-Aufgabe interpretiert.
   const freePilotRequested=/(?:vier|4)\s*wochen.{0,80}(?:kostenlos|unentgeltlich|gratis).{0,80}(?:test|pilot)|(?:kostenlos|unentgeltlich|gratis).{0,100}(?:test|pilot)|(?:test|pilot).{0,100}(?:kostenlos|unentgeltlich|gratis)/i.test(latest);
   const pilotScopePresent=/(?:kleinen?|ausgewählten?)\s+(?:vertriebsteam|team)|(?:umfang|teilnehmer|nutzerzahl|anwender).{0,60}(?:festgelegt|vereinbart|begrenzt)/i.test(latest);
@@ -9104,8 +9110,27 @@ function detectCurrentDealStateV6532(accId){
   const broaderRolloutSignal=/(?:erfolgreichen?\s+(?:test|pilot)).{0,100}(?:breitere|größere|weitere)\s+(?:einführung|rollout)|(?:breitere|größere|weitere)\s+(?:einführung|rollout).{0,100}(?:test|pilot)/i.test(latest);
   const cfoRiskAvoidance=/(?:cfo).{0,120}(?:finanzielle[s]?\s+risiko|risiko).{0,80}(?:vermeiden|reduzieren|ausschließen)/i.test(latest);
 
+
+  // v6.6.2 Dynamic Decision State: Ein nachverhandelter, begrenzter Pilot ist ein eigener Zustand.
+  // Er darf nicht weiter als offene Vier-Wochen-Gratisanforderung behandelt werden.
+  const pilotReducedToTwoWeeks=/(?:auf|nur noch|begrenzt auf).{0,35}(?:zwei|2)\s*wochen|(?:zwei|2)\s*wochen.{0,50}(?:begrenzt|pilot|test)/i.test(latest);
+  const boundedUseCase=/(?:klar|konkret|eng)\s+(?:abgegrenzt|begrenzt).{0,45}(?:anwendungsfall|use case)|(?:ein|einen)\s+(?:klar\s+)?(?:abgegrenzten|begrenzten)\s+anwendungsfall/i.test(latest);
+  const writtenCriteriaAgreed=/(?:erfolgskriterien|messkriterien|kriterien).{0,90}(?:schriftlich).{0,50}(?:vereinbart|festgelegt|vor dem start)|(?:schriftlich).{0,70}(?:erfolgskriterien|messkriterien)/i.test(latest);
+  const postPilotDecisionMeeting=/(?:entscheidungstermin|termin).{0,100}(?:geschäftsführer|cfo).{0,80}(?:zugesagt|vereinbart|verbindlich)|(?:geschäftsführer|cfo).{0,120}(?:entscheidungstermin|termin).{0,80}(?:zugesagt|vereinbart|verbindlich)|(?:gemeinsamen?\s+entscheidungstermin).{0,100}(?:nach|unmittelbar nach).{0,40}(?:test|pilot)/i.test(latest);
+  const salesAcceptanceAdded=/(?:akzeptanz).{0,50}(?:vertrieb|vertriebsteam)|(?:vertrieb|vertriebsteam).{0,50}(?:akzeptanz)/i.test(latest);
+  const noBindingApproval=/(?:keine|noch keine|nicht).{0,60}(?:verbindliche\s+)?(?:freigabe|kaufzusage)|(?:verbindliche\s+freigabe).{0,80}(?:nicht|noch nicht)/i.test(latest);
+  const boundedPilotConditional=freePilotRequested && pilotReducedToTwoWeeks && boundedUseCase && writtenCriteriaAgreed && postPilotDecisionMeeting;
+
   const approvalExplicit=!explicitNoDecision && /(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt)/i.test(latest);
   const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(scan);
+
+  if(boundedPilotConditional){
+    return {
+      type:'bounded_pilot_conditional',latest,budgetAvailable,decisionDate,
+      pilotReducedToTwoWeeks,boundedUseCase,writtenCriteriaAgreed,postPilotDecisionMeeting,
+      salesAcceptanceAdded,noBindingApproval,broaderRolloutSignal,cfoRiskAvoidance
+    };
+  }
 
   if(freePilotRequested){
     return {
@@ -9147,6 +9172,37 @@ function applyDealStateReassessmentV6532(intel,accId){
   copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
   copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
   const ds=detectCurrentDealStateV6532(accId);
+
+  if(ds.type==='bounded_pilot_conditional'){
+    copy.dealStatus='Begrenzter Pilot vereinbart · Freigabelogik noch offen';
+    copy.chance.statement='Der Pilot ist begrenzt und mit einem verbindlichen Managementtermin verknüpft';
+    copy.chance.evidence=[
+      'Der kostenlose Test wurde auf zwei Wochen und einen klar abgegrenzten Anwendungsfall begrenzt',
+      'Erfolgskriterien sollen vor dem Start schriftlich vereinbart werden und Geschäftsführer sowie CFO haben einen Entscheidungstermin nach dem Test zugesagt'
+    ];
+    copy.bottleneck.statement='Die Freigabelogik bleibt offen, weil Zielerreichung allein noch keine Entscheidung auslöst';
+    copy.bottleneck.evidence=[
+      'Eine verbindliche Freigabe bei Zielerreichung wurde noch nicht zugesagt',
+      ds.salesAcceptanceAdded?'Der CFO ergänzt die Akzeptanz im Vertrieb als weitere Bewertungsdimension':'Die endgültigen Freigabekriterien sind noch nicht vollständig geschlossen'
+    ];
+    copy.nextSteps=[
+      'Vor Pilotstart neben den fachlichen Kriterien auch die Vertriebsakzeptanz messbar definieren.',
+      'Mit Geschäftsführer und CFO verbindlich festlegen, welche konkrete Entscheidung unmittelbar nach dem Test getroffen wird.'
+    ];
+    copy.watchouts.currentRisk='Die Akzeptanz im Vertrieb darf nicht zur nächsten unklaren Zusatzbedingung oder verschobenen Entscheidungshürde werden.';
+    copy.watchouts.salesStrategy='Den begrenzten Pilot zulassen, aber die vollständige Scorecard und den verbindlichen Entscheidungsmechanismus vor dem Start schriftlich schließen.';
+    copy.businessCase.insights=[
+      'Die Gegenseitigkeit hat sich verbessert: Umfang, Dauer, Kriterienprozess und Managementtermin sind nun konkretisiert.',
+      'Nächstes Deliverable: eine kurze Pilotvereinbarung mit fachlichen Messgrößen, messbarer Vertriebsakzeptanz und der danach fälligen Managemententscheidung.'
+    ];
+    copy.decisionGap={
+      statement:'Welche konkrete Freigabeentscheidung treffen Geschäftsführer und CFO bei Erreichen der vereinbarten fachlichen und Akzeptanzkriterien?',
+      goalpostRisk:!!ds.salesAcceptanceAdded,
+      commitmentRisk:true,
+      requiredOutcome:'Vollständige Pilot-Scorecard plus verbindliche Entscheidung nach dem Test'
+    };
+    return copy;
+  }
 
   if(ds.type==='free_pilot_uncommitted'){
     copy.dealStatus='Pilotforderung offen · Gegenseitigkeit verhandeln';
@@ -9336,7 +9392,7 @@ async function shortCockpitRefreshV6532(accId){
   try{renderHealthBadgeIfPresent();}catch(e){}
   try{scheduleOpportunityHealthRefreshV656(accId,120);}catch(e){}
   await new Promise(resolve=>setTimeout(resolve,40));
-  // v6.6.1: Cockpit und Phasen verwenden unmittelbar dieselbe zentrale Score-Quelle.
+  // v6.6.2: Cockpit und Phasen verwenden unmittelbar dieselbe zentrale Score-Quelle.
   try{
     const canonical=getOpportunityHealth(accId);
     if(canonical)storeCentralOpportunityHealthV656(accId,{...canonical,score:canonical.baseScoreV661??canonical.score,riskAdjustedV661:false});
@@ -14223,7 +14279,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.1 Commitment Intelligence Pilot Gate Release';
+const KI21_VERSION='v6.6.2 Dynamic Decision State Engine';
 
 
 function runKi21VersionMigration(){
@@ -15379,7 +15435,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.1 Commitment Intelligence Pilot Gate Release';
+  const VERSION='v6.6.2 Dynamic Decision State Engine';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
