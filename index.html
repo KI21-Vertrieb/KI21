@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.31 Consistent Deal Intelligence Trust Release</title>
+<title>KI21 v6.5.32 Intelligent Next Steps & Risk Score Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2410,7 +2410,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.5.6: Zentraler Opportunity Health Score, synchron in Hauptmenü/Cockpit/Phasen; lokale semantische Fallback-Bewertung und automatische Aktualisierung nach Eingaben. -->
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
-<!-- v6.5.31: Konsistenz- und Vertrauens-Release. Neuere bestätigte Gesprächsinformationen haben Vorrang; Budgetverfügbarkeit, Kaufinteresse und Freigabe werden strikt getrennt. Gegensätzliche Management-Aussagen werden durch Deal-State-Regeln verhindert. -->
+<!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -8897,79 +8897,34 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
 }
 
 
-// v6.5.31 Consistent Deal Intelligence:
-// Deal-Zustände werden chronologisch aus Original-Ergänzungen abgeleitet.
-// Neuere bestätigte Aussagen ersetzen ältere Deal-Zustände. Budget vorhanden,
-// Interesse und bedingte Kaufbereitschaft sind ausdrücklich KEINE Freigabe.
-function getDealEvidenceTimelineV6531(accId){
-  const events=[];
-  try{
-    for(let phaseId=0;phaseId<5;phaseId++){
-      if(typeof getAdditionEntriesV623==='function'){
-        (getAdditionEntriesV623(accId,phaseId)||[]).forEach(function(entry){
-          const text=String(entry&&entry.text||'').trim();
-          if(text)events.push({ts:Number(entry&&entry.ts)||0,text,phaseId,source:'addition'});
-        });
-      }
-    }
-  }catch(e){}
-  // Nur wenn keine echte Historie existiert, auf die aggregierte Faktenbasis zurückfallen.
-  if(!events.length){
-    const raw=String(getOpportunityOnlySourceV6522(accId)||'').trim();
-    if(raw)events.push({ts:0,text:raw,phaseId:null,source:'fallback'});
-  }
-  return events.sort(function(a,b){return (a.ts||0)-(b.ts||0);});
-}
+// v6.5.30 Deal State Reassessment:
+// Neue Ergänzungen werden nicht nur angehängt. KI21 ermittelt zuerst den aktuellsten
+// Entscheidungszustand und baut Lagebild, Engpass und nächste Schritte danach neu auf.
+function detectCurrentDealStateV6530(accId){
+  const raw=String(getOpportunityOnlySourceV6522(accId)||'').replace(/\s+/g,' ').trim();
+  const low=raw.toLowerCase();
+  if(!low)return {type:'unknown',raw};
 
-function classifyDealEventV6531(text){
-  const raw=String(text||'').replace(/\s+/g,' ').trim();
-  if(!raw)return null;
-
-  const decisionDeferred=/(?:entscheidung|freigabe|beauftragung).{0,90}(?:verschoben|vertagt|zurückgestellt|ausgesetzt)|(?:verschoben|vertagt|zurückgestellt).{0,90}(?:entscheidung|freigabe|beauftragung)/i.test(raw);
-  const competingPriority=/(?:andere|zwei|weitere).{0,60}(?:projekte|digitalisierungsprojekte).{0,80}(?:priorisiert|vorrang|zuerst)|(?:priorisiert|vorrang).{0,80}(?:andere|weitere).{0,60}(?:projekte|digitalisierungsprojekte)/i.test(raw);
-  const priorityLoss=/(?:priorität).{0,70}(?:verliert|verloren|sinkt|gesunken|nachrangig)|(?:ohne regelmäßigen kontakt).{0,120}(?:priorität)/i.test(raw);
-  const rejected=/(?:entscheidung|freigabe|auftrag|beauftragung).{0,80}(?:abgelehnt|gestoppt|endgültig verworfen)|(?:kein|keine).{0,50}(?:beauftragung|freigabe|auftrag)/i.test(raw);
-
-  // Explizite Freigabe erfordert eine bereits vollzogene Handlung. Zukunft, Bedingung,
-  // Aussicht oder bloße Budgetverfügbarkeit reichen ausdrücklich nicht.
-  const merelyProspective=/(?:in aussicht gestellt|soll.{0,80}(?:erfolgen|freigeben)|will.{0,80}(?:freigeben|beauftragen)|möchte.{0,80}(?:freigeben|beauftragen)|wird.{0,80}(?:wenn|sobald|nachdem)|grundsätzlich.{0,80}(?:bereit|verfügbar|offen)|budget.{0,60}(?:bleibt|ist).{0,40}(?:grundsätzlich )?verfügbar)/i.test(raw);
-  const explicitApproval=!merelyProspective && (
-    /(?:freigabe|budgetfreigabe|auftrag|beauftragung).{0,55}(?:wurde|ist|hat).{0,45}(?:erteilt|bestätigt|freigegeben|beauftragt)/i.test(raw)
-    || /(?:geschäftsführer|cfo|entscheider).{0,100}(?:hat|haben).{0,70}(?:den )?(?:discovery sprint|auftrag|budget|betrag|projekt).{0,70}(?:freigegeben|beauftragt|genehmigt)/i.test(raw)
-    || /(?:geschäftsführer|cfo|entscheider).{0,100}(?:hat|haben).{0,70}(?:freigegeben|beauftragt|genehmigt)/i.test(raw)
-  );
-
+  const approvalExplicit=/(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt|zugestimmt)/i.test(raw);
   const conditionalCommitment=/(?:grundsätzlich|prinzipiell).{0,45}(?:bereit|offen).{0,100}(?:beauftragen|starten|freigeben)|(?:will|möchte|wird).{0,100}(?:freigeben|beauftragen).{0,140}(?:wenn|sobald|unter der voraussetzung)/i.test(raw);
-  const approvalAfterPrerequisite=/(?:wenn|sobald|nachdem|sofern).{0,180}(?:baseline|ausgangswerte|ausgangsdaten|messwerte|erfolgskriterien|kennzahlen).{0,180}(?:freigeben|beauftragen|zustimmen)|(?:freigeben|beauftragen).{0,180}(?:wenn|sobald|sofern).{0,180}(?:baseline|ausgangswerte|erfolgskriterien|kennzahlen)/i.test(raw);
+  const approvalAfterPrerequisite=/(?:wenn|sobald|nachdem).{0,180}(?:baseline|ausgangswerte|ausgangsdaten|messwerte|erfolgskriterien|kennzahlen).{0,180}(?:freigeben|beauftragen|zustimmen)|(?:freigeben|beauftragen).{0,180}(?:wenn|sobald).{0,180}(?:baseline|ausgangswerte|erfolgskriterien|kennzahlen)/i.test(raw);
   const baselineRequired=/(?:baseline|ausgangswerte|ausgangsdaten|ausgangsmessung)/i.test(raw);
   const successCriteriaRequired=/(?:messbare|verbindliche|konkrete).{0,50}(?:erfolgskriterien|kennzahlen|zielwerte)|(?:erfolgskriterien|kennzahlen).{0,80}(?:vereinbaren|festlegen|definieren)/i.test(raw);
   const concreteBaselineTask=/(?:baseline|ausgangswerte|ausgangsdaten).{0,180}(?:zusammenstellen|erstellen|dokumentieren|erheben|vorlegen)|(?:zusammenstellen|erstellen|dokumentieren|erheben).{0,180}(?:baseline|ausgangswerte|ausgangsdaten)/i.test(raw);
   const selectedCases=/(?:ausgewählte|konkrete|erste|drei|3).{0,70}(?:opportunit|deals?|fälle)/i.test(raw);
   const deadlineKnown=/(?:bis|spätestens).{0,55}(?:woche|montag|dienstag|mittwoch|donnerstag|freitag|\d{1,2}\.)/i.test(raw);
-  const startDateOpen=/(?:starttermin|projektstart|startdatum|kickoff).{0,70}(?:noch nicht|offen|nicht festgelegt|nicht vereinbart|ausstehend)/i.test(raw);
-  const nextDecisionOctober=/(?:entscheidungstermin|entscheidung|termin).{0,90}(?:anfang|erste\w* woche|im)\s+oktober|(?:anfang|erste\w* woche)\s+oktober.{0,90}(?:entscheidung|termin)/i.test(raw);
+  const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(raw);
 
-  if(rejected)return {type:'rejected',raw};
-  if(decisionDeferred||competingPriority||priorityLoss)return {type:'deferred_priority',raw,nextDecisionOctober,competingPriority,priorityLoss};
-  if(explicitApproval)return {type:'approved',raw,startDateOpen};
+  if(approvalExplicit){
+    return {type:'approved',raw,startDateOpen};
+  }
   if((conditionalCommitment||approvalAfterPrerequisite) && baselineRequired && concreteBaselineTask){
     return {type:'baseline_prerequisite',raw,selectedCases,deadlineKnown,startDateOpen};
   }
   if((conditionalCommitment||approvalAfterPrerequisite) && (baselineRequired||successCriteriaRequired)){
     return {type:'criteria_prerequisite',raw,baselineRequired,successCriteriaRequired,startDateOpen};
   }
-  return null;
-}
-
-function detectCurrentDealStateV6530(accId){
-  const timeline=getDealEvidenceTimelineV6531(accId);
-  let current={type:'open_decision',raw:''};
-  timeline.forEach(function(event){
-    const classified=classifyDealEventV6531(event.text);
-    if(classified)current={...classified,ts:event.ts,source:event.source};
-  });
-  current.timeline=timeline;
-  return current;
+  return {type:'open_decision',raw};
 }
 
 function applyDealStateReassessmentV6530(intel,accId){
@@ -8980,43 +8935,6 @@ function applyDealStateReassessmentV6530(intel,accId){
   copy.bottleneck=copy.bottleneck||{statement:'',evidence:[]};
   copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
   copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
-
-  if(stateNow.type==='deferred_priority'){
-    copy.dealStatus=stateNow.nextDecisionOctober?'Entscheidung verschoben · Anfang Oktober':'Entscheidung verschoben · Momentum sichern';
-    copy.chance.statement='Opportunity bleibt aktiv, verliert aber Momentum';
-    copy.chance.evidence=[
-      'Operativer Nutzen und Budgetverfügbarkeit bleiben grundsätzlich bestehen',
-      stateNow.competingPriority?'Andere interne Projekte haben aktuell Vorrang':'Die Entscheidung wurde auf einen späteren Termin verschoben'
-    ];
-    copy.bottleneck.statement='Interne Priorisierung verzögert die Entscheidung';
-    copy.bottleneck.evidence=[
-      'Nicht das Budget, sondern die Managementpriorität blockiert den Fortschritt',
-      stateNow.nextDecisionOctober?'Ein neuer Entscheidungstermin ist für Anfang Oktober vorgesehen':'Ein späterer Entscheidungstermin ist vorgesehen'
-    ];
-    copy.nextSteps=[
-      stateNow.nextDecisionOctober?'Managementkontakt bis Anfang Oktober verbindlich sichern.':'Nächsten Managementkontakt verbindlich terminieren.',
-      'Sponsor mit einem aktuellen, knappen Business Case unterstützen.'
-    ];
-    copy.watchouts.currentRisk='Die Opportunity kann trotz vorhandenem Budget intern an Priorität verlieren.';
-    copy.watchouts.salesStrategy='Bis zum Entscheidungstermin regelmäßig relevanten Fortschritt und wirtschaftlichen Handlungsdruck sichtbar machen.';
-    copy.businessCase.insights=[
-      'Der wirtschaftliche Handlungsdruck bleibt bestehen; aktuell fehlt jedoch Managementpriorität für die Entscheidung.',
-      'Business Case bis zum neuen Entscheidungstermin aktuell und entscheidungsfähig halten.'
-    ];
-    return copy;
-  }
-
-  if(stateNow.type==='rejected'){
-    copy.dealStatus='Entscheidung negativ · Ursache klären';
-    copy.chance.statement='Opportunity ist aktuell gestoppt';
-    copy.chance.evidence=['Eine Freigabe oder Beauftragung wurde ausdrücklich abgelehnt'];
-    copy.bottleneck.statement='Negative Managemententscheidung stoppt den Fortschritt';
-    copy.bottleneck.evidence=['Vor weiteren Aktivitäten muss die konkrete Ablehnungsursache geklärt werden'];
-    copy.nextSteps=['Ablehnungsgrund mit Sponsor und Entscheider konkret klären.'];
-    copy.watchouts.currentRisk='Weitere Aktivität ohne neue Entscheidungsgrundlage bindet Ressourcen ohne Fortschritt.';
-    copy.watchouts.salesStrategy='Nur mit verändertem Business Case, Timing oder Priorität erneut qualifizieren.';
-    return copy;
-  }
 
   if(stateNow.type==='baseline_prerequisite'){
     copy.dealStatus='Vor Freigabe · Baseline erstellen';
@@ -9069,9 +8987,9 @@ function applyDealStateReassessmentV6530(intel,accId){
   }
 
   if(stateNow.type==='approved'){
-    copy.dealStatus=stateNow.startDateOpen?'Freigegeben · Starttermin festlegen':'Freigegeben · Projektstart vorbereiten';
-    copy.chance.statement='Discovery Sprint ist ausdrücklich freigegeben';
-    copy.chance.evidence=['Die wirtschaftliche Entscheidung wurde bestätigt','Der Fokus wechselt von Verkauf zu sauberem Projektstart'];
+    copy.dealStatus=stateNow.startDateOpen?'Beauftragt · Starttermin festlegen':'Beauftragt · Projektstart vorbereiten';
+    copy.chance.statement='Discovery Sprint ist freigegeben';
+    copy.chance.evidence=['Die wirtschaftliche Entscheidung ist getroffen','Der Fokus wechselt von Verkauf zu sauberem Projektstart'];
     copy.bottleneck.statement=stateNow.startDateOpen?'Offener Starttermin verzögert die Umsetzung':'Projektstart muss jetzt verbindlich organisiert werden';
     copy.bottleneck.evidence=[stateNow.startDateOpen?'Ein konkreter Starttermin ist noch nicht vereinbart':'Verantwortliche, Messung und Kickoff müssen bestätigt werden'];
     copy.nextSteps=[stateNow.startDateOpen?'Starttermin und Kickoff verbindlich vereinbaren.':'Kickoff und Verantwortlichkeiten verbindlich festlegen.'];
@@ -9083,9 +9001,199 @@ function applyDealStateReassessmentV6530(intel,accId){
   return copy;
 }
 
-function normalizeOpportunityIntelligenceV6530(intel,accId){
-  return applyDealStateReassessmentV6530(normalizeOpportunityIntelligenceV6518(intel,accId),accId);
+
+// v6.5.32 – Consistent Deal State, intelligent next steps and risk-based score.
+// Neuere Original-Ergänzungen haben Vorrang. Budgetverfügbarkeit, Freigabe,
+// Interesse, Termin und Beauftragung bleiben strikt getrennte Fakten.
+function getLatestAdditionFactsV6532(accId){
+  const all=[];
+  for(let phaseId=0;phaseId<5;phaseId++){
+    try{
+      getAdditionEntriesV623(accId,phaseId).forEach(e=>{
+        if(e&&String(e.text||'').trim())all.push({...e,phaseId});
+      });
+    }catch(e){}
+  }
+  all.sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const latest=all.length?all[all.length-1]:null;
+  const recent=all.slice(-5);
+  return {
+    all,
+    latest,
+    latestText:String(latest&&latest.text||''),
+    recentText:recent.map(e=>String(e.text||'')).join('\n\n')
+  };
 }
+
+function detectCurrentDealStateV6532(accId){
+  const facts=getLatestAdditionFactsV6532(accId);
+  const latest=facts.latestText.replace(/\s+/g,' ').trim();
+  const recent=facts.recentText.replace(/\s+/g,' ').trim();
+  const source=String(getOpportunityOnlySourceV6522(accId)||'').replace(/\s+/g,' ').trim();
+  const scan=(latest+' '+recent+' '+source).trim();
+
+  const explicitNoDecision=/(?:keine|noch keine)\s+(?:freigabe|freigabeentscheidung|entscheidung).{0,45}(?:fallen|erfolgen|getroffen)|(?:freigabeentscheidung).{0,50}(?:soll|wird).{0,40}(?:noch nicht|nicht)/i.test(latest);
+  const decisionPostponed=/(?:entscheidung|freigabe).{0,80}(?:verschoben|vertagt|später)|(?:verschoben|vertagt).{0,80}(?:entscheidung|freigabe)/i.test(latest)||/(?:entscheidung|freigabe).{0,80}(?:verschoben|vertagt)/i.test(recent);
+  const priorityLoss=/(?:andere|zwei|2).{0,60}(?:projekte?).{0,50}(?:priorisier|vorrang)|(?:projekt|opportunity).{0,80}(?:priorität verliert|an priorität verliert|priorität gesunken)|managementpriorität/i.test(scan);
+  const budgetAvailable=/(?:budget).{0,70}(?:verfügbar|vorhanden|grundsätzlich verfügbar|bleibt.*verfügbar)/i.test(scan);
+  const decisionDate=(scan.match(/(?:entscheidungstermin|termin).{0,45}(?:für|am)\s*(?:die\s*)?([0-3]?\d\.\s*[a-zäöü]+|anfang\s+[a-zäöü]+|erste[nr]?\s+[a-zäöü]+woche)/i)||[])[1]||'';
+
+  const onePager=/(?:one[- ]?pager|onepager|ein[- ]?seiter|showcase)/i.test(latest);
+  const realCase=/(?:ausgewählte[nr]?|konkrete[nr]?|aktuelle[nr]?).{0,60}(?:opportunity|fall|deal)/i.test(latest);
+  const quantifiedEvidence=/(?:\d+\s+(?:zusätzliche\s+)?abstimmungsschleifen|\d+\s*stunden\s+nacharbeit)/i.test(latest);
+  const managementMeeting=/(?:geschäftsführer|cfo|management).{0,120}(?:termin|ansehen|präsentation)|(?:termin).{0,100}(?:geschäftsführer|cfo|management)/i.test(latest);
+  const confirmedMeeting=/(?:termin).{0,80}(?:bestätigt|vereinbart|steht)|(?:bestätigt|vereinbart).{0,80}(?:termin)/i.test(latest);
+  const meetingDate=(latest.match(/(?:am|für den)\s+([0-3]?\d\.\s*[a-zäöü]+)/i)||[])[1]||'';
+
+  const approvalExplicit=!explicitNoDecision && /(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt)/i.test(latest);
+  const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(scan);
+
+  if(onePager&&realCase&&managementMeeting&&confirmedMeeting){
+    return {type:'showcase_meeting',latest,meetingDate,quantifiedEvidence,explicitNoDecision,budgetAvailable,decisionDate};
+  }
+  if(onePager&&realCase){
+    return {type:'showcase_ready',latest,quantifiedEvidence,budgetAvailable,decisionDate};
+  }
+  if(decisionPostponed&&priorityLoss){
+    return {type:'priority_postponed',latest,budgetAvailable,decisionDate};
+  }
+  if(approvalExplicit)return {type:'approved',latest,startDateOpen};
+
+  // Bewährte Voraussetzungen-Logik aus v6.5.30 nur verwenden, wenn kein neuerer
+  // gegenteiliger Originaleintrag vorliegt.
+  const old=detectCurrentDealStateV6530(accId);
+  return old||{type:'unknown',latest};
+}
+
+function applyDealStateReassessmentV6532(intel,accId){
+  const copy=JSON.parse(JSON.stringify(intel||{}));
+  copy.chance=copy.chance||{statement:'',evidence:[]};
+  copy.bottleneck=copy.bottleneck||{statement:'',evidence:[]};
+  copy.nextSteps=Array.isArray(copy.nextSteps)?copy.nextSteps:[];
+  copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
+  copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
+  const ds=detectCurrentDealStateV6532(accId);
+
+  if(ds.type==='showcase_meeting'){
+    const date=ds.meetingDate||'bestätigten Managementtermin';
+    copy.dealStatus='Discovery-Phase · Managementtermin vorbereiten';
+    copy.chance.statement='Momentum verbessert sich: Showcase und Managementtermin stehen';
+    copy.chance.evidence=[
+      ds.quantifiedEvidence?'Eine reale Opportunity macht Abstimmungsschleifen und Nacharbeit konkret sichtbar':'Ein konkreter Kundenfall ist als Showcase aufbereitet',
+      'Der Geschäftsführer hat einen verbindlichen Termin am '+date+' bestätigt'
+    ];
+    copy.bottleneck.statement='Managementpriorität muss im Termin zurückgewonnen werden';
+    copy.bottleneck.evidence=[
+      ds.explicitNoDecision?'Im Termin fällt ausdrücklich noch keine Freigabeentscheidung':'Die Investitionsentscheidung bleibt offen',
+      'Der One-Pager muss den wirtschaftlichen Nutzen schnell und glaubwürdig greifbar machen'
+    ];
+    copy.nextSteps=[
+      'One-Pager auf Vorher-Nachher-Wirkung und wirtschaftlichen Effekt zuspitzen.',
+      'Für den Termin am '+date+' eine klare Entscheidungsfrage vorbereiten.'
+    ];
+    copy.watchouts.currentRisk='Der bestätigte Termin ist ein Fortschritt, aber noch keine Freigabe.';
+    copy.watchouts.salesStrategy='Den Showcase als kurze Entscheidungsunterlage nutzen, die Priorität schafft statt nur Interesse zu bestätigen.';
+    copy.businessCase.insights=[
+      'Der reale Showcase verbindet den bezifferten Handlungsdruck erstmals mit einem konkreten Problemfall.',
+      'Nächstes Deliverable: ein One-Pager mit Ausgangslage, Nacharbeit, Zielbild und klarer Entscheidungsfrage.'
+    ];
+    return copy;
+  }
+
+  if(ds.type==='showcase_ready'){
+    copy.dealStatus='Discovery-Phase · Showcase zur Managemententscheidung nutzen';
+    copy.chance.statement='Konkreter Showcase stärkt den internen Sponsor';
+    copy.chance.evidence=[
+      ds.quantifiedEvidence?'Nacharbeit und Abstimmungsschleifen sind am realen Fall nachvollziehbar':'Ein realer Fall ist als Beweisstück vorbereitet',
+      'Das Managementgespräch ist noch nicht verbindlich terminiert'
+    ];
+    copy.bottleneck.statement='Ohne Managementtermin bleibt der Showcase wirkungslos';
+    copy.bottleneck.evidence=['Das Deliverable ist vorhanden','Der Zugang zum wirtschaftlichen Entscheider fehlt noch'];
+    copy.nextSteps=[
+      'Showcase als Ein-Seiten-Business-Case fertigstellen.',
+      'Kurzen Managementtermin zur Entscheidungsvorbereitung verbindlich sichern.'
+    ];
+    copy.watchouts.currentRisk='Ein gutes Beweisstück schafft noch keine Priorität, solange es das Management nicht erreicht.';
+    copy.watchouts.salesStrategy='Sponsor mit einem entscheidungsfähigen One-Pager und einer klaren Gesprächsagenda ausstatten.';
+    return copy;
+  }
+
+  if(ds.type==='priority_postponed'){
+    copy.dealStatus='Entscheidung verschoben · Momentum sichern';
+    copy.chance.statement='Opportunity bleibt aktiv, verliert aber Momentum';
+    copy.chance.evidence=[
+      ds.budgetAvailable?'Operativer Nutzen und verfügbares Budget sprechen weiterhin für die Opportunity':'Der operative Nutzen bleibt grundsätzlich anerkannt',
+      'Die Entscheidung wurde auf einen späteren Termin verschoben'
+    ];
+    copy.bottleneck.statement='Interne Priorisierung verzögert die Entscheidung';
+    copy.bottleneck.evidence=[
+      ds.budgetAvailable?'Nicht das Budget, sondern die Managementpriorität blockiert den Fortschritt':'Andere interne Vorhaben haben aktuell Vorrang',
+      ds.decisionDate?'Ein neuer Entscheidungstermin ist für '+ds.decisionDate+' vorgesehen':'Ein neuer Entscheidungstermin ist vorgesehen'
+    ];
+    copy.nextSteps=[
+      'Mit dem Sponsor eine reale Opportunity als knappen Showcase aufbereiten.',
+      'Den Showcase als One-Pager für den nächsten Managementtermin entscheidungsfähig machen.'
+    ];
+    copy.watchouts.currentRisk='Die Opportunity kann trotz vorhandenem Budget intern an Priorität verlieren.';
+    copy.watchouts.salesStrategy='Bis zum Entscheidungstermin relevanten Fortschritt mit einem konkreten Beweisstück sichtbar machen.';
+    copy.businessCase.insights=[
+      'Der wirtschaftliche Handlungsdruck bleibt bestehen; aktuell fehlt Managementpriorität für die Entscheidung.',
+      'Nächstes Deliverable: ein knapper Business Case auf Basis einer realen Opportunity.'
+    ];
+    return copy;
+  }
+
+  return applyDealStateReassessmentV6530(copy,accId);
+}
+
+function normalizeOpportunityIntelligenceV6530(intel,accId){
+  return applyDealStateReassessmentV6532(normalizeOpportunityIntelligenceV6518(intel,accId),accId);
+}
+
+// Der Health Score misst die aktuelle Risikolage, nicht die Informationsmenge.
+const _getOpportunityHealthBeforeV6532=getOpportunityHealth;
+getOpportunityHealth=function(accId){
+  const base=_getOpportunityHealthBeforeV6532(accId);
+  if(!base)return base;
+  const out=JSON.parse(JSON.stringify(base));
+  const ds=detectCurrentDealStateV6532(accId);
+  const original=Number(out.score||0);
+  let delta=0;
+  if(ds.type==='priority_postponed')delta=-8;
+  else if(ds.type==='showcase_ready')delta=-5;
+  else if(ds.type==='showcase_meeting')delta=-3;
+  else if(ds.type==='baseline_prerequisite')delta=2;
+  else if(ds.type==='criteria_prerequisite')delta=1;
+  else if(ds.type==='approved')delta=8;
+  out.score=Math.max(0,Math.min(100,Math.round(original+delta)));
+  out.label=out.score>=85?'Sehr gesund':out.score>=70?'Gesund':out.score>=55?'Stabil':'Kritisch';
+  out.riskAdjusted=true;
+  out.dealState=ds.type;
+  return out;
+};
+
+function rebuildCockpitSnapshotV6532(accId){
+  if(!accId)return null;
+  try{
+    const raw=LS.get(getOpportunityIntelligenceKeyV620(accId),{})||{};
+    const deterministic=normalizeOpportunityIntelligenceV6530(raw,accId);
+    saveOpportunityIntelligenceV620(accId,deterministic,getPrimarySourceHashV63(accId));
+  }catch(e){console.warn('Deterministic cockpit refresh skipped',e);}
+  try{
+    const local=buildLocalOpportunityHealthV656(accId);
+    if(local)storeCentralOpportunityHealthV656(accId,local);
+  }catch(e){}
+  try{renderHealthBadgeIfPresent();}catch(e){}
+}
+
+async function shortCockpitRefreshV6532(accId){
+  LS.set('ki21_health_'+accId,null);
+  LS.set('ki21_health_lastError_'+accId,null);
+  LS.set(getOpportunityIntelligenceKeyV620(accId),null);
+  rebuildCockpitSnapshotV6532(accId);
+  try{scheduleOpportunityHealthRefreshV656(accId,120);}catch(e){}
+}
+
 
 function renderCockpitSnapshotLiteV4215(){
   const app=document.getElementById('app');
@@ -11979,7 +12087,7 @@ function showConversationNoteParserV4227(args){
       preview.appendChild(h('div',{style:{padding:'18px 14px',border:'1px solid rgba(46,160,67,.42)',borderRadius:'14px',background:'rgba(46,160,67,.10)',textAlign:'center'}},
         h('div',{style:{fontSize:'30px',lineHeight:'1',marginBottom:'10px',color:'#3fb950'}},'✓'),
         h('div',{style:{fontSize:'15px',fontWeight:'900',color:'#e6edf3',marginBottom:'6px'}},'Ergänzung erfolgreich übernommen'),
-        h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Die Opportunity wurde aktualisiert. Du kannst dieses Fenster jetzt schließen.')
+        h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Prioritäten, nächste Schritte und Health Score wurden neu bewertet. Du kannst dieses Fenster jetzt schließen.')
       ));
       status.textContent='';
       applyRow.innerHTML='';
@@ -12112,9 +12220,10 @@ function showNeuerKunde(initial,accId,initialTab){
   kkTa.value='';
   kkTa.addEventListener('input',e=>{currentKkSlot=e.target.value;});
   kontextDiv.appendChild(kkTa);
-  kontextDiv.appendChild(h('button',{
-    className:'btn-o note-parser-open',
-    style:{width:'100%',marginTop:'8px'},
+  const additionActionsV6532=h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'8px'}});
+  additionActionsV6532.appendChild(h('button',{
+    className:'btn note-parser-open',
+    style:{width:'100%',minHeight:'44px',fontWeight:'800',borderColor:'rgba(255,107,0,.55)',color:'#ff8a2a'},
     onclick:()=>showConversationNoteParserV4227({
       accId,
       cust:f,
@@ -12123,19 +12232,50 @@ function showNeuerKunde(initial,accId,initialTab){
       setCurrent:(v)=>{currentKkSlot=v;kkTa.value=v;},
       onCommit:async(originalNote,selectedAnalysis)=>{
         appendAdditionEntryV623(accId,currentPhaseForKk,originalNote,selectedAnalysis);
-        currentKkSlot='';
-        kkTa.value='';
+        currentKkSlot='';kkTa.value='';
         state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
-        LS.set('ki21_health_'+accId,null);
-        LS.set('ki21_health_lastError_'+accId,null);
         LS.set('ki21_acc',state.accounts);
-        await refreshOpportunityHealth(accId);
+        await shortCockpitRefreshV6532(accId);
         runSmartImpactAnalysis(accId,originalNote);
         if(m)m.remove();
         renderHome();
       }
     })
-  },'Gesprächsnotiz aufbereiten'));
+  },'Aufbereiten & prüfen'));
+  additionActionsV6532.appendChild(h('button',{
+    className:'btn-o note-parser-open',
+    style:{width:'100%',minHeight:'44px'},
+    onclick:async function(){
+      const note=String(currentKkSlot||kkTa.value||'').trim();
+      if(!note){alert('Bitte zuerst eine Gesprächsnotiz einfügen.');return;}
+      this.disabled=true;this.textContent='⏳ Wird übernommen...';
+      let analysis=null;
+      try{
+        const spinQuestions=getPhase2SpinQuestionsV4227(accId);
+        const spinLetters=getPhase2SpinLettersV4227(accId);
+        analysis=await callClaudeJSON(buildConversationNotePromptV4227({note:note,cust:f,spinQuestions:spinQuestions,spinLetters:spinLetters}));
+      }catch(e){console.warn('Schnellaufbereitung ohne Analyse-Fallback',e);}
+      appendAdditionEntryV623(accId,currentPhaseForKk,note,analysis);
+      currentKkSlot='';kkTa.value='';
+      state.accounts=state.accounts.map(a=>a.id===accId?{...a,cust:{...f}}:a);
+      LS.set('ki21_acc',state.accounts);
+      await shortCockpitRefreshV6532(accId);
+      runSmartImpactAnalysis(accId,note);
+      if(m)m.remove();
+      renderHome();
+      const success=h('div',{},
+        h('div',{style:{padding:'18px 14px',border:'1px solid rgba(46,160,67,.42)',borderRadius:'14px',background:'rgba(46,160,67,.10)',textAlign:'center'}},
+          h('div',{style:{fontSize:'30px',lineHeight:'1',marginBottom:'10px',color:'#3fb950'}},'✓'),
+          h('div',{style:{fontSize:'15px',fontWeight:'900',marginBottom:'6px'}},'Ergänzung übernommen – Cockpit aktualisiert'),
+          h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Prioritäten, nächste Schritte und Health Score wurden neu bewertet.')
+        )
+      );
+      let successModal=null;
+      success.appendChild(h('button',{className:'btn-o',style:{width:'100%',marginTop:'12px'},onclick:()=>{if(successModal)successModal.remove();}},'Okay'));
+      successModal=modal('Erfolgreich übernommen',success);
+    }
+  },'Aufbereiten & sofort übernehmen'));
+  kontextDiv.appendChild(additionActionsV6532);
 
   // Getrennte, nur lesbare Historie unterhalb des leeren Eingabefelds.
   if(accId){
@@ -12198,7 +12338,7 @@ function showNeuerKunde(initial,accId,initialTab){
       LS.set('ki21_health_'+accId,null);
       LS.set('ki21_health_lastError_'+accId,null);
       saveB.textContent='⏳ Wird aktualisiert...';
-      await refreshOpportunityHealth(accId);
+      await shortCockpitRefreshV6532(accId);
       // Smart Impact Analyse im Hintergrund
       if(currentKkSlot.trim())runSmartImpactAnalysis(accId,currentKkSlot);
       else markOpportunityPending(accId);
@@ -13868,7 +14008,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.31 Consistent Deal Intelligence Trust Release';
+const KI21_VERSION='v6.5.32 Intelligent Next Steps & Risk Score Release';
 
 
 function runKi21VersionMigration(){
@@ -15023,7 +15163,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.31 Consistent Deal Intelligence Trust Release';
+  const VERSION='v6.5.32 Intelligent Next Steps & Risk Score Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
