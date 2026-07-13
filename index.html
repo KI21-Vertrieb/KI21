@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.7.5-decision-reasoning-core-20260713 -->
+<!-- KI21_BUILD: v6.7.6-sales-manager-decision-language-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.7.5 Decision Reasoning Core</title>
+<title>KI21 v6.7.6 Sales Manager Decision Language</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9731,7 +9731,7 @@ function renderCockpitSnapshotLiteV4215(){
   },0);
   wrap.appendChild(buildV62Summary(opportunityIntelligenceV620,summaryChanceV500,summaryRiskV500));
 
-  // v6.7.5: Die Verkäuferentscheidung zeigt zusätzlich Prioritätsgrund, Fehlentscheidungsrisiko, fehlende Schlüsselinformation und eine einzige nächste Handlung.
+  // v6.7.6: Sales-Manager-Sprache, klare Sales-Entscheidung und natürliche Formulierungen.
   // Sie wird nicht nachträglich im DOM gesucht oder angehängt und kann daher nicht mehr
   // durch spätere Cockpit-Renders verloren gehen.
   const decisionAnalysisV674=(()=>{
@@ -9780,11 +9780,11 @@ function renderCockpitSnapshotLiteV4215(){
   const nextActionV675=cfoTimingV675?
     'Vor Pilotbeginn den CFO in einem kurzen Termin fragen, ob seine Anforderung Freigabekriterium oder Rollout-Vorbereitung ist.':
     (decisionPrimaryV674.rec||'Den aktuellen Engpass in ein konkretes Kundencommitment mit Verantwortlichem und Termin übersetzen.');
-  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core', 'aria-label':'KI21 Verkäuferentscheidung'},
+  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core', 'aria-label':'KI21 Sales-Entscheidung'},
     h('div',{className:'ki21-decision-head'},
       h('div',{},
         h('div',{className:'ki21-decision-kicker'},'VERKÄUFERENTSCHEIDUNG'),
-        h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Verkäuferentscheidung klären')
+        h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Sales-Entscheidung klären')
       ),
       h('div',{className:'ki21-decision-confidence'},'Confidence '+String(decisionAnalysisV674.confidence||'mittel'))
     ),
@@ -9806,7 +9806,7 @@ function renderCockpitSnapshotLiteV4215(){
         if(typeof window.openDecisionDetails==='function')return window.openDecisionDetails(decisionAnalysisV674);
       }catch(e){}
       try{
-        showBottomSheet('Verkäuferentscheidung',[
+        showBottomSheet('Sales-Entscheidung',[
           {glyph:'◆',text:decisionPrimaryV674.decision||'',kind:'ki21'},
           {glyph:'→',text:decisionPrimaryV674.rec||'',kind:'ki21'},
           {glyph:'?',text:missingInfoV675,kind:''},
@@ -14462,7 +14462,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.7.5 Decision Reasoning Core';
+const KI21_VERSION='v6.7.6 Sales Manager Decision Language';
 
 
 function runKi21VersionMigration(){
@@ -15630,7 +15630,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.7.5 Decision Reasoning Core';
+  const VERSION='v6.7.6 Sales Manager Decision Language';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15909,7 +15909,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.7.5 Decision Reasoning Core';
+  const VERSION='v6.7.6 Sales Manager Decision Language';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16122,7 +16122,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.7.5 Decision Reasoning Core';
+  const VERSION='v6.7.6 Sales Manager Decision Language';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16159,7 +16159,7 @@ if(document.readyState==='loading'){
 const KI21_DECISION_PATTERNS=[
  {id:'P001',name:'Zusätzliche Vorleistung',re:/kostenlos|gratis|unentgeltlich|zusätzliche\s+(?:analyse|workshop|test|pilot|referenz|nachweis)/i,decision:'Weitere Vorleistung leisten oder zuerst Gegenseitigkeit absichern?',rec:'Vor zusätzlicher Leistung zuerst Erfolgskriterien, Gegenleistung und verbindlichen Entscheidungspunkt vereinbaren.',ask:'Welche konkrete Unsicherheit soll die Zusatzleistung beseitigen – und welche Entscheidung folgt danach?',risk:'Risikoübertragung und offene Vorleistung'},
  {id:'P002',name:'Moving the Goalposts',re:/weitere\s+(?:fälle|showcases|tests|nachweise)|noch\s+ein(?:e|en)?\s+(?:test|pilot|referenz)|zusätzlich.*freigab/i,decision:'Neue Bedingung akzeptieren oder Entscheidungskriterien stabilisieren?',rec:'Die neue Forderung nur akzeptieren, wenn klar ist, welche bestehende Entscheidungslücke sie schließt und welche verbindliche Entscheidung danach fällt.',ask:'Ist dies ein legitimer letzter Prüfpunkt oder verschiebt sich die Messlatte erneut?',risk:'Endlosschleife ohne Kaufcommitment'},
- {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot starten oder zuerst die Entscheidungslogik schließen?',rec:'Pilot nur mit begrenztem Umfang, messbaren Kriterien, Verantwortlichen und festem Managemententscheid nach Abschluss starten.',ask:'Was gilt als Erfolg, wer entscheidet und was passiert bei Zielerreichung?',risk:'Pilot wird Aktivität statt Entscheidung'},
+ {id:'P003',name:'Pilot / PoC',re:/\bpilot\b|proof\s*of\s*concept|\bpoc\b|testbetrieb/i,decision:'Pilot jetzt starten oder zuerst die Entscheidung absichern?',rec:'Pilot jetzt starten – aber nur mit begrenztem Umfang, messbaren Kriterien, klaren Verantwortlichen und einer verbindlichen Kaufentscheidung nach Abschluss.',ask:'Ist die zusätzliche CFO-Anforderung Voraussetzung für die Kaufentscheidung oder erst für die spätere Einführung?',risk:'Der Pilot erzeugt Aktivität, ohne die Kaufentscheidung verbindlich näherzubringen'},
  {id:'P004',name:'Sponsor verliert Einfluss',re:/sponsor.{0,80}(?:weniger\s+einfluss|überstimmt|nicht\s+mehr|verliert)|champion.{0,80}(?:verlässt|schwach|isoliert)/i,decision:'Sponsor weiter belasten oder direkten Zugang zum Entscheider schaffen?',rec:'Sponsor schützen und parallel direkten Zugang zum wirtschaftlichen Entscheider herstellen.',ask:'Wer kann die Entscheidung intern tatsächlich tragen, wenn der Sponsor ausfällt?',risk:'Scheinsicherheit im Buying Center'},
  {id:'P005',name:'Neuer Entscheider',re:/neue[rn]?\s+(?:geschäftsführer|cfo|leiter|entscheider)|entscheidungsrolle.{0,60}(?:neu|geändert)/i,decision:'Bestehende Story fortsetzen oder Opportunity neu qualifizieren?',rec:'Entscheidungslogik mit der neuen Person neu aufbauen; frühere Zustimmung nicht übertragen.',ask:'Welche Ziele, Risiken und persönlichen Kriterien hat die neue entscheidende Person?',risk:'Alte Zustimmung wird fälschlich fortgeschrieben'},
  {id:'P006',name:'CFO / Einkauf greift ein',re:/\bcfo\b|einkauf|procurement|commercial\s+review/i,decision:'Nur Unterlagen liefern oder Entscheidungsabsicht klären?',rec:'Zuerst klären, ob Standardprüfung, Rollout-Vorbereitung oder neue Hürde vorliegt; Umfang der Nachweise begrenzen.',ask:'Welche Entscheidung soll mit den angeforderten Informationen vorbereitet werden?',risk:'Kommerzielle Prüfung wird zur neuen Hürde'},
@@ -16198,7 +16198,7 @@ function analyzeDecision(accId){
  const latest=latestAdditionText(accId);
  const raw=(latest+'\n'+rawForDecision(accId)).trim();
  const matches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(raw));
- let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Verkäuferentscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
+ let primary=matches[0]||{id:'P000',name:'Entscheidung klären',decision:'Welche Sales-Entscheidung bringt den Deal jetzt am stärksten voran?',rec:'Den aktuellen Engpass, die fehlende Kundenentscheidung und das nächste verbindliche Kundencommitment klären.',ask:'Welche Entscheidung steht beim Kunden tatsächlich noch aus?',risk:'Unklarer Entscheidungsmechanismus'};
  // Dominanz: neueste Information und spezifischere Patterns bevorzugen
  const latestMatches=KI21_DECISION_PATTERNS.filter(p=>p.re.test(latest));
  if(latestMatches.length) primary=latestMatches[0];
@@ -16211,7 +16211,7 @@ function analyzeDecision(accId){
 }
 function openDecisionDetails(a){
  const rows=[];
- rows.push({glyph:'◆',text:'Verkäuferentscheidung: '+a.primary.decision,kind:'ki21'});
+ rows.push({glyph:'◆',text:'Sales-Entscheidung: '+a.primary.decision,kind:'ki21'});
  rows.push({glyph:'✓',text:'Empfehlung: '+a.primary.rec,kind:'ki21'});
  rows.push({glyph:'?',text:'Zu klären: '+a.primary.ask,kind:''});
  rows.push({glyph:'!',text:'Hauptrisiko: '+a.primary.risk,kind:''});
@@ -16229,7 +16229,7 @@ function addDecisionCard(){
  const a=analyzeDecision(aid);
  const card=document.createElement('section');
  card.className='ki21-decision-card';
- card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">KI21 Verkäuferentscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
+ card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">Heute wichtigste Sales-Entscheidung · '+a.primary.id+'</div><div class="ki21-decision-title">'+escapeHtml(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+a.confidence+'</div></div><div class="ki21-decision-rec">'+escapeHtml(a.primary.rec)+'</div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+escapeHtml(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+escapeHtml(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';
  card.querySelector('button').onclick=()=>openDecisionDetails(a);
  summary.parentNode.insertBefore(card,summary.nextSibling);
 }
@@ -16340,7 +16340,7 @@ function leaf(label){var all=document.querySelectorAll('#app *');for(var i=0;i<a
 function nextCard(){var h=leaf('NÄCHSTE SCHRITTE');if(!h)return null;var n=h,c=[];for(var i=0;i<9&&n&&n.id!=='app';i++,n=n.parentElement){var t=String(n.textContent||'');if(/NÄCHSTE SCHRITTE/i.test(t)&&n.querySelector&&n.querySelector('input[type="checkbox"]'))c.push(n);}c.sort(function(a,b){return String(a.textContent||'').length-String(b.textContent||'').length;});return c[0]||null;}
 function strongest(a){var m={P001:'Welche konkrete Gegenleistung und welche verbindliche Entscheidung erhalten wir für die zusätzliche Vorleistung?',P002:'Welche bestehende Entscheidungslücke schließt die neue Forderung – und fällt danach wirklich die Entscheidung?',P003:'Welche objektiven Kriterien lösen nach dem Pilot welche Entscheidung durch wen aus?',P006:'Ist die CFO-/Einkaufsfrage Rollout-Vorbereitung, Standardprüfung oder eine neue Freigabehürde?',P016:'Welche minimale Rollout- und Supportinformation braucht der CFO wirklich für seine Entscheidung?',P019:'Welche Entscheidung ist bereits gefallen – und welche Information fehlt nur noch für die Umsetzung?'};return m[a&&a.primary&&a.primary.id]||(a&&a.primary&&a.primary.ask)||'Welche eine Information schließt die aktuelle Entscheidungslücke am stärksten?';}
 function evidence(){var t='';try{var aid=window.state&&state.activeId;var f=getLatestAdditionFactsV6532(aid);t=String(f&&f.latestText||'');}catch(e){}var facts=(t.match(/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben|zugesagt|festgelegt|terminiert|entschieden/gi)||[]).length;var open=(t.match(/unklar|offen|noch nicht|möchte|würde|könnte|befürchtet|signalisiert|grundsätzlich/gi)||[]).length;var contradiction=/(bestätigt|vereinbart).{0,120}(aber|jedoch|allerdings).{0,120}(offen|noch nicht|unklar)/i.test(t);return {facts:facts,open:open,contradiction:contradiction,level:facts>=3&&open<=1&&!contradiction?'hoch':facts>=1?'mittel':'niedrig'};}
-function render(){var app=document.getElementById('app'),aid=window.state&&state.activeId;if(!app||!aid||typeof window.analyzeDecisionV670!=='function')return false;if(app.querySelector('#ki21-visible-decision-core'))return true;var next=nextCard();if(!next||!next.parentNode)return false;var old=app.querySelector('.ki21-decision-card');if(old)old.remove();var a=window.analyzeDecisionV670(aid),p=evidence(),cls=p.level==='hoch'?'good':p.level==='mittel'?'warn':'risk';var card=document.createElement('section');card.className='ki21-decision-card';card.setAttribute('aria-label','KI21 Verkäuferentscheidung');card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">Verkäuferentscheidung · '+esc(a.primary.id)+'</div><div class="ki21-decision-title">'+esc(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+esc(a.confidence)+'</div></div><div class="ki21-decision-rec"><b>Empfehlung:</b> '+esc(a.primary.rec)+'</div><div class="ki21-qe-row"><div class="ki21-qe-label">Stärkste Klärungsfrage</div><div class="ki21-qe-question">'+esc(strongest(a))+'</div><div class="ki21-evidence-line"><span class="ki21-evidence-chip '+cls+'">Beleglage '+p.level+'</span><span class="ki21-evidence-chip">Fakten '+p.facts+'</span><span class="ki21-evidence-chip">Offene Signale '+p.open+'</span>'+(p.contradiction?'<span class="ki21-evidence-chip risk">Widerspruch prüfen</span>':'')+'</div></div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+esc(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+esc(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';card.querySelector('button').onclick=function(){try{openDecisionDetails(a);}catch(e){alert(a.primary.decision+'\n\n'+a.primary.rec);}};next.parentNode.insertBefore(card,next);return true;}
+function render(){var app=document.getElementById('app'),aid=window.state&&state.activeId;if(!app||!aid||typeof window.analyzeDecisionV670!=='function')return false;if(app.querySelector('#ki21-visible-decision-core'))return true;var next=nextCard();if(!next||!next.parentNode)return false;var old=app.querySelector('.ki21-decision-card');if(old)old.remove();var a=window.analyzeDecisionV670(aid),p=evidence(),cls=p.level==='hoch'?'good':p.level==='mittel'?'warn':'risk';var card=document.createElement('section');card.className='ki21-decision-card';card.setAttribute('aria-label','KI21 Sales-Entscheidung');card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">Heute wichtigste Sales-Entscheidung · '+esc(a.primary.id)+'</div><div class="ki21-decision-title">'+esc(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+esc(a.confidence)+'</div></div><div class="ki21-decision-rec"><b>Empfehlung:</b> '+esc(a.primary.rec)+'</div><div class="ki21-qe-row"><div class="ki21-qe-label">Stärkste Klärungsfrage</div><div class="ki21-qe-question">'+esc(strongest(a))+'</div><div class="ki21-evidence-line"><span class="ki21-evidence-chip '+cls+'">Beleglage '+p.level+'</span><span class="ki21-evidence-chip">Fakten '+p.facts+'</span><span class="ki21-evidence-chip">Offene Signale '+p.open+'</span>'+(p.contradiction?'<span class="ki21-evidence-chip risk">Widerspruch prüfen</span>':'')+'</div></div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+esc(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+esc(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';card.querySelector('button').onclick=function(){try{openDecisionDetails(a);}catch(e){alert(a.primary.decision+'\n\n'+a.primary.rec);}};next.parentNode.insertBefore(card,next);return true;}
 function schedule(){[0,80,220,600].forEach(function(ms){setTimeout(render,ms);});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();window.addEventListener('pageshow',schedule);var mo=new MutationObserver(function(){var app=document.getElementById('app');if(app&&!app.querySelector('.ki21-decision-card')&&leaf('NÄCHSTE SCHRITTE'))setTimeout(render,30);});if(document.body)mo.observe(document.body,{childList:true,subtree:true});window.renderVisibleDecisionCoreV673=render;
 })();
