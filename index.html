@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.32 Intelligent Next Steps & Risk Score Release</title>
+<title>KI21 v6.6.0 Intelligence Engine Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2406,10 +2406,27 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-header .cockpit-opp-link,.cockpit-header .cockpit-opp-name,.cockpit-header .cockpit-opp-placeholder{font-size:15px !important;}
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
+
+/* v6.6.0 Intelligence Engine Release */
+.ki21-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px;}
+.ki21-engine-card{border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(17,22,29,.76));border-radius:12px;padding:10px;min-height:88px;}
+.ki21-engine-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;}
+.ki21-engine-name{font-size:10.5px;font-weight:900;color:#f3f6fb;line-height:1.2;}
+.ki21-engine-active{font-size:8px;font-weight:900;color:#3fb950;background:rgba(46,160,67,.12);border:1px solid rgba(46,160,67,.28);border-radius:999px;padding:2px 5px;white-space:nowrap;}
+.ki21-engine-desc{font-size:9.5px;line-height:1.35;color:#9da7b3;}
+.ki21-source-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 10px;}
+.ki21-source-action{border:1px solid rgba(255,107,0,.28);background:rgba(255,107,0,.055);color:#ff9a45;border-radius:11px;padding:10px;font-size:10.5px;font-weight:850;text-align:center;cursor:pointer;}
+.ki21-source-action:active{background:rgba(255,107,0,.13);}
+.ki21-section-card{border:1px solid rgba(139,148,158,.18);border-radius:12px;padding:11px;margin:0 0 10px;background:rgba(255,255,255,.018);}
+.ki21-section-title{font-size:10px;font-weight:900;color:#f3f6fb;margin-bottom:4px;}
+.ki21-section-sub{font-size:9.5px;line-height:1.35;color:#8b949e;}
+@media(max-width:390px){.ki21-engine-grid{grid-template-columns:1fr 1fr;gap:6px}.ki21-engine-card{padding:8px;min-height:82px}.ki21-engine-name{font-size:9.8px}.ki21-engine-desc{font-size:8.8px}}
 </style>
 <!-- v6.5.6: Zentraler Opportunity Health Score, synchron in Hauptmenü/Cockpit/Phasen; lokale semantische Fallback-Bewertung und automatische Aktualisierung nach Eingaben. -->
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
+<!-- v6.5.33 Decision Intelligence: Entscheidungslücke vor Aufgabenlogik, Moving-the-Goalposts-Prüfung, explizite Freigabekriterien, strategische Hebel und konkrete Deliverables. -->
+<!-- v6.6.0 Intelligence Engine Release: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
 </head>
 <body>
@@ -2613,6 +2630,12 @@ function buildCtx(cust,mu,kk,stk,currentSitId){
     s+='Direkt danach, vor dem eigentlichen Inhalt, schätze grob ein (keine exakte Berechnung nötig, nur Orientierung): "Bestätigte Informationen: XX % | Arbeitshypothesen/Branchenwissen: XX % | Noch zu validierende Punkte: XX %" (die drei Werte sollten sich ungefähr zu 100% aufsummieren).\n';
   }
   s+='SCHREIBSTIL: Schreibe wie ein erfahrener deutscher Vertriebsleiter mit 30 Jahren Praxis. Verwende klare, natürliche Sprache. Vermeide Marketingfloskeln, Beraterjargon, unnötige Anglizismen und übertriebene Superlative. Jede Aussage soll so formuliert sein, dass sie in einem echten Kundengespräch glaubwürdig verwendet werden kann. Bevor du die Antwort ausgibst, lies sie gedanklich noch einmal durch und ersetze jede Formulierung, die künstlich, gestelzt oder nach KI klingt, durch einfaches, idiomatisches Deutsch – ohne den Inhalt zu verändern.\n';
+  s+='KI21 CORE INTELLIGENCE – AB WERK AKTIV: Nutze parallel Sales Intelligence, Decision Intelligence, Buying-Center Intelligence, Business-Case Intelligence, Negotiation Intelligence, Risk Intelligence, Change Intelligence und Industry Intelligence. Dieses Core-Wissen muss der Nutzer nicht pflegen. Verbinde die Perspektiven nur dort, wo sie strukturell zur konkreten Opportunity passen.\n';
+  s+='ENTSCHEIDUNGSKETTE (verbindlich): 1. bestätigte Fakten konsolidieren, 2. aktuellen Deal-State bestimmen, 3. eigentliche Entscheidung und Entscheidungslücke identifizieren, 4. tatsächlichen Engpass bestimmen, 5. stärksten strategischen Hebel wählen, 6. konkretes Deliverable festlegen, 7. gewünschten Entscheidungsfortschritt benennen, 8. erst danach nächste Schritte formulieren.\n';
+  s+='UNTERNEHMERISCHER QUALITÄTSCHECK: Übernimm Kundenforderungen nicht automatisch als Aufgaben. Prüfe Aufwand, Gegenleistung, Entscheidungsrelevanz, persönliche Risiken der Beteiligten, interne Anreize, Momentum und Opportunitätskosten. Frage intern: Wird die Entscheidung wahrscheinlicher oder entsteht nur mehr unbezahlte Vorleistung?\n';
+  s+='GREATEST-LEVER-REGEL: Empfehle zuerst die Maßnahme, die die Gewinnwahrscheinlichkeit am stärksten verändert. Ein offensichtliches To-do ist nachrangig, wenn zuvor Entscheidungskriterien, Gegenleistung, Zugang zum Entscheider oder ein verbindlicher Entscheidungspunkt abgesichert werden müssen.\n';
+  s+='MEHRERE STRATEGISCHE OPTIONEN: Wenn mehrere Wege ernsthaft sinnvoll sind, liefere maximal drei klar unterscheidbare Optionen mit kurzer Wirkung und Risiko. Markiere eine Option als Empfehlung. Keine künstlichen Alternativen erzeugen, wenn eine klare beste Entscheidung erkennbar ist.\n';
+  s+='CROSS-DOMAIN-ENTSCHEIDUNGSWISSEN: Nutze bei echter struktureller Passung übertragbare Muster aus Verhandlung, Entscheidungspsychologie, Verhaltensökonomie, Organisationsdynamik, Strategie, Change-, Projekt-, Risiko- und Krisenmanagement. Nenne die Theorie nicht; übersetze sie in eine konkrete vertriebliche Entscheidung.\n';
   s+='KRITISCH – NEUES VERDICHTUNGSZIEL: 50% weniger Worte, 100% der Aussage. Jede Aussage so kurz wie möglich. Füllwörter konsequent entfernen. Keine Wiederholungen zwischen den Abschnitten. KEIN Einleitungssatz, wenn die Überschrift die Aussage bereits trägt. Aktiv statt Passiv. Konkrete Formulierungen statt abstrakter Beschreibungen. Maximal 2 Zeilen pro Bullet. Beispiel: NICHT "Der wirtschaftliche Fall hängt entscheidend davon ab...", SONDERN "Zeitersparnis allein verkauft das Projekt nicht. Entscheidend ist der wirtschaftliche Schaden der Lieferfähigkeitsfehler." Wenn eine Aussage ohne Informationsverlust gekürzt werden kann, ist IMMER die kürzere Variante zu wählen.\n';
   s+='KRITISCH – PHASENDISZIPLIN: Fokus bedeutet, sich auf etwas zu konzentrieren. Disziplin bedeutet, konsequent alles wegzulassen, was nicht zur Aufgabe dieser Phase gehört. Die zentralen Analysephasen (Qualifizierung, Bedarfsanalyse, Demo, Nutzen-Kosten-Analyse, Angebot & Abschluss) besitzen jeweils eine definierte KERNFRAGE (siehe oben am Anfang dieses Prompts, falls dort benannt) – jede Aussage muss dieser Kernfrage dienen. Alle übrigen Phasen (z.B. Terminnachbereitung) folgen derselben Phasendisziplin ohne eigene benannte Kernfrage: Jeder Abschnitt erfüllt genau einen Zweck und liefert einen eigenständigen Mehrwert für genau diese Phase. Prüfe in JEDER Phase JEDE Aussage anhand dieser drei Fragen, bevor du sie aufnimmst: (1) Beantwortet diese Information die Aufgabe dieser Phase? (2) Liefert sie einen neuen Mehrwert gegenüber den vorherigen Phasen? (3) Würde der Leser etwas verlieren, wenn dieser Satz entfernt würde? Kann eine Frage mit Nein beantwortet werden, wird die Aussage entfernt oder deutlich gekürzt.\n';
   s+='KRITISCH – JEDE PHASE BEGINNT DORT, WO DIE VORHERIGE ENDET: Die Phasen sollen sich wie ein roter Faden lesen, nicht wie fünf unabhängige Berichte. Diese Phase übernimmt den aktuellen Wissensstand aus aktuellen Eingaben, Antworten und Ergänzungen. Frühere KI-Ergebnisse sind höchstens Orientierung und NIEMALS Faktenquelle. Zusätzliche Prüffrage vor jedem Abschnitt: "Baut dieser Abschnitt auf den aktuellen Kundendaten auf, oder wiederholt er nur alte KI-Texte?" Wenn ein Abschnitt nur frühere KI-Ausgaben wiederholt, muss er gekürzt oder entfernt werden. Der Leser soll beim Phasenwechsel denken "Jetzt geht der Prozess einen Schritt weiter" – nicht "Das habe ich gerade schon gelesen".\n';
@@ -9045,9 +9068,25 @@ function detectCurrentDealStateV6532(accId){
   const confirmedMeeting=/(?:termin).{0,80}(?:bestätigt|vereinbart|steht)|(?:bestätigt|vereinbart).{0,80}(?:termin)/i.test(latest);
   const meetingDate=(latest.match(/(?:am|für den)\s+([0-3]?\d\.\s*[a-zäöü]+)/i)||[])[1]||'';
 
+  // v6.5.33 Decision Intelligence: Zusätzliche Nachweise sind zunächst eine Entscheidungslücke,
+  // nicht automatisch eine operative Aufgabenliste. Erst Freigabekriterien absichern.
+  const firstShowcaseAccepted=/(?:ersten?|one[- ]?pager|showcase|fall).{0,100}(?:nachvollziehbar|plausibel|überzeugend|positiv bewertet|anerkannt)/i.test(latest);
+  const moreEvidenceRequested=/(?:zwei|2)\s+(?:weitere|zusätzliche).{0,55}(?:opportunit|fälle|showcases?)|(?:ein einzelnes|ein erster|der erste).{0,80}(?:nicht ausreichend|reicht.*nicht|nicht hinreichend)/i.test(latest);
+  const repeatabilityQuestion=/(?:muster|wiederholt|wiederholbarkeit|weitere fälle|zusätzliche fälle)/i.test(latest);
+  const evidenceDeadline=(latest.match(/(?:bis zum|bis)\s+([0-3]?\d\.\s*[a-zäöü]+)/i)||[])[1]||'';
+  const cfoInDecision=/(?:gemeinsam mit dem cfo|geschäftsführer und cfo|cfo).{0,80}(?:freigabe|entschieden|entscheidung)/i.test(latest);
+  const decisionAfterEvidence=/(?:danach|anschließend|wenn diese|sobald diese).{0,100}(?:freigabe|entschieden|entscheidung)|(?:nach vorlage|nach dokumentation).{0,100}(?:freigabe|entscheidung)/i.test(latest);
+
   const approvalExplicit=!explicitNoDecision && /(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt)/i.test(latest);
   const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(scan);
 
+  if(moreEvidenceRequested && (firstShowcaseAccepted||repeatabilityQuestion)){
+    return {
+      type:'decision_gap_additional_evidence',latest,budgetAvailable,decisionDate,
+      firstShowcaseAccepted,repeatabilityQuestion,evidenceDeadline,cfoInDecision,decisionAfterEvidence,
+      requestedCount:2
+    };
+  }
   if(onePager&&realCase&&managementMeeting&&confirmedMeeting){
     return {type:'showcase_meeting',latest,meetingDate,quantifiedEvidence,explicitNoDecision,budgetAvailable,decisionDate};
   }
@@ -9074,6 +9113,37 @@ function applyDealStateReassessmentV6532(intel,accId){
   copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
   const ds=detectCurrentDealStateV6532(accId);
 
+  if(ds.type==='decision_gap_additional_evidence'){
+    const deadline=ds.evidenceDeadline||'vereinbarten Termin';
+    copy.dealStatus='Entscheidung offen · Freigabekriterien absichern';
+    copy.chance.statement='Der erste Showcase wurde anerkannt; der Weg zur Entscheidung ist konkreter';
+    copy.chance.evidence=[
+      'Der Geschäftsführer bewertet den ersten Fall als nachvollziehbar',
+      ds.cfoInDecision?'Geschäftsführer und CFO sollen nach den Zusatznachweisen entscheiden':'Nach den Zusatznachweisen ist ein weiterer Entscheidungsschritt vorgesehen'
+    ];
+    copy.bottleneck.statement='Die konkrete Entscheidungslücke hinter den zwei Zusatzfällen ist noch nicht verbindlich geschlossen';
+    copy.bottleneck.evidence=[
+      'Der Geschäftsführer verlangt zwei weitere Opportunities als Nachweis der Wiederholbarkeit',
+      ds.decisionAfterEvidence?'Ein Entscheidungspunkt ist angekündigt; verbindliche Freigabekriterien müssen davor bestätigt werden':'Es fehlt eine verbindliche Zusage, dass die Zusatzarbeit zur Entscheidung führt'
+    ];
+    copy.nextSteps=[
+      'Mit Geschäftsführer und CFO zuerst die konkrete Entscheidungslücke, Prüfkriterien und den verbindlichen Entscheidungspunkt nach den Zusatzfällen festlegen.',
+      'Erst danach die zwei Zusatzfälle gezielt auf diese Kriterien ausrichten und bis '+deadline+' als Drei-Fälle-Entscheidungsunterlage verdichten.'
+    ];
+    copy.watchouts.currentRisk='Der Kunde könnte die Entscheidungshürde weiter verschieben und zusätzliche Vorleistungen verlangen.';
+    copy.watchouts.salesStrategy='Keine weiteren Nachweise ohne klar definierte Entscheidungslücke, Messkriterien und verbindlichen Freigabepunkt liefern.';
+    copy.businessCase.insights=[
+      'Der erste Showcase belegt einen realen Problemfall; jetzt soll die Wiederholbarkeit nachgewiesen werden.',
+      'Nächstes Deliverable: eine Drei-Fälle-Vergleichsübersicht – jedoch erst nach bestätigten Freigabekriterien.'
+    ];
+    copy.decisionGap={
+      statement:'Welche konkrete Unsicherheit sollen die zwei Zusatzfälle beseitigen?',
+      goalpostRisk:true,
+      requiredOutcome:'Verbindliche Entscheidungskriterien und Freigabepunkt mit Geschäftsführer und CFO'
+    };
+    return copy;
+  }
+
   if(ds.type==='showcase_meeting'){
     const date=ds.meetingDate||'bestätigten Managementtermin';
     copy.dealStatus='Discovery-Phase · Managementtermin vorbereiten';
@@ -9089,7 +9159,7 @@ function applyDealStateReassessmentV6532(intel,accId){
     ];
     copy.nextSteps=[
       'One-Pager auf Vorher-Nachher-Wirkung und wirtschaftlichen Effekt zuspitzen.',
-      'Für den Termin am '+date+' eine klare Entscheidungsfrage vorbereiten.'
+      'Den Managementtermin auf einen verbindlichen nächsten Entscheidungsschritt ausrichten.'
     ];
     copy.watchouts.currentRisk='Der bestätigte Termin ist ein Fortschritt, aber noch keine Freigabe.';
     copy.watchouts.salesStrategy='Den Showcase als kurze Entscheidungsunterlage nutzen, die Priorität schafft statt nur Interesse zu bestätigen.';
@@ -9160,6 +9230,7 @@ getOpportunityHealth=function(accId){
   const original=Number(out.score||0);
   let delta=0;
   if(ds.type==='priority_postponed')delta=-8;
+  else if(ds.type==='decision_gap_additional_evidence')delta=-6;
   else if(ds.type==='showcase_ready')delta=-5;
   else if(ds.type==='showcase_meeting')delta=-3;
   else if(ds.type==='baseline_prerequisite')delta=2;
@@ -9187,11 +9258,23 @@ function rebuildCockpitSnapshotV6532(accId){
 }
 
 async function shortCockpitRefreshV6532(accId){
+  // v6.5.33: leichter, aber vollständiger Cockpit-Refresh. Bestehende Intelligence bleibt als
+  // Struktur erhalten; nur Deal-State, Prioritäten, Risiken und Score werden neu abgeleitet.
   LS.set('ki21_health_'+accId,null);
   LS.set('ki21_health_lastError_'+accId,null);
-  LS.set(getOpportunityIntelligenceKeyV620(accId),null);
   rebuildCockpitSnapshotV6532(accId);
+  try{
+    const raw=LS.get(getOpportunityIntelligenceKeyV620(accId),{})||{};
+    const refreshed=normalizeOpportunityIntelligenceV6530(raw,accId);
+    saveOpportunityIntelligenceV620(accId,refreshed,getPrimarySourceHashV63(accId));
+  }catch(e){console.warn('Decision Intelligence refresh skipped',e);}
+  try{
+    const local=buildLocalOpportunityHealthV656(accId);
+    if(local)storeCentralOpportunityHealthV656(accId,local);
+  }catch(e){}
+  try{renderHealthBadgeIfPresent();}catch(e){}
   try{scheduleOpportunityHealthRefreshV656(accId,120);}catch(e){}
+  await new Promise(resolve=>setTimeout(resolve,40));
 }
 
 
@@ -12087,7 +12170,7 @@ function showConversationNoteParserV4227(args){
       preview.appendChild(h('div',{style:{padding:'18px 14px',border:'1px solid rgba(46,160,67,.42)',borderRadius:'14px',background:'rgba(46,160,67,.10)',textAlign:'center'}},
         h('div',{style:{fontSize:'30px',lineHeight:'1',marginBottom:'10px',color:'#3fb950'}},'✓'),
         h('div',{style:{fontSize:'15px',fontWeight:'900',color:'#e6edf3',marginBottom:'6px'}},'Ergänzung erfolgreich übernommen'),
-        h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Prioritäten, nächste Schritte und Health Score wurden neu bewertet. Du kannst dieses Fenster jetzt schließen.')
+        h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Entscheidungslücke, Prioritäten, nächste Schritte und Health Score wurden neu bewertet. Du kannst dieses Fenster jetzt schließen.')
       ));
       status.textContent='';
       applyRow.innerHTML='';
@@ -12267,7 +12350,7 @@ function showNeuerKunde(initial,accId,initialTab){
         h('div',{style:{padding:'18px 14px',border:'1px solid rgba(46,160,67,.42)',borderRadius:'14px',background:'rgba(46,160,67,.10)',textAlign:'center'}},
           h('div',{style:{fontSize:'30px',lineHeight:'1',marginBottom:'10px',color:'#3fb950'}},'✓'),
           h('div',{style:{fontSize:'15px',fontWeight:'900',marginBottom:'6px'}},'Ergänzung übernommen – Cockpit aktualisiert'),
-          h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Prioritäten, nächste Schritte und Health Score wurden neu bewertet.')
+          h('div',{style:{fontSize:'12px',lineHeight:'1.45',color:'#c9d1d9'}},'Deal-Zustand, Entscheidungslücke, Prioritäten, nächste Schritte und Health Score wurden neu bewertet.')
         )
       );
       let successModal=null;
@@ -13612,18 +13695,72 @@ function renderBranchenwissen(text){
   return html;
 }
 
+
+const KI21_SCRIPT_CACHE={};
+function loadExternalScriptV660(src){
+  if(KI21_SCRIPT_CACHE[src])return KI21_SCRIPT_CACHE[src];
+  KI21_SCRIPT_CACHE[src]=new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(x=>x.src===src);
+    if(existing){if(existing.dataset.loaded==='1')resolve();else existing.addEventListener('load',resolve,{once:true});return;}
+    const sc=document.createElement('script');sc.src=src;sc.async=true;
+    sc.onload=()=>{sc.dataset.loaded='1';resolve();};sc.onerror=()=>reject(new Error('Bibliothek konnte nicht geladen werden'));
+    document.head.appendChild(sc);
+  });
+  return KI21_SCRIPT_CACHE[src];
+}
+async function extractKnowledgeFileV660(file,onProgress){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(onProgress)onProgress('Datei wird gelesen …');
+  if(['txt','md','csv','json','html','htm'].includes(ext))return await file.text();
+  if(ext==='docx'){
+    if(onProgress)onProgress('Word-Dokument wird ausgelesen …');
+    await loadExternalScriptV660('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js');
+    const ab=await file.arrayBuffer();
+    const result=await window.mammoth.extractRawText({arrayBuffer:ab});
+    return String(result.value||'').trim();
+  }
+  if(ext==='pdf'){
+    if(onProgress)onProgress('PDF wird ausgelesen …');
+    await loadExternalScriptV660('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const data=new Uint8Array(await file.arrayBuffer());
+    const pdf=await window.pdfjsLib.getDocument({data}).promise;
+    const pages=[];
+    for(let i=1;i<=pdf.numPages;i++){
+      if(onProgress)onProgress('PDF-Seite '+i+' von '+pdf.numPages+' …');
+      const page=await pdf.getPage(i);const tc=await page.getTextContent();
+      pages.push(tc.items.map(x=>x.str).join(' '));
+    }
+    return pages.join('\n\n').trim();
+  }
+  throw new Error('Dateityp wird nicht unterstützt');
+}
+
+function getCoreEnginesV660(){
+  return [
+    ['Sales Intelligence','Qualifizierung, Discovery, Dealstrategie und Abschlusssteuerung'],
+    ['Decision Intelligence','Entscheidungslücken, Kriterien, Priorisierung und nächster Entscheidungsmeilenstein'],
+    ['Buying Center Intelligence','Sponsor, Entscheider, Blockierer, Macht und persönliche Risiken'],
+    ['Business Case Intelligence','Problemwert, wirtschaftliche Wirkung, Belastbarkeit und Freigabelogik'],
+    ['Negotiation Intelligence','Gegenleistung, Zugeständnisse, Einwände und verschobene Spielregeln'],
+    ['Risk Intelligence','Momentum, Deal-Risiken, Scheinsicherheit und Health Score'],
+    ['Change Intelligence','Veränderungsbereitschaft, Widerstand und Umsetzungsfähigkeit'],
+    ['Industry Intelligence','Branchenmuster, typische Werttreiber und Entscheidungslogiken']
+  ];
+}
+
 function showMeinUnternehmen(initialTab){
   let profil=LS.get('ki21_mu',{}).profil||'';
   let bausteine=LS.get('ki21_mu',{}).bausteine||'';
   let bw=LS.get('ki21_branchenwissen',{});
-  let tab=initialTab||'profil';
+  let tab=(initialTab==='bausteine'?'profil':(initialTab||'profil'));
 
   const tabRow=h('div',{className:'tab-row'});
-  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmen');
-  const t2=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bausteine')},'Bausteine');
-  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'🧠 Intelligence');
-  const t4=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('import')},'📥 Wissen importieren');
-  tabRow.appendChild(t1);tabRow.appendChild(t2);tabRow.appendChild(t3);tabRow.appendChild(t4);
+  const t1=h('button',{className:'tab-btn',style:{background:'#ff6b00',color:'#fff'},onclick:()=>sw('profil')},'Unternehmen & Angebot');
+  const t2=h('button',{className:'tab-btn',style:{display:'none'},onclick:()=>sw('profil')},'');
+  const t3=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('bw')},'KI21 Intelligence');
+  const t4=h('button',{className:'tab-btn',style:{background:'#1c2333',color:'#8b949e'},onclick:()=>sw('import')},'Wissen hinzufügen');
+  tabRow.appendChild(t1);tabRow.appendChild(t3);tabRow.appendChild(t4);
 
   const d1=h('div',{});
   const ta1=h('textarea',{placeholder:'Produkt: ...\nStärken: ...\nZielgruppe: ...\nReferenzen: ...\nMitbewerber/Alternativen: ... (z.B. auch Inhouse-Lösungen oder Module großer ERP-Anbieter, nicht nur direkte Wettbewerber)'});
@@ -13633,11 +13770,13 @@ function showMeinUnternehmen(initialTab){
   d1.appendChild(ta1);
 
   const d2=h('div',{style:{display:'none'}});
-  const ta2=h('textarea',{placeholder:'Projektvorgehen:\nPhase 1: ...\n\nSupport:\n- ...'});
+  const ta2=h('textarea',{placeholder:'Produkte, Leistungen, Preise, Projektvorgehen, Support und Voraussetzungen …'});
   ta2.value=bausteine;
   ta2.addEventListener('input',e=>bausteine=e.target.value);
-  d2.appendChild(h('p',{className:'modal-desc'},'Projektvorgehen, Support, Schulung, technische Voraussetzungen.'));
-  d2.appendChild(ta2);
+  d1.insertBefore(h('div',{className:'field-label',style:{marginTop:'12px'}},'Unternehmensprofil'),ta1);
+  d1.appendChild(h('div',{className:'field-label',style:{marginTop:'12px'}},'Angebot & Leistungen'));
+  d1.appendChild(h('p',{className:'modal-desc'},'Produkte, Preise, Angebotsbausteine, Projektvorgehen und Leistungsumfang.'));
+  d1.appendChild(ta2);
 
   // KI21 Intelligence Tab
   const d3=h('div',{style:{display:'none'}});
@@ -13795,7 +13934,18 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
     intelBtn.textContent=intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen';
   }},intel.erstellt?'🔄 Aktualisieren':'🧠 KI21 Intelligence erstellen');
 
-  d3.appendChild(h('p',{className:'modal-desc'},'KI21 verdichtet branchenspezifische Erkenntnisse zu robusten Business Patterns, die automatisch in alle Phasen einfließen.'));
+  d3.appendChild(h('p',{className:'modal-desc'},'Die Core Engines sind ab Werk aktiv und wirken gemeinsam in jeder Opportunity. Der Nutzer muss sie nicht befüllen.'));
+  const engineGrid=h('div',{className:'ki21-engine-grid'});
+  getCoreEnginesV660().forEach(([name,desc])=>engineGrid.appendChild(h('div',{className:'ki21-engine-card'},
+    h('div',{className:'ki21-engine-head'},h('div',{className:'ki21-engine-name'},name),h('span',{className:'ki21-engine-active'},'AKTIV')),
+    h('div',{className:'ki21-engine-desc'},desc)
+  )));
+  d3.appendChild(engineGrid);
+  d3.appendChild(h('div',{className:'ki21-section-card'},
+    h('div',{className:'ki21-section-title'},'Branchenspezifische Erweiterung'),
+    h('div',{className:'ki21-section-sub'},'Optional: Unternehmens- und Branchenkontext ergänzt die eingebauten Engines. Die Core Intelligence bleibt davon unabhängig sofort verfügbar.')
+  ));
+
   d3.appendChild(intelStatus);
   d3.appendChild(h('div',{className:'field-label'},'Branche'));
   d3.appendChild(intelBranche);
@@ -13831,17 +13981,15 @@ Nur Deutsch. Kein Fließtext, keine Marketingfloskeln. Erfinde nichts - wenn ein
   fileInput.addEventListener('change',async e=>{
     const f=e.target.files&&e.target.files[0];
     if(!f)return;
-    const ext=(f.name.split('.').pop()||'').toLowerCase();
-    if(['pdf','docx'].includes(ext)){
-      setImportStatus('PDF/DOCX können in dieser Beta noch nicht direkt ausgelesen werden. Bitte den Text aus dem Dokument kopieren und hier einfügen.',false);
-      return;
-    }
     try{
-      const txt=await f.text();
-      rawKnowledge=(rawKnowledge?rawKnowledge+'\n\n':'')+txt;
+      fileInput.disabled=true;
+      const txt=await extractKnowledgeFileV660(f,msg=>setImportStatus(msg,true));
+      if(!txt)throw new Error('Kein lesbarer Text gefunden');
+      rawKnowledge=(rawKnowledge?rawKnowledge+'\n\n':'')+'QUELLE: '+f.name+'\n'+txt;
       rawTa.value=rawKnowledge;
-      setImportStatus('✅ Datei „'+f.name+'“ eingelesen.',true);
-    }catch(err){setImportStatus('Datei konnte nicht gelesen werden.',false);}
+      setImportStatus('✅ „'+f.name+'“ eingelesen. KI21 kann den Inhalt jetzt strukturieren.',true);
+    }catch(err){setImportStatus('Datei konnte nicht gelesen werden: '+String(err&&err.message||err),false);}
+    fileInput.disabled=false;fileInput.value='';
   });
 
   const sampleText=`Unternehmen: KI21
@@ -13866,7 +14014,7 @@ Arbeitsweise: Cockpit öffnen → Lage verstehen → nächsten Schritt sehen →
     companyKnowledge={...companyKnowledge,raw:rawKnowledge,updatedAt:new Date().toLocaleString('de-DE')};
     LS.set('ki21_company_knowledge',companyKnowledge);
     setImportStatus('✅ Rohwissen gespeichert und für Opportunity-Prompts verfügbar.',true);
-  }},'Rohwissen speichern');
+  }},'Information speichern');
 
   async function rebuildCompanyIntelligence(structured){
     const sourceJson=JSON.stringify(structured||{});
@@ -13965,30 +14113,30 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
     }catch(err){
       console.error(err);setImportStatus('Strukturierung fehlgeschlagen. Das Rohwissen wurde nicht verändert.',false);
     }
-    structureBtn.disabled=false;structureBtn.textContent='Mit KI strukturieren';
-  }},'Mit KI strukturieren');
+    structureBtn.disabled=false;structureBtn.textContent='Analysieren & übernehmen';
+  }},'Analysieren & übernehmen');
 
   const preview=h('div',{style:{marginTop:'10px',fontSize:'11px',lineHeight:'1.5',color:'#8b949e',background:'#0d1117',border:'1px solid #30363d',borderRadius:'6px',padding:'10px'}},
     companyKnowledge.structured?'Strukturiertes Profil vorhanden: '+(companyKnowledge.structured.companyName||'Unternehmen'):'Noch kein strukturiertes Unternehmensprofil vorhanden.');
 
-  d4.appendChild(h('p',{className:'modal-desc'},'Füge Unternehmenswissen einmalig ein. Es wird getrennt von Opportunities gespeichert und künftig als Kontext verwendet.'));
+  d4.appendChild(h('p',{className:'modal-desc'},'Homepage-Texte, Preislisten, PDF, Word oder individuelle Informationen hinzufügen. KI21 ordnet die Inhalte automatisch dem Unternehmens- und Angebotswissen zu.'));
   d4.appendChild(importStatus);
-  d4.appendChild(h('div',{className:'field-label'},'Unternehmenswissen'));
+  d4.appendChild(h('div',{className:'field-label'},'Individuelle Informationen oder eingefügter Webseitentext'));
   d4.appendChild(rawTa);
   d4.appendChild(fileInput);
-  d4.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginTop:'5px',lineHeight:'1.4'}},'Direkt lesbar: TXT, MD, CSV, JSON, HTML. PDF/DOCX: Text bitte in dieser Beta kopieren und einfügen.'));
+  d4.appendChild(h('div',{style:{fontSize:'10px',color:'#8b949e',marginTop:'5px',lineHeight:'1.4'}},'Unterstützt: PDF, Word (DOCX), TXT, MD, CSV, JSON und HTML. Die Inhalte werden automatisch ausgelesen; das Original bleibt nur in dieser lokalen Sitzung verfügbar.'));
   d4.appendChild(sampleBtn);
   d4.appendChild(h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}},saveRawBtn,structureBtn));
   d4.appendChild(preview);
 
   function sw(t){
     tab=t;
-    d1.style.display=t==='profil'?'block':'none';
-    d2.style.display=t==='bausteine'?'block':'none';
+    d1.style.display=(t==='profil'||t==='bausteine')?'block':'none';
+    d2.style.display='none';
     d3.style.display=t==='bw'?'block':'none';
     d4.style.display=t==='import'?'block':'none';
     t1.style.background=t==='profil'?'#ff6b00':'#1c2333';t1.style.color=t==='profil'?'#fff':'#8b949e';
-    t2.style.background=t==='bausteine'?'#ff6b00':'#1c2333';t2.style.color=t==='bausteine'?'#fff':'#8b949e';
+    t2.style.display='none';
     t3.style.background=t==='bw'?'#ff6b00':'#1c2333';t3.style.color=t==='bw'?'#fff':'#8b949e';
     t4.style.background=t==='import'?'#ff6b00':'#1c2333';t4.style.color=t==='import'?'#fff':'#8b949e';
   }
@@ -14004,11 +14152,11 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
-  const m=modal('Mein Unternehmen',content,null);
+  const m=modal('Unternehmen, Angebot & Leistungen',content,null);
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.32 Intelligent Next Steps & Risk Score Release';
+const KI21_VERSION='v6.6.0 Intelligence Engine Release';
 
 
 function runKi21VersionMigration(){
@@ -14300,18 +14448,19 @@ function showSettings(){
     return false;
   };
   const companyBtn=h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
-    onclick:(e)=>openCompanySafely(e,null)},'🏢  Mein Unternehmen');
+    onclick:(e)=>openCompanySafely(e,null)},'🏢  Unternehmen, Angebot & Leistungen');
   const buildingBlocksBtn=h('button',{type:'button',className:'btn',style:{width:'100%',textAlign:'left'},
-    onclick:(e)=>openCompanySafely(e,'bausteine')},'📦  Angebotsbausteine');
+    onclick:(e)=>openCompanySafely(e,'bw')},'🧠  KI21 Intelligence');
   // Zusätzlicher Pointer-Guard verhindert synthetische Folge-Klicks auf Touch-Geräten.
   [companyBtn,buildingBlocksBtn].forEach(b=>{
     b.addEventListener('pointerdown',e=>{e.stopPropagation();});
     b.addEventListener('touchstart',e=>{e.stopPropagation();},{passive:true});
   });
   const menuItems=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'14px'}},
-    h('div',{className:'settings-group-title'},'Unternehmen & Daten'),
+    h('div',{className:'settings-group-title'},'Wissen & Intelligence'),
     companyBtn,
     buildingBlocksBtn,
+    h('button',{className:'btn',style:{width:'100%',textAlign:'left'},onclick:(e)=>openCompanySafely(e,'import')},'＋  Wissen hinzufügen'),
     h('button',{className:'btn',style:{width:'100%',textAlign:'left'},
       onclick:()=>{m.remove();showExport();}},
       '↑  Backup erstellen'),
@@ -15163,7 +15312,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.32 Intelligent Next Steps & Risk Score Release';
+  const VERSION='v6.6.0 Intelligence Engine Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
