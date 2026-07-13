@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.8.0-dynamic-decision-engine-20260713 -->
+<!-- KI21_BUILD: v6.9.0-explainable-decision-intelligence-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.8.0 Dynamic Decision Engine</title>
+<title>KI21 v6.9 Explainable Decision Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9858,15 +9858,65 @@ function renderCockpitSnapshotLiteV4215(){
     'sich der aktuelle Engpass nachweislich auflöst.',
     'eine neue, geschäftskritische Bedingung entsteht.'
   ];
-  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core', 'aria-label':'KI21 Deal-Entscheidung'},
+  // v6.9: Explainable Decision Intelligence – Fakten, Annahmen, offene Entscheidung und Änderungsgrund sichtbar machen.
+  const uniqV690=arr=>Array.from(new Set((arr||[]).map(x=>String(x||'').trim()).filter(Boolean)));
+  const confirmedFactsV690=uniqV690(reasonItemsV675.concat([
+    /entscheidungstermin/.test(latestNormV680)&&/(bleibt|besteht|bestätigt|verbindlich)/.test(latestNormV680)?'Der Entscheidungstermin ist bestätigt.':'',
+    /pilot/.test(latestNormV680)&&/(bestätigt|vereinbart|verbindlich|start)/.test(latestNormV680)?'Der Pilot ist vereinbart.':'',
+    cfoResolvedV680?'Die CFO-Anforderung ist kein Freigabekriterium mehr.':'',
+    hasMeasurementV680?'Nutzung und Forecast-Qualität sollen messbar bewertet werden.':''
+  ]));
+  const openAssumptionsV690=uniqV690(counterArgumentsV677.map(x=>String(x).replace(/[.]$/,'')));
+  const openDecisionsV690=uniqV690([missingInfoV675]);
+  const evidenceConfidenceV690=String(decisionAnalysisV674.confidence||'mittel').toLowerCase();
+  const evidenceLabelV690=evidenceConfidenceV690==='hoch'?'Hoch':evidenceConfidenceV690==='niedrig'?'Niedrig':'Mittel';
+  const openEvidenceSheetV690=(title,items,glyph)=>{
+    try{showBottomSheet(title,(items||[]).map(x=>({glyph:glyph||'•',text:x,kind:glyph==='✓'?'ki21':''})),'Keine Einträge vorhanden.');}
+    catch(e){alert(title+'\n\n'+(items||[]).join('\n'))}
+  };
+  let changeNoteV690='';
+  const snapshotKeyV690='ki21_decision_snapshot_v690_'+aid;
+  try{
+    const previousV690=LS.get(snapshotKeyV690,null);
+    const currentV690={id:decisionPrimaryV674.id||'',decision:decisionPrimaryV674.decision||'',rec:decisionPrimaryV674.rec||'',risk:wrongDecisionV675,ask:missingInfoV675,next:nextActionV675,ts:Date.now()};
+    if(previousV690&&previousV690.decision&&previousV690.decision!==currentV690.decision){
+      changeNoteV690='Die wichtigste Deal-Entscheidung hat sich geändert: „'+previousV690.decision+'“ wurde durch „'+currentV690.decision+'“ ersetzt.';
+    }else if(!previousV690&&hasMeasurementV680&&cfoResolvedV680){
+      changeNoteV690='Die CFO-Freigabehürde ist geklärt. Neuer Engpass ist die belastbare Erfolgsmessung.';
+    }
+    LS.set(snapshotKeyV690,currentV690);
+  }catch(e){}
+  const trustBarsV690=[
+    ['Faktenlage',Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2)))],
+    ['Entscheiderklarheit',/cfo|geschäftsführer|entscheider/.test(latestNormV680)?4:3],
+    ['Business Case',manualKpiV63?4:3],
+    ['Erfolgskriterien',hasMeasurementV680?4:2],
+    ['Risiken bewertet',counterArgumentsV677.length?4:2]
+  ];
+  const trustBarElV690=(label,val)=>h('div',{className:'ki21-trust-row-v690'},
+    h('span',{className:'ki21-trust-label-v690'},label),
+    h('span',{className:'ki21-trust-dots-v690'},...Array.from({length:5},(_,i)=>h('i',{className:i<val?'on':''})))
+  );
+  const decisionCardChildrenV690=[];
+  if(changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690',onclick:()=>openEvidenceSheetV690('Warum hat KI21 die Empfehlung geändert?',[changeNoteV690],'→')},
+    h('b',{},'Neu seit der letzten Ergänzung'),h('span',{},changeNoteV690)));
+  decisionCardChildrenV690.push(
     h('div',{className:'ki21-decision-head'},
       h('div',{},
         h('div',{className:'ki21-decision-kicker'},'DEAL-ENTSCHEIDUNG'),
         h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Deal-Entscheidung klären')
       ),
-      h('div',{className:'ki21-decision-confidence'},'Belastbarkeit: '+String(decisionAnalysisV674.confidence||'mittel'))
+      h('div',{className:'ki21-decision-confidence'},'Empfehlungssicherheit: '+evidenceLabelV690)
     ),
-    h('div',{className:'ki21-decision-rec'},h('b',{},'KI21 empfiehlt: '),decisionPrimaryV674.rec||''),
+    h('div',{className:'ki21-evidence-summary-v690'},
+      h('div',{className:'ki21-evidence-title-v690'},'Warum KI21 dieser Empfehlung vertraut'),
+      h('div',{className:'ki21-evidence-buttons-v690'},
+        h('button',{type:'button',className:'ki21-evidence-button-v690 fact',onclick:()=>openEvidenceSheetV690('Bestätigte Fakten',confirmedFactsV690,'✓')},'✓ '+confirmedFactsV690.length+' bestätigte Fakten'),
+        h('button',{type:'button',className:'ki21-evidence-button-v690 assumption',onclick:()=>openEvidenceSheetV690('Offene Annahmen',openAssumptionsV690,'≈')},'≈ '+openAssumptionsV690.length+' offene Annahmen'),
+        h('button',{type:'button',className:'ki21-evidence-button-v690 decision',onclick:()=>openEvidenceSheetV690('Offene Entscheidung',openDecisionsV690,'?')},'? '+openDecisionsV690.length+' offene Entscheidung')
+      )
+    ),
+    h('div',{className:'ki21-decision-rec'},h('b',{},'Empfohlene Deal-Strategie: '),decisionPrimaryV674.rec||''),
     h('div',{className:'ki21-decision-reasoning'},
       h('div',{className:'ki21-qe-label'},'DIESE FAKTEN SPRECHEN DAFÜR'),
       ...reasonItemsV675.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
@@ -9880,8 +9930,12 @@ function renderCockpitSnapshotLiteV4215(){
       ...counterArgumentsV677.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
     ),
     h('div',{className:'ki21-decision-reasoning ki21-decision-change-v677'},
-      h('div',{className:'ki21-qe-label'},'DIESE EMPFEHLUNG WÜRDE SICH ÄNDERN, WENN …'),
+      h('div',{className:'ki21-qe-label'},'KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN …'),
       ...changeConditionsV677.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
+    ),
+    h('div',{className:'ki21-trust-card-v690'},
+      h('div',{className:'ki21-qe-label'},'VERTRAUENSCHECK'),
+      ...trustBarsV690.map(x=>trustBarElV690(x[0],x[1]))
     ),
     h('div',{className:'ki21-next-action-v675'},
       h('div',{className:'ki21-qe-label'},'NÄCHSTE HANDLUNG'),
@@ -9902,6 +9956,7 @@ function renderCockpitSnapshotLiteV4215(){
       }catch(e){alert((decisionPrimaryV674.decision||'')+'\n\n'+(decisionPrimaryV674.rec||''));}
     }},'Szenarien und Alternativen ansehen')
   );
+  const decisionCardV674=h('section',{className:'ki21-decision-card ki21-decision-card-fixed',id:'ki21-visible-decision-core','aria-label':'KI21 Deal-Entscheidung'},...decisionCardChildrenV690);
   wrap.appendChild(decisionCardV674);
 
   const nextStepItemsV4263=[];
@@ -14548,7 +14603,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.8.0 Dynamic Decision Engine';
+const KI21_VERSION='v6.9 Explainable Decision Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -15716,7 +15771,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.8.0 Dynamic Decision Engine';
+  const VERSION='v6.9 Explainable Decision Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15995,7 +16050,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.8.0 Dynamic Decision Engine';
+  const VERSION='v6.9 Explainable Decision Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16208,7 +16263,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.8.0 Dynamic Decision Engine';
+  const VERSION='v6.9 Explainable Decision Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16416,6 +16471,10 @@ function enrich(){
 .ki21-decision-mini-risk{border-color:rgba(248,81,73,.28)!important;background:rgba(248,81,73,.07)!important}
 .ki21-next-action-v675{margin-top:12px;padding:14px;border-radius:14px;background:rgba(255,107,0,.10);border-left:4px solid #ff6b00}
 .ki21-next-action-text-v675{font-size:15px;line-height:1.45;font-weight:800;color:#f4f5f7}
+.ki21-change-banner-v690{display:block;width:100%;text-align:left;margin:0 0 14px;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,139,44,.48);background:rgba(255,139,44,.10);color:#ffd2aa}.ki21-change-banner-v690 b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#ff9c4a;margin-bottom:4px}.ki21-change-banner-v690 span{font-size:13px;line-height:1.38}
+.ki21-evidence-summary-v690{margin-top:12px;padding:12px 13px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10)}.ki21-evidence-title-v690{font-size:11px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;color:#cfd4dc;margin-bottom:9px}.ki21-evidence-buttons-v690{display:flex;gap:7px;flex-wrap:wrap}.ki21-evidence-button-v690{border-radius:999px;padding:7px 9px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#dbe0e6}.ki21-evidence-button-v690.fact{color:#71df94;border-color:rgba(52,199,89,.34);background:rgba(52,199,89,.10)}.ki21-evidence-button-v690.assumption{color:#f0bd57;border-color:rgba(255,179,0,.32);background:rgba(255,179,0,.09)}.ki21-evidence-button-v690.decision{color:#9bc4ff;border-color:rgba(64,156,255,.34);background:rgba(64,156,255,.09)}
+.ki21-trust-card-v690{margin-top:14px;padding:14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09)}.ki21-trust-row-v690{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}.ki21-trust-label-v690{font-size:12px;color:#dce1e7}.ki21-trust-dots-v690{display:flex;gap:4px}.ki21-trust-dots-v690 i{display:block;width:18px;height:5px;border-radius:99px;background:rgba(255,255,255,.12)}.ki21-trust-dots-v690 i.on{background:#ff7a22}
+@media(max-width:420px){.ki21-evidence-buttons-v690{display:grid;grid-template-columns:1fr}.ki21-evidence-button-v690{text-align:left}}
 
 </style>
 <script id="ki21-visible-decision-core-js">
