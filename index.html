@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.9.2-unified-deal-state-cockpit-fix-20260713 -->
+<!-- KI21_BUILD: v6.9.3-decision-confidence-intelligence-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.9.2 Unified Deal-State Cockpit Fix</title>
+<title>KI21 v6.9.3 Decision Confidence Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9889,16 +9889,32 @@ function renderCockpitSnapshotLiteV4215(){
   let manualKpiForTrustV690='';
   try{manualKpiForTrustV690=(typeof getManualQuantifiedProblemV63==='function'?getManualQuantifiedProblemV63(aid):'')||'';}catch(e){}
   const trustBarsV690=[
-    ['Faktenlage',Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2)))],
-    ['Entscheiderklarheit',/cfo|geschäftsführer|entscheider/.test(latestNormV680)?4:3],
-    ['Business Case',manualKpiForTrustV690?4:3],
-    ['Erfolgskriterien',hasMeasurementV680?4:2],
-    ['Risiken bewertet',counterArgumentsV677.length?4:2]
+    {label:'Faktenlage',value:Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2))),details:confirmedFactsV690},
+    {label:'Entscheiderklarheit',value:/cfo|geschäftsführer|entscheider/.test(latestNormV680)?4:3,details:uniqV690([
+      /geschäftsführer/.test(latestNormV680)?'Geschäftsführer ist in die Entscheidung eingebunden.':'Rolle des Geschäftsführers noch präzisieren.',
+      /cfo/.test(latestNormV680)?'CFO ist in die Bewertung eingebunden.':'CFO-Rolle noch klären.',
+      /entscheidungstermin/.test(latestNormV680)?'Entscheidungstermin ist benannt.':'Verbindlichen Entscheidungstermin bestätigen.'
+    ])},
+    {label:'Business Case',value:manualKpiForTrustV690?5:3,details:manualKpiForTrustV690?['Wirtschaftlicher Problemwert ist beziffert: '+manualKpiForTrustV690+'.']:['Wirtschaftlicher Effekt ist noch nicht ausreichend belegt.']},
+    {label:'Erfolgskriterien',value:hasMeasurementV680?4:2,details:hasMeasurementV680?['Nutzung und Forecast-Qualität werden als Pilotkriterien betrachtet.','Ausgangswert, Zielwert und Datenquelle sind noch verbindlich zu dokumentieren.']:['Messbare Erfolgskriterien fehlen noch.']},
+    {label:'Risiken bewertet',value:counterArgumentsV677.length?4:2,details:counterArgumentsV677}
   ];
-  const trustBarElV690=(label,val)=>h('div',{className:'ki21-trust-row-v690'},
-    h('span',{className:'ki21-trust-label-v690'},label),
-    h('span',{className:'ki21-trust-dots-v690'},...Array.from({length:5},(_,i)=>h('i',{className:i<val?'on':''})))
-  );
+  const trustStatusV693=val=>val>=5?['Stark','strong']:val>=4?['Gut','good']:val>=3?['Teilweise','partial']:['Offen','open'];
+  const trustBarElV690=item=>{
+    const st=trustStatusV693(item.value);
+    return h('button',{type:'button',className:'ki21-trust-row-v690 '+st[1],onclick:()=>openEvidenceSheetV690(item.label,item.details,'•')},
+      h('span',{className:'ki21-trust-label-v690'},item.label),
+      h('span',{className:'ki21-trust-status-v693'},st[0]),
+      h('span',{className:'ki21-trust-dots-v690'},...Array.from({length:5},(_,i)=>h('i',{className:i<item.value?'on':''})))
+    );
+  };
+  const missingForMaxV693=uniqV690([
+    !hasMeasurementV680?'Messbare Erfolgskriterien festlegen.':'',
+    hasMeasurementV680?'Ausgangswert, Zielwert und Datenquelle schriftlich bestätigen.':'',
+    !/entscheidungstermin/.test(latestNormV680)?'Verbindlichen Entscheidungstermin bestätigen.':'',
+    openAssumptionsV690[0]||''
+  ]).slice(0,3);
+  const maturityV693=hasMeasurementV680&&/entscheidungstermin/.test(latestNormV680)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
   const decisionCardChildrenV690=[];
   if(changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690',onclick:()=>openEvidenceSheetV690('Warum hat KI21 die Empfehlung geändert?',[changeNoteV690],'→')},
     h('b',{},'Neu seit der letzten Ergänzung'),h('span',{},changeNoteV690)));
@@ -9908,10 +9924,10 @@ function renderCockpitSnapshotLiteV4215(){
         h('div',{className:'ki21-decision-kicker'},'DEAL-ENTSCHEIDUNG'),
         h('div',{className:'ki21-decision-title'},decisionPrimaryV674.decision||'Deal-Entscheidung klären')
       ),
-      h('div',{className:'ki21-decision-confidence'},'Empfehlungssicherheit: '+evidenceLabelV690)
+      h('div',{className:'ki21-decision-badges-v693'},h('div',{className:'ki21-decision-confidence'},'Empfehlungssicherheit: '+evidenceLabelV690),h('div',{className:'ki21-decision-maturity-v693'},'Entscheidungsreife: '+maturityV693))
     ),
     h('div',{className:'ki21-evidence-summary-v690'},
-      h('div',{className:'ki21-evidence-title-v690'},'Warum KI21 dieser Empfehlung vertraut'),
+      h('div',{className:'ki21-evidence-title-v690'},'Warum diese Empfehlung belastbar ist'),
       h('div',{className:'ki21-evidence-buttons-v690'},
         h('button',{type:'button',className:'ki21-evidence-button-v690 fact',onclick:()=>openEvidenceSheetV690('Bestätigte Fakten',confirmedFactsV690,'✓')},'✓ '+confirmedFactsV690.length+' bestätigte Fakten'),
         h('button',{type:'button',className:'ki21-evidence-button-v690 assumption',onclick:()=>openEvidenceSheetV690('Offene Annahmen',openAssumptionsV690,'≈')},'≈ '+openAssumptionsV690.length+' offene Annahmen'),
@@ -9937,9 +9953,14 @@ function renderCockpitSnapshotLiteV4215(){
     ),
     h('div',{className:'ki21-trust-card-v690'},
       h('div',{className:'ki21-qe-label'},'VERTRAUENSCHECK'),
-      ...trustBarsV690.map(x=>trustBarElV690(x[0],x[1]))
+      ...trustBarsV690.map(trustBarElV690)
+    ),
+    h('div',{className:'ki21-confidence-gap-v693'},
+      h('div',{className:'ki21-qe-label'},'WAS FEHLT BIS ZUR MAXIMALEN ENTSCHEIDUNGSSICHERHEIT?'),
+      ...(missingForMaxV693.length?missingForMaxV693:['Keine kritische Lücke erkennbar.']).map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
     ),
     h('div',{className:'ki21-next-action-v675'},
+      h('div',{className:'ki21-leverage-label-v693'},'HÖCHSTER HEBEL'),
       h('div',{className:'ki21-qe-label'},'NÄCHSTE HANDLUNG'),
       h('div',{className:'ki21-next-action-text-v675'},nextActionV675)
     ),
@@ -14645,7 +14666,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
+const KI21_VERSION='v6.9.3 Decision Confidence Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -15813,7 +15834,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
+  const VERSION='v6.9.3 Decision Confidence Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16092,7 +16113,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
+  const VERSION='v6.9.3 Decision Confidence Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16305,7 +16326,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.9.2 Unified Deal-State Cockpit Fix';
+  const VERSION='v6.9.3 Decision Confidence Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16518,6 +16539,10 @@ function enrich(){
 .ki21-trust-card-v690{margin-top:14px;padding:14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09)}.ki21-trust-row-v690{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}.ki21-trust-label-v690{font-size:12px;color:#dce1e7}.ki21-trust-dots-v690{display:flex;gap:4px}.ki21-trust-dots-v690 i{display:block;width:18px;height:5px;border-radius:99px;background:rgba(255,255,255,.12)}.ki21-trust-dots-v690 i.on{background:#ff7a22}
 @media(max-width:420px){.ki21-evidence-buttons-v690{display:grid;grid-template-columns:1fr}.ki21-evidence-button-v690{text-align:left}}
 
+
+.ki21-decision-badges-v693{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ki21-decision-maturity-v693{display:inline-flex;align-items:center;border:1px solid rgba(64,156,255,.38);background:rgba(64,156,255,.10);color:#a9ccff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800}
+.ki21-trust-row-v690{width:100%;border:0;background:transparent;padding:0;cursor:pointer;text-align:left}.ki21-trust-status-v693{font-size:10px;font-weight:850;letter-spacing:.04em;text-transform:uppercase;margin-left:auto}.ki21-trust-row-v690.strong .ki21-trust-status-v693,.ki21-trust-row-v690.good .ki21-trust-status-v693{color:#71df94}.ki21-trust-row-v690.partial .ki21-trust-status-v693{color:#f0bd57}.ki21-trust-row-v690.open .ki21-trust-status-v693{color:#ff8b78}.ki21-trust-row-v690.strong .ki21-trust-dots-v690 i.on,.ki21-trust-row-v690.good .ki21-trust-dots-v690 i.on{background:#34c759}.ki21-trust-row-v690.partial .ki21-trust-dots-v690 i.on{background:#f0b84f}.ki21-trust-row-v690.open .ki21-trust-dots-v690 i.on{background:#ff6b5f}
+.ki21-confidence-gap-v693{margin-top:14px;padding:14px;border-radius:14px;background:rgba(255,179,0,.055);border:1px solid rgba(255,179,0,.18)}.ki21-leverage-label-v693{display:inline-flex;margin-bottom:6px;padding:4px 8px;border-radius:999px;background:rgba(255,107,0,.16);color:#ff9c4a;font-size:10px;font-weight:900;letter-spacing:.08em}
 </style>
 <script id="ki21-visible-decision-core-js">
 (function(){
