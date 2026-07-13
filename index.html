@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.9.3-decision-confidence-intelligence-20260713 -->
+<!-- KI21_BUILD: v7.0.0-adaptive-decision-intelligence-20260713 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.9.3 Decision Confidence Intelligence</title>
+<title>KI21 v7.0.0 Adaptive Decision Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9875,14 +9875,45 @@ function renderCockpitSnapshotLiteV4215(){
     catch(e){alert(title+'\n\n'+(items||[]).join('\n'))}
   };
   let changeNoteV690='';
+  let changeItemsV700=[];
+  let changeReasonV700='';
+  let previousDecisionV700=null;
   const snapshotKeyV690='ki21_decision_snapshot_v690_'+aid;
+  const historyKeyV700='ki21_decision_history_v700_'+aid;
   try{
     const previousV690=LS.get(snapshotKeyV690,null);
+    previousDecisionV700=previousV690;
     const currentV690={id:decisionPrimaryV674.id||'',decision:decisionPrimaryV674.decision||'',rec:decisionPrimaryV674.rec||'',risk:wrongDecisionV675,ask:missingInfoV675,next:nextActionV675,ts:Date.now()};
     if(previousV690&&previousV690.decision&&previousV690.decision!==currentV690.decision){
-      changeNoteV690='Die wichtigste Deal-Entscheidung hat sich geändert: „'+previousV690.decision+'“ wurde durch „'+currentV690.decision+'“ ersetzt.';
-    }else if(!previousV690&&hasMeasurementV680&&cfoResolvedV680){
-      changeNoteV690='Die CFO-Freigabehürde ist geklärt. Neuer Engpass ist die belastbare Erfolgsmessung.';
+      changeNoteV690='Die wichtigste Deal-Entscheidung hat sich geändert.';
+      changeItemsV700.push('Vorher: '+previousV690.decision);
+      changeItemsV700.push('Jetzt: '+currentV690.decision);
+      changeReasonV700='Eine neue Information hat den größten Entscheidungshebel im Deal verschoben.';
+    }
+    if(previousV690&&previousV690.rec&&previousV690.rec!==currentV690.rec){
+      changeItemsV700.push('Deal-Strategie wurde neu priorisiert.');
+    }
+    if(previousV690&&previousV690.ask&&previousV690.ask!==currentV690.ask){
+      changeItemsV700.push('Die wichtigste Klärungsfrage hat sich geändert.');
+    }
+    if(previousV690&&previousV690.next&&previousV690.next!==currentV690.next){
+      changeItemsV700.push('Der höchste nächste Hebel wurde angepasst.');
+    }
+    if(cfoResolvedV680&&hasMeasurementV680){
+      if(!changeItemsV700.some(x=>/CFO/i.test(x)))changeItemsV700.unshift('Gelöst: Die CFO-Anforderung ist kein Freigabekriterium mehr.');
+      if(!changeItemsV700.some(x=>/Erfolgsmessung|Messlogik/i.test(x)))changeItemsV700.push('Neuer Fokus: Den Piloterfolg objektiv und auswertbar machen.');
+      changeReasonV700=changeReasonV700||'Die Freigabehürde ist entfallen. Deshalb rückt die belastbare Erfolgsmessung an die erste Stelle.';
+      changeNoteV690=changeNoteV690||'Der Deal-Fokus hat sich von Freigabe auf Erfolgsmessung verschoben.';
+    }
+    if(changeItemsV700.length){
+      let hist=LS.get(historyKeyV700,[]);
+      if(!Array.isArray(hist))hist=[];
+      const sig=[currentV690.id,currentV690.decision,changeItemsV700.join('|')].join('::');
+      if(!hist.length||hist[0].sig!==sig){
+        hist.unshift({sig,ts:Date.now(),decision:currentV690.decision,items:changeItemsV700.slice(0,5),reason:changeReasonV700});
+        hist=hist.slice(0,5);
+        LS.set(historyKeyV700,hist);
+      }
     }
     LS.set(snapshotKeyV690,currentV690);
   }catch(e){}
@@ -9916,8 +9947,14 @@ function renderCockpitSnapshotLiteV4215(){
   ]).slice(0,3);
   const maturityV693=hasMeasurementV680&&/entscheidungstermin/.test(latestNormV680)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
   const decisionCardChildrenV690=[];
-  if(changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690',onclick:()=>openEvidenceSheetV690('Warum hat KI21 die Empfehlung geändert?',[changeNoteV690],'→')},
-    h('b',{},'Neu seit der letzten Ergänzung'),h('span',{},changeNoteV690)));
+  if(changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690 ki21-change-banner-v700',onclick:()=>{
+      const details=[changeReasonV700].concat(changeItemsV700).filter(Boolean);
+      openEvidenceSheetV690('Was hat sich seit der letzten Bewertung geändert?',details,'→');
+    }},
+    h('b',{},'SEIT DER LETZTEN BEWERTUNG GEÄNDERT'),
+    h('span',{className:'ki21-change-summary-v700'},changeNoteV690),
+    h('span',{className:'ki21-change-list-v700'},...changeItemsV700.slice(0,3).map(x=>h('i',{},'• '+x)))
+  ));
   decisionCardChildrenV690.push(
     h('div',{className:'ki21-decision-head'},
       h('div',{},
@@ -14666,7 +14703,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.9.3 Decision Confidence Intelligence';
+const KI21_VERSION='v7.0.0 Adaptive Decision Intelligence';
 
 
 function runKi21VersionMigration(){
@@ -15834,7 +15871,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.9.3 Decision Confidence Intelligence';
+  const VERSION='v7.0.0 Adaptive Decision Intelligence';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16113,7 +16150,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v6.9.3 Decision Confidence Intelligence';
+  const VERSION='v7.0.0 Adaptive Decision Intelligence';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16326,7 +16363,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v6.9.3 Decision Confidence Intelligence';
+  const VERSION='v7.0.0 Adaptive Decision Intelligence';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -16535,6 +16572,7 @@ function enrich(){
 .ki21-next-action-v675{margin-top:12px;padding:14px;border-radius:14px;background:rgba(255,107,0,.10);border-left:4px solid #ff6b00}
 .ki21-next-action-text-v675{font-size:15px;line-height:1.45;font-weight:800;color:#f4f5f7}
 .ki21-change-banner-v690{display:block;width:100%;text-align:left;margin:0 0 14px;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,139,44,.48);background:rgba(255,139,44,.10);color:#ffd2aa}.ki21-change-banner-v690 b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#ff9c4a;margin-bottom:4px}.ki21-change-banner-v690 span{font-size:13px;line-height:1.38}
+.ki21-change-banner-v700{padding:14px 15px;background:linear-gradient(135deg,rgba(255,139,44,.16),rgba(255,139,44,.07));box-shadow:0 10px 28px rgba(0,0,0,.18)}.ki21-change-summary-v700{display:block;font-weight:800;color:#fff4e8;margin-bottom:8px}.ki21-change-list-v700{display:grid!important;gap:5px}.ki21-change-list-v700 i{display:block;font-style:normal;color:#ffd8b5;font-size:12px;line-height:1.35}
 .ki21-evidence-summary-v690{margin-top:12px;padding:12px 13px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10)}.ki21-evidence-title-v690{font-size:11px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;color:#cfd4dc;margin-bottom:9px}.ki21-evidence-buttons-v690{display:flex;gap:7px;flex-wrap:wrap}.ki21-evidence-button-v690{border-radius:999px;padding:7px 9px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#dbe0e6}.ki21-evidence-button-v690.fact{color:#71df94;border-color:rgba(52,199,89,.34);background:rgba(52,199,89,.10)}.ki21-evidence-button-v690.assumption{color:#f0bd57;border-color:rgba(255,179,0,.32);background:rgba(255,179,0,.09)}.ki21-evidence-button-v690.decision{color:#9bc4ff;border-color:rgba(64,156,255,.34);background:rgba(64,156,255,.09)}
 .ki21-trust-card-v690{margin-top:14px;padding:14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09)}.ki21-trust-row-v690{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}.ki21-trust-label-v690{font-size:12px;color:#dce1e7}.ki21-trust-dots-v690{display:flex;gap:4px}.ki21-trust-dots-v690 i{display:block;width:18px;height:5px;border-radius:99px;background:rgba(255,255,255,.12)}.ki21-trust-dots-v690 i.on{background:#ff7a22}
 @media(max-width:420px){.ki21-evidence-buttons-v690{display:grid;grid-template-columns:1fr}.ki21-evidence-button-v690{text-align:left}}
