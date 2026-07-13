@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.5.29 Management Assessments & Addition Flow</title>
+<title>KI21 v6.5.30 Deal State Reassessment Test Release</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2409,7 +2409,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 </style>
 <!-- v6.5.6: Zentraler Opportunity Health Score, synchron in Hauptmenü/Cockpit/Phasen; lokale semantische Fallback-Bewertung und automatische Aktualisierung nach Eingaben. -->
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
-<!-- v6.5.29: Management-Aussagen im Cockpit; Gesprächsnotiz wird ohne zweiten Bestätigungsklick automatisch aufbereitet; eindeutiger Erfolgsabschluss mit Okay. -->
+<!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -8895,6 +8895,115 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
   return enrichOpportunityWithActionableIntelligenceV6520(copy,accId);
 }
 
+
+// v6.5.30 Deal State Reassessment:
+// Neue Ergänzungen werden nicht nur angehängt. KI21 ermittelt zuerst den aktuellsten
+// Entscheidungszustand und baut Lagebild, Engpass und nächste Schritte danach neu auf.
+function detectCurrentDealStateV6530(accId){
+  const raw=String(getOpportunityOnlySourceV6522(accId)||'').replace(/\s+/g,' ').trim();
+  const low=raw.toLowerCase();
+  if(!low)return {type:'unknown',raw};
+
+  const approvalExplicit=/(?:freigabe|budgetfreigabe|beauftragung|auftrag).{0,80}(?:erteilt|bestätigt|freigegeben|beauftragt)|(?:geschäftsführer|cfo|entscheider).{0,120}(?:hat|habe).{0,80}(?:freigegeben|beauftragt|zugestimmt)/i.test(raw);
+  const conditionalCommitment=/(?:grundsätzlich|prinzipiell).{0,45}(?:bereit|offen).{0,100}(?:beauftragen|starten|freigeben)|(?:will|möchte|wird).{0,100}(?:freigeben|beauftragen).{0,140}(?:wenn|sobald|unter der voraussetzung)/i.test(raw);
+  const approvalAfterPrerequisite=/(?:wenn|sobald|nachdem).{0,180}(?:baseline|ausgangswerte|ausgangsdaten|messwerte|erfolgskriterien|kennzahlen).{0,180}(?:freigeben|beauftragen|zustimmen)|(?:freigeben|beauftragen).{0,180}(?:wenn|sobald).{0,180}(?:baseline|ausgangswerte|erfolgskriterien|kennzahlen)/i.test(raw);
+  const baselineRequired=/(?:baseline|ausgangswerte|ausgangsdaten|ausgangsmessung)/i.test(raw);
+  const successCriteriaRequired=/(?:messbare|verbindliche|konkrete).{0,50}(?:erfolgskriterien|kennzahlen|zielwerte)|(?:erfolgskriterien|kennzahlen).{0,80}(?:vereinbaren|festlegen|definieren)/i.test(raw);
+  const concreteBaselineTask=/(?:baseline|ausgangswerte|ausgangsdaten).{0,180}(?:zusammenstellen|erstellen|dokumentieren|erheben|vorlegen)|(?:zusammenstellen|erstellen|dokumentieren|erheben).{0,180}(?:baseline|ausgangswerte|ausgangsdaten)/i.test(raw);
+  const selectedCases=/(?:ausgewählte|konkrete|erste|drei|3).{0,70}(?:opportunit|deals?|fälle)/i.test(raw);
+  const deadlineKnown=/(?:bis|spätestens).{0,55}(?:woche|montag|dienstag|mittwoch|donnerstag|freitag|\d{1,2}\.)/i.test(raw);
+  const startDateOpen=/(?:starttermin|projektstart|startdatum).{0,70}(?:noch nicht|offen|nicht festgelegt|ausstehend)/i.test(raw);
+
+  if(approvalExplicit){
+    return {type:'approved',raw,startDateOpen};
+  }
+  if((conditionalCommitment||approvalAfterPrerequisite) && baselineRequired && concreteBaselineTask){
+    return {type:'baseline_prerequisite',raw,selectedCases,deadlineKnown,startDateOpen};
+  }
+  if((conditionalCommitment||approvalAfterPrerequisite) && (baselineRequired||successCriteriaRequired)){
+    return {type:'criteria_prerequisite',raw,baselineRequired,successCriteriaRequired,startDateOpen};
+  }
+  return {type:'open_decision',raw};
+}
+
+function applyDealStateReassessmentV6530(intel,accId){
+  if(!intel||typeof intel!=='object')return intel;
+  const stateNow=detectCurrentDealStateV6530(accId);
+  const copy=JSON.parse(JSON.stringify(intel));
+  copy.chance=copy.chance||{statement:'',evidence:[]};
+  copy.bottleneck=copy.bottleneck||{statement:'',evidence:[]};
+  copy.watchouts=copy.watchouts||{currentRisk:'',salesStrategy:''};
+  copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
+
+  if(stateNow.type==='baseline_prerequisite'){
+    copy.dealStatus='Vor Freigabe · Baseline erstellen';
+    copy.chance.statement='Discovery Sprint steht kurz vor der Freigabe';
+    copy.chance.evidence=[
+      'Grundsätzliche Startbereitschaft des wirtschaftlichen Entscheiders ist bestätigt',
+      'Die Freigabe ist an eine dokumentierte Messgrundlage geknüpft'
+    ];
+    copy.bottleneck.statement='Fehlende Baseline verhindert die Freigabe';
+    copy.bottleneck.evidence=[
+      stateNow.selectedCases?'Ausgangswerte für ausgewählte Opportunities sind noch zu dokumentieren':'Die vereinbarte Ausgangsmessung liegt noch nicht vor',
+      'Die formale Freigabe folgt nach Vorlage der Messgrundlage'
+    ];
+    copy.nextSteps=[
+      stateNow.selectedCases?'Baseline für die ausgewählten Opportunities erstellen.':'Vereinbarte Baseline vollständig erstellen.',
+      'Anschließend die formale Freigabe des Discovery Sprints einholen.'
+    ];
+    copy.watchouts.currentRisk='Die Freigabe hängt jetzt von einer vollständigen und nachvollziehbaren Baseline ab.';
+    copy.watchouts.salesStrategy='Ausgangswerte sauber dokumentieren und direkt zur Entscheidung vorlegen.';
+    copy.businessCase.insights=[
+      'Wirtschaftlicher Handlungsdruck bestätigt; die Baseline schafft die Grundlage, den tatsächlichen Lösungsbeitrag später nachzuweisen.',
+      'Messmethode und Zielwerte vor Projektstart verbindlich festhalten.'
+    ];
+    return copy;
+  }
+
+  if(stateNow.type==='criteria_prerequisite'){
+    copy.dealStatus='Vor Freigabe · Erfolgskriterien festlegen';
+    copy.chance.statement='Kaufbereitschaft grundsätzlich bestätigt';
+    copy.chance.evidence=[
+      'Der wirtschaftliche Entscheider ist grundsätzlich bereit zu beauftragen',
+      'Die Freigabe hängt von messbaren Erfolgskriterien ab'
+    ];
+    copy.bottleneck.statement='Fehlende Erfolgskriterien verhindern die Freigabe';
+    copy.bottleneck.evidence=[
+      'Kennzahlen und Ausgangswerte sind noch nicht verbindlich festgelegt',
+      'Die Budgetfreigabe erfolgt erst nach Klärung der Messgrundlage'
+    ];
+    copy.nextSteps=[
+      'Erfolgskriterien und Baseline verbindlich festlegen.',
+      'Anschließend die formale Freigabe des Discovery Sprints einholen.'
+    ];
+    copy.watchouts.currentRisk='Der Projekterfolg ist ohne vereinbarte Messgrundlage später nicht objektiv nachweisbar.';
+    copy.watchouts.salesStrategy='Erfolgskriterien, Baseline und Messmethode vor der Freigabe gemeinsam festlegen.';
+    copy.businessCase.insights=[
+      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.',
+      'Beeinflussbaren Anteil des bezifferten Kundenproblems über klare Messkriterien validieren.'
+    ];
+    return copy;
+  }
+
+  if(stateNow.type==='approved'){
+    copy.dealStatus=stateNow.startDateOpen?'Beauftragt · Starttermin festlegen':'Beauftragt · Projektstart vorbereiten';
+    copy.chance.statement='Discovery Sprint ist freigegeben';
+    copy.chance.evidence=['Die wirtschaftliche Entscheidung ist getroffen','Der Fokus wechselt von Verkauf zu sauberem Projektstart'];
+    copy.bottleneck.statement=stateNow.startDateOpen?'Offener Starttermin verzögert die Umsetzung':'Projektstart muss jetzt verbindlich organisiert werden';
+    copy.bottleneck.evidence=[stateNow.startDateOpen?'Ein konkreter Starttermin ist noch nicht vereinbart':'Verantwortliche, Messung und Kickoff müssen bestätigt werden'];
+    copy.nextSteps=[stateNow.startDateOpen?'Starttermin und Kickoff verbindlich vereinbaren.':'Kickoff und Verantwortlichkeiten verbindlich festlegen.'];
+    copy.watchouts.currentRisk='Die vereinbarte Messlogik darf beim Übergang in die Umsetzung nicht verloren gehen.';
+    copy.watchouts.salesStrategy='Freigabe sofort in einen verbindlichen Startplan überführen.';
+    return copy;
+  }
+
+  return copy;
+}
+
+function normalizeOpportunityIntelligenceV6530(intel,accId){
+  return applyDealStateReassessmentV6530(normalizeOpportunityIntelligenceV6518(intel,accId),accId);
+}
+
 function renderCockpitSnapshotLiteV4215(){
   const app=document.getElementById('app');
   if(!app)return;
@@ -8906,7 +9015,7 @@ function renderCockpitSnapshotLiteV4215(){
   const raw=aid?(getOpportunityHealth(aid)||LS.get('ki21_health_'+aid,null)):null; // zentrale Score-Quelle
   const score=(raw&&typeof raw.score==='number')?Math.round(raw.score):null;
   const decisionConfirmedV6518=isManagingDirectorConfirmedV6518(aid);
-  const opportunityIntelligenceV620=normalizeOpportunityIntelligenceV6518(getOpportunityIntelligenceV620(aid),aid);
+  const opportunityIntelligenceV620=normalizeOpportunityIntelligenceV6530(getOpportunityIntelligenceV620(aid),aid);
   let pos=Array.isArray(raw&&raw.positive)?raw.positive.slice():[];
   let warn=Array.isArray(raw&&raw.warning)?raw.warning.slice():[];
   let open=Array.isArray(raw&&raw.open)?raw.open.slice():[];
@@ -13676,7 +13785,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.5.29 Management Assessments & Addition Flow';
+const KI21_VERSION='v6.5.30 Deal State Reassessment Test Release';
 
 
 function runKi21VersionMigration(){
@@ -14831,7 +14940,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.5.29 Management Assessments & Addition Flow';
+  const VERSION='v6.5.30 Deal State Reassessment Test Release';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
