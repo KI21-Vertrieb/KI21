@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v6.6.4-fresh-20260713T0945 -->
+<!-- KI21_BUILD: v6.6.5-fresh-20260713T1215 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v6.6.4 Scenario Decision & Score Consistency Engine</title>
+<title>KI21 v6.6.5 Persistence & Score Normalization Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2408,7 +2408,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
   .cockpit-dealstatus{font-size:8.2px !important;}
 }
 
-/* v6.6.4 Scenario Decision & Score Consistency Engine */
+/* v6.6.5 Persistence & Score Normalization Fix */
 .ki21-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px;}
 .ki21-engine-card{border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(17,22,29,.76));border-radius:12px;padding:10px;min-height:88px;}
 .ki21-engine-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;}
@@ -2427,7 +2427,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.5.28 Test Release: Explainable-Intelligence-Feinschliff, bewertendes Lagebild, klare Trennung Aktuell/Strategie, priorisierte nächste Schritte und erweiterter Explainable Business Case. -->
 <!-- v6.5.30: Jede neue Ergänzung bewertet den Deal-Zustand semantisch neu. Bedingte Kaufbereitschaft, konkrete Voraussetzungen und nachgelagerte Freigaben verschieben Lagebild, Engpass, Prioritäten und Empfehlungen. -->
 <!-- v6.5.33 Decision Intelligence: Entscheidungslücke vor Aufgabenlogik, Moving-the-Goalposts-Prüfung, explizite Freigabekriterien, strategische Hebel und konkrete Deliverables. -->
-<!-- v6.6.4 Scenario Decision & Score Consistency Engine: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
+<!-- v6.6.5 Persistence & Score Normalization Fix: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
 <!-- v6.6.2: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
 </head>
@@ -3961,6 +3961,26 @@ function normalizeScoreForDominantDealStateV664(accId,score){
   else if(ds.type==='free_pilot_uncommitted')value=Math.min(value,69);
   else if(ds.type==='decision_gap_additional_evidence')value=Math.min(value,74);
   return value;
+}
+
+// v6.6.5: Persistierte Scores bei jedem relevanten Render-/Lifecycle-Ereignis
+// gegen den dominanten Deal-State normalisieren. Dadurch werden alte 100-Werte
+// sofort korrigiert, auch wenn sich keine Checklisteneigenschaft mehr ändert.
+function normalizeAndPersistOpportunityScoreV665(accId){
+  if(!accId)return null;
+  const key='ki21_health_'+accId;
+  const health=LS.get(key,null);
+  if(!health||typeof health.score!=='number')return health;
+  const normalizedScore=normalizeScoreForDominantDealStateV664(accId,health.score);
+  const dealState=(detectCurrentDealStateV6532(accId)||{}).type||health.dealState;
+  if(normalizedScore!==Math.round(Number(health.score))||dealState!==health.dealState){
+    const next={...health,score:normalizedScore,dealState,scoreNormalizedV665:true,ts:Date.now()};
+    LS.set(key,next);
+    LS.set('ki21_score_'+accId,Math.round(normalizedScore/10));
+    LS.set('ki21_health_updated_'+accId,next.ts);
+    return next;
+  }
+  return health;
 }
 
 function storeCentralOpportunityHealthV656(accId,health){
@@ -9137,7 +9157,7 @@ function detectCurrentDealStateV6532(accId){
   const noBindingApproval=/(?:keine|noch keine|nicht).{0,60}(?:verbindliche\s+)?(?:freigabe|kaufzusage)|(?:verbindliche\s+freigabe).{0,80}(?:nicht|noch nicht)/i.test(latest);
   const boundedPilotConditional=freePilotRequested && pilotReducedToTwoWeeks && boundedUseCase && writtenCriteriaAgreed && postPilotDecisionMeeting;
 
-  // v6.6.4 Scenario Decision & Score Consistency Engine: Vollständig vereinbarter Pilot mit klarer
+  // v6.6.5 Persistence & Score Normalization Fix: Vollständig vereinbarter Pilot mit klarer
   // Scorecard und verbindlichem Entscheidungstermin. Zusätzliche Rollout-/Supportfragen
   // sind ein eigener, neuer Zustand und dürfen nicht als allgemeine Freigabe oder Startlogik
   // interpretiert werden.
@@ -14365,7 +14385,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v6.6.4 Scenario Decision & Score Consistency Engine';
+const KI21_VERSION='v6.6.5 Persistence & Score Normalization Fix';
 
 
 function runKi21VersionMigration(){
@@ -14391,7 +14411,7 @@ function runKi21VersionMigration(){
         warning:cleanArr(h.warning,'warning'),
         open:cleanArr(h.open,'open'),
         dealState:(detectCurrentDealStateV6532(acc.id)||{}).type||h.dealState,
-        protectedSchema:'v6.6.4',
+        protectedSchema:'v6.6.5',
         migratedAt:Date.now()
       });
     }
@@ -14400,6 +14420,9 @@ function runKi21VersionMigration(){
   });
   LS.set('ki21_applied_code_version',KI21_VERSION);
 }
+
+// v6.6.5: Migration und Score-Normalisierung müssen tatsächlich ausgeführt werden.
+try{runKi21VersionMigration();}catch(e){console.warn('KI21 migration skipped',e);}
 
 function encodeBase64UTF8(text){
   const bytes=new TextEncoder().encode(text);
@@ -15523,7 +15546,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v6.6.4 Scenario Decision & Score Consistency Engine';
+  const VERSION='v6.6.5 Persistence & Score Normalization Fix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -15597,16 +15620,19 @@ body{
     let delta=0;
     if(!checklist.economicBuyer){checklist.economicBuyer=true;delta+=10;}
     if(!checklist.decisionProcess){checklist.decisionProcess=true;delta+=5;}
-    if(!delta)return;
 
+    // v6.6.5: Auch ohne Checklist-Delta muss der bereits gespeicherte Score
+    // zwingend gegen den aktuellen Deal-State normalisiert werden.
     const nextScore=normalizeScoreForDominantDealStateV664(accId,Math.round(Number(health.score)+delta));
     LS.set(key,{
       ...health,
       checklist,
       score:nextScore,
       dealState:(detectCurrentDealStateV6532(accId)||{}).type||health.dealState,
+      scoreNormalizedV665:true,
       ts:Date.now()
     });
+    LS.set('ki21_score_'+accId,Math.round(nextScore/10));
   }
 
   function updateVisibleCockpit(){
@@ -15633,9 +15659,12 @@ body{
     });
 
     const badge=document.querySelector('.cockpit-score-badge,.cockpit-score-click');
-    const health=accId?LS.get('ki21_health_'+accId,null):null;
+    const health=accId?normalizeAndPersistOpportunityScoreV665(accId):null;
     if(badge&&health&&typeof health.score==='number'){
       badge.textContent=Math.round(health.score)+'/100';
+      const color=getHealthColor(health.score);
+      badge.style.color=color;
+      badge.style.borderColor=color;
     }
 
     document.querySelectorAll('.tagline').forEach(el=>{
@@ -15765,6 +15794,28 @@ body{
     }
     return result;
   };
+})();
+</script>
+
+<script>
+/* v6.6.5 – persistente Score-Normalisierung bei Laden, Rückkehr und Sichtbarkeit */
+(function(){
+  function enforceV665(){
+    try{
+      const aid=LS.get('ki21_aid',null);
+      if(!aid)return;
+      normalizeAndPersistOpportunityScoreV665(aid);
+      if(typeof renderHealthBadgeIfPresent==='function')renderHealthBadgeIfPresent();
+      const badge=document.querySelector('.cockpit-score-badge,.cockpit-score-click');
+      const health=getOpportunityHealth(aid);
+      if(badge&&health&&typeof health.score==='number')badge.textContent=Math.round(health.score)+'/100';
+    }catch(e){console.warn('Score normalization skipped',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(enforceV665,0),{once:true});
+  else setTimeout(enforceV665,0);
+  window.addEventListener('pageshow',()=>setTimeout(enforceV665,0));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(enforceV665,0);});
+  setTimeout(enforceV665,350);
 })();
 </script>
 
