@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.1.1-generalized-decision-learning-20260714 -->
+<!-- KI21_BUILD: v7.1.2-generalized-decision-quality-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.1.1 Generalized Decision Learning Engine – Clean</title>
+<title>KI21 v7.1.2 Generalized Decision Quality Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9735,13 +9735,23 @@ function renderCockpitSnapshotLiteV4215(){
   // Die jüngste geschäftskritische Ergänzung hat Vorrang vor älteren Deal-Zuständen.
   // Explizit gelöste Hürden dürfen nicht erneut aus historischen Texten aktiviert werden.
   let latestDecisionTextV680='';
-  try{latestDecisionTextV680=(typeof getLatestAdditionFactsV6532==='function'?(getLatestAdditionFactsV6532(aid)||{}).latestText:'')||'';}catch(e){}
+  let recentDecisionTextV712='';
+  let opportunitySourceTextV712='';
+  try{
+    const decisionFactsV712=typeof getLatestAdditionFactsV6532==='function'?(getLatestAdditionFactsV6532(aid)||{}):{};
+    latestDecisionTextV680=decisionFactsV712.latestText||'';
+    recentDecisionTextV712=decisionFactsV712.recentText||latestDecisionTextV680||'';
+    opportunitySourceTextV712=typeof getOpportunityOnlySourceV6522==='function'?(getOpportunityOnlySourceV6522(aid)||''):'';
+  }catch(e){}
   const latestNormV680=String(latestDecisionTextV680||'').toLowerCase();
-  const hasMeasurementV680=/messlogik|messmethode|messbar|nutzungshäufigkeit|regelmäßig(?:e|en)?\s+(?:nutzung|einsetzen)|forecast[-\s]?(?:begründung|qualität)|ausgangswert|baseline|erfolgsmessung|akzeptanzmessung/.test(latestNormV680);
+  // v7.1.2: Die aktuelle Entscheidung reagiert auf die jüngste Ergänzung; bereits bestätigte
+  // Fakten werden jedoch aus dem gesamten aktuellen Opportunity-State gelesen.
+  const currentStateNormV712=String(recentDecisionTextV712+' '+opportunitySourceTextV712).toLowerCase();
+  const hasMeasurementV680=/messlogik|messmethode|messbar|nutzungshäufigkeit|regelmäßig(?:e|en)?\s+(?:nutzung|einsetzen)|forecast[-\s]?(?:begründung|qualität)|ausgangswert|baseline|erfolgsmessung|akzeptanzmessung/.test(currentStateNormV712);
   // v7.0.1: Aktueller Deal-State hat absolute Priorität. Eine ausdrücklich abgeschlossene
   // Erfolgsmessung darf nicht wieder als offen behandelt werden. Neue operative
   // Einführungsfragen (z. B. operativen Aufwand) werden als neuer Engpass erkannt.
-  const measurementFinalizedV701=/(?:erfolgsmessung|messlogik|erfolgskriterien)[^.]{0,120}(?:verbindlich\s+(?:bestätigt|festgelegt|vereinbart)|stehen\s+fest)|(?:ausgangswert|baseline)[^.]{0,180}(?:zielwert|messmethode|datenquelle)[^.]{0,180}(?:stehen\s+fest|festgelegt|bestätigt|dokumentiert)|datenquelle[^.]{0,120}(?:verantwortlich(?:e|er)?|auswertungstermin)[^.]{0,120}(?:stehen\s+fest|festgelegt|bestätigt)/.test(latestNormV680);
+  const measurementFinalizedV701=/(?:erfolgsmessung|messlogik|erfolgskriterien)[^.]{0,120}(?:verbindlich\s+(?:bestätigt|festgelegt|vereinbart)|stehen\s+fest)|(?:ausgangswert|baseline)[^.]{0,180}(?:zielwert|messmethode|datenquelle)[^.]{0,180}(?:stehen\s+fest|festgelegt|bestätigt|dokumentiert)|datenquelle[^.]{0,120}(?:verantwortlich(?:e|er)?|auswertungstermin)[^.]{0,120}(?:stehen\s+fest|festgelegt|bestätigt)/.test(currentStateNormV712);
   const careEffortOpenV701=/(?:pflegeaufwand|pflegezeit|zeitaufwand|bearbeitungszeit|aufwand\s+pro\s+(?:opportunity|deal)|wie\s+viel\s+zeit)[^.]{0,180}(?:klären|offen|akzeptabel|benötig|tatsächlich|messen|ermitteln)/.test(latestNormV680);
   // v7.0.2: Ein bereits laufender Pilot mit gemessenem Zielkonflikt hat Vorrang vor
   // allen früheren Planungsfragen. Positiver Qualitätsfortschritt und negativer
@@ -9768,86 +9778,112 @@ function renderCockpitSnapshotLiteV4215(){
     }};
   })();
 
-  // v7.1.1 Generalized Decision Learning Engine – Clean
-  // Erkenntnisse aus Test-Opportunities werden als falluebergreifende semantische Regeln
-  // angewendet. Keine Firma, Person, Produktbezeichnung oder einzelner Testfall entscheidet
-  // ueber die Logik. Die Engine erkennt: erledigte Themen, Ziel-Ist-Abweichungen,
-  // Zielkonflikte, neue Freigabehuerden und den aktuell groessten Hebel.
+  // v7.1.2 Generalized Decision Quality Engine
+  // Allgemeine semantische Regeln, konkrete Opportunity-Ausgabe: Die Engine kennt keine
+  // Testfirma und keinen festen Testwert, verwendet aber die aktuellen Entitäten, Messwerte
+  // und Prozessbegriffe der jeweiligen Opportunity. Interne Normalisierung darf nie in die
+  // sichtbare deutsche Ausgabe gelangen.
   const generalizedDecisionV710=(()=>{
     const txt=latestNormV680;
     if(!txt)return null;
     const domains=[
-      {id:'effort',label:'Aufwand',nouns:/(?:pflegeaufwand|zeitaufwand|bearbeitungszeit|aufwand\s+pro|durchlaufzeit|implementierungsaufwand|einfuehrungsaufwand|einführungsaufwand)/,positive:/(?:sinkt|reduziert|geringer|schneller|verschlankt|vereinfacht)/,negative:/(?:zu\s+hoch|ueber|über|laenger|länger|aufwendig|dauert|ueberschritten|überschritten)/},
-      {id:'quality',label:'Qualitaet',nouns:/(?:qualitaet|qualität|vollstaendig|vollständig|forecast|prognose|fehlerquote|trefferquote|datenqualitaet|datenqualität)/,positive:/(?:besser|verbessert|vollstaendiger|vollständiger|hoeher|höher|gesunken|reduziert)/,negative:/(?:schlechter|unvollstaendig|unvollständig|sinkt|zurueck|zurück|fehlerhaft)/},
-      {id:'adoption',label:'Nutzerakzeptanz',nouns:/(?:akzeptanz|nutzung|anwender|nutzer|user|adoption|regelmaessig|regelmäßig)/,positive:/(?:steigt|hoch|regelmaessig|regelmäßig|angenommen|aktiv)/,negative:/(?:schwach|niedrig|nicht genutzt|ablehnung|akzeptanzproblem)/},
-      {id:'budget',label:'Budget',nouns:/(?:budget|preis|kostenrahmen|finanzierung)/,positive:/(?:bestaetigt|bestätigt|freigegeben|vorhanden|genehmigt)/,negative:/(?:fehlt|offen|gekürzt|ueberschritten|überschritten|nicht freigegeben)/},
-      {id:'authority',label:'Entscheidung',nouns:/(?:entscheider|entscheidung|freigabe|genehmigung|cfo|geschaeftsfuehrer|geschäftsführer|procurement|einkauf)/,positive:/(?:bestaetigt|bestätigt|zugesagt|verbindlich|freigegeben|kein freigabekriterium)/,negative:/(?:offen|unklar|verschoben|gestoppt|blockiert|zusaetzlich|zusätzlich)/},
-      {id:'criteria',label:'Erfolgskriterien',nouns:/(?:erfolgskriter|messmethode|messlogik|zielwert|ausgangswert|baseline|datenquelle|auswertungstermin)/,positive:/(?:festgelegt|bestaetigt|bestätigt|vereinbart|dokumentiert|steht fest|stehen fest)/,negative:/(?:offen|unklar|fehlt|noch festlegen|nicht definiert)/},
-      {id:'timeline',label:'Zeitplan',nouns:/(?:termin|timeline|starttermin|entscheidungsdatum|auftragseingang)/,positive:/(?:bestaetigt|bestätigt|verbindlich|steht fest|bleibt bestehen)/,negative:/(?:verschoben|offen|verzoegert|verzögert|entfaellt|entfällt)/},
-      {id:'risk',label:'Risiko',nouns:/(?:risiko|security|compliance|recht|datenschutz|integration|migration|support)/,positive:/(?:geklaert|geklärt|bestaetigt|bestätigt|geloest|gelöst|akzeptiert)/,negative:/(?:offen|kritisch|blockiert|problem|huerde|hürde|bedingung)/}
+      {id:'effort',label:'operativer Aufwand',nouns:/(?:pflegeaufwand|pflegezeit|zeitaufwand|bearbeitungszeit|aufwand\s+pro|durchlaufzeit|implementierungsaufwand|einführungsaufwand)/,positive:/(?:sinkt|reduziert|geringer|schneller|verschlankt|vereinfacht)/,negative:/(?:zu\s+hoch|über|länger|aufwendig|dauert|überschritten)/},
+      {id:'quality',label:'Qualität',nouns:/(?:qualität|vollständig|forecast|prognose|fehlerquote|trefferquote|datenqualität)/,positive:/(?:besser|verbessert|vollständiger|höher|gesunken|reduziert)/,negative:/(?:schlechter|unvollständig|sinkt|zurück|fehlerhaft)/},
+      {id:'adoption',label:'Nutzerakzeptanz',nouns:/(?:akzeptanz|nutzung|anwender|nutzer|adoption|regelmäßig)/,positive:/(?:steigt|hoch|regelmäßig|angenommen|aktiv)/,negative:/(?:schwach|niedrig|nicht genutzt|ablehnung|akzeptanzproblem)/},
+      {id:'budget',label:'Budget',nouns:/(?:budget|preis|kostenrahmen|finanzierung)/,positive:/(?:bestätigt|freigegeben|vorhanden|genehmigt)/,negative:/(?:fehlt|offen|gekürzt|überschritten|nicht freigegeben)/},
+      {id:'authority',label:'Entscheidung',nouns:/(?:entscheider|entscheidung|freigabe|genehmigung|cfo|geschäftsführer|procurement|einkauf)/,positive:/(?:bestätigt|zugesagt|verbindlich|freigegeben|kein freigabekriterium)/,negative:/(?:offen|unklar|verschoben|gestoppt|blockiert|zusätzlich)/},
+      {id:'criteria',label:'Erfolgskriterien',nouns:/(?:erfolgskriter|messmethode|messlogik|zielwert|ausgangswert|baseline|datenquelle|auswertungstermin)/,positive:/(?:festgelegt|bestätigt|vereinbart|dokumentiert|steht fest|stehen fest)/,negative:/(?:offen|unklar|fehlt|noch festlegen|nicht definiert)/},
+      {id:'timeline',label:'Zeitplan',nouns:/(?:termin|timeline|starttermin|entscheidungsdatum|auftragseingang)/,positive:/(?:bestätigt|verbindlich|steht fest|bleibt bestehen)/,negative:/(?:verschoben|offen|verzögert|entfällt)/},
+      {id:'risk',label:'Risiko',nouns:/(?:risiko|security|compliance|recht|datenschutz|integration|migration|support)/,positive:/(?:geklärt|bestätigt|gelöst|akzeptiert)/,negative:/(?:offen|kritisch|blockiert|problem|hürde|bedingung)/}
     ];
-    const completed=[];
-    const open=[];
-    const positive=[];
-    const negative=[];
+    const positive=[],negative=[],open=[];
     for(const d of domains){
       if(!d.nouns.test(txt))continue;
-      if(d.positive.test(txt)){positive.push(d); if(/(?:verbindlich|festgelegt|bestaetigt|bestätigt|geklaert|geklärt|geloest|gelöst|steht fest|stehen fest|kein freigabekriterium)/.test(txt))completed.push(d);}
+      if(d.positive.test(txt))positive.push(d);
       if(d.negative.test(txt))negative.push(d);
-      if(/(?:offen|unklar|noch\s+(?:zu\s+)?klaeren|noch\s+(?:zu\s+)?klären|muss geklaert|muss geklärt|fehlt|blockiert)/.test(txt)&&d.nouns.test(txt))open.push(d);
+      if(/(?:offen|unklar|noch\s+(?:zu\s+)?klären|muss geklärt|fehlt|blockiert)/.test(txt))open.push(d);
     }
     const nums=[...txt.matchAll(/(\d+(?:[.,]\d+)?)\s*(min(?:ute[n]?)?|stunde[n]?|tage[n]?|wochen?|prozent|%|euro|€)/g)].map(m=>({v:parseFloat(m[1].replace(',','.')),u:m[2],i:m.index}));
     let deviation=null;
     if(nums.length>=2){
-      for(let i=0;i<nums.length;i++)for(let j=i+1;j<nums.length;j++){
+      outer: for(let i=0;i<nums.length;i++)for(let j=i+1;j<nums.length;j++){
         if(nums[i].u===nums[j].u||(/min/.test(nums[i].u)&&/min/.test(nums[j].u))){
-          const a=nums[i],b=nums[j], hi=Math.max(a.v,b.v),lo=Math.min(a.v,b.v);
-          if(hi>lo*1.15){deviation={target:lo,actual:hi,unit:a.u,gap:hi-lo}; break;}
+          const a=nums[i],b=nums[j],hi=Math.max(a.v,b.v),lo=Math.min(a.v,b.v);
+          if(hi>lo*1.15){deviation={target:lo,actual:hi,unit:/min/.test(a.u)?'Minuten':a.u,gap:hi-lo};break outer;}
         }
       }
     }
-    const explicitTradeoff=positive.length&&negative.length&&/(?:gleichzeitig|aber|jedoch|waehrend|während|trotz|obwohl)/.test(txt);
-    const affected=/((?:\d+|ein|eine|zwei|drei|vier|fuenf|fünf|mehrere)\s+(?:von\s+\d+\s+)?(?:nutzer|anwender|personen|teams|kunden))/.exec(txt);
+    const explicitTradeoff=positive.length&&negative.length&&/(?:gleichzeitig|aber|jedoch|während|trotz|obwohl)/.test(txt);
+    const affected=/((?:\d+|ein|eine|zwei|drei|vier|fünf|mehrere)\s+(?:von\s+\d+\s+)?(?:nutzer|anwender|personen|teams|kunden))/.exec(txt);
     const currentNeg=negative[0]||open[0];
     const currentPos=positive.find(x=>!currentNeg||x.id!==currentNeg.id)||positive[0];
+    const pilotContext=/(?:pilot|pilotwoche|pilotbetrieb)/.test(txt);
+    const lowerLabel=d=>String(d&&d.label||'Punkt').toLowerCase();
+
     if(deviation&&currentNeg){
       const subject=currentNeg.label;
       const benefit=currentPos?currentPos.label:'Nutzen';
+      const decision=pilotContext&&currentNeg.id==='effort'
+        ?'Pilot unverändert fortsetzen oder die zeitintensiven Arbeitsschritte jetzt gezielt vereinfachen?'
+        :`Unverändert fortsetzen oder die Ursache der Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} jetzt gezielt korrigieren?`;
+      const rec=pilotContext&&currentNeg.id==='effort'
+        ?`Den Piloten fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte gezielt vereinfachen. Danach den Aufwand erneut messen und prüfen, ob die bereits verbesserte ${benefit.toLowerCase()} erhalten bleibt.`
+        :`Den laufenden Schritt fortsetzen, die Ursache der Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} gezielt reduzieren und anschließend Zielwert sowie ${benefit.toLowerCase()} gemeinsam neu bewerten.`;
       return {confidence:'hoch',primary:{
-        id:'D-GENERAL-TRADEOFF',
-        decision:`Unveraendert fortsetzen oder den ${subject.toLowerCase()} sofort korrigieren?`,
-        rec:`Den laufenden Schritt fortsetzen, aber die Ursache der Ziel-Ist-Abweichung beim ${subject.toLowerCase()} sofort bearbeiten. Anschliessend erneut messen und sicherstellen, dass der bereits erreichte ${benefit.toLowerCase()} erhalten bleibt.`,
-        ask:`Welche konkreten Ursachen erzeugen die Abweichung von ${deviation.target} auf ${deviation.actual} ${deviation.unit} – und welche davon koennen beseitigt werden, ohne den erreichten ${benefit.toLowerCase()} zu verlieren?`,
-        risk:`Der Nutzen ist erkennbar, kann aber an der nicht beherrschten Ziel-Ist-Abweichung beim ${subject.toLowerCase()} scheitern.`,
+        id:'D-GENERAL-TRADEOFF',decision,rec,
+        ask:`Welche konkreten Ursachen erklären die Abweichung von ${deviation.target} auf ${deviation.actual} ${deviation.unit} – und welche davon lassen sich beseitigen, ohne die erreichte ${benefit.toLowerCase()} wieder zu verlieren?`,
+        risk:`Der Nutzen ist erkennbar, kann aber an der nicht beherrschten Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} scheitern.`,
         reasons:[
-          `Ein Zielwert von ${deviation.target} ${deviation.unit} steht einem gemessenen Ist-Wert von ${deviation.actual} ${deviation.unit} gegenueber.`,
-          currentPos?`Gleichzeitig zeigt sich ein positiver Effekt bei ${benefit.toLowerCase()}.`:'Ein positiver Nutzen ist bereits erkennbar.',
-          affected?`${affected[1]} melden oder zeigen den kritischen Effekt.`:'Die Abweichung ist durch aktuelle Beobachtungen oder Messwerte belegt.'
+          `Der vereinbarte Zielwert von ${deviation.target} ${deviation.unit} wird mit aktuell ${deviation.actual} ${deviation.unit} deutlich überschritten.`,
+          currentPos?`Gleichzeitig ist ein positiver Effekt bei der ${benefit.toLowerCase()} belegt.`:'Ein positiver Nutzen ist bereits erkennbar.',
+          affected?`${affected[1]} bestätigen den kritischen operativen Effekt.`:'Die Abweichung ist durch aktuelle Messwerte oder Beobachtungen belegt.'
         ],
         counters:[
-          'Eine vorschnelle Korrektur kann den bereits erreichten Nutzen wieder reduzieren.',
-          'Ein Teil der Abweichung kann einmaliger Anlauf- oder Einfuehrungsaufwand sein und muss von dauerhaftem Aufwand getrennt werden.'
+          'Eine vorschnelle Vereinfachung kann genau die Informationen entfernen, die den positiven Effekt erzeugen.',
+          'Ein Teil des Mehraufwands kann einmaliger Anlauf- oder Lernaufwand sein und muss von dauerhaftem Aufwand getrennt werden.'
         ],
         changes:[
-          `der Ist-Wert beim ${subject.toLowerCase()} nach der Korrektur in den vereinbarten Zielkorridor faellt.`,
-          `der positive Effekt bei ${benefit.toLowerCase()} durch die Korrektur deutlich zurueckgeht.`,
-          'eine neue kaufentscheidende Bedingung oder ein staerkerer Engpass entsteht.'
+          `der Ist-Wert beim ${lowerLabel(currentNeg)} nach der Korrektur in den vereinbarten Zielkorridor fällt.`,
+          `der positive Effekt bei der ${benefit.toLowerCase()} durch die Korrektur deutlich zurückgeht.`,
+          'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
-        next:`Die zwei bis drei groessten Ursachen des ${subject.toLowerCase()} identifizieren, gezielt vereinfachen und danach Zielwert sowie ${benefit.toLowerCase()} erneut messen.`
+        next:pilotContext&&currentNeg.id==='effort'
+          ?'Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie Qualitätswirkung erneut messen.'
+          :`Die zwei bis drei größten Ursachen des ${lowerLabel(currentNeg)} identifizieren, gezielt korrigieren und anschließend Zielwert sowie ${benefit.toLowerCase()} erneut messen.`
       }};
     }
     if(explicitTradeoff&&currentNeg){
       const subject=currentNeg.label,benefit=currentPos?currentPos.label:'Nutzen';
-      return {confidence:'hoch',primary:{id:'D-GENERAL-TRADEOFF',decision:`Den aktuellen Ansatz unveraendert fortsetzen oder den Zielkonflikt zwischen ${benefit.toLowerCase()} und ${subject.toLowerCase()} jetzt loesen?`,rec:`Den positiven Effekt sichern, gleichzeitig aber die Ursache des negativen Effekts gezielt reduzieren und beide Groessen anschliessend gemeinsam neu bewerten.`,ask:`Welche Massnahme reduziert ${subject.toLowerCase()}, ohne ${benefit.toLowerCase()} wesentlich zu verschlechtern?`,risk:`Eine einseitige Optimierung kann entweder den Nutzen zerstoeren oder die Alltagstauglichkeit gefaehrden.`,reasons:['Ein positiver und ein negativer Effekt treten gleichzeitig auf.','Der Zielkonflikt ist fuer die Kaufentscheidung relevanter als eine weitere Aktivitaet.'],counters:['Der negative Effekt kann voruebergehender Anlaufaufwand sein.','Eine Aenderung kann den positiven Effekt abschwaechen.'],changes:[`der negative Effekt bei ${subject.toLowerCase()} nachweislich verschwindet.`,`der positive Effekt bei ${benefit.toLowerCase()} deutlich nachlaesst.`],next:`Den groessten Verursacher des ${subject.toLowerCase()} identifizieren, gezielt korrigieren und anschliessend beide Effekte erneut messen.`}};
+      return {confidence:'hoch',primary:{
+        id:'D-GENERAL-TRADEOFF',
+        decision:`Den aktuellen Ansatz unverändert fortsetzen oder den Zielkonflikt zwischen ${benefit.toLowerCase()} und ${subject.toLowerCase()} jetzt gezielt lösen?`,
+        rec:`Den positiven Effekt sichern, gleichzeitig aber die Ursache des negativen Effekts gezielt reduzieren und beide Größen anschließend gemeinsam neu bewerten.`,
+        ask:`Welche Maßnahme reduziert den ${subject.toLowerCase()}, ohne die ${benefit.toLowerCase()} wesentlich zu verschlechtern?`,
+        risk:'Eine einseitige Optimierung kann entweder den Nutzen zerstören oder die Alltagstauglichkeit gefährden.',
+        reasons:['Ein positiver und ein negativer Effekt treten gleichzeitig auf.','Der Zielkonflikt ist für die Kaufentscheidung relevanter als eine weitere Aktivität.'],
+        counters:['Der negative Effekt kann vorübergehender Anlaufaufwand sein.','Eine Änderung kann den positiven Effekt abschwächen.'],
+        changes:[`der negative Effekt beim ${subject.toLowerCase()} nachweislich verschwindet.`,`der positive Effekt bei der ${benefit.toLowerCase()} deutlich nachlässt.`],
+        next:`Den größten Verursacher des ${subject.toLowerCase()} identifizieren, gezielt korrigieren und anschließend beide Effekte erneut messen.`
+      }};
     }
     if(open.length){
       const d=open[0];
-      return {confidence:'mittel',primary:{id:'D-GENERAL-GATE',decision:`Jetzt fortsetzen oder zuerst ${d.label.toLowerCase()} verbindlich klaeren?`,rec:`Nur die Information klaeren, die fuer die naechste Kundenentscheidung wirklich erforderlich ist, und sie in ein verbindliches Kriterium, einen Verantwortlichen und einen Termin uebersetzen.`,ask:`Ist ${d.label.toLowerCase()} Voraussetzung fuer die Kaufentscheidung oder erst fuer die spaetere Umsetzung?`,risk:`Ein ungeklaerter Punkt kann nachtraeglich zur neuen Entscheidungshuerde werden.`,reasons:[`Der aktuelle offene Punkt betrifft ${d.label.toLowerCase()}.`],counters:['Eine zusaetzliche Klaerung kann den Deal unnoetig verlangsamen.'],changes:[`${d.label} verbindlich geklaert wird.`],next:`Mit dem zustaendigen Entscheider klaeren, welche konkrete Entscheidung von ${d.label.toLowerCase()} abhaengt und bis wann sie getroffen wird.`}};
+      return {confidence:'mittel',primary:{
+        id:'D-GENERAL-GATE',
+        decision:`Jetzt fortsetzen oder zuerst ${d.label.toLowerCase()} verbindlich klären?`,
+        rec:'Nur die Information klären, die für die nächste Kundenentscheidung wirklich erforderlich ist, und sie in ein verbindliches Kriterium, einen Verantwortlichen und einen Termin übersetzen.',
+        ask:`Ist ${d.label.toLowerCase()} Voraussetzung für die Kaufentscheidung oder erst für die spätere Umsetzung?`,
+        risk:'Ein ungeklärter Punkt kann nachträglich zur neuen Entscheidungshürde werden.',
+        reasons:[`Der aktuelle offene Punkt betrifft ${d.label.toLowerCase()}.`],
+        counters:['Eine zusätzliche Klärung kann den Deal unnötig verlangsamen.'],
+        changes:[`${d.label} verbindlich geklärt wird.`],
+        next:`Mit dem zuständigen Entscheider klären, welche konkrete Entscheidung von ${d.label.toLowerCase()} abhängt und bis wann sie getroffen wird.`
+      }};
     }
     return null;
   })();
 
-  // v7.1.1: Nur noch die falluebergreifende semantische Engine entscheidet.
+  // v7.1.2: Nur die fallübergreifende semantische Engine entscheidet; die Ausgabe bleibt konkret und sprachlich hochwertig.
   // Historische Opportunity-Sonderpfade wurden entfernt. Konkrete Namen, Firmen,
   // Produkte, feste Messwerte oder einzelne Testfallformulierungen duerfen die
   // Entscheidung nicht mehr steuern.
@@ -9875,7 +9911,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v6.9: Explainable Decision Intelligence – Fakten, Annahmen, offene Entscheidung und Änderungsgrund sichtbar machen.
   const uniqV690=arr=>Array.from(new Set((arr||[]).map(x=>String(x||'').trim()).filter(Boolean)));
   const confirmedFactsV690=uniqV690(reasonItemsV675.concat([
-    /entscheidungstermin/.test(latestNormV680)&&/(bleibt|besteht|bestätigt|verbindlich)/.test(latestNormV680)?'Der Entscheidungstermin ist bestätigt.':'',
+    /entscheidungstermin/.test(currentStateNormV712)&&/(bleibt|besteht|bestätigt|verbindlich)/.test(latestNormV680)?'Der Entscheidungstermin ist bestätigt.':'',
     /pilot/.test(latestNormV680)&&/(bestätigt|vereinbart|verbindlich|start)/.test(latestNormV680)?'Der Pilot ist vereinbart.':'',
     cfoResolvedV680?'Die CFO-Anforderung ist kein Freigabekriterium mehr.':'',
     hasMeasurementV680?'Eine relevante Nutzen- oder Qualitätswirkung soll messbar bewertet werden.':'',
@@ -9937,10 +9973,10 @@ function renderCockpitSnapshotLiteV4215(){
   try{manualKpiForTrustV690=(typeof getManualQuantifiedProblemV63==='function'?getManualQuantifiedProblemV63(aid):'')||'';}catch(e){}
   const trustBarsV690=[
     {label:'Faktenlage',value:Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2))),details:confirmedFactsV690},
-    {label:'Entscheiderklarheit',value:/cfo|geschäftsführer|entscheider/.test(latestNormV680)?4:3,details:uniqV690([
-      /geschäftsführer/.test(latestNormV680)?'Geschäftsführer ist in die Entscheidung eingebunden.':'Rolle des Geschäftsführers noch präzisieren.',
-      /cfo/.test(latestNormV680)?'CFO ist in die Bewertung eingebunden.':'CFO-Rolle noch klären.',
-      /entscheidungstermin/.test(latestNormV680)?'Entscheidungstermin ist benannt.':'Verbindlichen Entscheidungstermin bestätigen.'
+    {label:'Entscheiderklarheit',value:/cfo|geschäftsführer|entscheider/.test(currentStateNormV712)?4:3,details:uniqV690([
+      /geschäftsführer/.test(currentStateNormV712)?'Geschäftsführer ist in die Entscheidung eingebunden.':'Rolle des Geschäftsführers noch präzisieren.',
+      /cfo/.test(currentStateNormV712)?'CFO ist in die Bewertung eingebunden.':'CFO-Rolle noch klären.',
+      /entscheidungstermin/.test(currentStateNormV712)?'Entscheidungstermin ist benannt.':'Verbindlichen Entscheidungstermin bestätigen.'
     ])},
     {label:'Business Case',value:manualKpiForTrustV690?5:3,details:manualKpiForTrustV690?['Wirtschaftlicher Problemwert ist beziffert: '+manualKpiForTrustV690+'.']:['Wirtschaftlicher Effekt ist noch nicht ausreichend belegt.']},
     {label:'Erfolgskriterien',value:measurementFinalizedV701?5:(hasMeasurementV680?4:2),details:measurementFinalizedV701?['Nutzung und Nutzenqualität sind verbindlich definiert.','Ausgangswert, Zielwert, Datenquelle, Verantwortlicher und Auswertungstermin stehen fest.']:(hasMeasurementV680?['Nutzung und Nutzenqualität werden als Pilotkriterien betrachtet.','Ausgangswert, Zielwert und Datenquelle sind noch verbindlich zu dokumentieren.']:['Messbare Erfolgskriterien fehlen noch.'])},
@@ -9958,13 +9994,13 @@ function renderCockpitSnapshotLiteV4215(){
   const missingForMaxV693=uniqV690([
     /^D-GENERAL-/.test(String(decisionPrimaryV674.id||''))?missingInfoV675:'',
     !hasMeasurementV680?'Messbare Erfolgskriterien festlegen.':'',
-    hasMeasurementV680&&!measurementFinalizedV701?'Ausgangswert, Zielwert und Datenquelle schriftlich bestätigen.':'',
+    hasMeasurementV680&&!measurementFinalizedV701&&!/ausgangswert[^.]{0,180}zielwert[^.]{0,180}datenquelle/.test(currentStateNormV712)?'Ausgangswert, Zielwert und Datenquelle schriftlich bestätigen.':'',
     pilotTradeoffV702?'Zeitintensive Schritte reduzieren und in der zweiten Pilotwoche erneut messen.':'',
     measurementFinalizedV701&&careEffortOpenV701&&!pilotTradeoffV702?'Akzeptablen Zielkorridor und Messmethode für den operativen Aufwand festlegen.':'',
-    !/entscheidungstermin/.test(latestNormV680)?'Verbindlichen Entscheidungstermin bestätigen.':'',
+    !/entscheidungstermin/.test(currentStateNormV712)?'Verbindlichen Entscheidungstermin bestätigen.':'',
     openAssumptionsV690[0]||''
   ]).slice(0,3);
-  const maturityV693=/^D-GENERAL-TRADEOFF/.test(String(decisionPrimaryV674.id||''))?'Handlungsbedarf':/^D-GENERAL-GATE/.test(String(decisionPrimaryV674.id||''))?'In Vorbereitung':pilotTradeoffV702?'Handlungsbedarf':hasMeasurementV680&&/entscheidungstermin/.test(latestNormV680)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
+  const maturityV693=/^D-GENERAL-TRADEOFF/.test(String(decisionPrimaryV674.id||''))?'Handlungsbedarf':/^D-GENERAL-GATE/.test(String(decisionPrimaryV674.id||''))?'In Vorbereitung':pilotTradeoffV702?'Handlungsbedarf':hasMeasurementV680&&/entscheidungstermin/.test(currentStateNormV712)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
   const decisionCardChildrenV690=[];
   if(false&&changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690 ki21-change-banner-v700',onclick:()=>{
       const details=[changeReasonV700].concat(changeItemsV700).filter(Boolean);
@@ -10073,7 +10109,7 @@ function renderCockpitSnapshotLiteV4215(){
   if(/^D-GENERAL-/.test(activeDecisionIdV692)){
     nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
       nextActionV675,
-      'Die Wirkung der Massnahme mit dem bisherigen Zielwert und dem erhaltenen Kundennutzen erneut bewerten.'
+      'Die Wirkung der Maßnahme mit dem bisherigen Zielwert und dem erhaltenen Kundennutzen erneut bewerten.'
     );
     executiveRisksV4263.splice(0,executiveRisksV4263.length,
       ...counterArgumentsV677.slice(0,2).map(x=>({text:x,ki21:true,executive:true}))
@@ -14748,7 +14784,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.1.1 Generalized Decision Learning Engine – Clean';
+const KI21_VERSION='v7.1.2 Generalized Decision Quality Engine';
 
 
 function runKi21VersionMigration(){
@@ -15916,7 +15952,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.1.1 Generalized Decision Learning Engine – Clean';
+  const VERSION='v7.1.2 Generalized Decision Quality Engine';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16195,7 +16231,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.1.1 Generalized Decision Learning Engine – Clean';
+  const VERSION='v7.1.2 Generalized Decision Quality Engine';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16408,7 +16444,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.1.1 Generalized Decision Learning Engine – Clean';
+  const VERSION='v7.1.2 Generalized Decision Quality Engine';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
