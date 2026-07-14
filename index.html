@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.0-executive-decision-engine-20260714 -->
+<!-- KI21_BUILD: v7.2.1-executive-language-decision-consistency-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.0 Executive Decision Engine</title>
+<title>KI21 v7.2.1 Executive Language & Decision Consistency</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2430,6 +2430,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.6.5 Persistence & Score Normalization Fix: eingebaute Core Engines, vereinfachte Unternehmens-/Angebotsverwaltung, PDF-/DOCX-Import und decision-first Empfehlungen. -->
 <!-- v6.5.32: Faktenkonsistente Deal-State-Neubewertung, risikobasierter Health Score, sofortiger Cockpit-Refresh sowie zwei Ergänzungswege: prüfen oder sofort übernehmen. Nächste Schritte priorisieren das konkrete, entscheidungsrelevante Deliverable. -->
 <!-- v6.6.2: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
+<!-- v7.2.1: Executive Language & Decision Consistency – konkrete Wirkung statt abstrakter Platzhalter, eine zentrale Restunsicherheit, konsistente Entscheidungsbedingungen und geschärfter Business Case. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -8906,7 +8907,7 @@ function enrichOpportunityWithActionableIntelligenceV6520(intel,accId){
       'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     );
     copy.businessCase.insights.unshift(
-      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.'
+      'Das Kundenproblem ist wirtschaftlich beziffert. Ob die angebotene Lösung diesen Nutzen dauerhaft realisiert, wird aktuell validiert.'
     );
   }
 
@@ -8964,7 +8965,7 @@ function normalizeOpportunityIntelligenceV6518(intel,accId){
     copy.watchouts.salesStrategy='Erfolgskriterien und Baseline vor dem Discovery Sprint gemeinsam festlegen.';
     copy.businessCase=copy.businessCase||{quantifiedProblem:'',status:'offen',insights:[]};
     copy.businessCase.insights=[
-      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.',
+      'Das Kundenproblem ist wirtschaftlich beziffert. Ob die angebotene Lösung diesen Nutzen dauerhaft realisiert, wird aktuell validiert.',
       'Mit dem Geschäftsführer klären, welcher Anteil der 8.000 € durch den Discovery Sprint tatsächlich beeinflusst werden kann.'
     ];
   }
@@ -9030,7 +9031,7 @@ function applyDealStateReassessmentV6530(intel,accId){
     copy.watchouts.currentRisk='Die Freigabe hängt jetzt von einer vollständigen und nachvollziehbaren Baseline ab.';
     copy.watchouts.salesStrategy='Ausgangswerte sauber dokumentieren und direkt zur Entscheidung vorlegen.';
     copy.businessCase.insights=[
-      'Wirtschaftlicher Handlungsdruck bestätigt; die Baseline schafft die Grundlage, den tatsächlichen Lösungsbeitrag später nachzuweisen.',
+      'Das Kundenproblem ist wirtschaftlich beziffert. Die Baseline schafft die Grundlage, den tatsächlichen Lösungsbeitrag belastbar zu validieren.',
       'Messmethode und Zielwerte vor Projektstart verbindlich festhalten.'
     ];
     return copy;
@@ -9055,7 +9056,7 @@ function applyDealStateReassessmentV6530(intel,accId){
     copy.watchouts.currentRisk='Der Projekterfolg ist ohne vereinbarte Messgrundlage später nicht objektiv nachweisbar.';
     copy.watchouts.salesStrategy='Erfolgskriterien, Baseline und Messmethode vor der Freigabe gemeinsam festlegen.';
     copy.businessCase.insights=[
-      'Wirtschaftlicher Handlungsdruck bestätigt; der tatsächliche Lösungsbeitrag ist noch nicht belegt.',
+      'Das Kundenproblem ist wirtschaftlich beziffert. Ob die angebotene Lösung diesen Nutzen dauerhaft realisiert, wird aktuell validiert.',
       'Beeinflussbaren Anteil des bezifferten Kundenproblems über klare Messkriterien validieren.'
     ];
     return copy;
@@ -9778,7 +9779,7 @@ function renderCockpitSnapshotLiteV4215(){
     }};
   })();
 
-  // v7.2.0 Executive Decision Engine
+  // v7.2.1 Executive Language & Decision Consistency
   // Allgemeine semantische Regeln, konkrete Opportunity-Ausgabe: Die Engine kennt keine
   // Testfirma und keinen festen Testwert, verwendet aber die aktuellen Entitäten, Messwerte
   // und Prozessbegriffe der jeweiligen Opportunity. Interne Normalisierung darf nie in die
@@ -9869,7 +9870,7 @@ function renderCockpitSnapshotLiteV4215(){
       return {confidence:'hoch',primary:{
         id:'D-GENERAL-TRADEOFF',decision,rec,
         ask:`Welche konkreten Ursachen erklären die Abweichung von ${deviation.target} auf ${deviation.actual} ${deviation.unit} – und welche davon lassen sich beseitigen, ohne die erreichte Verbesserung der ${benefit} wieder zu verlieren?`,
-        risk:`Die Verbesserung der ${benefit} ist belegt, kann aber an der nicht beherrschten Ziel-Ist-Abweichung beim ${subject} scheitern.`,
+        risk:`Wird der ${subject} vorschnell reduziert, kann genau die Informationsqualität verloren gehen, die zur verbesserten ${benefit} geführt hat. Bleibt der Aufwand unverändert, gefährdet er die Alltagstauglichkeit.`,
         reasons:[
           `Der vereinbarte Zielwert von ${deviation.target} ${deviation.unit} wird mit aktuell ${deviation.actual} ${deviation.unit} deutlich überschritten.`,
           currentPos?`Gleichzeitig ist die Verbesserung der ${benefit} bereits belegt.`:'Ein konkreter Kundennutzen ist bereits erkennbar.',
@@ -9880,12 +9881,12 @@ function renderCockpitSnapshotLiteV4215(){
           'Ein Teil des Mehraufwands kann einmaliger Anlauf- oder Lernaufwand sein und muss von dauerhaftem Aufwand getrennt werden.'
         ],
         changes:[
-          `der Ist-Wert beim ${subject} nach der Anpassung in den vereinbarten Zielkorridor fällt.`,
-          `die Verbesserung der ${benefit} durch die Anpassung deutlich zurückgeht.`,
+          `der ${subject} dauerhaft in den vereinbarten Zielkorridor fällt, ohne dass die verbesserte ${benefit} zurückgeht.`,
+          `die ${benefit} durch die Anpassung deutlich zurückgeht.`,
           'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
         next:pilotContext&&currentNeg.id==='effort'
-          ?'Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie Qualitätswirkung erneut messen.'
+          ?'Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren, gezielt vereinfachen und danach Pflegeaufwand sowie Ergebnisqualität erneut gegen den Zielwert messen.'
           :`Die zwei bis drei größten Ursachen beim ${subject} identifizieren, gezielt reduzieren und anschließend Zielwert sowie ${benefit} erneut messen.`
       }};
     }
@@ -9901,7 +9902,7 @@ function renderCockpitSnapshotLiteV4215(){
           ask:`Welche konkreten Arbeitsschritte verursachen den zusätzlichen Aufwand – und welche davon lassen sich vereinfachen, ohne die verbesserte ${benefit} wieder zu verlieren?`,
           risk:'Der Nutzen ist erkennbar, kann aber an einem dauerhaft zu hohen operativen Aufwand im Vertriebsalltag scheitern.',
           reasons:[
-            `Ein positiver Effekt bei der ${benefit} und ein zu hoher operativer Aufwand treten gleichzeitig auf.`,
+            `Die ${benefit} hat sich verbessert, während der operative Aufwand gleichzeitig zu hoch bleibt.`,
             'Dieser Zielkonflikt ist für die Kaufentscheidung relevanter als eine weitere unveränderte Aktivität.'
           ],
           counters:[
@@ -9914,7 +9915,7 @@ function renderCockpitSnapshotLiteV4215(){
             'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
           ],
           next:pilotContext
-            ?`Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie ${benefit} erneut messen.`
+            ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren, gezielt vereinfachen und danach Pflegeaufwand sowie ${benefit} erneut gegen den Zielwert messen.`
             :`Die zwei bis drei größten Aufwandstreiber identifizieren, gezielt reduzieren und anschließend operativen Aufwand sowie ${benefit} erneut messen.`
         }};
       }
@@ -9978,7 +9979,7 @@ function renderCockpitSnapshotLiteV4215(){
     ['decision','rec','ask','risk','next'].forEach(k=>visibleParts.push(pp[k]||''));
     ['reasons','counters','changes'].forEach(k=>visibleParts.push(...(pp[k]||[])));
     const visibleJoined=visibleParts.join(' ');
-    const forbidden=/(?:positiver Effekt|negativer Effekt|den operativer|des operativer|unveraendert|qualitaet|Massnahme)/i;
+    const forbidden=/(?:positiver Effekt|negativer Effekt|den operativer|des operativer|unveraendert|qualitaet|Massnahme|\bMaßnahme\b|\bOptimierung\b|\bKorrektur\b)/i;
     if(forbidden.test(visibleJoined))console.warn('KI21 v7.2 Quality Gate: unerwünschte sichtbare Formulierung erkannt',visibleJoined);
   }catch(e){}
   const decisionAnalysisV674=dynamicDecisionV680;
@@ -10083,15 +10084,16 @@ function renderCockpitSnapshotLiteV4215(){
       h('span',{className:'ki21-trust-dots-v690'},...Array.from({length:5},(_,i)=>h('i',{className:i<item.value?'on':''})))
     );
   };
-  const missingForMaxV693=uniqV690([
+  // v7.2.1: Dieser Bereich zeigt genau eine zentrale Restunsicherheit, keine To-do-Liste.
+  const missingForMaxCandidatesV721=uniqV690([
     /^D-GENERAL-/.test(String(decisionPrimaryV674.id||''))?missingInfoV675:'',
-    !hasMeasurementV680?'Messbare Erfolgskriterien festlegen.':'',
-    hasMeasurementV680&&!measurementFinalizedV701&&!/ausgangswert[^.]{0,180}zielwert[^.]{0,180}datenquelle/.test(currentStateNormV712)?'Ausgangswert, Zielwert und Datenquelle schriftlich bestätigen.':'',
-    pilotTradeoffV702?'Zeitintensive Schritte reduzieren und in der zweiten Pilotwoche erneut messen.':'',
-    measurementFinalizedV701&&careEffortOpenV701&&!pilotTradeoffV702?'Akzeptablen Zielkorridor und Messmethode für den operativen Aufwand festlegen.':'',
-    !/entscheidungstermin/.test(currentStateNormV712)?'Verbindlichen Entscheidungstermin bestätigen.':'',
+    !hasMeasurementV680?'Welche messbaren Erfolgskriterien entscheiden über den nächsten Kundenschritt?':'',
+    hasMeasurementV680&&!measurementFinalizedV701&&!/ausgangswert[^.]{0,180}zielwert[^.]{0,180}datenquelle/.test(currentStateNormV712)?'Sind Ausgangswert, Zielwert und Datenquelle verbindlich bestätigt?':'',
+    measurementFinalizedV701&&careEffortOpenV701&&!pilotTradeoffV702?'Welcher Zielkorridor macht den operativen Aufwand dauerhaft akzeptabel?':'',
+    !/entscheidungstermin/.test(currentStateNormV712)?'Wann fällt die verbindliche Kaufentscheidung?':'',
     openAssumptionsV690[0]||''
-  ]).slice(0,3);
+  ]);
+  const missingForMaxV693=missingForMaxCandidatesV721.slice(0,1);
   const maturityV693=/^D-GENERAL-TRADEOFF/.test(String(decisionPrimaryV674.id||''))?'Handlungsbedarf':/^D-GENERAL-GATE/.test(String(decisionPrimaryV674.id||''))?'In Vorbereitung':pilotTradeoffV702?'Handlungsbedarf':hasMeasurementV680&&/entscheidungstermin/.test(currentStateNormV712)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
   const decisionCardChildrenV690=[];
   if(false&&changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690 ki21-change-banner-v700',onclick:()=>{
@@ -10133,7 +10135,7 @@ function renderCockpitSnapshotLiteV4215(){
     ),
     h('div',{className:'ki21-decision-reasoning ki21-decision-change-v677'},
       h('div',{className:'ki21-qe-label'},'KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN …'),
-      ...changeConditionsV677.map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
+      ...changeConditionsV677.slice(0,2).map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
     ),
     h('div',{className:'ki21-trust-card-v690'},
       h('div',{className:'ki21-qe-label'},'VERTRAUENSCHECK'),
@@ -10267,7 +10269,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.0 Executive Decision Engine'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.1 Executive Language & Decision Consistency'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14876,7 +14878,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.0 Executive Decision Engine';
+const KI21_VERSION='v7.2.1 Executive Language & Decision Consistency';
 
 
 function runKi21VersionMigration(){
@@ -16044,7 +16046,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.0 Executive Decision Engine';
+  const VERSION='v7.2.1 Executive Language & Decision Consistency';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16323,7 +16325,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.0 Executive Decision Engine';
+  const VERSION='v7.2.1 Executive Language & Decision Consistency';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16536,7 +16538,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.0 Executive Decision Engine';
+  const VERSION='v7.2.1 Executive Language & Decision Consistency';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
