@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.9a-unified-deal-state-syntaxfix-20260714 -->
+<!-- KI21_BUILD: v7.3.0-executive-language-dossier-superset-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.9a Unified Deal State Syntaxfix</title>
+<title>KI21 v7.3.0 Executive Language & Dossier-Obermenge</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2525,7 +2525,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.2.6: Stabilitätsfix – Cockpit wird transaktional gerendert und kann bei Fehlern nicht mehr leer/schwarz bleiben; Testbericht wird ohne sichtbaren Ansichtswechsel erzeugt und als kopierbarer Text oder TXT-Datei bereitgestellt. -->
 
 <style>
-/* v7.2.9a Unified Deal State Syntaxfix */
+/* v7.3.0 Executive Language & Dossier-Obermenge */
 .ki21-report-actions-v725{display:none!important}
 .ki21-report-textarea-v726{
   flex:1;min-height:0;width:100%;resize:none;border:0!important;border-left:0!important;
@@ -2547,6 +2547,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 </style>
 
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
+<!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -2708,7 +2709,9 @@ function buildOpportunityTestReportV723(){
   const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
   const cust=(acc&&acc.cust)||{};
   const section=(title,lines)=>{
-    const clean=(lines||[]).map(x=>String(x||'').trim()).filter(Boolean);
+    const clean=(lines||[])
+      .map(x=>String(x||'').trim().replace(/^(?:•\s*)+/,''))
+      .filter(Boolean);
     return clean.length?'\n\n'+title.toUpperCase()+'\n'+clean.map(x=>'• '+x).join('\n'):'';
   };
   const reasonBlocks=ki21TextsV723('.ki21-decision-reasoning');
@@ -2718,7 +2721,7 @@ function buildOpportunityTestReportV723(){
   const dealstatus=ki21TextV723('#ki21-dealstatus');
   let report='KI21 OPPORTUNITY-TESTBERICHT\nInhaltliche Opportunity-Bewertung – keine Kundenunterlage\n';
   report+='Version: '+KI21_VERSION+'\nOpportunity: '+(cust.firma||'Nicht benannt')+'\nErstellt: '+new Date().toLocaleString('de-DE');
-  report+=section('Health & Forecast',[score?('Health Score: '+score):'',forecast?('Forecast: '+forecast):'',dealstatus?('Dealstatus: '+dealstatus):'']);
+  report+=section('Health & Forecast',[score?('Health Score: '+score):'',forecast?('Forecast: '+forecast):'',dealstatus?(dealstatus.replace(/^Dealstatus:\s*/i,'')):'']);
   report+=section('Aktuelles Lagebild',ki21TextsV723('.cockpit-v54-lagebild .cockpit-v5-summary-row'));
   report+=section('Deal-Entscheidung',[ki21TextV723('.ki21-decision-title')]);
   report+=section('Empfohlene Deal-Strategie',[ki21TextV723('.ki21-decision-rec').replace(/^Empfohlene Deal-Strategie:\s*/i,'')]);
@@ -2728,14 +2731,14 @@ function buildOpportunityTestReportV723(){
   if(reasonBlocks[1])report+=section('Was spricht dagegen?',[reasonBlocks[1].replace(/^WAS SPRICHT DAGEGEN\?\s*/i,'')]);
   if(reasonBlocks[2])report+=section('KI21 würde anders entscheiden, wenn',[reasonBlocks[2].replace(/^KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN …\s*/i,'')]);
   report+=section('Vertrauenscheck',ki21TextsV723('.ki21-trust-row-v690'));
-  report+=section('Höchste Restunsicherheit',ki21TextsV723('.ki21-confidence-gap-v693 .ki21-decision-reason'));
+  report+=section('Was wir noch wissen müssen',ki21TextsV723('.ki21-confidence-gap-v693 .ki21-decision-reason').map(x=>x.replace(/^Welche konkreten Arbeitsschritte verursachen den zusätzlichen Aufwand[^?]*\?/i,'Noch unklar ist, welche Arbeitsschritte notwendig sind und welche ohne Qualitätsverlust entfallen können.')));
   report+=section('Warum dieser Hebel Vorrang hat',[ki21TextV723('.ki21-priority-reason-text-v723')]);
   report+=section('Höchster Hebel',[ki21TextV723('.ki21-next-action-text-v675')]);
   report+=section('Nächste Schritte',ki21TextsV723('.cockpit-card-next .v53-task-text,.cockpit-card-next .cockpit-tile-item'));
   report+=section('Business Case und Nutzen',ki21TextsV723('.cockpit-card-value .cockpit-business-anchor,.cockpit-card-value .cockpit-tile-item,.cockpit-card-value .v53-bc-benefit'));
   report+=section('Darauf achten',ki21TextsV723('.cockpit-card-risk .cockpit-tile-item,.cockpit-card-risk .v53-risk-text'));
   report+=section('Wirkungskette',[
-    /vollständigere Discovery-Ergebnisse/i.test(document.body.innerText)?'Primärwirkung: vollständigere Discovery-Ergebnisse':'',
+    /(?:Discovery-Qualität|vollständigere Discovery-Informationen)/i.test(document.body.innerText)?'Primärwirkung: höhere Discovery-Qualität':'',
     /Forecast-Begründungen/i.test(document.body.innerText)?'Messindikator: vollständigere Forecast-Begründungen':''
   ]);
   return report.trim();
@@ -10188,7 +10191,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
     const executiveTopic=(d,source)=>{
       const t=String(source||'').toLowerCase();
       if(!d)return 'offenen Punkt';
-      if(d.id==='discovery')return 'vollständigere Discovery-Ergebnisse';
+      if(d.id==='discovery')return 'Discovery-Qualität';
       if(d.id==='information')return 'Vollständigkeit der Opportunity-Informationen';
       if(d.id==='quality'){
         if(/forecast|prognose/.test(t))return 'Forecast-Begründungen';
@@ -10216,13 +10219,13 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
     const hasDiscoveryLayerV722=/(?:discovery|qualifizierung|bedarfsermittlung|kundengespräch)/.test(txt);
     const hasInformationLayerV722=/(?:opportunity[-\s]?(?:informationen|daten)|kundeninformationen|datenbasis|dokumentation|notizen)/.test(txt);
     const hasForecastIndicatorV722=/(?:forecast|prognose)/.test(txt);
-    const primaryEffectV722=hasDiscoveryLayerV722?'vollständigere Discovery-Ergebnisse':(hasInformationLayerV722?'Vollständigkeit der Opportunity-Informationen':topicPos);
+    const primaryEffectV722=hasDiscoveryLayerV722?'Discovery-Qualität':(hasInformationLayerV722?'Vollständigkeit der Opportunity-Informationen':topicPos);
     const measurementIndicatorV722=hasForecastIndicatorV722?'Forecast-Begründungen':'';
     const preserveBenefitV722=measurementIndicatorV722&&primaryEffectV722!==measurementIndicatorV722
       ?primaryEffectV722+' erhalten bleibt und sich dies weiterhin in vollständigen '+measurementIndicatorV722+' zeigt'
       :primaryEffectV722+' erhalten bleibt';
     const lostBenefitV722=measurementIndicatorV722&&primaryEffectV722!==measurementIndicatorV722
-      ?'die für die '+primaryEffectV722+' nötigen Informationen verloren gehen und die '+measurementIndicatorV722+' wieder schwächer werden'
+      ?(hasDiscoveryLayerV722?'für eine belastbare Discovery nötige Informationen verloren gehen und die ':'für '+primaryEffectV722+' nötige Informationen verloren gehen und die ')+measurementIndicatorV722+' wieder schwächer werden'
       :'die bereits erreichte '+primaryEffectV722+' wieder verloren geht';
     const topicNegDat=topicNeg==='Pflegeaufwand'?'Pflegeaufwand':topicNeg;
     const affectedMatch=/(?:(\d+)|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn)\s+(?:der|von)\s+(\d+)\s+(?:nutzer|anwender|personen)/.exec(txt);
@@ -10248,7 +10251,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
         risk:`Wird der ${subject} vorschnell reduziert, können ${lostBenefitV722}. Bleibt der Aufwand unverändert, gefährdet er die Alltagstauglichkeit.`,
         reasons:[
           `Der vereinbarte Zielwert von ${deviation.target} ${deviation.unit} wird mit aktuell ${deviation.actual} ${deviation.unit} deutlich überschritten.`,
-          currentPos?(measurementIndicatorV722?`${primaryEffectV722} bleibt die primäre Wirkung; die verbesserten ${measurementIndicatorV722} sind der aktuell belegte Messindikator.`:`Gleichzeitig ist die Verbesserung der ${benefit} bereits belegt.`):'Ein konkreter Kundennutzen ist bereits erkennbar.',
+          currentPos?(measurementIndicatorV722?`${hasDiscoveryLayerV722?'Die Discovery liefert vollständigere Informationen':primaryEffectV722+' ist bereits verbessert'}; die vollständigeren ${measurementIndicatorV722} belegen den Qualitätsfortschritt.`:`Gleichzeitig ist die Verbesserung der ${benefit} bereits belegt.`):'Ein konkreter Kundennutzen ist bereits erkennbar.',
           affectedCount?`${affectedCount} betroffene Nutzer bestätigen, dass der ${subject} im Arbeitsalltag kritisch ist.`:'Die Abweichung ist durch aktuelle Messwerte oder Beobachtungen belegt.'
         ],
         counters:[
@@ -10261,7 +10264,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
           'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
         next:pilotContext&&currentNeg.id==='effort'
-          ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren und gezielt vereinfachen. Danach den Pflegeaufwand gegen den unveränderten Zielwert messen und prüfen, ob ${measurementIndicatorV722?('die '+measurementIndicatorV722+' vollständig bleiben'):primaryEffectV722+' erhalten bleiben'}.`
+          ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren und gezielt vereinfachen. Danach prüfen, ob der Pflegeaufwand den unveränderten Zielwert erreicht und ${measurementIndicatorV722?('die '+measurementIndicatorV722+' vollständig bleiben'):primaryEffectV722+' erhalten bleibt'}.`
           :`Die zwei bis drei größten Ursachen beim ${subject} identifizieren, gezielt reduzieren und anschließend Zielwert sowie ${benefit} erneut messen.`
       }};
     }
@@ -10277,8 +10280,8 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
           ask:`Welche konkreten Arbeitsschritte verursachen den zusätzlichen Aufwand – und welche davon lassen sich vereinfachen, ohne dass ${lostBenefitV722}?`,
           risk:'Der Nutzen ist erkennbar, kann aber an einem dauerhaft zu hohen operativen Aufwand im Vertriebsalltag scheitern.',
           reasons:[
-            (measurementIndicatorV722?`${primaryEffectV722} bleibt die primäre Wirkung; die verbesserten ${measurementIndicatorV722} belegen aktuell den Qualitätsfortschritt.`:`Die ${benefit} hat sich verbessert, während der operative Aufwand gleichzeitig zu hoch bleibt.`),
-            'Dieser Zielkonflikt ist für die Kaufentscheidung relevanter als eine weitere unveränderte Aktivität.'
+            (measurementIndicatorV722?`${hasDiscoveryLayerV722?'Die Discovery liefert vollständigere Informationen':primaryEffectV722+' ist bereits verbessert'}; die vollständigeren ${measurementIndicatorV722} belegen den Qualitätsfortschritt.`:`Die ${benefit} hat sich verbessert, während der operative Aufwand gleichzeitig zu hoch bleibt.`),
+            'Der zusätzliche Informationsgewinn ist sichtbar. Jetzt muss geklärt werden, ob derselbe Nutzen mit geringerem Aufwand erreicht werden kann.'
           ],
           counters:[
             'Ein Teil des Mehraufwands kann vorübergehender Anlauf- oder Lernaufwand sein.',
@@ -10290,7 +10293,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
             'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
           ],
           next:pilotContext
-            ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren, gezielt vereinfachen und danach Pflegeaufwand sowie ${benefit} erneut gegen den Zielwert messen.`
+            ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren und gezielt vereinfachen. Danach prüfen, ob der Pflegeaufwand den Zielwert erreicht und die vollständigen ${measurementIndicatorV722||'Qualitätsnachweise'} erhalten bleiben.`
             :`Die zwei bis drei größten Aufwandstreiber identifizieren, gezielt reduzieren und anschließend operativen Aufwand sowie ${benefit} erneut messen.`
         }};
       }
@@ -10674,7 +10677,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.9a Unified Deal State Syntaxfix'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.3.0 Executive Language & Dossier-Obermenge'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -13606,6 +13609,29 @@ function generateKundePDF(aid, cust){
   const SITS_LABELS=['Qualifizierung','Bedarfsanalyse & Demo','Termin nachbereiten',
     'Nutzen-Kosten-Analyse','Angebot & Abschluss'];
 
+  // v7.3.0: Das Dossier ist eine echte Obermenge aus Cockpit, Executive Report
+  // und sämtlichen phasenbezogenen Arbeitsdetails.
+  let executiveReportV730='';
+  try{
+    executiveReportV730=buildOpportunityTestReportSafelyV726();
+  }catch(e){
+    try{executiveReportV730=buildOpportunityTestReportV723();}catch(_){}
+  }
+  const reportSectionsV730=(()=>{
+    const sections=[];
+    let current=null;
+    String(executiveReportV730||'').split('\n').forEach(raw=>{
+      const line=String(raw||'').trim();
+      if(!line)return;
+      if(line==='KI21 OPPORTUNITY-TESTBERICHT'||/^Inhaltliche Opportunity-Bewertung/.test(line)||/^Version:|^Opportunity:|^Erstellt:/.test(line))return;
+      if(/^[A-ZÄÖÜ0-9 &/–—-]{4,}$/.test(line)&&!line.startsWith('•')){
+        current={title:line,items:[]};sections.push(current);return;
+      }
+      if(current)current.items.push(line.replace(/^(?:•\s*)+/,''));
+    });
+    return sections.filter(s=>s.items.length);
+  })();
+
   const health=getOpportunityHealth(aid);
   const scoreColor=health?getHealthColor(health.score):'#666';
 
@@ -13638,6 +13664,13 @@ function generateKundePDF(aid, cust){
     .status-ok{background:#e6f4ea;color:#2ea043;border:1px solid #2ea04330;}
     .status-open{background:#fff3e0;color:#e65100;border:1px solid #ff6b0030;}
     .evidence-note{font-size:11px;color:#666;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 12px;margin-bottom:14px;}
+    .executive-block{border:1px solid #f0c7a5;background:#fffaf6;border-radius:9px;padding:14px;margin:0 0 16px;page-break-inside:avoid;}
+    .executive-title{font-size:15px;font-weight:800;color:#e65f00;margin:0 0 10px;border-bottom:1px solid #f0d4bf;padding-bottom:7px;}
+    .executive-section{margin:0 0 12px;page-break-inside:avoid;}
+    .executive-section:last-child{margin-bottom:0;}
+    .executive-section-title{font-size:10px;font-weight:800;color:#c95400;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+    .executive-item{font-size:12px;line-height:1.5;margin:3px 0;padding-left:13px;position:relative;}
+    .executive-item::before{content:'•';position:absolute;left:1px;color:#ff6b00;font-weight:800;}
     .phase{background:#f8f8f8;border-left:3px solid #ff6b00;padding:12px;margin-bottom:12px;border-radius:4px;}
     .phase-title{font-weight:700;font-size:13px;margin-bottom:6px;color:#ff6b00;}
     .empty{color:#999;font-style:italic;}
@@ -14034,7 +14067,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 </head><body>
-  <h1>Vertriebsdossier</h1>
+  <h1>KI21 Opportunity-Arbeitsdossier</h1>
   <div class="meta">
     <strong>${cust.firma||'–'}</strong> | 
     Branche: ${cust.branche||'–'} | 
@@ -14064,8 +14097,18 @@ function generateKundePDF(aid, cust){
     ${health&&health.provisional?'<span class="status-pill status-open">⚠ Vorläufige Bewertung</span>':''}
   </div>
 
+  <div class="executive-block">
+    <div class="executive-title">Aktuelle Opportunity-Steuerung</div>
+    ${reportSectionsV730.length
+      ?reportSectionsV730.map(section=>`<div class="executive-section">
+          <div class="executive-section-title">${section.title}</div>
+          ${section.items.map(item=>`<div class="executive-item">${highlightResultHTML(item)}</div>`).join('')}
+        </div>`).join('')
+      :'<div style="font-size:12px;color:#666;">Aktuelle Cockpit-Bewertung konnte nicht eingebettet werden.</div>'}
+  </div>
+
   <div class="evidence-note">
-    <strong>Hinweis zur Evidenz:</strong> Dieses Dossier enthält eine Mischung aus bestätigten Kundeninformationen (BESTÄTIGT), KI-Einschätzungen (ANNAHME) und noch offenen Punkten (ZU KLÄREN / NOCH OFFEN). Bitte diese Kennzeichnungen im Text beachten.
+    <strong>Hinweis zur Evidenz:</strong> Dieses Dossier enthält alle Inhalte aus Cockpit und Opportunity-Testbericht sowie die vollständigen phasenbezogenen Arbeitsdetails. Es unterscheidet bestätigte Kundeninformationen (BESTÄTIGT), KI-Einschätzungen (ANNAHME) und offene Punkte (ZU KLÄREN / NOCH OFFEN).
   </div>`;
 
   for(let i=0;i<5;i++){
@@ -14089,7 +14132,7 @@ function generateKundePDF(aid, cust){
 
 </body></html>`;
 
-  exportHtmlAsPdf(html,'KI21_Dossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
+  exportHtmlAsPdf(html,'KI21_Opportunity-Arbeitsdossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
 }
 
 function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
@@ -15296,7 +15339,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.9a Unified Deal State Syntaxfix';
+const KI21_VERSION='v7.3.0 Executive Language & Dossier-Obermenge';
 
 
 function runKi21VersionMigration(){
@@ -16464,7 +16507,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
+  const VERSION='v7.3.0 Executive Language & Dossier-Obermenge';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16743,7 +16786,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
+  const VERSION='v7.3.0 Executive Language & Dossier-Obermenge';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16956,7 +16999,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
+  const VERSION='v7.3.0 Executive Language & Dossier-Obermenge';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
