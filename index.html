@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.6-canonical-phase-source-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.7-pilot-freeze-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.6</title>
+<title>KI21 Pilot Core 1.0.7</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2556,7 +2556,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.3.1: Freigegebener/beauftragter Deal-State überschreibt ältere Pilot-Abwägungen; Cockpit, Testbericht und Dossier bleiben entscheidungskonsistent. -->
 <!-- Pilot Core 1.0.5: Opportunity Isolation & Source Management – anderer Firmenname erzeugt zwingend eine neue Opportunity; CRM-Reimport ersetzt statt anzuhängen; Importquelle und Ergänzungen bleiben getrennt. -->
 <!-- Pilot Core 1.0.5: Single Opportunity State – alle Primärdaten, Phasen, Ergebnisse und Deal-Memory-Inhalte sind strikt an den aktiven Opportunity-Container gebunden. -->
-<!-- Pilot Core 1.0.6: Canonical Phase Source – Phase 1 und Lead-Steckbrief werden bei Aktivierung und Öffnen aus dem kanonischen CRM-Import rekonstruiert; alte IMPORTIERTE-INFORMATIONEN-Blöcke werden entfernt. -->
+<!-- Pilot Core 1.0.7: Pilot Freeze – Vertrauenscheck bewertet Buying Center und Business Case nur bei bestätigter Evidenz als gut/stark; widersprüchliche Kundenschritt-Formulierungen bereinigt. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -3037,6 +3037,8 @@ function ki21FinalizeReportFromPrimarySourceV103(report,accId){
      .replace(/nach der Freigabe/gi,'vor der Pilotentscheidung')
      .replace(/freigegebenen Discovery Sprint/gi,'noch nicht freigegebenen Pilot')
      .replace(/Projektstart/gi,'nächsten Kundenschritt');
+  r=r.replace(/Ein Angebot oder nächsten Kundenschritt wäre verfrüht/gi,'Ein Angebot wäre verfrüht')
+     .replace(/Keinen nächsten Kundenschritt empfehlen, solange die Pilotentscheidung noch offen ist\.?/gi,'Keinen Pilotstart empfehlen, solange die Pilotentscheidung noch offen ist.');
   return r.replace(/\n{3,}/g,'\n\n').trim();
 }
 
@@ -3068,14 +3070,17 @@ function ki21ConfidenceV740(memory){
   const facts=[ev.approved,has(ev.goal),has(ev.success),memory.open.length>0].filter(Boolean).length;
   const stakeholderText=(memory.sections['FAKTEN, DIE DAFÜR SPRECHEN']||[]).join(' ')+' '+(memory.sections['STÄRKSTE KLÄRUNGSFRAGE']||[]).join(' ');
   const stakeholder=/entscheider|geschäftsführer|cfo|freigabe|verantwortlich/i.test(stakeholderText);
+  const truth=memory.sourceTruth||ki21SourceTruthV103(memory.accId);
+  const decisionMakerOpen=!!(truth&&truth.economicDecisionMakerOpen);
   const business=(memory.sections['BUSINESS CASE UND NUTZEN']||[]).join(' ');
   const money=/\d[\d\.]*\s*€/.test(business);
+  const businessUnconfirmed=!!(truth&&(truth.negativeApproval||truth.avoidableUnconfirmed)) || /noch nicht bestätigt|orientierungswert|vermeidbare anteil.*bestätigen/i.test(business);
   const success=has(ev.success)||/erfolgskriter|erfolgsmessung|messmethode/i.test(business);
   const risk=(memory.sections['RISIKO EINER FEHLENTSCHEIDUNG']||[]).length>0;
   return [
     {label:'Faktenlage',level:facts>=3?'GUT':facts>=1?'TEILWEISE':'OFFEN',reason:facts>=3?'Freigabe, Ziel und Erfolgskriterium sind dokumentiert.':facts>=1?'Wesentliche Fakten liegen vor; operative Details fehlen.':'Kerninformationen sind noch nicht bestätigt.'},
-    {label:'Entscheiderklarheit',level:stakeholder?'GUT':'TEILWEISE',reason:stakeholder?'Entscheidung beziehungsweise Verantwortlichkeiten sind eingeordnet.':'Entscheidung und Verantwortlichkeiten sind nicht vollständig geklärt.'},
-    {label:'Business Case',level:money?'STARK':'TEILWEISE',reason:money?'Das Kundenproblem ist wirtschaftlich beziffert.':'Der wirtschaftliche Effekt ist noch nicht belastbar beziffert.'},
+    {label:'Entscheiderklarheit',level:(stakeholder&&!decisionMakerOpen)?'GUT':'TEILWEISE',reason:(stakeholder&&!decisionMakerOpen)?'Entscheidung und Zuständigkeiten sind weitgehend bestätigt.':'Einzelne Rollen sind erkennbar; das Buying Center ist noch nicht vollständig bestätigt.'},
+    {label:'Business Case',level:(money&&!businessUnconfirmed)?'STARK':'TEILWEISE',reason:(money&&!businessUnconfirmed)?'Das Kundenproblem ist wirtschaftlich bestätigt beziffert.':'Wirtschaftliche Anhaltspunkte liegen vor; der Business Case ist noch nicht bestätigt.'},
     {label:'Erfolgskriterien',level:success?'STARK':'OFFEN',reason:success?'Ziel und Messlogik sind beschrieben.':'Messbares Erfolgskriterium fehlt.'},
     {label:'Risiken bewertet',level:risk?'GUT':'TEILWEISE',reason:risk?'Das zentrale Fehlentscheidungsrisiko ist benannt.':'Risiken sind noch nicht ausreichend konkretisiert.'}
   ];
@@ -3537,7 +3542,6 @@ function ki21ActivateOpportunityV105(accId){
   state.activeId=accId;
   LS.set('ki21_aid',accId);
   ki21SanitizeOpportunityStateV105(accId);
-  try{ki21ReconcileCanonicalImportV106(accId);}catch(e){console.warn('Canonical import reconcile skipped',e);}
   return true;
 }
 
@@ -12718,7 +12722,6 @@ function goBackFromPhaseV4219(){
 
 function renderStation(sitId){
   state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
-  if(state.activeId){try{ki21ReconcileCanonicalImportV106(state.activeId);}catch(e){console.warn('Phase source reconcile skipped',e);}}
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
@@ -16053,7 +16056,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.6';
+const KI21_VERSION='Pilot Core 1.0.7';
 
 
 function runKi21VersionMigration(){
@@ -16936,66 +16939,6 @@ function ki21BuildImportedFactTextV65(data,selected){
   if(cfs.length){lines.push('Widersprüche:');cfs.forEach(x=>lines.push('- '+x));}
   return lines.join('\n').trim();
 }
-
-// ── PILOT CORE 1.0.6: CANONICAL PHASE SOURCE ────────────────────────
-// Der CRM-Import ist die einzige Quelle für das importierte Phase-1-Feld.
-// Alte, angehängte Importblöcke und fremde Lead-Steckbrief-Daten werden
-// bei Aktivierung und beim Öffnen der Phase überschrieben, nicht gemischt.
-function ki21IsLegacyImportBlockV106(text){
-  const t=String(text||'').trim();
-  return /(?:^|\n)\s*IMPORTIERTE INFORMATIONEN\s*:/i.test(t)
-    || (t.length>700 && /\bKontext\s*:/i.test(t) && /\bStakeholder\s*:/i.test(t) && /\bOffene Punkte\s*:/i.test(t));
-}
-function ki21CanonicalImportFactTextV106(accId){
-  const meta=LS.get('ki21_import_structured_'+accId,null);
-  if(meta&&meta.data){
-    const selected=meta.selected||{};
-    return ki21BuildImportedFactTextV65(meta.data,selected);
-  }
-  return '';
-}
-function ki21ReconcileCanonicalImportV106(accId){
-  if(!accId)return;
-  const meta=LS.get('ki21_import_structured_'+accId,null);
-  const canonical=ki21CanonicalImportFactTextV106(accId);
-  if(meta&&meta.data){
-    const company=String((meta.data.customer&&meta.data.customer.company)||meta.company||'').trim();
-    if(company){
-      let changed=false;
-      state.accounts=(state.accounts||LS.get('ki21_acc',[])||[]).map(a=>{
-        if(!a||a.id!==accId)return a;
-        const current=String(a.cust&&a.cust.firma||'').trim();
-        if(ki21NormalizeCompanyNameV104(current)!==ki21NormalizeCompanyNameV104(company)){
-          changed=true;
-          return {...a,cust:{...(a.cust||{}),firma:company},updatedAt:Date.now()};
-        }
-        return a;
-      });
-      if(changed)LS.set('ki21_acc',state.accounts);
-    }
-  }
-  if(canonical){
-    const key='ki21_st_'+accId+'_0';
-    const st=LS.get(key,{fv:{},result:''})||{fv:{},result:''};
-    st.fv=st.fv||{};
-    if(String(st.fv.info||'').trim()!==canonical){
-      st.fv.info=canonical;
-      st.result='';st.summary='';st.detail='';
-      LS.set(key,st);
-      LS.set('ki21_phase_snap_'+accId+'_0',null);
-    }
-  }
-  // Vollständige CRM-Importe dürfen nie als manuelle Ergänzung fortleben.
-  for(let i=0;i<5;i++){
-    try{
-      const entries=getAdditionEntriesV623(accId,i).filter(e=>!ki21IsLegacyImportBlockV106(e&&e.text));
-      saveAdditionEntriesV623(accId,i,entries);
-      LS.set('ki21_kk_'+accId+'_'+i,entries.map(e=>String(e&&e.text||'').trim()).filter(Boolean).join('\n\n'));
-    }catch(e){}
-  }
-  const legacy=String(LS.get('ki21_kk_'+accId,'')||'');
-  if(ki21IsLegacyImportBlockV106(legacy))LS.set('ki21_kk_'+accId,'');
-}
 // ── PILOT CORE 1.0.4: OPPORTUNITY ISOLATION & SOURCE MANAGEMENT ──
 function ki21NormalizeCompanyNameV104(value){
   return String(value||'').toLowerCase()
@@ -17098,7 +17041,6 @@ function ki21ApplySmartImportV65(data,raw,selected,existingAccId){
   // Der CRM-Import ist eine eigene Primärquelle und wird nicht als Ergänzung dupliziert.
   LS.set('ki21_health_'+id,null);LS.set('ki21_health_lastError_'+id,null);
   ki21SanitizeOpportunityStateV105(id);
-  ki21ReconcileCanonicalImportV106(id);
   return id;
 }
 function showSmartOpportunityImportV65(existingAccId){
@@ -18199,18 +18141,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.addEventListener('pageshow',()=>setTimeout(syncVisibleScoreV729,0));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(syncVisibleScoreV729,0);});
   setTimeout(syncVisibleScoreV729,450);
-})();
-
-// Pilot Core 1.0.6: bestehende lokale Daten einmalig auf die kanonische
-// Importquelle zurückführen, bevor Phase 1 oder der Lead-Steckbrief geöffnet wird.
-(function(){
-  const run=()=>{try{
-    const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
-    if(aid)ki21ReconcileCanonicalImportV106(aid);
-  }catch(e){console.warn('Pilot Core 1.0.6 migration skipped',e);}};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,0),{once:true});
-  else setTimeout(run,0);
-  window.addEventListener('pageshow',()=>setTimeout(run,0));
 })();
 
 </script>
