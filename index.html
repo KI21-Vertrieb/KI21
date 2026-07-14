@@ -16485,10 +16485,52 @@ function ki21EscV65(s){
   return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});
 }
 function ki21NormalizeJsonV65(txt){
-  txt=String(txt||'').trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-  const m=txt.match(/\{[\s\S]*\}/);
-  if(!m)throw new Error('Keine strukturierte JSON-Antwort erhalten.');
-  return JSON.parse(m[0]);
+  txt=String(txt||'').trim()
+    .replace(/^```(?:json)?\s*/i,'')
+    .replace(/\s*```$/,'')
+    .replace(/[“”]/g,'\"')
+    .replace(/[‘’]/g,"'")
+    .trim();
+
+  // Erstes vollständig balanciertes JSON-Objekt extrahieren. Ein simples /{.*}/
+  // greift bei Erklärtext oder mehreren Codeblöcken häufig zu weit.
+  let start=txt.indexOf('{'), end=-1, depth=0, inString=false, escaped=false;
+  if(start<0)throw new Error('Keine strukturierte JSON-Antwort erhalten.');
+  for(let i=start;i<txt.length;i++){
+    const ch=txt[i];
+    if(inString){
+      if(escaped){escaped=false;continue;}
+      if(ch==='\\'){escaped=true;continue;}
+      if(ch==='\"')inString=false;
+      continue;
+    }
+    if(ch==='\"'){inString=true;continue;}
+    if(ch==='{')depth++;
+    if(ch==='}'){
+      depth--;
+      if(depth===0){end=i+1;break;}
+    }
+  }
+  let json=end>start?txt.slice(start,end):txt.slice(start);
+  const attempts=[
+    json,
+    json.replace(/,\s*([}\]])/g,'$1'),
+    json.replace(/\u0000/g,'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' '),
+    json.replace(/,\s*([}\]])/g,'$1').replace(/\u0000/g,'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ')
+  ];
+  let lastErr=null;
+  for(const candidate of attempts){
+    try{return JSON.parse(candidate);}catch(e){lastErr=e;}
+  }
+  throw new Error('JSON-Antwort war unvollständig oder fehlerhaft: '+String(lastErr&&lastErr.message||'Parsefehler'));
+}
+
+async function ki21RepairImportJsonV65(rawAnswer,key){
+  const repairPrompt=`Repariere ausschließlich die folgende fehlerhafte JSON-Antwort. Gib nur ein einziges vollständiges, valides JSON-Objekt zurück, ohne Markdown und ohne Erklärung. Fehlende Klammern oder Anführungszeichen ergänzen. Inhalt nicht erfinden.\n\nFEHLERHAFTE ANTWORT:\n${String(rawAnswer||'').slice(0,18000)}`;
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5000,messages:[{role:'user',content:repairPrompt}]})});
+  const data=await resp.json();
+  if(!resp.ok)throw new Error((data&&data.error&&data.error.message)||'JSON-Reparatur fehlgeschlagen');
+  return data&&data.content&&data.content[0]&&data.content[0].text||'';
 }
 
 function ki21NormalizeParsedImportV654(parsed,raw){
@@ -16683,10 +16725,19 @@ function showSmartOpportunityImportV65(existingAccId){
     const key=LS.get('ki21_apikey','');if(!key){status.textContent='Bitte zuerst den API Key in den Einstellungen hinterlegen.';return;}
     analyze.disabled=true;confirmBtn.disabled=true;analyze.textContent='⏳ KI21 strukturiert …';status.textContent='Kundendaten, Stakeholder und vorhandene SPIN-Antworten werden erkannt.';
     try{
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3500,messages:[{role:'user',content:ki21ImportPromptV65(raw,ki21GetCompanyContextV65())}]})});
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:6000,messages:[{role:'user',content:ki21ImportPromptV65(raw,ki21GetCompanyContextV65())}]})});
       const data=await resp.json();
       if(!resp.ok)throw new Error((data&&data.error&&data.error.message)||'API-Fehler');
-      parsed=ki21NormalizeParsedImportV654(ki21NormalizeJsonV65(data&&data.content&&data.content[0]&&data.content[0].text),raw);
+      const rawAnswer=data&&data.content&&data.content[0]&&data.content[0].text||'';
+      let jsonData;
+      try{
+        jsonData=ki21NormalizeJsonV65(rawAnswer);
+      }catch(parseErr){
+        status.textContent='Die KI-Antwort wird automatisch repariert …';
+        const repaired=await ki21RepairImportJsonV65(rawAnswer,key);
+        jsonData=ki21NormalizeJsonV65(repaired);
+      }
+      parsed=ki21NormalizeParsedImportV654(jsonData,raw);
       renderPreview();
       status.textContent='Vorschau erstellt. Nur aktivierte Punkte werden übernommen.';
       confirmBtn.disabled=false;analyze.textContent='↻ Erneut analysieren';
