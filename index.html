@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.4-source-management-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.5-source-management-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.4</title>
+<title>KI21 Pilot Core 1.0.5</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,8 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 <!-- v7.3.2: Evidence Impact Engine – Ergänzungen aktualisieren Cockpit/Health/Report, markieren betroffene Phasen und übernehmen erkannte SPIN-Antworten gezielt in Phase 2. -->
 <!-- v7.3.1: Freigegebener/beauftragter Deal-State überschreibt ältere Pilot-Abwägungen; Cockpit, Testbericht und Dossier bleiben entscheidungskonsistent. -->
-<!-- Pilot Core 1.0.4: Opportunity Isolation & Source Management – anderer Firmenname erzeugt zwingend eine neue Opportunity; CRM-Reimport ersetzt statt anzuhängen; Importquelle und Ergänzungen bleiben getrennt. -->
+<!-- Pilot Core 1.0.5: Opportunity Isolation & Source Management – anderer Firmenname erzeugt zwingend eine neue Opportunity; CRM-Reimport ersetzt statt anzuhängen; Importquelle und Ergänzungen bleiben getrennt. -->
+<!-- Pilot Core 1.0.5: Single Opportunity State – alle Primärdaten, Phasen, Ergebnisse und Deal-Memory-Inhalte sind strikt an den aktiven Opportunity-Container gebunden. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -3474,12 +3475,77 @@ const state={
   safeHydrated:false,
 };
 
+
+// ── PILOT CORE 1.0.5: SINGLE OPPORTUNITY STATE ─────────────────────
+// Jeder sichtbare und generierte Inhalt muss zum Kunden des aktiven
+// Opportunity-Containers gehören. Fremde Altinhalte werden beim Laden,
+// Aktivieren und Importieren entfernt, bevor sie erneut als Kontext dienen.
+function ki21TextMentionsOtherAccountV105(text, account){
+  const t=String(text||'').toLowerCase();
+  if(!t.trim()||!account||!account.cust)return false;
+  const own=ki21NormalizeCompanyNameV104(account.cust.firma||'');
+  const accounts=(state.accounts||LS.get('ki21_acc',[])||[]).filter(a=>a&&a.id!==account.id&&a.cust&&a.cust.firma);
+  return accounts.some(a=>{
+    const other=ki21NormalizeCompanyNameV104(a.cust.firma||'');
+    if(!other||other===own)return false;
+    const tokens=other.split(' ').filter(x=>x.length>=4);
+    return tokens.length && tokens.every(x=>t.includes(x));
+  });
+}
+function ki21SanitizeOpportunityStateV105(accId){
+  if(!accId)return;
+  const account=(state.accounts||LS.get('ki21_acc',[])||[]).find(a=>a&&a.id===accId);
+  if(!account)return;
+  const ownCompany=String(account.cust&&account.cust.firma||'').trim();
+  const raw=String(LS.get('ki21_import_raw_'+accId,'')||'');
+  // Ein kanonischer Import darf nur zum Container-Kunden gehören.
+  if(raw && ki21TextMentionsOtherAccountV105(raw,account)){
+    LS.set('ki21_import_raw_'+accId,'');
+    LS.set('ki21_import_structured_'+accId,null);
+  }
+  for(let i=0;i<5;i++){
+    const key='ki21_st_'+accId+'_'+i;
+    const st=LS.get(key,{fv:{},result:''})||{fv:{},result:''};
+    st.fv=st.fv||{};
+    let changed=false;
+    Object.keys(st.fv).forEach(k=>{
+      if(ki21TextMentionsOtherAccountV105(st.fv[k],account)){st.fv[k]='';changed=true;}
+    });
+    if(ki21TextMentionsOtherAccountV105(st.result,account)){st.result='';changed=true;}
+    if(changed)LS.set(key,st);
+    // Nur echte manuelle Ergänzungen des eigenen Containers behalten.
+    try{
+      const entries=getAdditionEntriesV623(accId,i).filter(e=>!ki21TextMentionsOtherAccountV105(e&&e.text,account));
+      saveAdditionEntriesV623(accId,i,entries);
+      LS.set('ki21_kk_'+accId+'_'+i,entries.map(e=>String(e&&e.text||'').trim()).filter(Boolean).join('\n\n'));
+    }catch(e){}
+  }
+  // Alte globale Ergänzungsquelle darf keinen Fremdkunden enthalten.
+  const legacy=String(LS.get('ki21_kk_'+accId,'')||'');
+  if(ki21TextMentionsOtherAccountV105(legacy,account))LS.set('ki21_kk_'+accId,'');
+  ['ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_'].forEach(prefix=>{
+    const v=LS.get(prefix+accId,null);
+    if(v && ki21TextMentionsOtherAccountV105(JSON.stringify(v),account)){
+      try{localStorage.removeItem(prefix+accId);}catch(e){}
+    }
+  });
+}
+function ki21ActivateOpportunityV105(accId){
+  const account=(state.accounts||[]).find(a=>a&&a.id===accId);
+  if(!account)return false;
+  state.activeId=accId;
+  LS.set('ki21_aid',accId);
+  ki21SanitizeOpportunityStateV105(accId);
+  return true;
+}
+
 function ki21HydrateStateFromStorage(){
   try{
     state.view=LS.get('ki21_view','home');
     state.accounts=LS.get('ki21_acc',[]).filter(a=>a&&a.cust&&a.cust.firma);
     const savedAid=LS.get('ki21_aid',null);
     state.activeId=state.accounts.find(a=>a.id===savedAid)?savedAid:null;
+    if(state.activeId)ki21SanitizeOpportunityStateV105(state.activeId);
     state.safeHydrated=true;
   }catch(e){
     state.accounts=[];state.activeId=null;state.safeHydrated=false;
@@ -13523,7 +13589,7 @@ function showKunde(){
         const initials=(a.cust.firma||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
         const phaseLabel=info.phaseIdx>=0?'Phase '+(info.phaseIdx+1):'Neu';
         const row=h('div',{className:'acc-row'+(a.id===state.activeId?' active':''),
-          onclick:()=>{state.activeId=a.id;LS.set('ki21_aid',a.id);m.remove();
+          onclick:()=>{ki21ActivateOpportunityV105(a.id);m.remove();
             if(state.pendingSit!==null){const s=state.pendingSit;state.pendingSit=null;renderStation(s);}
             else renderHome();}
         },
@@ -15984,7 +16050,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.4';
+const KI21_VERSION='Pilot Core 1.0.5';
 
 
 function runKi21VersionMigration(){
@@ -16930,11 +16996,14 @@ function ki21ApplySmartImportV65(data,raw,selected,existingAccId){
     state.activeId=id;
     LS.set('ki21_aid',id);
   }
+  // Account-Container und kanonische Importquelle gemeinsam aktualisieren.
+  state.accounts=state.accounts.map(a=>a.id===id?{...a,cust:{...cust},rawImport:String(raw||''),importText:String(raw||''),updatedAt:Date.now()}:a);
   LS.set('ki21_acc',state.accounts);
+  ki21ActivateOpportunityV105(id);
   ki21RemoveLegacyImportAdditionV104(id,previousRaw);
   ki21ResetDerivedImportStateV104(id);
   LS.set('ki21_import_raw_'+id,String(raw||''));
-  LS.set('ki21_import_structured_'+id,{data,selected,importedAt:Date.now()});
+  LS.set('ki21_import_structured_'+id,{data,selected,importedAt:Date.now(),company:String(c.company||cust.firma||'')});
 
   // Phase 1: bestätigte importierte Opportunity-Informationen als Ausgangslage.
   const st0=LS.get('ki21_st_'+id+'_0',{fv:{},result:''});st0.fv=st0.fv||{};
@@ -16965,6 +17034,7 @@ function ki21ApplySmartImportV65(data,raw,selected,existingAccId){
 
   // Der CRM-Import ist eine eigene Primärquelle und wird nicht als Ergänzung dupliziert.
   LS.set('ki21_health_'+id,null);LS.set('ki21_health_lastError_'+id,null);
+  ki21SanitizeOpportunityStateV105(id);
   return id;
 }
 function showSmartOpportunityImportV65(existingAccId){
@@ -17033,7 +17103,7 @@ function showSmartOpportunityImportV65(existingAccId){
     try{
       const id=ki21ApplySmartImportV65(parsed,ta.value,selected,existingAccId);
       if(modalRef)modalRef.remove();
-      state.activeId=id;LS.set('ki21_aid',id);LS.set('ki21_view','cockpit-lite');
+      ki21ActivateOpportunityV105(id);LS.set('ki21_view','cockpit-lite');
       try{await refreshOpportunityHealth(id);}catch(e){console.warn(e);}
       renderCockpitSnapshotLiteV4215();
       setTimeout(()=>{const n=document.createElement('div');n.textContent=existingAccId?'✓ Opportunity-Daten und SPIN-Antworten übernommen.':'✓ Opportunity aus Importdaten angelegt.';n.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#173b27;color:#d9ffe8;border:1px solid #2f8f58;border-radius:12px;padding:12px 16px;font-weight:700;max-width:88%;text-align:center';document.body.appendChild(n);setTimeout(()=>n.remove(),2600);},100);
