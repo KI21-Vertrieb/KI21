@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.4.0-deal-memory-engine-20260714 -->
+<!-- KI21_BUILD: v7.5.0-sales-decision-intelligence-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.4.0 Deal Memory Engine</title>
+<title>KI21 v7.5.0 Sales Decision Intelligence</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2548,6 +2548,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 <!-- v7.3.4: Knowledge Fusion – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
 <!-- v7.4.0: Deal Memory Engine – konsolidiert Primärquellen, Deal-State, Entscheidung, Nutzen, Risiken, offene Punkte und Confidence vor der Ausgabe in einem persistenten Opportunity-Modell. -->
+<!-- v7.5.0: Sales Decision Intelligence – Sales-first Sprache, Executive Sales Summary, Decision Readiness, Warum-jetzt-Prüfung und robuste Abschnittserkennung. -->
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 <!-- v7.3.2: Evidence Impact Engine – Ergänzungen aktualisieren Cockpit/Health/Report, markieren betroffene Phasen und übernehmen erkannte SPIN-Antworten gezielt in Phase 2. -->
@@ -2820,7 +2821,7 @@ function ki21ParseReportSectionsV740(report){
   const lines=text.split('\n');
   const meta=[]; const sections={}; let current='';
   lines.forEach(line=>{
-    if(/^[A-ZÄÖÜ][A-ZÄÖÜ &?\-]+$/.test(line.trim())){current=line.trim();sections[current]=[];return;}
+    if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(line.trim())){current=line.trim();sections[current]=[];return;}
     if(!current){meta.push(line);return;}
     const clean=line.replace(/^•\s*/, '').trim();
     if(clean)sections[current].push(clean);
@@ -2856,7 +2857,7 @@ function buildDealMemoryV740(baseReport,accId){
   const parsed=ki21ParseReportSectionsV740(baseReport);
   const evidence=extractPrimaryEvidenceV733(accId);
   const memory={
-    version:'1.0',updatedAt:Date.now(),accId:accId||null,
+    version:'1.1-sales-first',updatedAt:Date.now(),accId:accId||null,
     evidence:evidence,sections:parsed.sections||{},open:[],
     dealState:'',decision:'',bottleneck:'',goal:'',success:'',businessCase:[],risks:[],nextSteps:[],confidence:[]
   };
@@ -2874,30 +2875,76 @@ function buildDealMemoryV740(baseReport,accId){
   try{LS.set('ki21_deal_memory_'+accId,memory);}catch(e){}
   return memory;
 }
+function ki21DecisionReadinessV750(memory){
+  const e=memory.evidence||{};
+  const s=memory.sections||{};
+  const business=(s['BUSINESS CASE UND NUTZEN']||[]).join(' ');
+  const all=JSON.stringify(s)+' '+String(e.text||'');
+  const checks=[
+    {label:'Sprint-Freigabe',ok:!!e.approved,weight:20},
+    {label:'Kundenziel bestätigt',ok:!!String(e.goal||'').trim(),weight:15},
+    {label:'Erfolgskriterium beschrieben',ok:!!String(e.success||'').trim(),weight:15},
+    {label:'Business Case beziffert',ok:/\d[\d\.]*\s*€/.test(business),weight:20},
+    {label:'Nächster Kundentermin vereinbart',ok:/(starttermin|kickoff|termin)[^.!?]{0,80}(vereinbart|bestätigt|steht fest)/i.test(all),weight:15},
+    {label:'Verantwortliche bestätigt',ok:/verantwortlich[^.!?]{0,80}(benannt|bestätigt|vereinbart)/i.test(all),weight:15}
+  ];
+  const score=Math.max(0,Math.min(100,checks.reduce((n,c)=>n+(c.ok?c.weight:0),0)));
+  const label=score>=85?'HOCH':score>=65?'GUT':score>=40?'TEILWEISE':'NIEDRIG';
+  return {score,label,checks};
+}
+function ki21SalesFirstTextV750(text){
+  return String(text||'')
+    .replace(/Projektstart jetzt verbindlich absichern\.?/gi,'Den freigegebenen Discovery Sprint ohne Momentumverlust starten und die nächste Kaufentscheidung vorbereiten.')
+    .replace(/Projektstart vorbereiten\s*·\s*Kickoff und Messung absichern/gi,'Discovery Sprint starten · nächste Kaufentscheidung vorbereiten')
+    .replace(/Momentum nach der Freigabe sichern\.?/gi,'Den freigegebenen Sprint als belastbaren Beleg für die nächste Kaufentscheidung nutzen.')
+    .replace(/Starttermin und Kickoff verbindlich vereinbaren\.?/gi,'Den nächsten Kundentermin für Start und Kickoff verbindlich vereinbaren.')
+    .replace(/Starttermin und Kickoff mit Verantwortlichen verbindlich festlegen\.?/gi,'Start und Kickoff mit den zuständigen Kundenansprechpartnern verbindlich vereinbaren.')
+    .replace(/Verantwortliche für Messung und Auswertung benennen\.?/gi,'Beim Kunden klären, wer Messung und Auswertung bestätigt.')
+    .replace(/Verantwortlichkeiten/gi,'Zuständigkeiten beim Kunden')
+    .replace(/operative Details/gi,'vertriebsrelevante Details');
+}
 function renderOpportunityReportFromDealMemoryV740(baseReport,memory){
   const parsed=ki21ParseReportSectionsV740(baseReport);
   const meta=parsed.meta.join('\n').trim();
   const s=memory.sections||{};
+  const readiness=ki21DecisionReadinessV750(memory);
+  const sales=(lines)=>ki21UniqueV740(lines||[]).map(ki21SalesFirstTextV750);
   const section=(title,lines)=>{
-    const clean=ki21UniqueV740(lines||[]);
+    const clean=sales(lines);
     return clean.length?'\n\n'+title+'\n'+clean.map(x=>'• '+x).join('\n'):'';
   };
+  const e=memory.evidence||{};
+  const goal=String(e.goal||'').trim().replace(/^dass\s+/i,'');
+  const approved=!!e.approved;
+  const summary=[];
+  if(approved)summary.push('Der Discovery Sprint ist freigegeben. Der Vertrieb muss jetzt den vereinbarten Kundenschritt sauber starten und daraus belastbare Belege für die anschließende Kaufentscheidung gewinnen.');
+  else if(memory.dealState)summary.push(ki21SalesFirstTextV750(memory.dealState));
+  if(memory.bottleneck)summary.push(ki21SalesFirstTextV750(memory.bottleneck.replace(/^GRÖSSTER ENGPASS\s*/i,'')));
+  const whyNow=[];
+  if(approved)whyNow.push('Die Zustimmung liegt vor. Verzögerung kostet Momentum und verschiebt den Erkenntnisgewinn für die nächste Kaufentscheidung.');
+  else whyNow.push('Der nächste Kundenschritt sollte jetzt erfolgen, wenn er eine offene Kaufbedingung klärt oder einen verbindlichen Entscheidungsfortschritt erzeugt.');
+  if(goal)whyNow.push('Der Kunde erwartet konkret, dass '+goal.charAt(0).toLowerCase()+goal.slice(1)+'.');
+  const readinessLines=[readiness.score+' % · '+readiness.label+' für den nächsten Kundenschritt'];
+  readiness.checks.forEach(c=>readinessLines.push((c.ok?'✓ ':'⚠ ')+c.label));
+
   let out=meta;
+  out+=section('SALES SUMMARY',summary);
   out+=section('HEALTH & FORECAST',s['HEALTH & FORECAST']);
+  out+=section('ENTSCHEIDUNGSREIFE',readinessLines);
   out+=section('AKTUELLES LAGEBILD',s['AKTUELLES LAGEBILD']);
-  out+=section('DEAL-ENTSCHEIDUNG',s['DEAL-ENTSCHEIDUNG']);
-  out+=section('EMPFOHLENE DEAL-STRATEGIE',s['EMPFOHLENE DEAL-STRATEGIE']);
+  out+=section('VERTRIEBSEMPFEHLUNG',s['DEAL-ENTSCHEIDUNG']);
+  out+=section('WARUM JETZT?',whyNow);
+  out+=section('EMPFOHLENE VERKAUFSSTRATEGIE',s['EMPFOHLENE DEAL-STRATEGIE']);
   out+=section('FAKTEN, DIE DAFÜR SPRECHEN',s['FAKTEN, DIE DAFÜR SPRECHEN']);
-  out+=section('RISIKO EINER FEHLENTSCHEIDUNG',s['RISIKO EINER FEHLENTSCHEIDUNG']);
+  out+=section('VERKAUFSRISIKO',s['RISIKO EINER FEHLENTSCHEIDUNG']);
   out+=section('STÄRKSTE KLÄRUNGSFRAGE',s['STÄRKSTE KLÄRUNGSFRAGE']);
   out+=section('WAS SPRICHT DAGEGEN?',s['WAS SPRICHT DAGEGEN?']);
-  out+=section('KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN',s['KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN']);
-  out+=section('VERTRAUENSCHECK',memory.confidence.map(c=>c.label+' '+c.level+' – '+c.reason));
-  out+=section('WAS WIR NOCH WISSEN MÜSSEN',memory.open);
-  out+=section('BUSINESS CASE UND NUTZEN',s['BUSINESS CASE UND NUTZEN']);
-  out+=section('WARUM DIESER HEBEL VORRANG HAT',s['WARUM DIESER HEBEL VORRANG HAT']);
-  out+=section('HÖCHSTER HEBEL',s['HÖCHSTER HEBEL']);
-  out+=section('NÄCHSTE SCHRITTE',s['NÄCHSTE SCHRITTE']);
+  out+=section('KI21 WÜRDE ANDERS EMPFEHLEN, WENN',s['KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN']);
+  out+=section('VERTRAUENSCHECK',memory.confidence.map(c=>c.label+' '+c.level+' – '+ki21SalesFirstTextV750(c.reason)));
+  out+=section('WAS DER VERTRIEB NOCH KLÄREN MUSS',memory.open);
+  out+=section('BUSINESS CASE UND KUNDENNUTZEN',s['BUSINESS CASE UND NUTZEN']);
+  out+=section('GRÖSSTER VERKAUFSHEBEL',s['HÖCHSTER HEBEL']);
+  out+=section('NÄCHSTE KUNDENSCHRITTE',s['NÄCHSTE SCHRITTE']);
   out+=section('DARAUF ACHTEN',s['DARAUF ACHTEN']);
   return out.trim();
 }
@@ -15634,7 +15681,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.4.0 Deal Memory Engine';
+const KI21_VERSION='v7.5.0 Sales Decision Intelligence';
 
 
 function runKi21VersionMigration(){
