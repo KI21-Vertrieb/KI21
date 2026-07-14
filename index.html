@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.6.0-sales-reasoning-engine-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.2-opportunity-isolation-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.6.0 Pilot Core 1.0</title>
+<title>KI21 Pilot Core 1.0.2</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2548,7 +2548,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 <!-- v7.3.4: Knowledge Fusion – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
 <!-- v7.4.0: Deal Memory Engine – konsolidiert Primärquellen, Deal-State, Entscheidung, Nutzen, Risiken, offene Punkte und Confidence vor der Ausgabe in einem persistenten Opportunity-Modell. -->
-<!-- v7.5.0: Sales Decision Intelligence – Sales-first Sprache, Executive Sales Summary, Decision Readiness, Warum-jetzt-Prüfung und robuste Abschnittserkennung. -->
+<!-- Pilot Core 1.0.2: Opportunity Isolation – neue Imports beginnen ohne Alt-Cache; Berichte werden stets aus der aktuell aktiven Opportunity frisch gerendert; negierte Freigaben haben Vorrang. -->
 <!-- v7.6.0: Pilot Core 1.0 – faktenbasierte Empfehlungsbegründung, Buying-Center-Vertrauen, priorisierte Verkaufshebel, verdichtete Sales Summary und semantischer Wiederholungsfilter. -->
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
@@ -3178,8 +3178,8 @@ function ki21CreateTxtDownloadV726(text,filename){
 function buildOpportunityTestReportSafelyV726(){
   const app=document.getElementById('app');
   if(!app)throw new Error('App-Container fehlt');
-  if(document.querySelector('#ki21-visible-decision-core'))return buildOpportunityTestReportV723();
-
+  // Immer aus der aktuell aktiven Opportunity frisch rendern. Ein sichtbares Cockpit
+  // kann noch zu einer zuvor geöffneten Opportunity gehören und darf nie Berichtquelle sein.
   const saved=document.createDocumentFragment();
   while(app.firstChild)saved.appendChild(app.firstChild);
 
@@ -9210,8 +9210,10 @@ function getOpportunityOnlySourceV6522(accId){
         current.crmText,
         current.context,
         current.notes,
-        current.description
-      ].forEach(v=>{if(v)parts.push(String(v));});
+        current.description,
+        LS.get('ki21_import_raw_'+accId,''),
+        (LS.get('ki21_import_structured_'+accId,null)||{}).data
+      ].forEach(v=>{if(v)parts.push(typeof v==='string'?v:JSON.stringify(v));});
 
       if(current.cust){
         ['firma','ap','branche','ma','um','budget','timing','angebot','wettbewerb']
@@ -9805,7 +9807,7 @@ function detectCurrentDealStateV6532(accId){
   const source=String(getOpportunityOnlySourceV6522(accId)||'').replace(/\s+/g,' ').trim();
   const scan=(latest+' '+recent+' '+source).trim();
 
-  const explicitNoDecision=/(?:keine|noch keine)\s+(?:freigabe|freigabeentscheidung|entscheidung).{0,45}(?:fallen|erfolgen|getroffen)|(?:freigabeentscheidung).{0,50}(?:soll|wird).{0,40}(?:noch nicht|nicht)/i.test(latest);
+  const explicitNoDecision=/(?:keine|noch keine)\s+(?:freigabe|freigabeentscheidung|entscheidung).{0,45}(?:fallen|erfolgen|getroffen)|(?:freigabeentscheidung).{0,50}(?:soll|wird).{0,40}(?:noch nicht|nicht)|(?:pilot|sprint|angebot|investition).{0,80}(?:noch nicht|nicht)\s+(?:freigegeben|genehmigt|beauftragt)|(?:noch nicht|nicht)\s+(?:freigegeben|genehmigt|beauftragt)/i.test(scan);
   const decisionPostponed=/(?:entscheidung|freigabe).{0,80}(?:verschoben|vertagt|später)|(?:verschoben|vertagt).{0,80}(?:entscheidung|freigabe)/i.test(latest)||/(?:entscheidung|freigabe).{0,80}(?:verschoben|vertagt)/i.test(recent);
   const priorityLoss=/(?:andere|zwei|2).{0,60}(?:projekte?).{0,50}(?:priorisier|vorrang)|(?:projekt|opportunity).{0,80}(?:priorität verliert|an priorität verliert|priorität gesunken)|managementpriorität/i.test(scan);
   const budgetAvailable=/(?:budget).{0,70}(?:verfügbar|vorhanden|grundsätzlich verfügbar|bleibt.*verfügbar)/i.test(scan);
@@ -15754,7 +15756,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.6.0 Pilot Core 1.0';
+const KI21_VERSION='Pilot Core 1.0.2';
 
 
 function runKi21VersionMigration(){
@@ -16649,12 +16651,16 @@ function ki21ApplySmartImportV65(data,raw,selected,existingAccId){
   if(existingAccId){
     state.accounts=state.accounts.map(a=>a.id===existingAccId?{...a,cust:{...cust}}:a);
   }else{
-    acc={id,cust:{...cust},ts:Date.now()};
+    acc={id,cust:{...cust},ts:Date.now(),rawImport:String(raw||''),importText:String(raw||'')};
     state.accounts=[acc,...state.accounts].slice(0,10);
     state.activeId=id;
     LS.set('ki21_aid',id);
   }
   LS.set('ki21_acc',state.accounts);
+  // Neue Opportunities starten strikt ohne Analyse-/Report-Altzustand.
+  ['ki21_intel_','ki21_opportunity_intelligence_','ki21_deal_memory_','ki21_health_','ki21_health_lastError_'].forEach(prefix=>{
+    try{localStorage.removeItem(prefix+id);}catch(e){}
+  });
   LS.set('ki21_import_raw_'+id,String(raw||''));
   LS.set('ki21_import_structured_'+id,{data,selected,importedAt:Date.now()});
 
