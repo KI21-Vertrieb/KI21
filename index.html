@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.3-executive-prioritization-report-20260714 -->
+<!-- KI21_BUILD: v7.2.4-ui-regression-fix-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.3 Executive Priorisierung & Testbericht</title>
+<title>KI21 v7.2.4 UI Regression Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2444,6 +2444,61 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 .ki21-report-actions-v723{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-top:1px solid #30363d}.ki21-report-actions-v723 button:last-child{grid-column:1/-1}
 @media(max-width:390px){.ki21-priority-reason-text-v723{font-size:12.5px}.ki21-report-overlay-v723{padding:10px 8px max(16px,env(safe-area-inset-bottom))}}
 </style>
+<!-- v7.2.4: UI Regression Fix – Bericht aus dem Kennzahlen-Header entfernt, als eigener Menüpunkt unter der Hauptnavigation platziert; Phasenansicht erhält aktuellen Arbeitsstand und einen strukturierten Seitenabschluss. -->
+
+<style>
+/* v7.2.4 UI Regression Fix */
+.ki21-mode-nav-v724{margin-bottom:10px}
+.ki21-mode-nav-v724 .ki21-mode-tabs{margin-bottom:7px!important}
+.ki21-report-menu-v724{
+  width:100%;min-height:34px;border-radius:11px;
+  border:1px solid rgba(255,107,0,.34);
+  background:linear-gradient(135deg,rgba(255,107,0,.10),rgba(255,107,0,.035));
+  color:#ff9a45;font-family:'DM Sans',sans-serif;font-size:10.8px;font-weight:850;
+  cursor:pointer;touch-action:manipulation;
+}
+.ki21-report-menu-v724:active{background:rgba(255,107,0,.16);transform:translateY(1px)}
+.cockpit-v612-compact{
+  min-height:calc(100dvh - 86px);
+  background:
+    radial-gradient(circle at 80% 22%,rgba(255,107,0,.045),transparent 30%),
+    radial-gradient(circle at 10% 65%,rgba(88,166,255,.035),transparent 32%);
+}
+.ki21-phase-overview-v724{
+  margin:16px 0 18px;padding:15px;border-radius:17px;
+  border:1px solid rgba(139,148,158,.20);
+  background:linear-gradient(145deg,rgba(22,27,34,.88),rgba(15,20,27,.80));
+  box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.ki21-phase-overview-head-v724{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ki21-phase-overview-kicker-v724{font-size:8.2px;font-weight:900;letter-spacing:1.2px;color:#ff8a2a}
+.ki21-phase-overview-title-v724{margin-top:4px;font-size:13.4px;font-weight:850;color:#f3f6fb}
+.ki21-phase-overview-ring-v724{
+  flex:0 0 auto;min-width:44px;height:29px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(46,160,67,.34);background:rgba(46,160,67,.10);
+  color:#56d390;font-size:11px;font-weight:900;
+}
+.ki21-phase-progress-v724{height:5px;margin:12px 0 13px;border-radius:999px;background:rgba(139,148,158,.12);overflow:hidden}
+.ki21-phase-progress-fill-v724{height:100%;border-radius:999px;background:linear-gradient(90deg,#ff6b00,#56d390)}
+.ki21-phase-overview-grid-v724{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ki21-phase-overview-item-v724{padding:10px;border-radius:11px;border:1px solid rgba(139,148,158,.14);background:rgba(255,255,255,.018)}
+.ki21-phase-overview-item-v724.wide{grid-column:1/-1}
+.ki21-phase-overview-label-v724{font-size:7.7px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:#8b949e}
+.ki21-phase-overview-value-v724{margin-top:4px;font-size:10.8px;line-height:1.35;font-weight:760;color:#e6edf3}
+.ki21-phase-overview-value-v724.muted{color:#aeb8c4;font-weight:650}
+.cockpit-phase-list{margin-bottom:0!important}
+.tagline{position:static!important;margin:16px 0 0!important;padding-bottom:12px!important}
+@media(max-width:390px){
+  .cockpit-v612-compact{min-height:calc(100dvh - 82px)}
+  .ki21-report-menu-v724{min-height:32px;font-size:10.3px}
+  .ki21-phase-overview-v724{margin-top:13px;padding:13px;border-radius:15px}
+  .ki21-phase-overview-title-v724{font-size:12.5px}
+  .ki21-phase-overview-grid-v724{grid-template-columns:1fr}
+  .ki21-phase-overview-item-v724.wide{grid-column:auto}
+}
+</style>
+
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -7474,15 +7529,22 @@ function showScoreDetailsV4224(raw){
 }
 function buildModeTabsV4224(active){
   const aid=state.activeId||LS.get('ki21_aid',null);
-  return h('div',{className:'ki21-mode-tabs'},
-    h('button',{type:'button',className:'ki21-mode-tab '+(active==='cockpit'?'active':''),onclick:(e)=>{e.preventDefault();renderCockpitSnapshotLiteV4215();}},'Cockpit'),
-    h('button',{type:'button',className:'ki21-mode-tab '+(active==='phases'?'active':''),onclick:(e)=>{e.preventDefault();renderHomeLiteV4211();}},'Phasen'),
-    h('button',{type:'button',className:'ki21-mode-add',onclick:(e)=>{
+  return h('div',{className:'ki21-mode-nav-v724'},
+    h('div',{className:'ki21-mode-tabs'},
+      h('button',{type:'button',className:'ki21-mode-tab '+(active==='cockpit'?'active':''),onclick:(e)=>{e.preventDefault();renderCockpitSnapshotLiteV4215();}},'Cockpit'),
+      h('button',{type:'button',className:'ki21-mode-tab '+(active==='phases'?'active':''),onclick:(e)=>{e.preventDefault();renderHomeLiteV4211();}},'Phasen'),
+      h('button',{type:'button',className:'ki21-mode-add',onclick:(e)=>{
+        e.preventDefault();
+        if(!aid){showKunde();return;}
+        const a=(state.accounts||[]).find(x=>x.id===aid);
+        if(a)showNeuerKunde(a.cust,a.id,'kontext');
+      }},'＋ Ergänzung')
+    ),
+    h('button',{type:'button',className:'ki21-report-menu-v724',onclick:(e)=>{
       e.preventDefault();
       if(!aid){showKunde();return;}
-      const a=(state.accounts||[]).find(x=>x.id===aid);
-      if(a)showNeuerKunde(a.cust,a.id,'kontext');
-    }},'＋ Ergänzung')
+      showOpportunityTestReportV723();
+    }},'📄 Opportunity-Testbericht')
   );
 }
 function getCockpitNextStepV4224(raw){
@@ -8475,7 +8537,6 @@ function renderHomeLiteV4211(){
         renderScoreBadgeV4224(''),
         h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
       ),
-      h('button',{className:'btn ki21-report-btn-v723',onclick:showOpportunityTestReportV723},'Bericht'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -8499,6 +8560,52 @@ function renderHomeLiteV4211(){
     phaseList.appendChild(row);
   });
   wrap.appendChild(phaseList);
+
+  // v7.2.4: strukturierter Abschluss statt leerer schwarzer Fläche.
+  let completedPhasesV724=0;
+  phaseNames.forEach((_,i)=>{
+    let st='';
+    try{st=getPhaseStatus(i);}catch(e){st='';}
+    if(st==='done')completedPhasesV724++;
+  });
+  const activePhaseIndexV724=Math.min(completedPhasesV724,phaseNames.length-1);
+  const lastUpdateV724=(()=>{
+    try{
+      const raw=LS.get('ki21_last_refresh_'+aid,null)||LS.get('ki21_last_update_'+aid,null);
+      if(raw){
+        const d=new Date(raw);
+        if(!isNaN(d.getTime()))return d.toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'});
+      }
+    }catch(e){}
+    return 'Aktueller gespeicherter Stand';
+  })();
+
+  wrap.appendChild(h('div',{className:'ki21-phase-overview-v724'},
+    h('div',{className:'ki21-phase-overview-head-v724'},
+      h('div',{},
+        h('div',{className:'ki21-phase-overview-kicker-v724'},'ARBEITSSTAND'),
+        h('div',{className:'ki21-phase-overview-title-v724'},completedPhasesV724+' von '+phaseNames.length+' Phasen bearbeitet')
+      ),
+      h('div',{className:'ki21-phase-overview-ring-v724'},String(Math.round((completedPhasesV724/phaseNames.length)*100))+'%')
+    ),
+    h('div',{className:'ki21-phase-progress-v724'},
+      h('div',{className:'ki21-phase-progress-fill-v724',style:{width:Math.round((completedPhasesV724/phaseNames.length)*100)+'%'}})
+    ),
+    h('div',{className:'ki21-phase-overview-grid-v724'},
+      h('div',{className:'ki21-phase-overview-item-v724'},
+        h('div',{className:'ki21-phase-overview-label-v724'},'Aktuelle Phase'),
+        h('div',{className:'ki21-phase-overview-value-v724'},'Phase '+(activePhaseIndexV724+1)+' – '+phaseNames[activePhaseIndexV724])
+      ),
+      h('div',{className:'ki21-phase-overview-item-v724'},
+        h('div',{className:'ki21-phase-overview-label-v724'},'Nächster sinnvoller Schritt'),
+        h('div',{className:'ki21-phase-overview-value-v724'},completedPhasesV724<phaseNames.length?'Phase '+(activePhaseIndexV724+1)+' vollständig abschließen':'Cockpit aktualisieren und Entscheidung prüfen')
+      ),
+      h('div',{className:'ki21-phase-overview-item-v724 wide'},
+        h('div',{className:'ki21-phase-overview-label-v724'},'Letzte Aktualisierung'),
+        h('div',{className:'ki21-phase-overview-value-v724 muted'},lastUpdateV724)
+      )
+    )
+  ));
 
   // v4.233 UI Cleanup: unterer Cockpit-Zusatzbutton entfernt; Navigation läuft über die Tabs.
 
@@ -9711,7 +9818,6 @@ function renderCockpitSnapshotLiteV4215(){
         renderScoreBadgeV4224(''),
         h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
       ),
-      h('button',{className:'btn ki21-report-btn-v723',onclick:showOpportunityTestReportV723},'Bericht'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -15010,7 +15116,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.3 Executive Priorisierung & Testbericht';
+const KI21_VERSION='v7.2.4 UI Regression Fix';
 
 
 function runKi21VersionMigration(){
