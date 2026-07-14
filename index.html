@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.5-cockpit-export-fix-20260714 -->
+<!-- KI21_BUILD: v7.2.6-stable-cockpit-report-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.5 Cockpit & Export Fix</title>
+<title>KI21 v7.2.6 Stabiler Cockpit-Testbericht</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2522,6 +2522,30 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 </style>
 
+<!-- v7.2.6: Stabilitätsfix – Cockpit wird transaktional gerendert und kann bei Fehlern nicht mehr leer/schwarz bleiben; Testbericht wird ohne sichtbaren Ansichtswechsel erzeugt und als kopierbarer Text oder TXT-Datei bereitgestellt. -->
+
+<style>
+/* v7.2.6 Stabiler Cockpit-Testbericht */
+.ki21-report-actions-v725{display:none!important}
+.ki21-report-textarea-v726{
+  flex:1;min-height:0;width:100%;resize:none;border:0!important;border-left:0!important;
+  border-radius:0!important;background:#0d1117!important;color:#e6edf3!important;
+  -webkit-text-fill-color:#e6edf3!important;padding:15px 16px!important;
+  font-family:'DM Sans',sans-serif!important;font-size:12px!important;line-height:1.55!important;
+  white-space:pre-wrap!important;overflow:auto!important;
+}
+.ki21-report-actions-v726{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  padding:12px 14px;border-top:1px solid #30363d;
+}
+.ki21-report-actions-v726 .btn-o,.ki21-report-actions-v726 .btn{width:100%;min-height:40px}
+.ki21-report-actions-v726 .btn:last-child{grid-column:1/-1}
+@media(max-width:390px){
+  .ki21-report-actions-v726{grid-template-columns:1fr}
+  .ki21-report-actions-v726 .btn:last-child{grid-column:auto}
+}
+</style>
+
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -2803,6 +2827,78 @@ function showOpportunityTestReportV725(){
   if(document.querySelector('#ki21-visible-decision-core')){create();return;}
   try{renderCockpitSnapshotLiteV4215();setTimeout(create,220);}
   catch(e){alert('Der Testbericht konnte nicht erzeugt werden. Bitte zuerst das Cockpit öffnen.');}
+}
+
+
+
+// ── v7.2.6 STABILER TESTBERICHT OHNE SICHTBAREN ANSICHTSWECHSEL ─────────
+function ki21CreateTxtDownloadV726(text,filename){
+  try{
+    const blob=new Blob([String(text||'')],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;a.style.display='none';
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{try{a.remove();URL.revokeObjectURL(url);}catch(e){}},1500);
+    return true;
+  }catch(e){return false;}
+}
+function buildOpportunityTestReportSafelyV726(){
+  const app=document.getElementById('app');
+  if(!app)throw new Error('App-Container fehlt');
+  if(document.querySelector('#ki21-visible-decision-core'))return buildOpportunityTestReportV723();
+
+  const saved=document.createDocumentFragment();
+  while(app.firstChild)saved.appendChild(app.firstChild);
+
+  let report='';
+  try{
+    renderCockpitSnapshotLiteV4215();
+    report=buildOpportunityTestReportV723();
+    if(!report||report.length<80)throw new Error('Testbericht ist leer');
+  }finally{
+    while(app.firstChild)app.removeChild(app.firstChild);
+    app.appendChild(saved);
+  }
+  return report;
+}
+function showOpportunityTestReportV726(){
+  const aid=state.activeId||LS.get('ki21_aid',null);
+  if(!aid){showKunde();return;}
+
+  let report='';
+  try{report=buildOpportunityTestReportSafelyV726();}
+  catch(err){
+    alert('Der Testbericht konnte nicht erzeugt werden. Die aktuelle Ansicht bleibt erhalten.\\n\\n'+String((err&&err.message)||err||'Unbekannter Fehler'));
+    return;
+  }
+
+  const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
+  const name=sanitizeFilenameV725(acc&&acc.cust&&acc.cust.firma);
+  const filename='KI21_Testbericht_'+name+'.txt';
+  const overlay=h('div',{className:'ki21-report-overlay-v723'});
+  const close=()=>{try{overlay.remove();}catch(e){}};
+  const textarea=h('textarea',{readonly:true,className:'ki21-report-textarea-v726'});
+  textarea.value=report;
+
+  const panel=h('div',{className:'ki21-report-panel-v723'},
+    h('div',{className:'ki21-report-head-v723'},
+      h('div',{className:'ki21-report-title-v723'},'Opportunity-Testbericht'),
+      h('div',{className:'ki21-report-sub-v723'},'Für ChatGPT kopieren oder als TXT-Datei speichern')
+    ),
+    textarea,
+    h('div',{className:'ki21-report-actions-v726'},
+      h('button',{className:'btn-o',onclick:()=>universalCopy(report,()=>alert('✅ Bericht kopiert. Jetzt im Chat einfügen.'))},'Bericht kopieren'),
+      h('button',{className:'btn-o',onclick:()=>{
+        if(!ki21CreateTxtDownloadV726(report,filename)){
+          alert('Die TXT-Datei konnte nicht gespeichert werden. Nutze bitte „Bericht kopieren“.');
+        }
+      }},'TXT für ChatGPT speichern'),
+      h('button',{className:'btn',onclick:close},'Schließen')
+    )
+  );
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
 }
 
 
@@ -7626,7 +7722,7 @@ function buildModeTabsV4224(active){
       h('button',{type:'button',className:'ki21-report-link-v725',onclick:(e)=>{
         e.preventDefault();
         if(!aid){showKunde();return;}
-        showOpportunityTestReportV725();
+        showOpportunityTestReportV726();
       }},'Testbericht teilen')
     )
   );
@@ -9743,9 +9839,9 @@ async function shortCockpitRefreshV6532(accId){
 
 
 function renderCockpitSnapshotLiteV4215(){
-  const app=document.getElementById('app');
-  if(!app)return;
-  app.innerHTML='';
+  const realApp=document.getElementById('app');
+  if(!realApp)return;
+  const app=document.createElement('div');
   try{ if(typeof ki21SafeRemoveBlockingUi==='function')ki21SafeRemoveBlockingUi(); }catch(e){}
   const aid=state.activeId||LS.get('ki21_aid',null);
   const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
@@ -10545,9 +10641,11 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.2 Wirkungsarchitektur'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.6 Stabiler Cockpit-Testbericht'));
   app.appendChild(header);
   app.appendChild(wrap);
+  // v7.2.6: sichtbare Ansicht erst nach vollständig erfolgreichem Aufbau ersetzen.
+  realApp.replaceChildren(...Array.from(app.childNodes));
   LS.set('ki21_view','cockpit-lite');
 }
 
@@ -15154,7 +15252,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.5 Cockpit & Export Fix';
+const KI21_VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
 
 
 function runKi21VersionMigration(){
@@ -16322,7 +16420,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.2 Wirkungsarchitektur';
+  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16601,7 +16699,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.2 Wirkungsarchitektur';
+  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16814,7 +16912,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.2 Wirkungsarchitektur';
+  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
