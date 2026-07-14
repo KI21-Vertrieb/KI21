@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.9-pre-pilot-state-gate-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.10-pre-pilot-state-gate-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.9</title>
+<title>KI21 Pilot Core 1.0.10</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11398,7 +11398,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.4.0 Deal Memory Engine'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.10 · Actionable Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -18291,6 +18291,91 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const base=_finalizeV108(report,accId);
     return applyPrePilotGateV109(base,accId);
   };
+})();
+</script>
+<!-- Pilot Core 1.0.10: Actionable Cockpit – konkrete Verkaufsaufträge statt abstrakter Lagebeschreibung. -->
+<style>
+.ki21-action-command-v110{border:1px solid rgba(167,139,250,.38)!important;background:linear-gradient(145deg,rgba(41,31,66,.96),rgba(18,22,31,.95))!important;box-shadow:0 14px 32px rgba(0,0,0,.25)!important}
+.ki21-action-command-v110 .cockpit-tile-label{color:#cbbcff!important}
+.ki21-action-list-v110{display:flex;flex-direction:column;gap:9px}
+.ki21-action-item-v110{display:grid;grid-template-columns:28px 1fr;gap:9px;align-items:start;padding:10px 11px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.06)}
+.ki21-action-item-v110.primary{background:rgba(167,139,250,.14);border-color:rgba(167,139,250,.42)}
+.ki21-action-num-v110{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(167,139,250,.18);color:#e7deff;font-size:10px;font-weight:950}
+.ki21-action-kicker-v110{font-size:8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#a998e8;margin-bottom:3px}
+.ki21-action-text-v110{font-size:12.5px;line-height:1.38;color:#f4f1ff;font-weight:760}
+.ki21-action-success-v110{margin-top:9px;padding:9px 10px;border-left:3px solid #56d390;border-radius:8px;background:rgba(86,211,144,.07);font-size:11.5px;line-height:1.38;color:#dff8e8}
+@media(max-width:390px){.ki21-action-item-v110{padding:9px}.ki21-action-text-v110{font-size:11.8px}.ki21-action-success-v110{font-size:10.9px}}
+</style>
+<script>
+(function(){
+  const _renderCockpitV110=window.renderCockpitSnapshotLiteV4215;
+  function sourceV110(){
+    try{return String(getOpportunityOnlySourceV6522(state.activeId)||'');}catch(e){return '';}
+  }
+  function firstNameRoleV110(text,roleRe,fallback){
+    const lines=String(text||'').split(/\n+/);
+    for(const line of lines){
+      if(roleRe.test(line)){
+        const m=line.match(/-\s*([^·\n]+)\s*·/);
+        if(m&&m[1])return m[1].trim();
+      }
+    }
+    return fallback;
+  }
+  function buildActionPlanV110(){
+    const t=sourceV110();
+    if(!t)return null;
+    const low=t.toLowerCase();
+    const sponsor=firstNameRoleV110(t,/(vertriebsleiter|fachlicher sponsor|sponsor)/i,'Der fachliche Sponsor');
+    const dm=firstNameRoleV110(t,/(geschäftsführer|geschäftsführerin|wirtschaftliche entscheider)/i,'der wirtschaftliche Entscheider');
+    const presales=firstNameRoleV110(t,/(leiter presales|presales)/i,'der wichtigste Einflussnehmer');
+    const prePilot=/(noch kein budget freigegeben|pilotentscheidung liegt noch nicht vor|pilot.{0,80}noch nicht freigegeben|noch nicht eingebunden|workshop.{0,80}noch nicht terminiert)/i.test(t);
+    if(!prePilot)return null;
+    const hasPresales=/presales/i.test(low);
+    const hasTests=/(produkttest|workshop)/i.test(low);
+    const hasForecast=/forecast/i.test(low);
+    const participants=[dm];
+    if(hasPresales&&presales&&!participants.includes(presales))participants.push(presales);
+    const meeting='60-minütigen Discovery- und Entscheidungstermin mit '+participants.join(' und ');
+    const evidence=[];
+    if(hasPresales)evidence.push('investierte Presales-Tage');
+    if(hasTests)evidence.push('Produkttests oder Workshops');
+    if(hasForecast)evidence.push('ursprüngliche Forecast-Einschätzung und tatsächlichen Ausgang');
+    evidence.push('fehlende Entscheider oder Qualifikationsinformationen');
+    return {
+      now:sponsor+' vereinbart innerhalb der nächsten fünf Arbeitstage einen '+meeting+'.',
+      prepare:'Vor dem Termin zwei bis drei reale verlorene oder gefährdete Opportunities auswählen und je Fall '+evidence.join(', ')+' dokumentieren.',
+      decide:'Im Termin wirtschaftlichen Handlungsdruck, messbare Pilotziele, Budgetweg, Verantwortliche und den nächsten Entscheidungsschritt bestätigen.',
+      success:'Erfolg des nächsten Schritts: '+dm+' bestätigt den Entscheidungsprozess und beauftragt die Ausarbeitung eines konkreten Pilotvorschlags.'
+    };
+  }
+  function applyActionableCockpitV110(){
+    const plan=buildActionPlanV110();
+    if(!plan)return;
+    const card=document.querySelector('.cockpit-v5-workgrid .cockpit-card-next');
+    if(!card)return;
+    card.classList.add('ki21-action-command-v110');
+    const label=card.querySelector('.cockpit-tile-label');
+    if(label)label.textContent='Konkreter Verkaufsauftrag';
+    [...card.querySelectorAll('.cockpit-tile-item,.cockpit-tile-link,.v53-task,.v53-task-list')].forEach(n=>n.remove());
+    const list=document.createElement('div');list.className='ki21-action-list-v110';
+    const items=[['JETZT TUN',plan.now,true],['VORBEREITEN',plan.prepare,false],['IM TERMIN ENTSCHEIDEN',plan.decide,false]];
+    items.forEach((it,idx)=>{
+      const row=document.createElement('div');row.className='ki21-action-item-v110'+(it[2]?' primary':'');
+      const num=document.createElement('div');num.className='ki21-action-num-v110';num.textContent=String(idx+1);
+      const body=document.createElement('div');
+      const kick=document.createElement('div');kick.className='ki21-action-kicker-v110';kick.textContent=it[0];
+      const txt=document.createElement('div');txt.className='ki21-action-text-v110';txt.textContent=it[1];
+      body.append(kick,txt);row.append(num,body);list.appendChild(row);
+    });
+    const success=document.createElement('div');success.className='ki21-action-success-v110';success.textContent=plan.success;
+    card.append(list,success);
+  }
+  window.renderCockpitSnapshotLiteV4215=function(){
+    _renderCockpitV110.apply(this,arguments);
+    try{applyActionableCockpitV110();}catch(e){console.warn('Actionable Cockpit 1.0.10',e);}
+  };
+  window.addEventListener('load',()=>setTimeout(()=>{try{applyActionableCockpitV110();}catch(e){}},120));
 })();
 </script>
 </body>
