@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.8-cockpit-image-export-fix-20260714 -->
+<!-- KI21_BUILD: v7.2.9-unified-deal-state-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.8 Cockpit- und Bildexport-Fix</title>
+<title>KI21 v7.2.9 Unified Deal State</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2525,7 +2525,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.2.6: Stabilitätsfix – Cockpit wird transaktional gerendert und kann bei Fehlern nicht mehr leer/schwarz bleiben; Testbericht wird ohne sichtbaren Ansichtswechsel erzeugt und als kopierbarer Text oder TXT-Datei bereitgestellt. -->
 
 <style>
-/* v7.2.8 Cockpit- und Bildexport-Fix */
+/* v7.2.9 Unified Deal State */
 .ki21-report-actions-v725{display:none!important}
 .ki21-report-textarea-v726{
   flex:1;min-height:0;width:100%;resize:none;border:0!important;border-left:0!important;
@@ -2547,21 +2547,6 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 </style>
 
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
-
-<style>
-/* v7.2.8 Cockpit- und Bildexport-Fix */
-.ki21-report-image-wrap-v728{flex:1;min-height:0;overflow:auto;background:#0d1117;padding:10px}
-.ki21-report-image-v728{display:block;width:100%;height:auto;border-radius:10px;background:#0d1117}
-.ki21-report-actions-v728{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-top:1px solid #30363d}
-.ki21-report-actions-v728 .btn-o,.ki21-report-actions-v728 .btn{width:100%;min-height:40px}
-.ki21-report-actions-v728 .btn:last-child{grid-column:1/-1}
-@media(max-width:390px){
-  .ki21-report-actions-v728{grid-template-columns:1fr}
-  .ki21-report-actions-v728 .btn:last-child{grid-column:auto}
-}
-</style>
-
-<!-- v7.2.8: ReferenceError topicNeg behoben; Opportunity-Testbericht wird als PNG-Bild erzeugt, angezeigt, geteilt und gespeichert. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -2910,157 +2895,6 @@ function showOpportunityTestReportV726(){
           alert('Die TXT-Datei konnte nicht gespeichert werden. Nutze bitte „Bericht kopieren“.');
         }
       }},'TXT für ChatGPT speichern'),
-      h('button',{className:'btn',onclick:close},'Schließen')
-    )
-  );
-  overlay.appendChild(panel);
-  document.body.appendChild(overlay);
-}
-
-
-
-// ── v7.2.8 OPPORTUNITY-TESTBERICHT ALS PNG-BILD ─────────────────────────
-function ki21WrapCanvasTextV728(ctx,text,maxWidth){
-  const words=String(text||'').split(/\s+/).filter(Boolean);
-  const lines=[]; let line='';
-  for(const word of words){
-    const test=line?line+' '+word:word;
-    if(line&&ctx.measureText(test).width>maxWidth){lines.push(line);line=word;}
-    else line=test;
-  }
-  if(line)lines.push(line);
-  return lines;
-}
-function ki21BuildReportCanvasV728(report,customer){
-  const width=1200, margin=74, contentWidth=width-margin*2, scale=2;
-  const measure=document.createElement('canvas').getContext('2d');
-  const rawLines=String(report||'').split('\n');
-  const layout=[]; let height=96;
-
-  for(const raw of rawLines){
-    const line=String(raw||'').trimEnd();
-    if(!line){layout.push({type:'space',h:22});height+=22;continue;}
-    if(line==='KI21 OPPORTUNITY-TESTBERICHT'){
-      layout.push({type:'title',text:line,h:62});height+=62;continue;
-    }
-    if(/^[A-ZÄÖÜ0-9 &/–—-]{4,}$/.test(line)&&!line.startsWith('•')){
-      measure.font='800 24px Arial';
-      const lines=ki21WrapCanvasTextV728(measure,line,contentWidth);
-      const h=lines.length*34+24;
-      layout.push({type:'heading',lines,h});height+=h;continue;
-    }
-    const bullet=line.startsWith('•');
-    const text=bullet?line.slice(1).trim():line;
-    measure.font=(bullet?'500 ':'400 ')+'25px Arial';
-    const lines=ki21WrapCanvasTextV728(measure,text,contentWidth-(bullet?34:0));
-    const h=lines.length*35+12;
-    layout.push({type:bullet?'bullet':'body',lines,h});height+=h;
-  }
-
-  height=Math.max(900,height+92);
-  const canvas=document.createElement('canvas');
-  canvas.width=width*scale; canvas.height=height*scale;
-  const ctx=canvas.getContext('2d'); ctx.scale(scale,scale);
-
-  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,width,height);
-  const grd=ctx.createLinearGradient(0,0,width,0);
-  grd.addColorStop(0,'#ff6b00');grd.addColorStop(1,'#ff9a45');
-  ctx.fillStyle=grd;ctx.fillRect(0,0,width,14);
-
-  let y=74;
-  for(const item of layout){
-    if(item.type==='space'){y+=item.h;continue;}
-    if(item.type==='title'){
-      ctx.fillStyle='#ff8a2a';ctx.font='800 38px Arial';
-      ctx.fillText(item.text,margin,y);y+=item.h;continue;
-    }
-    if(item.type==='heading'){
-      ctx.fillStyle='#ff9a45';ctx.font='800 24px Arial';
-      for(const line of item.lines){ctx.fillText(line,margin,y);y+=34;}
-      ctx.strokeStyle='rgba(255,138,42,.32)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(margin,y-12);ctx.lineTo(width-margin,y-12);ctx.stroke();
-      y+=24;continue;
-    }
-    ctx.font=(item.type==='bullet'?'500 ':'400 ')+'25px Arial';
-    let x=margin;
-    if(item.type==='bullet'){
-      ctx.fillStyle='#ff8a2a';ctx.beginPath();ctx.arc(margin+7,y-8,5,0,Math.PI*2);ctx.fill();
-      x=margin+32;
-    }
-    ctx.fillStyle='#e6edf3';
-    for(const line of item.lines){ctx.fillText(line,x,y);y+=35;}
-    y+=12;
-  }
-
-  ctx.fillStyle='rgba(139,148,158,.78)';ctx.font='500 20px Arial';
-  ctx.fillText('KI21 · '+String(customer||'Opportunity'),margin,height-42);
-  return canvas;
-}
-function ki21CanvasBlobV728(canvas){
-  return new Promise((resolve,reject)=>{
-    try{canvas.toBlob(b=>b?resolve(b):reject(new Error('Bild konnte nicht erzeugt werden')),'image/png',1);}
-    catch(e){reject(e);}
-  });
-}
-async function ki21SaveReportImageV728(canvas,filename){
-  const blob=await ki21CanvasBlobV728(canvas);
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=filename;a.style.display='none';
-  document.body.appendChild(a);a.click();
-  setTimeout(()=>{try{a.remove();URL.revokeObjectURL(url);}catch(e){}},1500);
-}
-async function ki21ShareReportImageV728(canvas,filename){
-  const blob=await ki21CanvasBlobV728(canvas);
-  const file=new File([blob],filename,{type:'image/png'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
-    await navigator.share({title:'KI21 Opportunity-Testbericht',files:[file]});
-    return;
-  }
-  await ki21SaveReportImageV728(canvas,filename);
-}
-function showOpportunityTestReportV728(){
-  const aid=state.activeId||LS.get('ki21_aid',null);
-  if(!aid){showKunde();return;}
-
-  try{
-    if(!document.querySelector('#ki21-visible-decision-core')){
-      renderCockpitSnapshotLiteV4215();
-    }
-  }catch(e){}
-
-  let report='';
-  try{
-    report=buildOpportunityTestReportV723();
-    if(!report||report.length<80)throw new Error('Testbericht ist leer');
-  }catch(err){
-    alert('Der Testbericht konnte nicht erzeugt werden.\n\n'+String((err&&err.message)||err||'Unbekannter Fehler'));
-    return;
-  }
-
-  const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
-  const customer=(acc&&acc.cust&&acc.cust.firma)||'Opportunity';
-  const filename='KI21_Testbericht_'+sanitizeFilenameV725(customer)+'.png';
-  const canvas=ki21BuildReportCanvasV728(report,customer);
-  canvas.className='ki21-report-image-v728';
-
-  const overlay=h('div',{className:'ki21-report-overlay-v723'});
-  const close=()=>{try{overlay.remove();}catch(e){}};
-  const panel=h('div',{className:'ki21-report-panel-v723'},
-    h('div',{className:'ki21-report-head-v723'},
-      h('div',{className:'ki21-report-title-v723'},'Opportunity-Testbericht'),
-      h('div',{className:'ki21-report-sub-v723'},'Als PNG-Bild direkt an ChatGPT senden')
-    ),
-    h('div',{className:'ki21-report-image-wrap-v728'},canvas),
-    h('div',{className:'ki21-report-actions-v728'},
-      h('button',{className:'btn-o',onclick:async()=>{
-        try{await ki21ShareReportImageV728(canvas,filename);}
-        catch(e){if(!(e&&e.name==='AbortError'))alert('Bild konnte nicht geteilt werden: '+String((e&&e.message)||e));}
-      }},'Bild teilen'),
-      h('button',{className:'btn-o',onclick:async()=>{
-        try{await ki21SaveReportImageV728(canvas,filename);}
-        catch(e){alert('PNG konnte nicht gespeichert werden.');}
-      }},'PNG speichern'),
       h('button',{className:'btn',onclick:close},'Schließen')
     )
   );
@@ -7889,7 +7723,7 @@ function buildModeTabsV4224(active){
       h('button',{type:'button',className:'ki21-report-link-v725',onclick:(e)=>{
         e.preventDefault();
         if(!aid){showKunde();return;}
-        showOpportunityTestReportV728();
+        showOpportunityTestReportV726();
       }},'Testbericht teilen')
     )
   );
@@ -10311,14 +10145,36 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
       if(/(?:offen|unklar|noch\s+(?:zu\s+)?klären|muss geklärt|fehlt|blockiert)/.test(txt))open.push(d);
     }
     const numberWordsV713={ein:1,eine:1,einen:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwölf:12,dreizehn:13,vierzehn:14,fünfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19,zwanzig:20};
-    const nums=[...txt.matchAll(/(\d+(?:[,.]\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig)\s*(minuten?|stunden?|tage?|wochen?|monate?|prozent|%|euro|€)/g)].map(m=>({v:/^\d/.test(m[1])?parseFloat(m[1].replace(',','.')):numberWordsV713[m[1]],u:m[2],i:m.index}));
-    let deviation=null;
-    if(nums.length>=2){
-      outer: for(let i=0;i<nums.length;i++)for(let j=i+1;j<nums.length;j++){
-        if(nums[i].u===nums[j].u||(/min/.test(nums[i].u)&&/min/.test(nums[j].u))){
-          const a=nums[i],b=nums[j],hi=Math.max(a.v,b.v),lo=Math.min(a.v,b.v);
-          if(hi>lo*1.15){deviation={target:lo,actual:hi,unit:/min/.test(a.u)?'Minuten':a.u,gap:hi-lo};break outer;}
+    const metricNumberV729='(\\d+(?:[,.]\\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig)';
+    const metricUnitV729='(minuten?|stunden?|tage?|wochen?|monate?|prozent|%|euro|€)';
+    const parseMetricValueV729=value=>/^\d/.test(value)?parseFloat(value.replace(',','.')):numberWordsV713[value];
+    const extractMetricV729=(source,patterns)=>{
+      for(const p of patterns){
+        const m=new RegExp(p,'i').exec(String(source||''));
+        if(m){
+          const value=parseMetricValueV729(m[1]);
+          if(Number.isFinite(value))return {value,unit:m[2],index:m.index};
         }
+      }
+      return null;
+    };
+    const targetMetricV729=extractMetricV729(currentStateNormV712,[
+      '(?:zielwert|zielkorridor|akzeptiert(?:e|er)?\\s+pflegeaufwand|vereinbart(?:e|er)?\\s+zielwert|maximal|höchstens|nicht mehr als)[^.!?]{0,70}?'+metricNumberV729+'\\s*'+metricUnitV729,
+      metricNumberV729+'\\s*'+metricUnitV729+'[^.!?]{0,55}?(?:zielwert|zielkorridor|maximal|höchstens|akzeptiert)'
+    ]);
+    const latestActualMetricV729=extractMetricV729(latestNormV680,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei|nach der (?:anpassung|vereinfachung))[^.!?]{0,70}?'+metricNumberV729+'\\s*'+metricUnitV729,
+      metricNumberV729+'\\s*'+metricUnitV729+'[^.!?]{0,55}?(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt)'
+    ]);
+    const stateActualMetricV729=extractMetricV729(currentStateNormV712,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei)[^.!?]{0,70}?'+metricNumberV729+'\\s*'+metricUnitV729
+    ]);
+    const actualMetricV729=latestActualMetricV729||stateActualMetricV729;
+    let deviation=null;
+    if(targetMetricV729&&actualMetricV729){
+      const sameUnit=targetMetricV729.unit===actualMetricV729.unit||(/min/.test(targetMetricV729.unit)&&/min/.test(actualMetricV729.unit));
+      if(sameUnit&&actualMetricV729.value>targetMetricV729.value*1.02){
+        deviation={target:targetMetricV729.value,actual:actualMetricV729.value,unit:/min/.test(targetMetricV729.unit)?'Minuten':targetMetricV729.unit,gap:actualMetricV729.value-targetMetricV729.value};
       }
     }
     const explicitTradeoff=positive.length&&negative.length&&/(?:gleichzeitig|aber|jedoch|während|trotz|obwohl)/.test(txt);
@@ -10405,7 +10261,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
           'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
         next:pilotContext&&currentNeg.id==='effort'
-          ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren, gezielt vereinfachen und danach Pflegeaufwand sowie ${measurementIndicatorV722||primaryEffectV722} erneut gegen den Zielwert messen.`
+          ?`Mit den betroffenen Pilotnutzern die größten Zeittreiber identifizieren und gezielt vereinfachen. Danach den Pflegeaufwand gegen den unveränderten Zielwert messen und prüfen, ob ${measurementIndicatorV722?('die '+measurementIndicatorV722+' vollständig bleiben'):primaryEffectV722+' erhalten bleiben'}.`
           :`Die zwei bis drei größten Ursachen beim ${subject} identifizieren, gezielt reduzieren und anschließend Zielwert sowie ${benefit} erneut messen.`
       }};
     }
@@ -10597,14 +10453,14 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   ]);
   const priorityTopicV723=(()=>{
     const source=String(
-      decisionPrimaryV674.risk||
-      decisionPrimaryV674.ask||
-      decisionPrimaryV674.decision||
+      (decisionPrimaryV674&&decisionPrimaryV674.risk)||
+      (decisionPrimaryV674&&decisionPrimaryV674.ask)||
+      (decisionPrimaryV674&&decisionPrimaryV674.decision)||
       wrongDecisionV675||
       ''
     );
-    const match=source.match(/(?:beim|zwischen|kritische(?:r|n)?|Ursache(?:n)?(?:\s+der)?|Engpass(?:\s+bei)?)\s+([^,.?–—]+)/i);
-    return match&&match[1]?match[1].trim():'aktuelle Engpass';
+    const match=source.match(/(?:beim|zwischen|Engpass(?:\s+bei)?|Ursache(?:n)?(?:\s+der)?)\s+([^,.?–—]+)/i);
+    return match&&match[1]?match[1].trim():'aktueller Engpass';
   })();
   const priorityReasonV723=securedForPriorityV723.length
     ?`${securedForPriorityV723.slice(0,4).join(', ')} verändern den Deal aktuell nicht mehr. Der kritische Punkt „${priorityTopicV723}“ hat Vorrang, weil er den nächsten verbindlichen Kundenschritt unmittelbar gefährdet.`
@@ -10818,7 +10674,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.8 Cockpit- und Bildexport-Fix'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.9 Unified Deal State'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11771,6 +11627,94 @@ function exportAutopilotPDF(cust,dossierResults){
   });
   html+=`
 
+<script>
+
+(function(){
+  const previousHealthV729=window.getOpportunityHealth;
+  function sourceTextV729(accId){
+    let text='';
+    try{text+=' '+String(collectCurrentOpportunityInputsV620(accId)||'');}catch(e){}
+    try{const f=getLatestAdditionFactsV6532(accId)||{};text+=' '+String(f.recentText||f.latestText||'');}catch(e){}
+    return text.toLowerCase().replace(/\s+/g,' ').trim();
+  }
+  function parseNumberV729(raw){
+    const words={ein:1,eine:1,einen:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwölf:12,dreizehn:13,vierzehn:14,fünfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19,zwanzig:20};
+    return /^\d/.test(raw)?parseFloat(raw.replace(',','.')):words[raw];
+  }
+  function metricMatchV729(text,patterns){
+    const number='(\\d+(?:[,.]\\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig)';
+    const unit='(minuten?|stunden?|tage?|wochen?|monate?|prozent|%|euro|€)';
+    for(const p of patterns){
+      const m=new RegExp(p.replace('{N}',number).replace('{U}',unit),'i').exec(text);
+      if(m){const value=parseNumberV729(m[1]);if(Number.isFinite(value))return {value,unit:m[2]};}
+    }
+    return null;
+  }
+  function buildUnifiedDealStateV729(accId){
+    const all=sourceTextV729(accId);
+    let latest='';
+    try{const f=getLatestAdditionFactsV6532(accId)||{};latest=String(f.latestText||f.recentText||'').toLowerCase().replace(/\s+/g,' ');}catch(e){}
+    const target=metricMatchV729(all,[
+      '(?:zielwert|zielkorridor|maximal|höchstens|nicht mehr als|akzeptiert(?:e|er)?\\s+pflegeaufwand)[^.!?]{0,70}?{N}\\s*{U}',
+      '{N}\\s*{U}[^.!?]{0,55}?(?:zielwert|zielkorridor|maximal|höchstens|akzeptiert)'
+    ]);
+    const current=metricMatchV729(latest,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei|nach der (?:anpassung|vereinfachung))[^.!?]{0,70}?{N}\\s*{U}',
+      '{N}\\s*{U}[^.!?]{0,55}?(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt)'
+    ])||metricMatchV729(all,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei)[^.!?]{0,70}?{N}\\s*{U}'
+    ]);
+    const metric=target&&current?{
+      name:/pflege|zeitaufwand|bearbeitungszeit/.test(all)?'Pflegeaufwand':'Messwert',
+      targetValue:target.value,currentValue:current.value,
+      unit:/min/.test(target.unit)?'Minuten':target.unit,
+      variance:current.value-target.value,
+      status:current.value<=target.value?'erfüllt':'kritisch'
+    }:null;
+    const openStart=/(?:starttermin|projektstart|kickoff)[^.!?]{0,100}(?:offen|noch nicht|nicht vereinbart|fehlt|zu klären)/.test(all);
+    const openDecision=/(?:entscheidungstermin|kaufentscheidung|freigabe)[^.!?]{0,100}(?:offen|verschoben|noch nicht|zu klären|fehlt)/.test(all);
+    const userFriction=/(?:nutzer|anwender)[^.!?]{0,120}(?:zu hoch|zu lang|aufwendig|akzeptanzproblem)/.test(all);
+    const criticalMetric=!!(metric&&metric.status==='kritisch');
+    return {metric,openStart,openDecision,userFriction,hasCriticalRisk:criticalMetric||openDecision||userFriction,hasOpenRisk:openStart||openDecision||criticalMetric||userFriction};
+  }
+  window.buildUnifiedDealStateV729=buildUnifiedDealStateV729;
+  window.getOpportunityHealth=function(accId){
+    const base=previousHealthV729?previousHealthV729.call(this,accId):null;
+    if(!base)return base;
+    const out=JSON.parse(JSON.stringify(base));
+    const deal=buildUnifiedDealStateV729(accId);
+    let score=Math.max(0,Math.min(100,Math.round(Number(out.score)||0)));
+    if(deal.hasCriticalRisk)score=Math.min(score,84);
+    else if(deal.hasOpenRisk)score=Math.min(score,92);
+    out.score=score;
+    out.label=score>=85?'Sehr gesund':score>=70?'Gesund':score>=55?'Stabil':'Kritisch';
+    out.unifiedDealStateV729=deal;
+    out.scoreSource='unified_deal_state_v729';
+    out.riskAdjustedV661=true;
+    return out;
+  };
+  function syncVisibleScoreV729(){
+    try{
+      const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
+      if(!aid)return;
+      const health=window.getOpportunityHealth(aid);
+      if(!health||typeof health.score!=='number')return;
+      LS.set('ki21_health_'+aid,{...(LS.get('ki21_health_'+aid,{})||{}),...health,ts:Date.now()});
+      document.querySelectorAll('.cockpit-score-badge,.cockpit-score-click,.score-pill-v667.health .score-value-v667').forEach(el=>{
+        el.textContent=Math.round(health.score)+'/100';
+        try{const c=getHealthColor(health.score);el.style.color=c;el.style.borderColor=c;}catch(e){}
+      });
+    }catch(e){console.warn('Unified Deal State score sync skipped',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVisibleScoreV729,0),{once:true});
+  else setTimeout(syncVisibleScoreV729,0);
+  window.addEventListener('pageshow',()=>setTimeout(syncVisibleScoreV729,0));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(syncVisibleScoreV729,0);});
+  setTimeout(syncVisibleScoreV729,450);
+})();
+
+</script>
+<!-- v7.2.9: Unified Deal State – semantische Soll-/Ist-Trennung, jüngster Istwert gewinnt, Health 100 nur ohne offene oder kritische Risiken. -->
 </body></html>`;
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 }
@@ -15440,7 +15384,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.8 Cockpit- und Bildexport-Fix';
+const KI21_VERSION='v7.2.9 Unified Deal State';
 
 
 function runKi21VersionMigration(){
@@ -16608,7 +16552,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.8 Cockpit- und Bildexport-Fix';
+  const VERSION='v7.2.9 Unified Deal State';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16887,7 +16831,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.8 Cockpit- und Bildexport-Fix';
+  const VERSION='v7.2.9 Unified Deal State';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -17100,7 +17044,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.8 Cockpit- und Bildexport-Fix';
+  const VERSION='v7.2.9 Unified Deal State';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
