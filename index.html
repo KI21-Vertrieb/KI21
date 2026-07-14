@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.6-stable-cockpit-report-20260714 -->
+<!-- KI21_BUILD: v7.2.7-cockpit-immediate-fix-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.6 Stabiler Cockpit-Testbericht</title>
+<title>KI21 v7.2.7 Cockpit-Sofortfix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2525,7 +2525,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.2.6: Stabilitätsfix – Cockpit wird transaktional gerendert und kann bei Fehlern nicht mehr leer/schwarz bleiben; Testbericht wird ohne sichtbaren Ansichtswechsel erzeugt und als kopierbarer Text oder TXT-Datei bereitgestellt. -->
 
 <style>
-/* v7.2.6 Stabiler Cockpit-Testbericht */
+/* v7.2.7 Cockpit-Sofortfix */
 .ki21-report-actions-v725{display:none!important}
 .ki21-report-textarea-v726{
   flex:1;min-height:0;width:100%;resize:none;border:0!important;border-left:0!important;
@@ -2546,6 +2546,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 </style>
 
+<!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -9838,10 +9839,10 @@ async function shortCockpitRefreshV6532(accId){
 }
 
 
-function renderCockpitSnapshotLiteV4215(){
-  const realApp=document.getElementById('app');
-  if(!realApp)return;
-  const app=document.createElement('div');
+function renderCockpitSnapshotLiteV4215Unsafe(){
+  const app=document.getElementById('app');
+  if(!app)return;
+  app.innerHTML='';
   try{ if(typeof ki21SafeRemoveBlockingUi==='function')ki21SafeRemoveBlockingUi(); }catch(e){}
   const aid=state.activeId||LS.get('ki21_aid',null);
   const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
@@ -10641,12 +10642,23 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.6 Stabiler Cockpit-Testbericht'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.7 Cockpit-Sofortfix'));
   app.appendChild(header);
   app.appendChild(wrap);
-  // v7.2.6: sichtbare Ansicht erst nach vollständig erfolgreichem Aufbau ersetzen.
-  realApp.replaceChildren(...Array.from(app.childNodes));
   LS.set('ki21_view','cockpit-lite');
+}
+
+function renderCockpitSnapshotLiteV4215(){
+  const app=document.getElementById('app');
+  if(!app)return;
+  const previousNodes=Array.from(app.childNodes).map(node=>node.cloneNode(true));
+  try{
+    renderCockpitSnapshotLiteV4215Unsafe();
+  }catch(err){
+    app.replaceChildren(...previousNodes);
+    console.error('KI21 Cockpit-Renderfehler',err);
+    alert('Das Cockpit konnte nicht vollständig aufgebaut werden. Die vorherige Ansicht wurde wiederhergestellt.\n\n'+String((err&&err.message)||err||'Unbekannter Fehler'));
+  }
 }
 
 function renderHome(){
@@ -15252,7 +15264,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
+const KI21_VERSION='v7.2.7 Cockpit-Sofortfix';
 
 
 function runKi21VersionMigration(){
@@ -16420,7 +16432,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
+  const VERSION='v7.2.7 Cockpit-Sofortfix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16699,7 +16711,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
+  const VERSION='v7.2.7 Cockpit-Sofortfix';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16912,7 +16924,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.6 Stabiler Cockpit-Testbericht';
+  const VERSION='v7.2.7 Cockpit-Sofortfix';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
