@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.7-pilot-freeze-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.8-buying-center-confidence-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.7</title>
+<title>KI21 Pilot Core 1.0.8</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2557,6 +2557,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.5: Opportunity Isolation & Source Management – anderer Firmenname erzeugt zwingend eine neue Opportunity; CRM-Reimport ersetzt statt anzuhängen; Importquelle und Ergänzungen bleiben getrennt. -->
 <!-- Pilot Core 1.0.5: Single Opportunity State – alle Primärdaten, Phasen, Ergebnisse und Deal-Memory-Inhalte sind strikt an den aktiven Opportunity-Container gebunden. -->
 <!-- Pilot Core 1.0.7: Pilot Freeze – Vertrauenscheck bewertet Buying Center und Business Case nur bei bestätigter Evidenz als gut/stark; widersprüchliche Kundenschritt-Formulierungen bereinigt. -->
+<!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -3182,13 +3183,23 @@ function ki21ReasoningV760(memory,readiness){
   if(success||goal)levers.push('2. Erfolgsmessung und Baseline gemeinsam mit dem Kunden schriftlich bestätigen.');
   levers.push('3. Sponsor und Buying Center früh auf die anschließende Kaufentscheidung ausrichten.');
   const buyingText=JSON.stringify(s)+' '+String(e.text||'');
+  const truth=memory.sourceTruth||ki21SourceTruthV103(memory.accId);
   const sponsor=/sponsor|champion|befürworter/i.test(buyingText);
   const economic=/cfo|geschäftsführer|geschäftsführung|wirtschaftlich(?:er|e) entscheider|budgetverantwort/i.test(buyingText);
   const roles=/verantwortlich|ansprechpartner|kickoff-teilnehmer/i.test(buyingText);
+  const economicOpen=!!truth.economicDecisionMakerOpen || /wirtschaftlich(?:er|e) entscheider[^.!?]{0,120}(?:noch nicht eingebunden|nicht persönlich eingebunden|nicht bestätigt|offen|abgeleitet)/i.test(buyingText);
+  const rolesOpen=/buying center[^.!?]{0,120}(?:nicht vollständig|offen|noch nicht)|weitere(?:n)? rollen[^.!?]{0,100}(?:offen|nicht bestätigt)|rolle offen/i.test(buyingText);
   let buyingLevel='OFFEN',buyingReason='Sponsor, wirtschaftlicher Entscheider und weitere Einflussnehmer sind noch nicht belastbar eingeordnet.';
   const bcCount=[sponsor,economic,roles].filter(Boolean).length;
-  if(bcCount>=3){buyingLevel='GUT';buyingReason='Sponsor, wirtschaftlicher Entscheider und Zuständigkeiten sind weitgehend eingeordnet.';}
-  else if(bcCount>=1){buyingLevel='TEILWEISE';buyingReason='Einzelne Rollen sind erkennbar; das Buying Center ist noch nicht vollständig bestätigt.';}
+  if(sponsor&&economic&&!economicOpen&&!rolesOpen&&bcCount>=3){
+    buyingLevel='GUT';
+    buyingReason='Sponsor, wirtschaftlicher Entscheider und Zuständigkeiten sind weitgehend eingeordnet und eingebunden.';
+  }else if(bcCount>=1){
+    buyingLevel='TEILWEISE';
+    buyingReason=economicOpen
+      ?'Sponsor ist bekannt. Der wirtschaftliche Entscheider ist identifiziert, aber noch nicht eingebunden. Weitere Buying-Center-Rollen sind noch nicht vollständig bestätigt.'
+      :'Einzelne Rollen sind erkennbar; Einbindung, Einfluss und weitere Buying-Center-Rollen sind noch nicht vollständig bestätigt.';
+  }
   return {facts,interpretations,reasons,levers,buying:{label:'Buying Center',level:buyingLevel,reason:buyingReason}};
 }
 function renderOpportunityReportFromDealMemoryV740(baseReport,memory){
@@ -16056,7 +16067,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.7';
+const KI21_VERSION='Pilot Core 1.0.8';
 
 
 function runKi21VersionMigration(){
