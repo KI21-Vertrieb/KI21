@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.1.3-generalized-decision-regression-gate-20260714 -->
+<!-- KI21_BUILD: v7.2.0-executive-decision-engine-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.1.3 Generalized Decision Regression Gate</title>
+<title>KI21 v7.2.0 Executive Decision Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9778,7 +9778,7 @@ function renderCockpitSnapshotLiteV4215(){
     }};
   })();
 
-  // v7.1.3 Generalized Decision Regression Gate
+  // v7.2.0 Executive Decision Engine
   // Allgemeine semantische Regeln, konkrete Opportunity-Ausgabe: Die Engine kennt keine
   // Testfirma und keinen festen Testwert, verwendet aber die aktuellen Entitäten, Messwerte
   // und Prozessbegriffe der jeweiligen Opportunity. Interne Normalisierung darf nie in die
@@ -9820,92 +9820,129 @@ function renderCockpitSnapshotLiteV4215(){
     const currentPos=positive.find(x=>!currentNeg||x.id!==currentNeg.id)||positive[0];
     const pilotContext=/(?:pilot|pilotwoche|pilotbetrieb)/.test(txt);
     const lowerLabel=d=>String(d&&d.label||'Punkt').toLowerCase();
+    // v7.2 Executive Language Engine: Die Entscheidungslogik bleibt semantisch,
+    // die sichtbare Sprache benennt jedoch das konkrete Thema aus der Opportunity.
+    const executiveTopic=(d,source)=>{
+      const t=String(source||'').toLowerCase();
+      if(!d)return 'offenen Punkt';
+      if(d.id==='quality'){
+        if(/forecast|prognose/.test(t))return 'Forecast-Begründungen';
+        if(/datenqualität/.test(t))return 'Datenqualität';
+        if(/fehlerquote/.test(t))return 'Fehlerquote';
+        if(/trefferquote/.test(t))return 'Trefferquote';
+        return 'Ergebnisqualität';
+      }
+      if(d.id==='effort'){
+        if(/pflegeaufwand|pflegezeit/.test(t))return 'Pflegeaufwand';
+        if(/bearbeitungszeit/.test(t))return 'Bearbeitungszeit';
+        if(/implementierungsaufwand/.test(t))return 'Implementierungsaufwand';
+        if(/einführungsaufwand/.test(t))return 'Einführungsaufwand';
+        if(/durchlaufzeit/.test(t))return 'Durchlaufzeit';
+        return 'Arbeitsaufwand';
+      }
+      if(d.id==='adoption')return /nutzung/.test(t)?'regelmäßige Nutzung':'Nutzerakzeptanz';
+      if(d.id==='authority')return /freigabe/.test(t)?'Freigabe':'Kaufentscheidung';
+      if(d.id==='criteria')return 'Erfolgskriterien';
+      if(d.id==='timeline')return /starttermin/.test(t)?'Starttermin':'Zeitplan';
+      return d.label;
+    };
+    const topicNeg=executiveTopic(currentNeg,txt);
+    const topicPos=executiveTopic(currentPos,txt);
+    const topicNegDat=topicNeg==='Pflegeaufwand'?'Pflegeaufwand':topicNeg;
+    const affectedMatch=/(?:(\d+)|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn)\s+(?:der|von)\s+(\d+)\s+(?:nutzer|anwender|personen)/.exec(txt);
+    const wordToNum={ein:1,eine:1,einen:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10};
+    const affectedCount=(()=>{
+      if(!affectedMatch)return null;
+      const raw=affectedMatch[1]||affectedMatch[0].split(/\s+/)[0];
+      return /^\d+$/.test(raw)?Number(raw):wordToNum[raw];
+    })();
 
     if(deviation&&currentNeg){
-      const subject=currentNeg.label;
-      const benefit=currentPos?currentPos.label:'Nutzen';
+      const subject=topicNeg;
+      const benefit=currentPos?topicPos:'Kundennutzen';
       const decision=pilotContext&&currentNeg.id==='effort'
         ?'Pilot unverändert fortsetzen oder die zeitintensiven Arbeitsschritte jetzt gezielt vereinfachen?'
-        :`Unverändert fortsetzen oder die Ursache der Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} jetzt gezielt korrigieren?`;
+        :`Unverändert fortsetzen oder die Ursache der Ziel-Ist-Abweichung beim ${subject} jetzt gezielt klären?`;
       const rec=pilotContext&&currentNeg.id==='effort'
-        ?`Den Piloten fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte gezielt vereinfachen. Danach den Aufwand erneut messen und prüfen, ob die bereits verbesserte ${benefit.toLowerCase()} erhalten bleibt.`
-        :`Den laufenden Schritt fortsetzen, die Ursache der Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} gezielt reduzieren und anschließend Zielwert sowie ${benefit.toLowerCase()} gemeinsam neu bewerten.`;
+        ?`Den Piloten fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte gezielt vereinfachen. Danach den Aufwand erneut messen und prüfen, ob die bereits verbesserte ${benefit} erhalten bleibt.`
+        :`Den laufenden Schritt fortsetzen, die Ursache der Ziel-Ist-Abweichung beim ${subject} gezielt reduzieren und anschließend Zielwert sowie ${benefit} gemeinsam neu bewerten.`;
       return {confidence:'hoch',primary:{
         id:'D-GENERAL-TRADEOFF',decision,rec,
-        ask:`Welche konkreten Ursachen erklären die Abweichung von ${deviation.target} auf ${deviation.actual} ${deviation.unit} – und welche davon lassen sich beseitigen, ohne die erreichte ${benefit.toLowerCase()} wieder zu verlieren?`,
-        risk:`Der Nutzen ist erkennbar, kann aber an der nicht beherrschten Ziel-Ist-Abweichung beim ${lowerLabel(currentNeg)} scheitern.`,
+        ask:`Welche konkreten Ursachen erklären die Abweichung von ${deviation.target} auf ${deviation.actual} ${deviation.unit} – und welche davon lassen sich beseitigen, ohne die erreichte Verbesserung der ${benefit} wieder zu verlieren?`,
+        risk:`Die Verbesserung der ${benefit} ist belegt, kann aber an der nicht beherrschten Ziel-Ist-Abweichung beim ${subject} scheitern.`,
         reasons:[
           `Der vereinbarte Zielwert von ${deviation.target} ${deviation.unit} wird mit aktuell ${deviation.actual} ${deviation.unit} deutlich überschritten.`,
-          currentPos?`Gleichzeitig ist ein positiver Effekt bei der ${benefit.toLowerCase()} belegt.`:'Ein positiver Nutzen ist bereits erkennbar.',
-          affected?`${affected[1]} bestätigen den kritischen operativen Effekt.`:'Die Abweichung ist durch aktuelle Messwerte oder Beobachtungen belegt.'
+          currentPos?`Gleichzeitig ist die Verbesserung der ${benefit} bereits belegt.`:'Ein konkreter Kundennutzen ist bereits erkennbar.',
+          affectedCount?`${affectedCount} betroffene Nutzer bestätigen, dass der ${subject} im Arbeitsalltag kritisch ist.`:'Die Abweichung ist durch aktuelle Messwerte oder Beobachtungen belegt.'
         ],
         counters:[
-          'Eine vorschnelle Vereinfachung kann genau die Informationen entfernen, die den positiven Effekt erzeugen.',
+          `Eine vorschnelle Vereinfachung kann genau die Informationen entfernen, die zur Verbesserung der ${benefit} geführt haben.`,
           'Ein Teil des Mehraufwands kann einmaliger Anlauf- oder Lernaufwand sein und muss von dauerhaftem Aufwand getrennt werden.'
         ],
         changes:[
-          `der Ist-Wert beim ${lowerLabel(currentNeg)} nach der Korrektur in den vereinbarten Zielkorridor fällt.`,
-          `der positive Effekt bei der ${benefit.toLowerCase()} durch die Korrektur deutlich zurückgeht.`,
+          `der Ist-Wert beim ${subject} nach der Anpassung in den vereinbarten Zielkorridor fällt.`,
+          `die Verbesserung der ${benefit} durch die Anpassung deutlich zurückgeht.`,
           'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
         next:pilotContext&&currentNeg.id==='effort'
           ?'Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie Qualitätswirkung erneut messen.'
-          :`Die zwei bis drei größten Ursachen des ${lowerLabel(currentNeg)} identifizieren, gezielt korrigieren und anschließend Zielwert sowie ${benefit.toLowerCase()} erneut messen.`
+          :`Die zwei bis drei größten Ursachen beim ${subject} identifizieren, gezielt reduzieren und anschließend Zielwert sowie ${benefit} erneut messen.`
       }};
     }
     if(explicitTradeoff&&currentNeg){
-      const benefit=currentPos?currentPos.label:'Kundennutzen';
+      const benefit=currentPos?topicPos:'Kundennutzen';
       if(currentNeg.id==='effort'){
         return {confidence:'hoch',primary:{
           id:'D-GENERAL-TRADEOFF',
           decision:pilotContext?'Pilot unverändert fortsetzen oder die zeitintensiven Arbeitsschritte jetzt gezielt vereinfachen?':'Den aktuellen Prozess unverändert fortsetzen oder den operativen Aufwand jetzt gezielt reduzieren?',
           rec:pilotContext
-            ?`Den Piloten fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte gezielt vereinfachen. Danach den operativen Aufwand erneut messen und sicherstellen, dass die verbesserte ${benefit.toLowerCase()} erhalten bleibt.`
-            :`Den positiven Nutzen sichern und gleichzeitig die größten Aufwandstreiber gezielt reduzieren. Anschließend operativen Aufwand und ${benefit.toLowerCase()} gemeinsam neu bewerten.`,
-          ask:`Welche konkreten Arbeitsschritte verursachen den zusätzlichen Aufwand – und welche davon lassen sich vereinfachen, ohne die verbesserte ${benefit.toLowerCase()} wieder zu verlieren?`,
+            ?`Den Piloten fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte gezielt vereinfachen. Danach den operativen Aufwand erneut messen und sicherstellen, dass die verbesserte ${benefit} erhalten bleibt.`
+            :`Den positiven Nutzen sichern und gleichzeitig die größten Aufwandstreiber gezielt reduzieren. Anschließend operativen Aufwand und ${benefit} gemeinsam neu bewerten.`,
+          ask:`Welche konkreten Arbeitsschritte verursachen den zusätzlichen Aufwand – und welche davon lassen sich vereinfachen, ohne die verbesserte ${benefit} wieder zu verlieren?`,
           risk:'Der Nutzen ist erkennbar, kann aber an einem dauerhaft zu hohen operativen Aufwand im Vertriebsalltag scheitern.',
           reasons:[
-            `Ein positiver Effekt bei der ${benefit.toLowerCase()} und ein zu hoher operativer Aufwand treten gleichzeitig auf.`,
+            `Ein positiver Effekt bei der ${benefit} und ein zu hoher operativer Aufwand treten gleichzeitig auf.`,
             'Dieser Zielkonflikt ist für die Kaufentscheidung relevanter als eine weitere unveränderte Aktivität.'
           ],
           counters:[
             'Ein Teil des Mehraufwands kann vorübergehender Anlauf- oder Lernaufwand sein.',
-            `Eine vorschnelle Vereinfachung kann genau die Informationen entfernen, die zur besseren ${benefit.toLowerCase()} geführt haben.`
+            `Eine vorschnelle Vereinfachung kann genau die Informationen entfernen, die zur besseren ${benefit} geführt haben.`
           ],
           changes:[
-            `der operative Aufwand nach der Vereinfachung in den akzeptierten Zielkorridor fällt und die ${benefit.toLowerCase()} erhalten bleibt.`,
-            `die ${benefit.toLowerCase()} durch die Vereinfachung deutlich zurückgeht.`,
+            `der operative Aufwand nach der Vereinfachung in den akzeptierten Zielkorridor fällt und die ${benefit} erhalten bleibt.`,
+            `die ${benefit} durch die Vereinfachung deutlich zurückgeht.`,
             'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
           ],
           next:pilotContext
-            ?`Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie ${benefit.toLowerCase()} erneut messen.`
-            :`Die zwei bis drei größten Aufwandstreiber identifizieren, gezielt reduzieren und anschließend operativen Aufwand sowie ${benefit.toLowerCase()} erneut messen.`
+            ?`Mit den betroffenen Pilotnutzern die zwei bis drei zeitintensivsten Arbeitsschritte identifizieren, gezielt vereinfachen und in der nächsten Pilotwoche Aufwand sowie ${benefit} erneut messen.`
+            :`Die zwei bis drei größten Aufwandstreiber identifizieren, gezielt reduzieren und anschließend operativen Aufwand sowie ${benefit} erneut messen.`
         }};
       }
       return {confidence:'hoch',primary:{
         id:'D-GENERAL-TRADEOFF',
-        decision:'Den aktuellen Weg unverändert fortsetzen oder den erkannten Zielkonflikt jetzt gezielt lösen?',
-        rec:'Den belegten Nutzen sichern, die Ursache des negativen Effekts gezielt reduzieren und beide Wirkungen anschließend gemeinsam neu bewerten.',
-        ask:'Welche konkrete Veränderung reduziert den negativen Effekt, ohne den belegten Nutzen wesentlich zu schwächen?',
-        risk:'Eine einseitige Optimierung kann entweder den Nutzen schwächen oder die Umsetzbarkeit gefährden.',
-        reasons:['Ein positiver und ein negativer Effekt treten gleichzeitig auf.','Der Zielkonflikt ist für die Kaufentscheidung relevanter als eine weitere unveränderte Aktivität.'],
-        counters:['Der negative Effekt kann vorübergehend sein.','Eine Änderung kann den positiven Effekt abschwächen.'],
-        changes:['der negative Effekt nachweislich verschwindet.','der positive Effekt deutlich nachlässt.'],
-        next:'Die Hauptursache des negativen Effekts identifizieren, gezielt korrigieren und anschließend beide Wirkungen erneut messen.'
+        decision:`Den aktuellen Weg unverändert fortsetzen oder den Zielkonflikt zwischen ${topicPos} und ${topicNeg} jetzt gezielt lösen?`,
+        rec:`Die bereits erreichte Verbesserung der ${topicPos} erhalten und gleichzeitig die Hauptursache beim ${topicNeg} gezielt reduzieren. Danach beide Größen gemeinsam neu bewerten.`,
+        ask:`Welche konkrete Änderung reduziert den ${topicNeg}, ohne die bereits erreichte Verbesserung der ${topicPos} wesentlich zu schwächen?`,
+        risk:`Eine einseitige Anpassung kann entweder die Verbesserung der ${topicPos} wieder verlieren oder die Alltagstauglichkeit gefährden.`,
+        reasons:[`Die ${topicPos} hat sich verbessert, während der ${topicNeg} gleichzeitig kritisch bleibt.`,`Dieser Zielkonflikt beeinflusst die Kaufentscheidung stärker als eine weitere unveränderte Aktivität.`],
+        counters:[`Der kritische ${topicNeg} kann vorübergehender Anlaufaufwand sein.`,`Eine vorschnelle Anpassung kann die Verbesserung der ${topicPos} wieder abschwächen.`],
+        changes:[`der ${topicNeg} nachweislich in den akzeptierten Zielkorridor fällt.`,`die Verbesserung der ${topicPos} deutlich nachlässt.`],
+        next:`Die Hauptursache beim ${topicNeg} identifizieren, gezielt reduzieren und anschließend ${topicNeg} sowie ${topicPos} erneut messen.`
       }};
     }
     if(open.length){
       const d=open[0];
+      const openTopic=executiveTopic(d,txt);
       return {confidence:'mittel',primary:{
         id:'D-GENERAL-GATE',
-        decision:`Jetzt fortsetzen oder zuerst ${d.label.toLowerCase()} verbindlich klären?`,
+        decision:`Jetzt fortsetzen oder zuerst ${openTopic} verbindlich klären?`,
         rec:'Nur die Information klären, die für die nächste Kundenentscheidung wirklich erforderlich ist, und sie in ein verbindliches Kriterium, einen Verantwortlichen und einen Termin übersetzen.',
-        ask:`Ist ${d.label.toLowerCase()} Voraussetzung für die Kaufentscheidung oder erst für die spätere Umsetzung?`,
+        ask:`Ist ${openTopic} Voraussetzung für die Kaufentscheidung oder erst für die spätere Umsetzung?`,
         risk:'Ein ungeklärter Punkt kann nachträglich zur neuen Entscheidungshürde werden.',
-        reasons:[`Der aktuelle offene Punkt betrifft ${d.label.toLowerCase()}.`],
+        reasons:[`Der aktuelle offene Punkt betrifft ${openTopic}.`],
         counters:['Eine zusätzliche Klärung kann den Deal unnötig verlangsamen.'],
-        changes:[`${d.label} verbindlich geklärt wird.`],
-        next:`Mit dem zuständigen Entscheider klären, welche konkrete Entscheidung von ${d.label.toLowerCase()} abhängt und bis wann sie getroffen wird.`
+        changes:[`${openTopic} verbindlich geklärt wird.`],
+        next:`Mit dem zuständigen Entscheider klären, welche konkrete Entscheidung von ${openTopic} abhängt und bis wann sie getroffen wird.`
       }};
     }
     return null;
@@ -9923,7 +9960,10 @@ function renderCockpitSnapshotLiteV4215(){
       .replace(/den operativer Aufwand/gi,'den operativen Aufwand')
       .replace(/des operativer Aufwand/gi,'des operativen Aufwands')
       .replace(/operativer aufwand/g,'operativer Aufwand')
-      .replace(/qualität/g,'Qualität');
+      .replace(/qualität/g,'Qualität')
+      .replace(/positiver Effekt/gi,'konkreter Nutzen')
+      .replace(/negativer Effekt/gi,'kritischer Nachteil')
+      .replace(/operative Qualität/gi,'Ergebnisqualität');
     if(!obj||!obj.primary)return obj;
     const p=obj.primary;
     ['decision','rec','ask','risk','next'].forEach(k=>p[k]=fix(p[k]));
@@ -9931,6 +9971,16 @@ function renderCockpitSnapshotLiteV4215(){
     return obj;
   };
   sanitizeVisibleDecisionV713(dynamicDecisionV680);
+  // v7.2 Runtime Quality Gate: sichtbare Texte dürfen weder technische Platzhalter
+  // noch grammatikalisch falsche Normalisierungen enthalten.
+  try{
+    const visibleParts=[]; const pp=dynamicDecisionV680&&dynamicDecisionV680.primary||{};
+    ['decision','rec','ask','risk','next'].forEach(k=>visibleParts.push(pp[k]||''));
+    ['reasons','counters','changes'].forEach(k=>visibleParts.push(...(pp[k]||[])));
+    const visibleJoined=visibleParts.join(' ');
+    const forbidden=/(?:positiver Effekt|negativer Effekt|den operativer|des operativer|unveraendert|qualitaet|Massnahme)/i;
+    if(forbidden.test(visibleJoined))console.warn('KI21 v7.2 Quality Gate: unerwünschte sichtbare Formulierung erkannt',visibleJoined);
+  }catch(e){}
   const decisionAnalysisV674=dynamicDecisionV680;
   const decisionPrimaryV674=decisionAnalysisV674.primary||{};
   const reasonItemsV675=decisionPrimaryV674.reasons||[
@@ -10217,7 +10267,7 @@ function renderCockpitSnapshotLiteV4215(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.1.3 Generalized Decision Regression Gate'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.0 Executive Decision Engine'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14826,7 +14876,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.1.3 Generalized Decision Regression Gate';
+const KI21_VERSION='v7.2.0 Executive Decision Engine';
 
 
 function runKi21VersionMigration(){
@@ -15994,7 +16044,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.1.3 Generalized Decision Regression Gate';
+  const VERSION='v7.2.0 Executive Decision Engine';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16273,7 +16323,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.1.3 Generalized Decision Regression Gate';
+  const VERSION='v7.2.0 Executive Decision Engine';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16486,7 +16536,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.1.3 Generalized Decision Regression Gate';
+  const VERSION='v7.2.0 Executive Decision Engine';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
