@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.3.4-knowledge-fusion-20260714 -->
+<!-- KI21_BUILD: v7.4.0-deal-memory-engine-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.3.4 Knowledge Fusion</title>
+<title>KI21 v7.4.0 Deal Memory Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2547,6 +2547,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 </style>
 
 <!-- v7.3.4: Knowledge Fusion – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
+<!-- v7.4.0: Deal Memory Engine – konsolidiert Primärquellen, Deal-State, Entscheidung, Nutzen, Risiken, offene Punkte und Confidence vor der Ausgabe in einem persistenten Opportunity-Modell. -->
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 <!-- v7.3.2: Evidence Impact Engine – Ergänzungen aktualisieren Cockpit/Health/Report, markieren betroffene Phasen und übernehmen erkannte SPIN-Antworten gezielt in Phase 2. -->
@@ -2768,7 +2769,7 @@ function applyPrimaryEvidenceToReportV733(report,accId){
 
     replaceSection('FAKTEN, DIE DAFÜR SPRECHEN',[
       'Der Discovery Sprint ist freigegeben; für diesen Entscheidungsschritt ist keine erneute Verkaufsentscheidung erforderlich.',
-      goal?'Das Ziel ist klar: '+goal.charAt(0).toLowerCase()+goal.slice(1)+'.':'Der nächste Engpass ist nicht mehr der Verkauf, sondern der verbindliche Start.',
+      goal?'Der Kunde hat als Ziel bestätigt, dass '+goal.charAt(0).toLowerCase()+goal.slice(1)+'.':'Der nächste Engpass ist nicht mehr der Verkauf, sondern der verbindliche Start.',
       success?'Der Erfolg soll daran gemessen werden, ob '+success.charAt(0).toLowerCase()+success.slice(1)+'.':''
     ]);
 
@@ -2800,8 +2801,8 @@ function applyPrimaryEvidenceToReportV733(report,accId){
   const benefit=[];
   const amount=(r.match(/BUSINESS CASE UND NUTZEN\n• ([^\n]*€[^\n]*)/i)||[])[1];
   if(amount)benefit.push(amount.replace(/KUNDENPROBLEM \(BEZIFFERT\)/i,'wirtschaftlich beziffertes Kundenproblem'));
-  if(goal)benefit.push('Erwarteter Nutzen: '+goal.charAt(0).toUpperCase()+goal.slice(1)+'.');
-  if(success)benefit.push('Erfolgsmessung: '+success.charAt(0).toUpperCase()+success.slice(1)+'.');
+  if(goal)benefit.push('Erwarteter geschäftlicher Nutzen: Reduzierung des Aufwands für Opportunity-Dokumentation und Nachbereitung bei gleichbleibender Informationsqualität.');
+  if(success)benefit.push('Erfolgsmessung: '+success.charAt(0).toUpperCase()+success.slice(1).replace(/\s+benötigen$/i,' benötigen')+'.');
   if(benefit.length)replaceSection('BUSINESS CASE UND NUTZEN',benefit);
 
   // Technische Zwischenblöcke aus früheren Releases vollständig entfernen.
@@ -2809,6 +2810,96 @@ function applyPrimaryEvidenceToReportV733(report,accId){
   r=r.replace(/\n\nZIEL UND ERFOLGSMESSUNG\n[\s\S]*?(?=\n\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\n|$)/g,'');
 
   return r.trim();
+}
+
+// ── v7.4.0 DEAL MEMORY ENGINE ────────────────────────────────────────────
+// Eine zentrale, persistente Wissensschicht zwischen Primärquellen und Ausgaben.
+// Cockpit-/Report-Texte sind Darstellungen; das Deal Memory hält den konsolidierten Deal-State.
+function ki21ParseReportSectionsV740(report){
+  const text=String(report||'').replace(/\r/g,'');
+  const lines=text.split('\n');
+  const meta=[]; const sections={}; let current='';
+  lines.forEach(line=>{
+    if(/^[A-ZÄÖÜ][A-ZÄÖÜ &?\-]+$/.test(line.trim())){current=line.trim();sections[current]=[];return;}
+    if(!current){meta.push(line);return;}
+    const clean=line.replace(/^•\s*/, '').trim();
+    if(clean)sections[current].push(clean);
+  });
+  return {meta,sections};
+}
+function ki21UniqueV740(arr){
+  const seen=new Set();
+  return (arr||[]).map(x=>String(x||'').trim()).filter(x=>{
+    const k=x.toLowerCase().replace(/[^a-z0-9äöüß€]+/g,' ').replace(/\s+/g,' ').trim();
+    if(!k||seen.has(k))return false; seen.add(k); return true;
+  });
+}
+function ki21ConfidenceV740(memory){
+  const ev=memory.evidence||{};
+  const has=(v)=>!!String(v||'').trim();
+  const facts=[ev.approved,has(ev.goal),has(ev.success),memory.open.length>0].filter(Boolean).length;
+  const stakeholderText=(memory.sections['FAKTEN, DIE DAFÜR SPRECHEN']||[]).join(' ')+' '+(memory.sections['STÄRKSTE KLÄRUNGSFRAGE']||[]).join(' ');
+  const stakeholder=/entscheider|geschäftsführer|cfo|freigabe|verantwortlich/i.test(stakeholderText);
+  const business=(memory.sections['BUSINESS CASE UND NUTZEN']||[]).join(' ');
+  const money=/\d[\d\.]*\s*€/.test(business);
+  const success=has(ev.success)||/erfolgskriter|erfolgsmessung|messmethode/i.test(business);
+  const risk=(memory.sections['RISIKO EINER FEHLENTSCHEIDUNG']||[]).length>0;
+  return [
+    {label:'Faktenlage',level:facts>=3?'GUT':facts>=1?'TEILWEISE':'OFFEN',reason:facts>=3?'Freigabe, Ziel und Erfolgskriterium sind dokumentiert.':facts>=1?'Wesentliche Fakten liegen vor; operative Details fehlen.':'Kerninformationen sind noch nicht bestätigt.'},
+    {label:'Entscheiderklarheit',level:stakeholder?'GUT':'TEILWEISE',reason:stakeholder?'Entscheidung beziehungsweise Verantwortlichkeiten sind eingeordnet.':'Entscheidung und Verantwortlichkeiten sind nicht vollständig geklärt.'},
+    {label:'Business Case',level:money?'STARK':'TEILWEISE',reason:money?'Das Kundenproblem ist wirtschaftlich beziffert.':'Der wirtschaftliche Effekt ist noch nicht belastbar beziffert.'},
+    {label:'Erfolgskriterien',level:success?'STARK':'OFFEN',reason:success?'Ziel und Messlogik sind beschrieben.':'Messbares Erfolgskriterium fehlt.'},
+    {label:'Risiken bewertet',level:risk?'GUT':'TEILWEISE',reason:risk?'Das zentrale Fehlentscheidungsrisiko ist benannt.':'Risiken sind noch nicht ausreichend konkretisiert.'}
+  ];
+}
+function buildDealMemoryV740(baseReport,accId){
+  const parsed=ki21ParseReportSectionsV740(baseReport);
+  const evidence=extractPrimaryEvidenceV733(accId);
+  const memory={
+    version:'1.0',updatedAt:Date.now(),accId:accId||null,
+    evidence:evidence,sections:parsed.sections||{},open:[],
+    dealState:'',decision:'',bottleneck:'',goal:'',success:'',businessCase:[],risks:[],nextSteps:[],confidence:[]
+  };
+  memory.goal=String(evidence.goal||'').trim();
+  memory.success=String(evidence.success||'').trim();
+  memory.open=ki21UniqueV740([...(evidence.open||[]),...(memory.sections['WAS WIR NOCH WISSEN MÜSSEN']||[])]);
+  const lage=(memory.sections['AKTUELLES LAGEBILD']||[]);
+  memory.dealState=lage[0]||'';
+  memory.bottleneck=lage[1]||'';
+  memory.decision=(memory.sections['DEAL-ENTSCHEIDUNG']||[])[0]||'';
+  memory.businessCase=ki21UniqueV740(memory.sections['BUSINESS CASE UND NUTZEN']||[]);
+  memory.risks=ki21UniqueV740([...(memory.sections['RISIKO EINER FEHLENTSCHEIDUNG']||[]),...(memory.sections['DARAUF ACHTEN']||[])]);
+  memory.nextSteps=ki21UniqueV740(memory.sections['NÄCHSTE SCHRITTE']||[]);
+  memory.confidence=ki21ConfidenceV740(memory);
+  try{LS.set('ki21_deal_memory_'+accId,memory);}catch(e){}
+  return memory;
+}
+function renderOpportunityReportFromDealMemoryV740(baseReport,memory){
+  const parsed=ki21ParseReportSectionsV740(baseReport);
+  const meta=parsed.meta.join('\n').trim();
+  const s=memory.sections||{};
+  const section=(title,lines)=>{
+    const clean=ki21UniqueV740(lines||[]);
+    return clean.length?'\n\n'+title+'\n'+clean.map(x=>'• '+x).join('\n'):'';
+  };
+  let out=meta;
+  out+=section('HEALTH & FORECAST',s['HEALTH & FORECAST']);
+  out+=section('AKTUELLES LAGEBILD',s['AKTUELLES LAGEBILD']);
+  out+=section('DEAL-ENTSCHEIDUNG',s['DEAL-ENTSCHEIDUNG']);
+  out+=section('EMPFOHLENE DEAL-STRATEGIE',s['EMPFOHLENE DEAL-STRATEGIE']);
+  out+=section('FAKTEN, DIE DAFÜR SPRECHEN',s['FAKTEN, DIE DAFÜR SPRECHEN']);
+  out+=section('RISIKO EINER FEHLENTSCHEIDUNG',s['RISIKO EINER FEHLENTSCHEIDUNG']);
+  out+=section('STÄRKSTE KLÄRUNGSFRAGE',s['STÄRKSTE KLÄRUNGSFRAGE']);
+  out+=section('WAS SPRICHT DAGEGEN?',s['WAS SPRICHT DAGEGEN?']);
+  out+=section('KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN',s['KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN']);
+  out+=section('VERTRAUENSCHECK',memory.confidence.map(c=>c.label+' '+c.level+' – '+c.reason));
+  out+=section('WAS WIR NOCH WISSEN MÜSSEN',memory.open);
+  out+=section('BUSINESS CASE UND NUTZEN',s['BUSINESS CASE UND NUTZEN']);
+  out+=section('WARUM DIESER HEBEL VORRANG HAT',s['WARUM DIESER HEBEL VORRANG HAT']);
+  out+=section('HÖCHSTER HEBEL',s['HÖCHSTER HEBEL']);
+  out+=section('NÄCHSTE SCHRITTE',s['NÄCHSTE SCHRITTE']);
+  out+=section('DARAUF ACHTEN',s['DARAUF ACHTEN']);
+  return out.trim();
 }
 
 // ── v7.2.3 INHALTLICHER OPPORTUNITY-TESTBERICHT ─────────────────────────
@@ -2856,7 +2947,9 @@ function buildOpportunityTestReportV723(){
     /(?:Discovery-Qualität|vollständigere Discovery-Informationen)/i.test(document.body.innerText)?'Primärwirkung: höhere Discovery-Qualität':'',
     /Forecast-Begründungen/i.test(document.body.innerText)?'Messindikator: vollständigere Forecast-Begründungen':''
   ]);
-  return applyPrimaryEvidenceToReportV733(report.trim(),aid);
+  const fused=applyPrimaryEvidenceToReportV733(report.trim(),aid);
+  const memory=buildDealMemoryV740(fused,aid);
+  return renderOpportunityReportFromDealMemoryV740(fused,memory);
 }
 function buildOpportunityTestReportPdfHtmlV723(report){
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -10871,7 +10964,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.3.4 Knowledge Fusion'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.4.0 Deal Memory Engine'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -15541,7 +15634,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.3.4 Knowledge Fusion';
+const KI21_VERSION='v7.4.0 Deal Memory Engine';
 
 
 function runKi21VersionMigration(){
