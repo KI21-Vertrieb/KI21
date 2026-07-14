@@ -2922,6 +2922,121 @@ function ki21ApplyOpportunitySourceGuardV103(report,accId){
           .trim();
 }
 
+
+// ── PILOT CORE 1.0.3 FINAL PRIMARY-SOURCE GATE ────────────────────────
+// Läuft als letzter Schritt NACH Deal Memory und Sales-Reasoning-Ausgabe.
+// Damit können alte Cockpit-Texte oder frühere Fallbacks keinen ausdrücklich
+// negierten Deal-State der aktiven Opportunity wieder überschreiben.
+function ki21FinalizeReportFromPrimarySourceV103(report,accId){
+  let r=String(report||'');
+  const st=ki21SourceTruthV103(accId);
+  if(!st.raw)return r;
+
+  // Fremde Geldwerte konsequent entfernen. Angebotspreise sind kein Business Case.
+  if(!/8\.?000\s*€\s*(?:pro|\/)\s*monat/i.test(st.raw)){
+    r=r.replace(/^•\s*8\.?000\s*€\s*(?:pro|\/)\s*Monat[^\n]*\n?/gim,'');
+  }
+
+  if(!st.negativeApproval)return r.trim();
+
+  const set=(title,lines)=>{r=ki21ReplaceSectionV103(r,title,lines);};
+  const status=st.sponsorPresent
+    ?'Der fachliche Hauptkontakt erkennt Handlungsbedarf; eine Pilotentscheidung liegt noch nicht vor.'
+    :'Der Pilot ist noch nicht freigegeben; der nächste Entscheidungsschritt ist offen.';
+  const bottleneck=st.economicDecisionMakerOpen
+    ?'Die wirtschaftliche Entscheiderin ist noch nicht persönlich eingebunden; ein gemeinsamer Entscheidungstermin fehlt.'
+    :'Buying Center, Entscheidungskriterien und verbindlicher nächster Kundentermin sind noch nicht vollständig bestätigt.';
+  const recommendation='Einen gemeinsamen Discovery- und Entscheidungstermin mit Sponsor, wirtschaftlichem Entscheider und relevanten Einflussnehmern verbindlich erreichen.';
+
+  set('SALES SUMMARY',[
+    'Status: '+status,
+    'Engpass: '+bottleneck,
+    'Empfehlung: '+recommendation
+  ]);
+  set('HEALTH & FORECAST',['Qualifizierung · Buying Center und Pilotentscheidung vorbereiten']);
+  set('ENTSCHEIDUNGSREIFE',[
+    '35 % · NIEDRIG für die Pilotentscheidung',
+    '⚠ Pilot noch nicht freigegeben',
+    st.sponsorPresent?'✓ Fachlicher Sponsor erkennbar':'⚠ Fachlicher Sponsor noch nicht bestätigt',
+    st.economicDecisionMakerOpen?'⚠ Wirtschaftlicher Entscheider noch nicht eingebunden':'⚠ Wirtschaftlicher Entscheider noch nicht bestätigt',
+    st.successNotAgreed?'⚠ Erfolgskriterien noch nicht vereinbart':'⚠ Erfolgskriterien belastbar bestätigen',
+    st.nextMeetingOpen?'⚠ Nächster Kundentermin noch nicht vereinbart':'⚠ Nächsten Kundentermin bestätigen',
+    '⚠ Business Case noch nicht bestätigt'
+  ]);
+  set('VERTRIEBSEMPFEHLUNG',[recommendation]);
+  set('WARUM KI21 GENAU DAS EMPFIEHLT',[
+    'Der fachliche Kontakt kann die Investition nicht allein freigeben.',
+    'Der wirtschaftliche Nutzen und die Erfolgskriterien sind noch nicht gemeinsam bestätigt.',
+    'Weiterer Verkaufsfortschritt entsteht jetzt durch die Einbindung des vollständigen Buying Centers – nicht durch einen vorgezogenen Projektstart.'
+  ]);
+  set('WARUM JETZT?',[
+    'Kundensicht: Die offenen Vertriebsprobleme sollten vor der nächsten Planungs- und Budgetentscheidung wirtschaftlich eingeordnet werden.',
+    'Vertriebssicht: Ohne verbindlichen Termin und wirtschaftlichen Entscheider bleibt das Interesse unverbindlich und verliert Momentum.'
+  ]);
+  set('AKTUELLES LAGEBILD',[
+    'CHANCE '+status,
+    'GRÖSSTER ENGPASS '+bottleneck
+  ]);
+  set('EMPFOHLENE VERKAUFSSTRATEGIE',[
+    '1. Priorität: Den Sponsor befähigen, einen gemeinsamen Discovery- und Entscheidungstermin verbindlich zu organisieren.',
+    '2. Priorität: Wirtschaftlichen Handlungsdruck, Entscheidungskriterien und mögliche Pilotziele gemeinsam validieren.',
+    '3. Priorität: Erst danach einen belastbaren Pilotvorschlag mit klarer Erfolgsmessung vorlegen.'
+  ]);
+  set('FAKTENBASIS',[
+    st.sponsorPresent?'Der fachliche Hauptkontakt erkennt Handlungsbedarf und kann zum internen Sponsor werden.':'Ein fachlicher Hauptkontakt ist vorhanden; seine Sponsorrolle ist noch nicht bestätigt.',
+    'Der Pilot ist ausdrücklich noch nicht freigegeben.',
+    st.economicDecisionMakerOpen?'Die wirtschaftliche Entscheiderin wurde noch nicht persönlich eingebunden.':'Der wirtschaftliche Entscheider ist noch nicht belastbar bestätigt.',
+    st.nextMeetingOpen?'Ein Folgetermin ist in Aussicht gestellt, aber noch nicht konkret vereinbart.':'Ein verbindlicher nächster Kundentermin ist noch nicht bestätigt.'
+  ]);
+  set('VERTRIEBLICHE INTERPRETATION',[
+    'Das Interesse des Hauptkontakts ist ein positives Signal, aber noch keine Kaufentscheidung.',
+    'Der aktuelle Engpass ist die fehlende gemeinsame Entscheidungssituation im Buying Center.',
+    'Ein Angebot oder Projektstart wäre verfrüht, solange wirtschaftlicher Nutzen und Erfolgskriterien nicht bestätigt sind.'
+  ]);
+  set('VERKAUFSRISIKO',[
+    'Wird der Pilot zu früh angeboten, kann KI21 als zusätzliches Tool statt als Lösung eines wirtschaftlich relevanten Vertriebsproblems wahrgenommen werden.'
+  ]);
+  set('STÄRKSTE KLÄRUNGSFRAGE',[
+    'Welche nachweisbaren Ergebnisse benötigt der wirtschaftliche Entscheider, um einen Pilot freizugeben?'
+  ]);
+  set('WAS DER VERTRIEB NOCH KLÄREN MUSS',[
+    'Wirtschaftlichen Entscheider und weitere relevante Buying-Center-Rollen bestätigen.',
+    'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren.',
+    'Wirtschaftlichen Handlungsdruck und vermeidbare Opportunity-Verluste validieren.',
+    'Pilotziele, Erfolgskriterien und akzeptablen Pflegeaufwand vereinbaren.'
+  ]);
+  set('BUSINESS CASE UND KUNDENNUTZEN',[
+    st.lostOpps?'Verlorene Opportunities bilden einen relevanten wirtschaftlichen Ausgangspunkt; der vermeidbare Anteil ist noch zu bestätigen.':'Der wirtschaftliche Ausgangspunkt ist plausibel, aber noch nicht belastbar quantifiziert.',
+    st.avgValue?'Der genannte durchschnittliche Vertragswert ist ein Orientierungswert und noch kein bestätigter KI21-Nutzen.':'Entgangener Umsatz beziehungsweise Deckungsbeitrag sind noch nicht bestätigt.',
+    'Erwarteter Kundennutzen: weniger vermeidbare Dealverluste, belastbarere Forecasts und effizientere Deal-Reviews.',
+    'Der Angebotspreis darf nicht als Business Case oder Kundennutzen behandelt werden.'
+  ]);
+  set('VERKAUFSHEBEL – PRIORISIERT',[
+    '1. Sponsor für einen gemeinsamen Entscheidungstermin aktivieren.',
+    '2. Wirtschaftlichen Entscheider und Sales Operations direkt einbinden.',
+    '3. Erfolgskriterien und Business Case vor einem Pilotangebot gemeinsam entwickeln.'
+  ]);
+  set('NÄCHSTE KUNDENSCHRITTE',[
+    'Gemeinsamen Discovery- und Entscheidungstermin mit Sponsor, wirtschaftlichem Entscheider und relevanten Einflussnehmern vereinbaren.',
+    'Konkrete verlorene Opportunities als Diskussionsgrundlage auswählen.',
+    'Im Termin Pilotziele, Erfolgskriterien, Rollen, Pflegeaufwand und nächsten Entscheidungsschritt bestätigen.'
+  ]);
+  set('DARAUF ACHTEN',[
+    'Interesse des Vertriebsleiters nicht mit einer wirtschaftlichen Freigabe gleichsetzen.',
+    'Keine bestätigten Erfolgskriterien oder Business-Case-Werte unterstellen.',
+    'Keinen Projektstart empfehlen, solange die Pilotentscheidung noch offen ist.'
+  ]);
+
+  // Letzte Sicherheitsbereinigung für widersprüchliche Altformulierungen.
+  r=r.replace(/Discovery Sprint ist freigegeben/gi,'Pilot ist noch nicht freigegeben')
+     .replace(/wirtschaftliche Entscheidung ist getroffen/gi,'wirtschaftliche Entscheidung ist noch offen')
+     .replace(/bereits erteilten Freigabe/gi,'noch offenen Pilotentscheidung')
+     .replace(/nach der Freigabe/gi,'vor der Pilotentscheidung')
+     .replace(/freigegebenen Discovery Sprint/gi,'noch nicht freigegebenen Pilot')
+     .replace(/Projektstart/gi,'nächsten Kundenschritt');
+  return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+
 // ── v7.4.0 DEAL MEMORY ENGINE ────────────────────────────────────────────
 // Eine zentrale, persistente Wissensschicht zwischen Primärquellen und Ausgaben.
 // Cockpit-/Report-Texte sind Darstellungen; das Deal Memory hält den konsolidierten Deal-State.
@@ -3180,7 +3295,8 @@ function buildOpportunityTestReportV723(){
   const guarded=ki21ApplyOpportunitySourceGuardV103(fused,aid);
   const memory=buildDealMemoryV740(guarded,aid);
   memory.sourceTruth=ki21SourceTruthV103(aid);
-  return renderOpportunityReportFromDealMemoryV740(guarded,memory);
+  const rendered=renderOpportunityReportFromDealMemoryV740(guarded,memory);
+  return ki21FinalizeReportFromPrimarySourceV103(rendered,aid);
 }
 function buildOpportunityTestReportPdfHtmlV723(report){
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -15867,7 +15983,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.2';
+const KI21_VERSION='Pilot Core 1.0.3';
 
 
 function runKi21VersionMigration(){
