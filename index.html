@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.9-unified-deal-state-20260714 -->
+<!-- KI21_BUILD: v7.2.9a-unified-deal-state-syntaxfix-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.9 Unified Deal State</title>
+<title>KI21 v7.2.9a Unified Deal State Syntaxfix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2525,7 +2525,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.2.6: Stabilitätsfix – Cockpit wird transaktional gerendert und kann bei Fehlern nicht mehr leer/schwarz bleiben; Testbericht wird ohne sichtbaren Ansichtswechsel erzeugt und als kopierbarer Text oder TXT-Datei bereitgestellt. -->
 
 <style>
-/* v7.2.9 Unified Deal State */
+/* v7.2.9a Unified Deal State Syntaxfix */
 .ki21-report-actions-v725{display:none!important}
 .ki21-report-textarea-v726{
   flex:1;min-height:0;width:100%;resize:none;border:0!important;border-left:0!important;
@@ -10674,7 +10674,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.2.9 Unified Deal State'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.2.9a Unified Deal State Syntaxfix'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -11627,95 +11627,7 @@ function exportAutopilotPDF(cust,dossierResults){
   });
   html+=`
 
-<script>
-
-(function(){
-  const previousHealthV729=window.getOpportunityHealth;
-  function sourceTextV729(accId){
-    let text='';
-    try{text+=' '+String(collectCurrentOpportunityInputsV620(accId)||'');}catch(e){}
-    try{const f=getLatestAdditionFactsV6532(accId)||{};text+=' '+String(f.recentText||f.latestText||'');}catch(e){}
-    return text.toLowerCase().replace(/\s+/g,' ').trim();
-  }
-  function parseNumberV729(raw){
-    const words={ein:1,eine:1,einen:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwölf:12,dreizehn:13,vierzehn:14,fünfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19,zwanzig:20};
-    return /^\d/.test(raw)?parseFloat(raw.replace(',','.')):words[raw];
-  }
-  function metricMatchV729(text,patterns){
-    const number='(\\d+(?:[,.]\\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig)';
-    const unit='(minuten?|stunden?|tage?|wochen?|monate?|prozent|%|euro|€)';
-    for(const p of patterns){
-      const m=new RegExp(p.replace('{N}',number).replace('{U}',unit),'i').exec(text);
-      if(m){const value=parseNumberV729(m[1]);if(Number.isFinite(value))return {value,unit:m[2]};}
-    }
-    return null;
-  }
-  function buildUnifiedDealStateV729(accId){
-    const all=sourceTextV729(accId);
-    let latest='';
-    try{const f=getLatestAdditionFactsV6532(accId)||{};latest=String(f.latestText||f.recentText||'').toLowerCase().replace(/\s+/g,' ');}catch(e){}
-    const target=metricMatchV729(all,[
-      '(?:zielwert|zielkorridor|maximal|höchstens|nicht mehr als|akzeptiert(?:e|er)?\\s+pflegeaufwand)[^.!?]{0,70}?{N}\\s*{U}',
-      '{N}\\s*{U}[^.!?]{0,55}?(?:zielwert|zielkorridor|maximal|höchstens|akzeptiert)'
-    ]);
-    const current=metricMatchV729(latest,[
-      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei|nach der (?:anpassung|vereinfachung))[^.!?]{0,70}?{N}\\s*{U}',
-      '{N}\\s*{U}[^.!?]{0,55}?(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt)'
-    ])||metricMatchV729(all,[
-      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei)[^.!?]{0,70}?{N}\\s*{U}'
-    ]);
-    const metric=target&&current?{
-      name:/pflege|zeitaufwand|bearbeitungszeit/.test(all)?'Pflegeaufwand':'Messwert',
-      targetValue:target.value,currentValue:current.value,
-      unit:/min/.test(target.unit)?'Minuten':target.unit,
-      variance:current.value-target.value,
-      status:current.value<=target.value?'erfüllt':'kritisch'
-    }:null;
-    const openStart=/(?:starttermin|projektstart|kickoff)[^.!?]{0,100}(?:offen|noch nicht|nicht vereinbart|fehlt|zu klären)/.test(all);
-    const openDecision=/(?:entscheidungstermin|kaufentscheidung|freigabe)[^.!?]{0,100}(?:offen|verschoben|noch nicht|zu klären|fehlt)/.test(all);
-    const userFriction=/(?:nutzer|anwender)[^.!?]{0,120}(?:zu hoch|zu lang|aufwendig|akzeptanzproblem)/.test(all);
-    const criticalMetric=!!(metric&&metric.status==='kritisch');
-    return {metric,openStart,openDecision,userFriction,hasCriticalRisk:criticalMetric||openDecision||userFriction,hasOpenRisk:openStart||openDecision||criticalMetric||userFriction};
-  }
-  window.buildUnifiedDealStateV729=buildUnifiedDealStateV729;
-  window.getOpportunityHealth=function(accId){
-    const base=previousHealthV729?previousHealthV729.call(this,accId):null;
-    if(!base)return base;
-    const out=JSON.parse(JSON.stringify(base));
-    const deal=buildUnifiedDealStateV729(accId);
-    let score=Math.max(0,Math.min(100,Math.round(Number(out.score)||0)));
-    if(deal.hasCriticalRisk)score=Math.min(score,84);
-    else if(deal.hasOpenRisk)score=Math.min(score,92);
-    out.score=score;
-    out.label=score>=85?'Sehr gesund':score>=70?'Gesund':score>=55?'Stabil':'Kritisch';
-    out.unifiedDealStateV729=deal;
-    out.scoreSource='unified_deal_state_v729';
-    out.riskAdjustedV661=true;
-    return out;
-  };
-  function syncVisibleScoreV729(){
-    try{
-      const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
-      if(!aid)return;
-      const health=window.getOpportunityHealth(aid);
-      if(!health||typeof health.score!=='number')return;
-      LS.set('ki21_health_'+aid,{...(LS.get('ki21_health_'+aid,{})||{}),...health,ts:Date.now()});
-      document.querySelectorAll('.cockpit-score-badge,.cockpit-score-click,.score-pill-v667.health .score-value-v667').forEach(el=>{
-        el.textContent=Math.round(health.score)+'/100';
-        try{const c=getHealthColor(health.score);el.style.color=c;el.style.borderColor=c;}catch(e){}
-      });
-    }catch(e){console.warn('Unified Deal State score sync skipped',e);}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVisibleScoreV729,0),{once:true});
-  else setTimeout(syncVisibleScoreV729,0);
-  window.addEventListener('pageshow',()=>setTimeout(syncVisibleScoreV729,0));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(syncVisibleScoreV729,0);});
-  setTimeout(syncVisibleScoreV729,450);
-})();
-
-</script>
-<!-- v7.2.9: Unified Deal State – semantische Soll-/Ist-Trennung, jüngster Istwert gewinnt, Health 100 nur ohne offene oder kritische Risiken. -->
-</body></html>`;
+</html>`;
   exportHtmlAsPdf(html,'Opportunity-Vorschau_'+(cust.firma||'Kunde').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 }
 
@@ -15384,7 +15296,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.9 Unified Deal State';
+const KI21_VERSION='v7.2.9a Unified Deal State Syntaxfix';
 
 
 function runKi21VersionMigration(){
@@ -16552,7 +16464,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.2.9 Unified Deal State';
+  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16831,7 +16743,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.2.9 Unified Deal State';
+  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -17044,7 +16956,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.2.9 Unified Deal State';
+  const VERSION='v7.2.9a Unified Deal State Syntaxfix';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
@@ -17277,5 +17189,94 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<script>
+
+(function(){
+  const previousHealthV729=window.getOpportunityHealth;
+  function sourceTextV729(accId){
+    let text='';
+    try{text+=' '+String(collectCurrentOpportunityInputsV620(accId)||'');}catch(e){}
+    try{const f=getLatestAdditionFactsV6532(accId)||{};text+=' '+String(f.recentText||f.latestText||'');}catch(e){}
+    return text.toLowerCase().replace(/\s+/g,' ').trim();
+  }
+  function parseNumberV729(raw){
+    const words={ein:1,eine:1,einen:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwölf:12,dreizehn:13,vierzehn:14,fünfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19,zwanzig:20};
+    return /^\d/.test(raw)?parseFloat(raw.replace(',','.')):words[raw];
+  }
+  function metricMatchV729(text,patterns){
+    const number='(\\d+(?:[,.]\\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig)';
+    const unit='(minuten?|stunden?|tage?|wochen?|monate?|prozent|%|euro|€)';
+    for(const p of patterns){
+      const m=new RegExp(p.replace('{N}',number).replace('{U}',unit),'i').exec(text);
+      if(m){const value=parseNumberV729(m[1]);if(Number.isFinite(value))return {value,unit:m[2]};}
+    }
+    return null;
+  }
+  function buildUnifiedDealStateV729(accId){
+    const all=sourceTextV729(accId);
+    let latest='';
+    try{const f=getLatestAdditionFactsV6532(accId)||{};latest=String(f.latestText||f.recentText||'').toLowerCase().replace(/\s+/g,' ');}catch(e){}
+    const target=metricMatchV729(all,[
+      '(?:zielwert|zielkorridor|maximal|höchstens|nicht mehr als|akzeptiert(?:e|er)?\\s+pflegeaufwand)[^.!?]{0,70}?{N}\\s*{U}',
+      '{N}\\s*{U}[^.!?]{0,55}?(?:zielwert|zielkorridor|maximal|höchstens|akzeptiert)'
+    ]);
+    const current=metricMatchV729(latest,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei|nach der (?:anpassung|vereinfachung))[^.!?]{0,70}?{N}\\s*{U}',
+      '{N}\\s*{U}[^.!?]{0,55}?(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt)'
+    ])||metricMatchV729(all,[
+      '(?:aktuell|derzeit|gemessen|tatsächlich|istwert|beträgt|liegt bei)[^.!?]{0,70}?{N}\\s*{U}'
+    ]);
+    const metric=target&&current?{
+      name:/pflege|zeitaufwand|bearbeitungszeit/.test(all)?'Pflegeaufwand':'Messwert',
+      targetValue:target.value,currentValue:current.value,
+      unit:/min/.test(target.unit)?'Minuten':target.unit,
+      variance:current.value-target.value,
+      status:current.value<=target.value?'erfüllt':'kritisch'
+    }:null;
+    const openStart=/(?:starttermin|projektstart|kickoff)[^.!?]{0,100}(?:offen|noch nicht|nicht vereinbart|fehlt|zu klären)/.test(all);
+    const openDecision=/(?:entscheidungstermin|kaufentscheidung|freigabe)[^.!?]{0,100}(?:offen|verschoben|noch nicht|zu klären|fehlt)/.test(all);
+    const userFriction=/(?:nutzer|anwender)[^.!?]{0,120}(?:zu hoch|zu lang|aufwendig|akzeptanzproblem)/.test(all);
+    const criticalMetric=!!(metric&&metric.status==='kritisch');
+    return {metric,openStart,openDecision,userFriction,hasCriticalRisk:criticalMetric||openDecision||userFriction,hasOpenRisk:openStart||openDecision||criticalMetric||userFriction};
+  }
+  window.buildUnifiedDealStateV729=buildUnifiedDealStateV729;
+  window.getOpportunityHealth=function(accId){
+    const base=previousHealthV729?previousHealthV729.call(this,accId):null;
+    if(!base)return base;
+    const out=JSON.parse(JSON.stringify(base));
+    const deal=buildUnifiedDealStateV729(accId);
+    let score=Math.max(0,Math.min(100,Math.round(Number(out.score)||0)));
+    if(deal.hasCriticalRisk)score=Math.min(score,84);
+    else if(deal.hasOpenRisk)score=Math.min(score,92);
+    out.score=score;
+    out.label=score>=85?'Sehr gesund':score>=70?'Gesund':score>=55?'Stabil':'Kritisch';
+    out.unifiedDealStateV729=deal;
+    out.scoreSource='unified_deal_state_v729';
+    out.riskAdjustedV661=true;
+    return out;
+  };
+  function syncVisibleScoreV729(){
+    try{
+      const aid=(window.state&&state.activeId)||LS.get('ki21_aid',null);
+      if(!aid)return;
+      const health=window.getOpportunityHealth(aid);
+      if(!health||typeof health.score!=='number')return;
+      LS.set('ki21_health_'+aid,{...(LS.get('ki21_health_'+aid,{})||{}),...health,ts:Date.now()});
+      document.querySelectorAll('.cockpit-score-badge,.cockpit-score-click,.score-pill-v667.health .score-value-v667').forEach(el=>{
+        el.textContent=Math.round(health.score)+'/100';
+        try{const c=getHealthColor(health.score);el.style.color=c;el.style.borderColor=c;}catch(e){}
+      });
+    }catch(e){console.warn('Unified Deal State score sync skipped',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVisibleScoreV729,0),{once:true});
+  else setTimeout(syncVisibleScoreV729,0);
+  window.addEventListener('pageshow',()=>setTimeout(syncVisibleScoreV729,0));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(syncVisibleScoreV729,0);});
+  setTimeout(syncVisibleScoreV729,450);
+})();
+
+</script>
+<!-- v7.2.9: Unified Deal State – semantische Soll-/Ist-Trennung, jüngster Istwert gewinnt, Health 100 nur ohne offene oder kritische Risiken. -->
 </body>
 </html>
