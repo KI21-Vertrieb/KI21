@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.0.1-current-state-priority-fix-20260713 -->
+<!-- KI21_BUILD: v7.0.2-pilot-tradeoff-priority-fix-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.0.1 Current State Priority Fix</title>
+<title>KI21 v7.0.2 Pilot Trade-off Priority Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -9743,6 +9743,15 @@ function renderCockpitSnapshotLiteV4215(){
   // Einführungsfragen (z. B. Pflegeaufwand) werden als neuer Engpass erkannt.
   const measurementFinalizedV701=/(?:erfolgsmessung|messlogik|erfolgskriterien)[^.]{0,120}(?:verbindlich\s+(?:bestätigt|festgelegt|vereinbart)|stehen\s+fest)|(?:ausgangswert|baseline)[^.]{0,180}(?:zielwert|messmethode|datenquelle)[^.]{0,180}(?:stehen\s+fest|festgelegt|bestätigt|dokumentiert)|datenquelle[^.]{0,120}(?:verantwortlich(?:e|er)?|auswertungstermin)[^.]{0,120}(?:stehen\s+fest|festgelegt|bestätigt)/.test(latestNormV680);
   const careEffortOpenV701=/(?:pflegeaufwand|pflegezeit|zeitaufwand|bearbeitungszeit|aufwand\s+pro\s+(?:opportunity|deal)|wie\s+viel\s+zeit)[^.]{0,180}(?:klären|offen|akzeptabel|benötig|tatsächlich|messen|ermitteln)/.test(latestNormV680);
+  // v7.0.2: Ein bereits laufender Pilot mit gemessenem Zielkonflikt hat Vorrang vor
+  // allen früheren Planungsfragen. Positiver Qualitätsfortschritt und negativer
+  // Pflegeaufwand müssen gemeinsam abgewogen werden.
+  const pilotRunningV702=/(?:erste[nr]?\s+pilotwoche|pilotwoche|pilotbetrieb|pilot\s+(?:läuft|gestartet|läuft bereits)|nach\s+der\s+ersten\s+woche)/.test(latestNormV680);
+  const careTargetDefinedV702=/(?:maximal|höchstens|zielkorridor|akzeptabel)[^.]{0,80}(?:minute[n]?|pflegeaufwand|zeitaufwand)|(?:pflegeaufwand|zeitaufwand)[^.]{0,100}(?:maximal|höchstens|zielkorridor|akzeptabel)/.test(latestNormV680);
+  const careOverTargetV702=/(?:18\s*minute[n]?|achtzehn\s*minute[n]?|deutlich\s+(?:über|oberhalb)|zu\s+hoch(?:er|em)?\s+(?:pflege|zeit)aufwand|über\s+dem\s+(?:akzeptierten\s+)?zielkorridor)/.test(latestNormV680);
+  const userFrictionV702=/(?:drei\s+der\s+fünf|3\s*(?:von|der)\s*5|mehrere\s+nutz(?:er|ende))[^.]{0,160}(?:zu\s+lange|zu\s+hoch|aufwendig|dauert)/.test(latestNormV680);
+  const qualityImprovedV702=/(?:forecast[-\s]?(?:begründung|qualität)|begründungen)[^.]{0,140}(?:deutlich|messbar|spürbar)?\s*(?:vollständiger|besser|verbessert)|(?:deutlich|messbar|spürbar)\s+(?:vollständigere|bessere)\s+forecast/.test(latestNormV680);
+  const pilotTradeoffV702=pilotRunningV702&&careTargetDefinedV702&&careOverTargetV702&&qualityImprovedV702;
   const cfoResolvedV680=/(?:kein|nicht)\s+(?:freigabe|entscheidungs|kaufentscheidungs)[-\s]?(?:kriterium|voraussetzung)|ausschließlich\s+(?:der|zur)\s+(?:vorbereitung|planung)|nur\s+(?:der|zur)\s+(?:vorbereitung|planung)|entscheidungstermin[^.]{0,90}(?:bleibt|besteht|bestätigt)/.test(latestNormV680);
   const cfoUnresolvedV680=/cfo|rollout|support|einführungsaufwand/.test(latestNormV680) && !cfoResolvedV680;
 
@@ -9760,6 +9769,33 @@ function renderCockpitSnapshotLiteV4215(){
   })();
 
   const dynamicDecisionV680=(()=>{
+    if(pilotTradeoffV702){
+      return {
+        confidence:'hoch',
+        primary:{
+          id:'D-PILOT-TRADEOFF',
+          decision:'Pilot unverändert fortsetzen oder den Prozess sofort verschlanken?',
+          rec:'Pilot fortsetzen, aber die zeitintensivsten Eingabe- und Nachbereitungsschritte sofort auf die wirklich entscheidungsrelevanten Informationen reduzieren. Den Pflegeaufwand in der zweiten Pilotwoche erneut messen, ohne die bereits verbesserte Forecast-Qualität zu verlieren.',
+          ask:'Welche konkreten Arbeitsschritte verursachen die zusätzlichen acht Minuten – und welche davon können entfallen, ohne die bessere Forecast-Qualität wieder zu verschlechtern?',
+          risk:'Der Pilot verbessert zwar die Forecast-Qualität, kann aber wegen des zu hohen Pflegeaufwands im Vertriebsalltag trotzdem scheitern.',
+          reasons:[
+            'Der akzeptable Pflegeaufwand ist mit maximal zehn Minuten bereits verbindlich festgelegt.',
+            'Nach der ersten Pilotwoche liegt der gemessene Aufwand mit 18 Minuten deutlich über dem Ziel.',
+            'Gleichzeitig sind die Forecast-Begründungen sichtbar vollständiger geworden; der Nutzen ist also real, aber der Prozess noch nicht alltagstauglich.'
+          ],
+          counters:[
+            'Eine vorschnelle Verschlankung kann genau die Informationen entfernen, die zur besseren Forecast-Qualität geführt haben.',
+            'Die erste Pilotwoche kann noch Anlaufaufwand enthalten; deshalb sollte nach der Vereinfachung erneut gemessen werden.'
+          ],
+          changes:[
+            'der Pflegeaufwand nach der Vereinfachung auf höchstens zehn Minuten sinkt und die Forecast-Qualität erhalten bleibt.',
+            'die hohe Bearbeitungszeit überwiegend einmaliger Lern- oder Einführungsaufwand war.',
+            'die Forecast-Qualität trotz Vereinfachung wieder deutlich zurückgeht.'
+          ],
+          next:'Mit den drei betroffenen Pilotnutzern die zeitintensivsten Schritte identifizieren, vor der zweiten Pilotwoche vereinfachen und anschließend Aufwand sowie Forecast-Qualität erneut messen.'
+        }
+      };
+    }
     if(measurementFinalizedV701 && careEffortOpenV701){
       return {
         confidence:'hoch',
@@ -9976,11 +10012,12 @@ function renderCockpitSnapshotLiteV4215(){
   const missingForMaxV693=uniqV690([
     !hasMeasurementV680?'Messbare Erfolgskriterien festlegen.':'',
     hasMeasurementV680&&!measurementFinalizedV701?'Ausgangswert, Zielwert und Datenquelle schriftlich bestätigen.':'',
-    measurementFinalizedV701&&careEffortOpenV701?'Akzeptablen Zielkorridor und Messmethode für den Pflegeaufwand festlegen.':'',
+    pilotTradeoffV702?'Zeitintensive Schritte reduzieren und in der zweiten Pilotwoche erneut messen.':'',
+    measurementFinalizedV701&&careEffortOpenV701&&!pilotTradeoffV702?'Akzeptablen Zielkorridor und Messmethode für den Pflegeaufwand festlegen.':'',
     !/entscheidungstermin/.test(latestNormV680)?'Verbindlichen Entscheidungstermin bestätigen.':'',
     openAssumptionsV690[0]||''
   ]).slice(0,3);
-  const maturityV693=hasMeasurementV680&&/entscheidungstermin/.test(latestNormV680)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
+  const maturityV693=pilotTradeoffV702?'Handlungsbedarf':hasMeasurementV680&&/entscheidungstermin/.test(latestNormV680)?'Entscheidungsreif':hasMeasurementV680?'In Vorbereitung':'Noch nicht entscheidungsreif';
   const decisionCardChildrenV690=[];
   if(false&&changeNoteV690)decisionCardChildrenV690.push(h('button',{type:'button',className:'ki21-change-banner-v690 ki21-change-banner-v700',onclick:()=>{
       const details=[changeReasonV700].concat(changeItemsV700).filter(Boolean);
@@ -10086,7 +10123,16 @@ function renderCockpitSnapshotLiteV4215(){
   // aktuellen Deal-State stammen. Ältere Showcase-/Prioritäts-Empfehlungen dürfen
   // nach einer dominanten neueren Ergänzung nicht wieder in das Cockpit gelangen.
   const activeDecisionIdV692=String(decisionPrimaryV674.id||'');
-  if(activeDecisionIdV692==='D-CARE-EFFORT-GATE'){
+  if(activeDecisionIdV692==='D-PILOT-TRADEOFF'){
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
+      'Mit den drei betroffenen Pilotnutzern die zeitintensivsten Schritte identifizieren und vor der zweiten Pilotwoche vereinfachen.',
+      'Pflegeaufwand und Forecast-Qualität in der zweiten Pilotwoche erneut messen und gemeinsam auswerten.'
+    );
+    executiveRisksV4263.splice(0,executiveRisksV4263.length,
+      {text:'Nicht pauschal Inhalte streichen: Nur Schritte reduzieren, die keinen erkennbaren Beitrag zur besseren Forecast-Qualität leisten.',ki21:true,executive:true},
+      {text:'Anlaufaufwand und dauerhaften Pflegeaufwand trennen; nach der Vereinfachung erneut unter realen Bedingungen messen.',ki21:true,executive:true}
+    );
+  }else if(activeDecisionIdV692==='D-CARE-EFFORT-GATE'){
     nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
       'Mit Geschäftsführer und CFO einen akzeptablen Zielkorridor für den Pflegeaufwand pro Opportunity festlegen.',
       'Den tatsächlichen Zeitaufwand im Pilot messen und zum Entscheidungstermin gemeinsam mit den Qualitätskennzahlen auswerten.'
@@ -14747,7 +14793,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.0.1 Current State Priority Fix';
+const KI21_VERSION='v7.0.2 Pilot Trade-off Priority Fix';
 
 
 function runKi21VersionMigration(){
@@ -15915,7 +15961,7 @@ body{
 <script>
 /* v6.5.17 – ein konsolidierter, ereignisbasierter Patch */
 (function(){
-  const VERSION='v7.0.1 Current State Priority Fix';
+  const VERSION='v7.0.2 Pilot Trade-off Priority Fix';
 
   function activeId(){
     try{return (window.state&&state.activeId)||LS.get('ki21_aid',null);}catch(e){return null;}
@@ -16194,7 +16240,7 @@ body{
    Score, Score-Begründung, Risiken und offene Punkte werden aus demselben
    dominanten Deal-State wie das Cockpit abgeleitet. */
 (function(){
-  const VERSION='v7.0.1 Current State Priority Fix';
+  const VERSION='v7.0.2 Pilot Trade-off Priority Fix';
   const previousGetOpportunityHealth=window.getOpportunityHealth;
 
   function itemText(item){
@@ -16407,7 +16453,7 @@ function buildScorePairV667(accId,health,extraClass){
   );
 }
 (function initV667(){
-  const VERSION='v7.0.1 Current State Priority Fix';
+  const VERSION='v7.0.2 Pilot Trade-off Priority Fix';
   try{document.title='KI21 '+VERSION;}catch(e){}
   function stamp(){
     document.querySelectorAll('.tagline').forEach(el=>{if(/^v6\./i.test(String(el.textContent||'').trim()))el.textContent=VERSION;});
