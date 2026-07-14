@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.3.3-primary-source-dataflow-fix-20260714 -->
+<!-- KI21_BUILD: v7.3.4-knowledge-fusion-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.3.3 Primary Source Dataflow Fix</title>
+<title>KI21 v7.3.4 Knowledge Fusion</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2546,7 +2546,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 </style>
 
-<!-- v7.3.3: Primary Source Dataflow Fix – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
+<!-- v7.3.4: Knowledge Fusion – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 <!-- v7.3.2: Evidence Impact Engine – Ergänzungen aktualisieren Cockpit/Health/Report, markieren betroffene Phasen und übernehmen erkannte SPIN-Antworten gezielt in Phase 2. -->
@@ -2699,7 +2699,7 @@ function buildSimplePdfHtml(title,text,cust){
 }
 
 
-// ── v7.3.3 PRIMÄRQUELLEN-DATENFLUSS ─────────────────────────────────────
+// ── v7.3.4 KNOWLEDGE FUSION ─────────────────────────────────────
 // Der Executive Report darf nicht nur den aktuell gerenderten DOM-/Cache-Zustand lesen.
 // Die jüngste Original-Ergänzung wird zusätzlich direkt als Primärquelle ausgewertet.
 function getLatestOriginalAdditionV733(accId){
@@ -2739,38 +2739,75 @@ function applyPrimaryEvidenceToReportV733(report,accId){
   let r=String(report||'');
   const e=extractPrimaryEvidenceV733(accId);
   if(!e.text)return r;
+
+  const clean=s=>String(s||'').trim().replace(/^dass\s+/i,'').replace(/\s+/g,' ');
+  const goal=clean(e.goal);
+  const success=clean(e.success);
+  const replaceSection=(title,lines)=>{
+    const body=(lines||[]).filter(Boolean).map(x=>'• '+String(x).replace(/^(?:•\s*)+/,'')).join('\n');
+    if(!body)return;
+    const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\\n|$)');
+    const block=title+'\n'+body;
+    if(re.test(r))r=r.replace(re,block);else r+='\n\n'+block;
+  };
+
   if(e.approved){
     r=r.replace(/Discovery-Phase\s*·\s*Erfolgskriterien vereinbaren/gi,'Projektstart vorbereiten · Kickoff und Messung absichern');
+
+    const chance='CHANCE Discovery Sprint ist freigegeben Die Entscheidung für den Sprint ist getroffen · Jetzt zählt ein sauberer Projektstart';
+    const bottleneck='GRÖSSTER ENGPASS Offener Starttermin verzögert die Umsetzung · Starttermin und Verantwortliche sind noch nicht verbindlich festgelegt';
+    replaceSection('AKTUELLES LAGEBILD',[chance,bottleneck]);
+
+    replaceSection('DEAL-ENTSCHEIDUNG',['Projektstart jetzt verbindlich absichern.']);
+
+    const strategy=[];
+    strategy.push('Starttermin und Kickoff verbindlich vereinbaren.');
+    if(goal||success)strategy.push('Baseline, Messmethode, Verantwortliche und Auswertungstermin vor dem Start bestätigen.');
+    replaceSection('EMPFOHLENE DEAL-STRATEGIE',strategy);
+
+    replaceSection('FAKTEN, DIE DAFÜR SPRECHEN',[
+      'Der Discovery Sprint ist freigegeben; für diesen Entscheidungsschritt ist keine erneute Verkaufsentscheidung erforderlich.',
+      goal?'Das Ziel ist klar: '+goal.charAt(0).toLowerCase()+goal.slice(1)+'.':'Der nächste Engpass ist nicht mehr der Verkauf, sondern der verbindliche Start.',
+      success?'Der Erfolg soll daran gemessen werden, ob '+success.charAt(0).toLowerCase()+success.slice(1)+'.':''
+    ]);
+
+    replaceSection('RISIKO EINER FEHLENTSCHEIDUNG',['Ein offener Starttermin kostet Momentum; ein Start ohne klare Messverantwortung schwächt die spätere Bewertung.']);
+    replaceSection('STÄRKSTE KLÄRUNGSFRAGE',['Wer bestätigt bis wann Starttermin, Kickoff-Teilnehmer sowie Verantwortung für Messung und Auswertung?']);
+    replaceSection('WAS SPRICHT DAGEGEN?',[
+      'Ein übereilter Start ohne klare Verantwortliche erschwert die spätere Bewertung.',
+      'Zusätzliche Abstimmung darf den freigegebenen Start nicht unnötig verzögern.'
+    ]);
+    replaceSection('KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN',[
+      'die Freigabe zurückgenommen oder an neue Bedingungen geknüpft wird.',
+      'ein neuer kaufentscheidender Blocker entsteht.'
+    ]);
   }
-  if(e.facts.length){
-    const block='\n\nNEUE BESTÄTIGTE EVIDENZ\n'+e.facts.map(x=>'• '+x).join('\n');
-    if(!/NEUE BESTÄTIGTE EVIDENZ/.test(r)){
-      const pos=r.indexOf('\n\nDEAL-ENTSCHEIDUNG');
-      r=pos>=0?r.slice(0,pos)+block+r.slice(pos):r+block;
-    }
-  }
-  if(e.goal||e.success){
-    const lines=[];
-    if(e.goal)lines.push('• Ziel des Sprints: '+e.goal.replace(/^dass\s+/i,''));
-    if(e.success)lines.push('• Erfolgsmessung: '+e.success.replace(/^dass\s+/i,''));
-    const block='\n\nZIEL UND ERFOLGSMESSUNG\n'+lines.join('\n');
-    if(!/ZIEL UND ERFOLGSMESSUNG/.test(r)){
-      const pos=r.indexOf('\n\nBUSINESS CASE UND NUTZEN');
-      r=pos>=0?r.slice(0,pos)+block+r.slice(pos):r+block;
-    }
-  }
-  if(e.open.length){
-    const replacement='WAS WIR NOCH WISSEN MÜSSEN\n'+e.open.map(x=>'• '+x).join('\n');
-    if(/WAS WIR NOCH WISSEN MÜSSEN\n[\s\S]*?(?=\n\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\n|$)/.test(r)){
-      r=r.replace(/WAS WIR NOCH WISSEN MÜSSEN\n[\s\S]*?(?=\n\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\n|$)/,replacement);
-    }else r+='\n\n'+replacement;
-  }
+
+  if(e.open.length)replaceSection('WAS WIR NOCH WISSEN MÜSSEN',e.open);
   if(e.facts.length)r=r.replace('Faktenlage OFFEN','Faktenlage TEILWEISE');
-  if(e.goal){
-    const benefit='• Erwartete direkte Wirkung: '+e.goal.replace(/^dass\s+/i,'');
-    const pos=r.indexOf('\n\nDARAUF ACHTEN');
-    if(pos>=0&&!r.includes(benefit))r=r.slice(0,pos)+'\n'+benefit+r.slice(pos);
+
+  if(e.approved){
+    replaceSection('WARUM DIESER HEBEL VORRANG HAT',[
+      'Die Entscheidung für den Sprint ist gefallen. Nutzen entsteht jetzt nur, wenn Start, Messung und Verantwortlichkeiten verbindlich geregelt sind.'
+    ]);
+    replaceSection('HÖCHSTER HEBEL',['Momentum nach der Freigabe sichern.']);
+    const steps=['Starttermin und Kickoff mit Verantwortlichen verbindlich festlegen.'];
+    if(goal||success)steps.push('Baseline, Erfolgskriterium, Datenquelle und Auswertungstermin schriftlich sichern.');
+    replaceSection('NÄCHSTE SCHRITTE',steps);
   }
+
+  const benefit=[];
+  const amount=(r.match(/BUSINESS CASE UND NUTZEN\n• ([^\n]*€[^\n]*)/i)||[])[1];
+  if(amount)benefit.push(amount.replace(/KUNDENPROBLEM \(BEZIFFERT\)/i,'wirtschaftlich beziffertes Kundenproblem'));
+  if(goal)benefit.push('Erwarteter Nutzen: '+goal.charAt(0).toUpperCase()+goal.slice(1)+'.');
+  if(success)benefit.push('Erfolgsmessung: '+success.charAt(0).toUpperCase()+success.slice(1)+'.');
+  if(benefit.length)replaceSection('BUSINESS CASE UND NUTZEN',benefit);
+
+  // Technische Zwischenblöcke aus früheren Releases vollständig entfernen.
+  r=r.replace(/\n\nNEUE BESTÄTIGTE EVIDENZ\n[\s\S]*?(?=\n\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\n|$)/g,'');
+  r=r.replace(/\n\nZIEL UND ERFOLGSMESSUNG\n[\s\S]*?(?=\n\n[A-ZÄÖÜ][A-ZÄÖÜ &?-]+\n|$)/g,'');
+
   return r.trim();
 }
 
@@ -10834,7 +10871,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.3.3 Primary Source Dataflow Fix'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.3.4 Knowledge Fusion'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -15504,7 +15541,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.3.3 Primary Source Dataflow Fix';
+const KI21_VERSION='v7.3.4 Knowledge Fusion';
 
 
 function runKi21VersionMigration(){
