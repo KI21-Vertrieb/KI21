@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.4-ui-regression-fix-20260714 -->
+<!-- KI21_BUILD: v7.2.5-cockpit-export-fix-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.4 UI Regression Fix</title>
+<title>KI21 v7.2.5 Cockpit & Export Fix</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2499,6 +2499,29 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 }
 </style>
 
+<!-- v7.2.5: Cockpit & Export Fix – Arbeitsstand-Zusatzkarte entfernt; Phasenansicht wieder kompakt; Opportunity-Testbericht als echte TXT-Datei teilbar; PDF bleibt optional. -->
+
+<style>
+/* v7.2.5 Cockpit & Export Fix */
+.ki21-phase-overview-v724{display:none!important}
+.ki21-report-menu-v724{display:none!important}
+.ki21-mode-nav-v725{margin-bottom:7px!important}
+.ki21-report-row-v725{display:flex;justify-content:flex-end;margin:-1px 2px 6px}
+.ki21-report-link-v725{border:0;background:transparent;color:#8b949e;font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:800;padding:3px 2px;cursor:pointer}
+.ki21-report-link-v725::before{content:'↗';margin-right:5px;color:#ff8a2a}
+.ki21-report-actions-v725{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-top:1px solid #30363d}
+.ki21-report-actions-v725 .btn-o,.ki21-report-actions-v725 .btn{width:100%;min-height:38px}
+.ki21-report-actions-v725 .ki21-pdf-secondary-v725{background:rgba(255,107,0,.08)!important;border:1px solid rgba(255,107,0,.32)!important;color:#ff9a45!important}
+.ki21-report-actions-v725 .btn:last-child{grid-column:1/-1}
+.cockpit-v612-compact{min-height:auto!important;background:transparent!important}
+.cockpit-phase-list{margin-bottom:8px!important}
+.tagline{position:static!important;display:block!important;margin:10px 0 0!important;padding:0 0 8px!important}
+@media(max-width:390px){
+  .ki21-report-actions-v725{grid-template-columns:1fr}
+  .ki21-report-actions-v725 .btn:last-child{grid-column:auto}
+}
+</style>
+
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -2720,6 +2743,65 @@ function showOpportunityTestReportV723(){
   };
   if(document.querySelector('#ki21-visible-decision-core')){create();return;}
   try{renderCockpitSnapshotLiteV4215();setTimeout(create,180);}
+  catch(e){alert('Der Testbericht konnte nicht erzeugt werden. Bitte zuerst das Cockpit öffnen.');}
+}
+
+
+
+// ── v7.2.5 ROBUSTER OPPORTUNITY-TESTBERICHT ALS DATEI ───────────────────
+function sanitizeFilenameV725(name){
+  return String(name||'Opportunity').replace(/[^\wäöüÄÖÜß-]+/g,'_').replace(/^_+|_+$/g,'')||'Opportunity';
+}
+function downloadTextFileV725(text,filename){
+  const blob=new Blob([String(text||'')],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+async function shareOpportunityReportTxtV725(report,filename){
+  const file=new File([String(report||'')],filename,{type:'text/plain'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+      await navigator.share({title:'KI21 Opportunity-Testbericht',files:[file]});
+      return;
+    }
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  try{
+    if(navigator.share){
+      await navigator.share({title:'KI21 Opportunity-Testbericht',text:String(report||'')});
+      return;
+    }
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  downloadTextFileV725(report,filename);
+}
+function showOpportunityTestReportV725(){
+  const aid=state.activeId||LS.get('ki21_aid',null);
+  if(!aid){showKunde();return;}
+  const create=()=>{
+    const report=buildOpportunityTestReportV723();
+    const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
+    const name=sanitizeFilenameV725(acc&&acc.cust&&acc.cust.firma);
+    const filename='KI21_Testbericht_'+name+'.txt';
+    const overlay=h('div',{className:'ki21-report-overlay-v723'});
+    const close=()=>{try{overlay.remove();}catch(e){}};
+    const panel=h('div',{className:'ki21-report-panel-v723'},
+      h('div',{className:'ki21-report-head-v723'},
+        h('div',{className:'ki21-report-title-v723'},'Opportunity-Testbericht'),
+        h('div',{className:'ki21-report-sub-v723'},'Inhaltliche Bewertung als Datei teilen oder speichern')
+      ),
+      h('div',{className:'ki21-report-preview-v723'},report),
+      h('div',{className:'ki21-report-actions-v725'},
+        h('button',{className:'btn-o',onclick:async()=>{await shareOpportunityReportTxtV725(report,filename);}},'Datei teilen'),
+        h('button',{className:'btn-o',onclick:()=>downloadTextFileV725(report,filename)},'TXT speichern'),
+        h('button',{className:'btn-o ki21-pdf-secondary-v725',onclick:()=>exportHtmlAsPdf(buildOpportunityTestReportPdfHtmlV723(report),'KI21_Testbericht_'+name+'.pdf')},'PDF'),
+        h('button',{className:'btn',onclick:close},'Schließen')
+      )
+    );
+    overlay.appendChild(panel);document.body.appendChild(overlay);
+  };
+  if(document.querySelector('#ki21-visible-decision-core')){create();return;}
+  try{renderCockpitSnapshotLiteV4215();setTimeout(create,220);}
   catch(e){alert('Der Testbericht konnte nicht erzeugt werden. Bitte zuerst das Cockpit öffnen.');}
 }
 
@@ -7529,7 +7611,7 @@ function showScoreDetailsV4224(raw){
 }
 function buildModeTabsV4224(active){
   const aid=state.activeId||LS.get('ki21_aid',null);
-  return h('div',{className:'ki21-mode-nav-v724'},
+  return h('div',{className:'ki21-mode-nav-v725'},
     h('div',{className:'ki21-mode-tabs'},
       h('button',{type:'button',className:'ki21-mode-tab '+(active==='cockpit'?'active':''),onclick:(e)=>{e.preventDefault();renderCockpitSnapshotLiteV4215();}},'Cockpit'),
       h('button',{type:'button',className:'ki21-mode-tab '+(active==='phases'?'active':''),onclick:(e)=>{e.preventDefault();renderHomeLiteV4211();}},'Phasen'),
@@ -7540,11 +7622,13 @@ function buildModeTabsV4224(active){
         if(a)showNeuerKunde(a.cust,a.id,'kontext');
       }},'＋ Ergänzung')
     ),
-    h('button',{type:'button',className:'ki21-report-menu-v724',onclick:(e)=>{
-      e.preventDefault();
-      if(!aid){showKunde();return;}
-      showOpportunityTestReportV723();
-    }},'📄 Opportunity-Testbericht')
+    h('div',{className:'ki21-report-row-v725'},
+      h('button',{type:'button',className:'ki21-report-link-v725',onclick:(e)=>{
+        e.preventDefault();
+        if(!aid){showKunde();return;}
+        showOpportunityTestReportV725();
+      }},'Testbericht teilen')
+    )
   );
 }
 function getCockpitNextStepV4224(raw){
@@ -8560,52 +8644,6 @@ function renderHomeLiteV4211(){
     phaseList.appendChild(row);
   });
   wrap.appendChild(phaseList);
-
-  // v7.2.4: strukturierter Abschluss statt leerer schwarzer Fläche.
-  let completedPhasesV724=0;
-  phaseNames.forEach((_,i)=>{
-    let st='';
-    try{st=getPhaseStatus(i);}catch(e){st='';}
-    if(st==='done')completedPhasesV724++;
-  });
-  const activePhaseIndexV724=Math.min(completedPhasesV724,phaseNames.length-1);
-  const lastUpdateV724=(()=>{
-    try{
-      const raw=LS.get('ki21_last_refresh_'+aid,null)||LS.get('ki21_last_update_'+aid,null);
-      if(raw){
-        const d=new Date(raw);
-        if(!isNaN(d.getTime()))return d.toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'});
-      }
-    }catch(e){}
-    return 'Aktueller gespeicherter Stand';
-  })();
-
-  wrap.appendChild(h('div',{className:'ki21-phase-overview-v724'},
-    h('div',{className:'ki21-phase-overview-head-v724'},
-      h('div',{},
-        h('div',{className:'ki21-phase-overview-kicker-v724'},'ARBEITSSTAND'),
-        h('div',{className:'ki21-phase-overview-title-v724'},completedPhasesV724+' von '+phaseNames.length+' Phasen bearbeitet')
-      ),
-      h('div',{className:'ki21-phase-overview-ring-v724'},String(Math.round((completedPhasesV724/phaseNames.length)*100))+'%')
-    ),
-    h('div',{className:'ki21-phase-progress-v724'},
-      h('div',{className:'ki21-phase-progress-fill-v724',style:{width:Math.round((completedPhasesV724/phaseNames.length)*100)+'%'}})
-    ),
-    h('div',{className:'ki21-phase-overview-grid-v724'},
-      h('div',{className:'ki21-phase-overview-item-v724'},
-        h('div',{className:'ki21-phase-overview-label-v724'},'Aktuelle Phase'),
-        h('div',{className:'ki21-phase-overview-value-v724'},'Phase '+(activePhaseIndexV724+1)+' – '+phaseNames[activePhaseIndexV724])
-      ),
-      h('div',{className:'ki21-phase-overview-item-v724'},
-        h('div',{className:'ki21-phase-overview-label-v724'},'Nächster sinnvoller Schritt'),
-        h('div',{className:'ki21-phase-overview-value-v724'},completedPhasesV724<phaseNames.length?'Phase '+(activePhaseIndexV724+1)+' vollständig abschließen':'Cockpit aktualisieren und Entscheidung prüfen')
-      ),
-      h('div',{className:'ki21-phase-overview-item-v724 wide'},
-        h('div',{className:'ki21-phase-overview-label-v724'},'Letzte Aktualisierung'),
-        h('div',{className:'ki21-phase-overview-value-v724 muted'},lastUpdateV724)
-      )
-    )
-  ));
 
   // v4.233 UI Cleanup: unterer Cockpit-Zusatzbutton entfernt; Navigation läuft über die Tabs.
 
@@ -15116,7 +15154,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.4 UI Regression Fix';
+const KI21_VERSION='v7.2.5 Cockpit & Export Fix';
 
 
 function runKi21VersionMigration(){
