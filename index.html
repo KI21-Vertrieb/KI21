@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.3.0-executive-language-dossier-superset-20260714 -->
+<!-- KI21_BUILD: v7.3.1-approved-state-consistency-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.3.0 Executive Language & Dossier-Obermenge</title>
+<title>KI21 v7.3.1 Approved-State Consistency</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2548,6 +2548,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
+<!-- v7.3.1: Freigegebener/beauftragter Deal-State überschreibt ältere Pilot-Abwägungen; Cockpit, Testbericht und Dossier bleiben entscheidungskonsistent. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -10331,7 +10332,47 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // Historische Opportunity-Sonderpfade wurden entfernt. Konkrete Namen, Firmen,
   // Produkte, feste Messwerte oder einzelne Testfallformulierungen duerfen die
   // Entscheidung nicht mehr steuern.
-  const dynamicDecisionV680=generalizedDecisionV710||baseDecisionV680;
+  let dynamicDecisionV680=generalizedDecisionV710||baseDecisionV680;
+
+  // v7.3.1 Approved-State Consistency:
+  // Eine bestätigte Freigabe/Beauftragung ist der stärkere und neuere Deal-State.
+  // Sie darf nicht durch eine ältere Pilot-, Aufwand- oder Zielkonflikt-Abwägung
+  // überschrieben werden. Entscheidung, Strategie, nächste Schritte und Risiken
+  // werden deshalb direkt aus demselben kanonischen Deal-State abgeleitet.
+  const canonicalDealStateV731=detectCurrentDealStateV6532(aid)||{};
+  if(canonicalDealStateV731.type==='approved'){
+    const startOpenV731=!!canonicalDealStateV731.startDateOpen;
+    dynamicDecisionV680={confidence:'hoch',primary:{
+      id:'D-APPROVED-START',
+      decision:startOpenV731
+        ?'Wie überführen wir die Freigabe jetzt ohne Momentumverlust in einen verbindlichen Projektstart?'
+        :'Wie stellen wir sicher, dass der freigegebene Discovery Sprint sauber und messbar startet?',
+      rec:startOpenV731
+        ?'Starttermin und Kickoff jetzt verbindlich vereinbaren. Dabei Verantwortliche, Baseline, Erfolgskriterien und Auswertungstermin bestätigen.'
+        :'Den Projektstart verbindlich organisieren und die vereinbarte Messlogik vor dem Kickoff schriftlich bestätigen.',
+      ask:startOpenV731
+        ?'Wer bestätigt bis wann den Starttermin, die Teilnehmer des Kickoffs und die Verantwortlichen für Messung und Auswertung?'
+        :'Sind Verantwortliche, Baseline, Erfolgskriterien, Datenquelle und Auswertungstermin vor dem Kickoff vollständig bestätigt?',
+      risk:startOpenV731
+        ?'Ein offener Starttermin lässt nach der Freigabe Momentum verloren gehen und verzögert die Umsetzung.'
+        :'Ohne saubere Übergabe in die Umsetzung können Messlogik und Erfolgskriterien trotz Freigabe verwässern.',
+      reasons:[
+        'Die wirtschaftliche Entscheidung ist getroffen; eine erneute Verkaufsentscheidung ist nicht mehr erforderlich.',
+        startOpenV731?'Der noch offene Starttermin ist jetzt der konkrete Engpass.':'Der Fokus liegt jetzt auf einem verbindlichen und messbaren Projektstart.'
+      ],
+      counters:[
+        'Ein übereilter Start ohne bestätigte Verantwortliche kann die spätere Bewertung erschweren.',
+        'Zusätzliche Abstimmung darf den bereits freigegebenen Start jedoch nicht unnötig verzögern.'
+      ],
+      changes:[
+        'die Freigabe ausdrücklich zurückgenommen oder an neue Bedingungen geknüpft wird.',
+        'ein neuer kaufentscheidender Blocker entsteht.'
+      ],
+      next:startOpenV731
+        ?'Starttermin und Kickoff mit Verantwortlichen verbindlich festlegen.'
+        :'Kickoff, Verantwortlichkeiten und Messgrundlage verbindlich bestätigen.'
+    }};
+  }
 
   // v7.1.3 Quality Gate: keine technische Normalisierung in sichtbaren Texten.
   const sanitizeVisibleDecisionV713=obj=>{
@@ -10608,7 +10649,18 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // aktuellen Deal-State stammen. Ältere Showcase-/Prioritäts-Empfehlungen dürfen
   // nach einer dominanten neueren Ergänzung nicht wieder in das Cockpit gelangen.
   const activeDecisionIdV692=String(decisionPrimaryV674.id||'');
-  if(/^D-GENERAL-/.test(activeDecisionIdV692)){
+  if(activeDecisionIdV692==='D-APPROVED-START'){
+    const approvedStateV731=detectCurrentDealStateV6532(aid)||{};
+    const startOpenV731=!!approvedStateV731.startDateOpen;
+    nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
+      startOpenV731?'Starttermin und Kickoff mit Verantwortlichen verbindlich festlegen.':'Kickoff, Verantwortlichkeiten und Messgrundlage verbindlich bestätigen.',
+      'Baseline, Erfolgskriterien, Datenquelle und Auswertungstermin vor dem Start schriftlich sichern.'
+    );
+    executiveRisksV4263.splice(0,executiveRisksV4263.length,
+      {text:startOpenV731?'Nach der Freigabe keinen Momentumverlust durch einen offenen Starttermin zulassen.':'Die vereinbarte Messlogik beim Übergang in die Umsetzung nicht verwässern.',ki21:true,executive:true},
+      {text:'Keine frühere Pilot- oder Verkaufsentscheidung erneut öffnen, solange keine neue kaufentscheidende Bedingung entsteht.',ki21:true,executive:true}
+    );
+  }else if(/^D-GENERAL-/.test(activeDecisionIdV692)){
     nextStepItemsV4263.splice(0,nextStepItemsV4263.length,
       nextActionV675,
       'Die Wirkung der Maßnahme mit dem bisherigen Zielwert und dem erhaltenen Kundennutzen erneut bewerten.'
@@ -10677,7 +10729,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'v7.3.0 Executive Language & Dossier-Obermenge'));
+  wrap.appendChild(h('div',{className:'tagline'},'v7.3.1 Approved-State Consistency'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -15339,7 +15391,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.3.0 Executive Language & Dossier-Obermenge';
+const KI21_VERSION='v7.3.1 Approved-State Consistency';
 
 
 function runKi21VersionMigration(){
