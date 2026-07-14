@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.5.0-sales-decision-intelligence-20260714 -->
+<!-- KI21_BUILD: v7.6.0-sales-reasoning-engine-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.5.0 Sales Decision Intelligence</title>
+<title>KI21 v7.6.0 Sales Reasoning Engine</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2549,6 +2549,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v7.3.4: Knowledge Fusion – jüngste Original-Ergänzung wird im Executive Report direkt ausgewertet; Impact-Markierung erfolgt vor dem Cockpit-Refresh. -->
 <!-- v7.4.0: Deal Memory Engine – konsolidiert Primärquellen, Deal-State, Entscheidung, Nutzen, Risiken, offene Punkte und Confidence vor der Ausgabe in einem persistenten Opportunity-Modell. -->
 <!-- v7.5.0: Sales Decision Intelligence – Sales-first Sprache, Executive Sales Summary, Decision Readiness, Warum-jetzt-Prüfung und robuste Abschnittserkennung. -->
+<!-- v7.6.0: Sales Reasoning Engine – faktenbasierte Empfehlungsbegründung, Buying-Center-Vertrauen, priorisierte Verkaufshebel, verdichtete Sales Summary und semantischer Wiederholungsfilter. -->
 <!-- v7.2.7: Cockpit-Sofortfix – fehlerhafte Detached-DOM-Renderlogik vollständig zurückgenommen. Das Cockpit rendert wieder direkt; bei einem Laufzeitfehler wird die vorherige Ansicht automatisch wiederhergestellt. -->
 <!-- v7.3.0: Executive Language Engine bereinigt; Dossier ist Obermenge aus Cockpit, Testbericht und Phasendetails. -->
 <!-- v7.3.2: Evidence Impact Engine – Ergänzungen aktualisieren Cockpit/Health/Report, markieren betroffene Phasen und übernehmen erkannte SPIN-Antworten gezielt in Phase 2. -->
@@ -2885,8 +2886,8 @@ function ki21DecisionReadinessV750(memory){
     {label:'Kundenziel bestätigt',ok:!!String(e.goal||'').trim(),weight:15},
     {label:'Erfolgskriterium beschrieben',ok:!!String(e.success||'').trim(),weight:15},
     {label:'Business Case beziffert',ok:/\d[\d\.]*\s*€/.test(business),weight:20},
-    {label:'Nächster Kundentermin vereinbart',ok:/(starttermin|kickoff|termin)[^.!?]{0,80}(vereinbart|bestätigt|steht fest)/i.test(all),weight:15},
-    {label:'Verantwortliche bestätigt',ok:/verantwortlich[^.!?]{0,80}(benannt|bestätigt|vereinbart)/i.test(all),weight:15}
+    {label:'Nächster Kundentermin',ok:/(starttermin|kickoff|termin)[^.!?]{0,80}(vereinbart|bestätigt|steht fest)/i.test(all),weight:15},
+    {label:'Zuständigkeiten beim Kunden',ok:/verantwortlich[^.!?]{0,80}(benannt|bestätigt|vereinbart)/i.test(all),weight:15}
   ];
   const score=Math.max(0,Math.min(100,checks.reduce((n,c)=>n+(c.ok?c.weight:0),0)));
   const label=score>=85?'HOCH':score>=65?'GUT':score>=40?'TEILWEISE':'NIEDRIG';
@@ -2903,12 +2904,68 @@ function ki21SalesFirstTextV750(text){
     .replace(/Verantwortlichkeiten/gi,'Zuständigkeiten beim Kunden')
     .replace(/operative Details/gi,'vertriebsrelevante Details');
 }
+function ki21NormalizeReasoningKeyV760(text){
+  return String(text||'').toLowerCase()
+    .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen|und|oder|für|mit|im|in|am|an|zu|zur|zum|jetzt|noch)\b/g,' ')
+    .replace(/[^a-z0-9äöüß€]+/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+function ki21SemanticUniqueV760(lines){
+  const kept=[]; const keys=[];
+  (lines||[]).forEach(raw=>{
+    const text=String(raw||'').trim();
+    if(!text)return;
+    const key=ki21NormalizeReasoningKeyV760(text);
+    const words=new Set(key.split(' ').filter(w=>w.length>3));
+    const duplicate=keys.some(prev=>{
+      if(key===prev.key)return true;
+      const inter=[...words].filter(w=>prev.words.has(w)).length;
+      const min=Math.min(words.size,prev.words.size)||1;
+      return inter/min>=0.72;
+    });
+    if(!duplicate){kept.push(text);keys.push({key,words});}
+  });
+  return kept;
+}
+function ki21ReasoningV760(memory,readiness){
+  const e=memory.evidence||{};
+  const s=memory.sections||{};
+  const approved=!!e.approved;
+  const goal=String(e.goal||'').trim().replace(/^dass\s+/i,'');
+  const success=String(e.success||'').trim().replace(/^dass\s+/i,'');
+  const open=memory.open||[];
+  const facts=[]; const interpretations=[]; const reasons=[];
+  if(approved)facts.push('Der Kunde hat den Discovery Sprint freigegeben.');
+  if(goal)facts.push('Der Kunde hat das Ziel bestätigt: '+goal+'.');
+  if(success)facts.push('Ein Erfolgskriterium für den Sprint ist beschrieben.');
+  if(/\d[\d\.]*\s*€/.test((s['BUSINESS CASE UND NUTZEN']||[]).join(' ')))facts.push('Das Kundenproblem ist wirtschaftlich beziffert.');
+  if(approved)interpretations.push('Eine erneute Verkaufsqualifizierung für den Sprint schafft keinen zusätzlichen Entscheidungsfortschritt.');
+  if(open.some(x=>/starttermin|kundentermin|kickoff/i.test(x)))interpretations.push('Der aktuelle Engpass liegt beim verbindlichen nächsten Kundenschritt, nicht bei der bereits erteilten Freigabe.');
+  if(success)interpretations.push('Der Sprint kann als Beleg für die anschließende Kaufentscheidung genutzt werden, wenn die Messung vorab verbindlich geklärt wird.');
+  if(approved)reasons.push('Der Entscheidungsschritt für den Sprint ist bereits erfolgt.');
+  if(open.length)reasons.push('Offen sind vor allem Termin und Zuständigkeiten beim Kunden; genau dort kann der Vertrieb den nächsten Fortschritt erzeugen.');
+  if(goal||success)reasons.push('Der Sprint liefert nur dann Verkaufswirkung, wenn Ziel und Erfolgsmessung in belastbare Entscheidungsbelege übersetzt werden.');
+  const levers=[];
+  if(approved)levers.push('1. Den nächsten Kundentermin für Start und Kickoff verbindlich sichern.');
+  if(success||goal)levers.push('2. Erfolgsmessung und Baseline gemeinsam mit dem Kunden schriftlich bestätigen.');
+  levers.push('3. Sponsor und Buying Center früh auf die anschließende Kaufentscheidung ausrichten.');
+  const buyingText=JSON.stringify(s)+' '+String(e.text||'');
+  const sponsor=/sponsor|champion|befürworter/i.test(buyingText);
+  const economic=/cfo|geschäftsführer|geschäftsführung|wirtschaftlich(?:er|e) entscheider|budgetverantwort/i.test(buyingText);
+  const roles=/verantwortlich|ansprechpartner|kickoff-teilnehmer/i.test(buyingText);
+  let buyingLevel='OFFEN',buyingReason='Sponsor, wirtschaftlicher Entscheider und weitere Einflussnehmer sind noch nicht belastbar eingeordnet.';
+  const bcCount=[sponsor,economic,roles].filter(Boolean).length;
+  if(bcCount>=3){buyingLevel='GUT';buyingReason='Sponsor, wirtschaftlicher Entscheider und Zuständigkeiten sind weitgehend eingeordnet.';}
+  else if(bcCount>=1){buyingLevel='TEILWEISE';buyingReason='Einzelne Rollen sind erkennbar; das Buying Center ist noch nicht vollständig bestätigt.';}
+  return {facts,interpretations,reasons,levers,buying:{label:'Buying Center',level:buyingLevel,reason:buyingReason}};
+}
 function renderOpportunityReportFromDealMemoryV740(baseReport,memory){
   const parsed=ki21ParseReportSectionsV740(baseReport);
   const meta=parsed.meta.join('\n').trim();
   const s=memory.sections||{};
   const readiness=ki21DecisionReadinessV750(memory);
-  const sales=(lines)=>ki21UniqueV740(lines||[]).map(ki21SalesFirstTextV750);
+  const reasoning=ki21ReasoningV760(memory,readiness);
+  const sales=(lines)=>ki21SemanticUniqueV760(ki21UniqueV740(lines||[]).map(ki21SalesFirstTextV750));
   const section=(title,lines)=>{
     const clean=sales(lines);
     return clean.length?'\n\n'+title+'\n'+clean.map(x=>'• '+x).join('\n'):'';
@@ -2916,34 +2973,50 @@ function renderOpportunityReportFromDealMemoryV740(baseReport,memory){
   const e=memory.evidence||{};
   const goal=String(e.goal||'').trim().replace(/^dass\s+/i,'');
   const approved=!!e.approved;
-  const summary=[];
-  if(approved)summary.push('Der Discovery Sprint ist freigegeben. Der Vertrieb muss jetzt den vereinbarten Kundenschritt sauber starten und daraus belastbare Belege für die anschließende Kaufentscheidung gewinnen.');
-  else if(memory.dealState)summary.push(ki21SalesFirstTextV750(memory.dealState));
-  if(memory.bottleneck)summary.push(ki21SalesFirstTextV750(memory.bottleneck.replace(/^GRÖSSTER ENGPASS\s*/i,'')));
+  const bottleneck=ki21SalesFirstTextV750(String(memory.bottleneck||'').replace(/^GRÖSSTER ENGPASS\s*/i,''));
+  const recommendation=sales(s['DEAL-ENTSCHEIDUNG'])[0]||(approved?'Den freigegebenen Discovery Sprint ohne Momentumverlust starten und die nächste Kaufentscheidung vorbereiten.':'Den nächsten entscheidungsrelevanten Kundenschritt verbindlich erreichen.');
+  const summary=[
+    'Status: '+(approved?'Discovery Sprint freigegeben.':(memory.dealState||'Deal-Status noch nicht belastbar.')),
+    'Engpass: '+(bottleneck||'Der nächste verbindliche Kundenschritt ist noch nicht ausreichend geklärt.'),
+    'Empfehlung: '+recommendation
+  ];
   const whyNow=[];
-  if(approved)whyNow.push('Die Zustimmung liegt vor. Verzögerung kostet Momentum und verschiebt den Erkenntnisgewinn für die nächste Kaufentscheidung.');
-  else whyNow.push('Der nächste Kundenschritt sollte jetzt erfolgen, wenn er eine offene Kaufbedingung klärt oder einen verbindlichen Entscheidungsfortschritt erzeugt.');
-  if(goal)whyNow.push('Der Kunde erwartet konkret, dass '+goal.charAt(0).toLowerCase()+goal.slice(1)+'.');
+  if(approved)whyNow.push('Kundensicht: Die Zustimmung liegt vor; eine Verzögerung verschiebt den erwarteten Erkenntnisgewinn und den möglichen Nutzen.');
+  else whyNow.push('Kundensicht: Der nächste Schritt ist jetzt sinnvoll, wenn er eine offene Kaufbedingung klärt.');
+  if(goal)whyNow.push('Vertriebssicht: Der Kunde erwartet konkret, dass '+goal.charAt(0).toLowerCase()+goal.slice(1)+'. Jetzt muss daraus ein belastbarer Beleg für die nächste Kaufentscheidung entstehen.');
+  else whyNow.push('Vertriebssicht: Ohne verbindlichen nächsten Kundenschritt verliert die Opportunity Momentum.');
   const readinessLines=[readiness.score+' % · '+readiness.label+' für den nächsten Kundenschritt'];
-  readiness.checks.forEach(c=>readinessLines.push((c.ok?'✓ ':'⚠ ')+c.label));
+  readiness.checks.forEach(c=>{
+    let label=c.label;
+    if(!c.ok&&label==='Nächster Kundentermin')label='Nächster Kundentermin noch nicht vereinbart';
+    if(!c.ok&&label==='Zuständigkeiten beim Kunden')label='Zuständigkeiten beim Kunden noch nicht bestätigt';
+    if(c.ok&&label==='Nächster Kundentermin')label='Nächster Kundentermin vereinbart';
+    if(c.ok&&label==='Zuständigkeiten beim Kunden')label='Zuständigkeiten beim Kunden bestätigt';
+    readinessLines.push((c.ok?'✓ ':'⚠ ')+label);
+  });
+  const strategy=sales(s['EMPFOHLENE DEAL-STRATEGIE']).map((x,i)=>(i+1)+'. Priorität: '+x);
+  const confidence=(memory.confidence||[]).filter(c=>c.label!=='Entscheiderklarheit').map(c=>c.label+' '+c.level+' – '+ki21SalesFirstTextV750(c.reason));
+  confidence.splice(1,0,reasoning.buying.label+' '+reasoning.buying.level+' – '+reasoning.buying.reason);
 
   let out=meta;
   out+=section('SALES SUMMARY',summary);
   out+=section('HEALTH & FORECAST',s['HEALTH & FORECAST']);
   out+=section('ENTSCHEIDUNGSREIFE',readinessLines);
-  out+=section('AKTUELLES LAGEBILD',s['AKTUELLES LAGEBILD']);
-  out+=section('VERTRIEBSEMPFEHLUNG',s['DEAL-ENTSCHEIDUNG']);
+  out+=section('VERTRIEBSEMPFEHLUNG',[recommendation]);
+  out+=section('WARUM KI21 GENAU DAS EMPFIEHLT',reasoning.reasons);
   out+=section('WARUM JETZT?',whyNow);
-  out+=section('EMPFOHLENE VERKAUFSSTRATEGIE',s['EMPFOHLENE DEAL-STRATEGIE']);
-  out+=section('FAKTEN, DIE DAFÜR SPRECHEN',s['FAKTEN, DIE DAFÜR SPRECHEN']);
+  out+=section('AKTUELLES LAGEBILD',s['AKTUELLES LAGEBILD']);
+  out+=section('EMPFOHLENE VERKAUFSSTRATEGIE',strategy);
+  out+=section('FAKTENBASIS',reasoning.facts.length?reasoning.facts:s['FAKTEN, DIE DAFÜR SPRECHEN']);
+  out+=section('VERTRIEBLICHE INTERPRETATION',reasoning.interpretations);
   out+=section('VERKAUFSRISIKO',s['RISIKO EINER FEHLENTSCHEIDUNG']);
   out+=section('STÄRKSTE KLÄRUNGSFRAGE',s['STÄRKSTE KLÄRUNGSFRAGE']);
   out+=section('WAS SPRICHT DAGEGEN?',s['WAS SPRICHT DAGEGEN?']);
   out+=section('KI21 WÜRDE ANDERS EMPFEHLEN, WENN',s['KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN']);
-  out+=section('VERTRAUENSCHECK',memory.confidence.map(c=>c.label+' '+c.level+' – '+ki21SalesFirstTextV750(c.reason)));
+  out+=section('VERTRAUENSCHECK',confidence);
   out+=section('WAS DER VERTRIEB NOCH KLÄREN MUSS',memory.open);
   out+=section('BUSINESS CASE UND KUNDENNUTZEN',s['BUSINESS CASE UND NUTZEN']);
-  out+=section('GRÖSSTER VERKAUFSHEBEL',s['HÖCHSTER HEBEL']);
+  out+=section('VERKAUFSHEBEL – PRIORISIERT',reasoning.levers);
   out+=section('NÄCHSTE KUNDENSCHRITTE',s['NÄCHSTE SCHRITTE']);
   out+=section('DARAUF ACHTEN',s['DARAUF ACHTEN']);
   return out.trim();
@@ -15681,7 +15754,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.5.0 Sales Decision Intelligence';
+const KI21_VERSION='v7.6.0 Sales Reasoning Engine';
 
 
 function runKi21VersionMigration(){
