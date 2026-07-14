@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.2-opportunity-isolation-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.3-opportunity-isolation-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.2</title>
+<title>KI21 Pilot Core 1.0.3</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2724,12 +2724,13 @@ function extractPrimaryEvidenceV733(accId){
   const low=text.toLowerCase();
   const out={text,approved:false,goal:'',success:'',open:[],facts:[]};
   if(!text)return out;
-  out.approved=/(discovery\s*sprint|sprint)[^.]{0,80}(freigegeben|beauftragt|genehmigt)/i.test(text);
+  const explicitNotApproved=/(discovery\s*sprint|pilot|sprint)[^.!?]{0,120}(?:noch\s+nicht|nicht)\s+(?:intern\s+)?(?:freigegeben|beauftragt|genehmigt|beschlossen)/i.test(text);
+  out.approved=!explicitNotApproved&&/(discovery\s*sprint|pilot|sprint)[^.]{0,80}(freigegeben|beauftragt|genehmigt|beschlossen)/i.test(text);
   const goal=text.match(/(?:kunde erwartet|ziel ist|soll dadurch|dadurch sollen?)[,\s]*(?:dass\s*)?([^.!?]{18,220})/i);
   if(goal)out.goal=goal[1].trim().replace(/^(dadurch\s*)/i,'');
   const success=text.match(/als erfolg gilt[,\s]*(?:wenn\s*)?([^.!?]{18,240})/i)
     || text.match(/erfolgskriter(?:ium|ien)[^:]*:\s*([^.!?]{18,240})/i);
-  if(success)out.success=success[1].trim();
+  if(success&&!/(mögliche\s+erfolgskriterien|noch\s+nicht.{0,60}vereinbart|diskussionsgrundlage)/i.test(text))out.success=success[1].trim();
   if(/starttermin[^.!?]{0,100}(offen|nicht vereinbart|noch offen)/i.test(text)||/(starttermin|start)[^.!?]{0,100}noch offen/i.test(text))out.open.push('Starttermin verbindlich vereinbaren.');
   if(/verantwortlich(?:e|en|keit)[^.!?]{0,100}(offen|noch offen|nicht geklärt)/i.test(text)||/verantwortlichen?[^.!?]{0,100}noch offen/i.test(text))out.open.push('Verantwortliche für Messung und Auswertung benennen.');
   if(/baseline|ausgangswert/i.test(text)&&!/(baseline|ausgangswert)[^.!?]{0,100}(festgelegt|bestätigt|vereinbart)/i.test(text))out.open.push('Baseline vor dem Start dokumentieren.');
@@ -2814,6 +2815,113 @@ function applyPrimaryEvidenceToReportV733(report,accId){
   return r.trim();
 }
 
+
+// ── PILOT CORE 1.0.3 SOURCE-OF-TRUTH GUARD ───────────────────────────────
+// Explizite Primärdaten der aktiven Opportunity haben immer Vorrang vor
+// sichtbaren Cockpit-Texten, älteren KI-Ergebnissen und fallbezogenen Fallbacks.
+function ki21SourceTruthV103(accId){
+  let raw='';
+  try{raw=String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){}
+  if(!raw){
+    try{raw=String(LS.get('ki21_import_raw_'+accId,'')||'');}catch(e){}
+  }
+  const t=raw.replace(/\s+/g,' ').trim();
+  const negativeApproval=/(pilot|discovery\s*sprint)[^.!?]{0,120}(?:noch\s+nicht|nicht)\s+(?:intern\s+)?(?:freigegeben|genehmigt|beauftragt|beschlossen)/i.test(t)
+    || /ein\s+pilot\s+ist\s+noch\s+nicht\s+freigegeben/i.test(t);
+  const positiveApproval=/(pilot|discovery\s*sprint)[^.!?]{0,120}(freigegeben|genehmigt|beauftragt|beschlossen)/i.test(t) && !negativeApproval;
+  const nextMeetingOpen=/(folgetermin|gemeinsamer\s+termin)[^.!?]{0,150}(?:noch\s+nicht\s+konkret|nicht\s+vereinbart|in\s+aussicht|soll.*organisieren)/i.test(t);
+  const nextMeetingConfirmed=/(folgetermin|gemeinsamer\s+termin|kundentermin)[^.!?]{0,120}(?:verbindlich\s+vereinbart|bestätigt|steht\s+fest|terminiert)/i.test(t) && !nextMeetingOpen;
+  const successNotAgreed=/(mögliche\s+erfolgskriterien|erfolgskriterien)[^.!?]{0,120}(?:noch\s+nicht\s+(?:mit\s+dem\s+kunden\s+)?vereinbart|diskussionsgrundlage|offen)/i.test(t);
+  const economicDecisionMakerOpen=/(geschäftsführerin|wirtschaftliche\s+entscheiderin)[^.!?]{0,160}(?:noch\s+nicht\s+persönlich\s+gesprochen|noch\s+nicht\s+eingebunden|haltung\s*:\s*noch\s+nicht)/i.test(t);
+  const sponsorPresent=/(vertriebsleiter|markus\s+schneider)[^.!?]{0,180}(?:sponsor|positiv|interessiert|handlungsbedarf)/i.test(t);
+  const lostOpps=/38\s+(?:größere\s+)?(?:verlorene\s+)?opportunit/i.test(t);
+  const avgValue=/85\.?000\s*€/i.test(t);
+  const avoidableUnconfirmed=/(?:drei\s+bis\s+fünf|3\s*(?:bis|–|-)\s*5)[^.!?]{0,160}(?:vermutet|realistische\s+gewinnchance)/i.test(t)
+    || /nicht\s+bestätigt/i.test(t);
+  return {raw:t,negativeApproval,positiveApproval,nextMeetingOpen,nextMeetingConfirmed,successNotAgreed,economicDecisionMakerOpen,sponsorPresent,lostOpps,avgValue,avoidableUnconfirmed};
+}
+function ki21ReplaceSectionV103(report,title,lines){
+  let r=String(report||'');
+  const body=(lines||[]).filter(Boolean).map(x=>'• '+String(x).replace(/^(?:•\s*)+/,'')).join('\n');
+  const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp(esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)');
+  const block=body?title+'\n'+body:'';
+  if(re.test(r))r=r.replace(re,block); else if(block)r+='\n\n'+block;
+  return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+function ki21ApplyOpportunitySourceGuardV103(report,accId){
+  let r=String(report||'');
+  const st=ki21SourceTruthV103(accId);
+  if(!st.raw)return r;
+
+  // Niemals Angebotswerte oder Werte anderer Opportunities als Business Case übernehmen.
+  if(!/8\.?000\s*€\s*(?:pro|\/)\s*monat/i.test(st.raw)){
+    r=r.replace(/^•?\s*8\.000\s*€\s*pro\s*Monat[^\n]*\n?/gim,'');
+  }
+
+  if(st.negativeApproval){
+    r=ki21ReplaceSectionV103(r,'HEALTH & FORECAST',['Qualifizierung · Buying Center und Pilotentscheidung vorbereiten']);
+    r=ki21ReplaceSectionV103(r,'AKTUELLES LAGEBILD',[
+      'CHANCE Der Vertriebsleiter bestätigt Handlungsbedarf bei Qualifizierung, Forecast und Opportunity-Steuerung und kann zum internen Sponsor werden.',
+      'GRÖSSTER ENGPASS Der Pilot ist noch nicht freigegeben. Die wirtschaftliche Entscheiderin und Sales Operations wurden noch nicht gemeinsam in die Entscheidung eingebunden.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'DEAL-ENTSCHEIDUNG',['Einen gemeinsamen Discovery- und Entscheidungstermin mit Vertriebsleitung, Geschäftsführung und Sales Operations verbindlich erreichen.']);
+    r=ki21ReplaceSectionV103(r,'EMPFOHLENE DEAL-STRATEGIE',[
+      'Den gemeinsamen Entscheidungstermin verbindlich vereinbaren und die Erwartungen der Geschäftsführung direkt klären.',
+      'Vermeidbare Opportunity-Verluste, Pilotziele, Erfolgskriterien und geringen Pflegeaufwand gemeinsam validieren.',
+      'Erst danach einen belastbaren Pilotvorschlag mit klarer Entscheidungslogik vorlegen.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'FAKTEN, DIE DAFÜR SPRECHEN',[
+      'Der Vertriebsleiter bestätigt Schwächen in Qualifizierung, Forecast und Opportunity-Steuerung.',
+      'Im vergangenen Geschäftsjahr wurden 38 größere Opportunities verloren.',
+      'Der Pilot ist noch nicht freigegeben; die Geschäftsführerin wurde noch nicht persönlich eingebunden.',
+      'Ein gemeinsamer Folgetermin ist in Aussicht gestellt, aber noch nicht konkret vereinbart.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'RISIKO EINER FEHLENTSCHEIDUNG',['Ein zu früher Pilotvorschlag ohne bestätigten wirtschaftlichen Handlungsdruck und ohne abgestimmte Erfolgskriterien kann als zusätzliches Tool statt als Lösung für vermeidbare Dealverluste wahrgenommen werden.']);
+    r=ki21ReplaceSectionV103(r,'STÄRKSTE KLÄRUNGSFRAGE',['Welche konkreten verlorenen Opportunities wären aus Sicht der Geschäftsführung vermeidbar gewesen – und welche nachweisbaren Ergebnisse muss ein Pilot liefern, damit sie eine breitere Einführung freigibt?']);
+    r=ki21ReplaceSectionV103(r,'WAS SPRICHT DAGEGEN?',[
+      'HubSpot, Coaching und interne Checklisten können als ausreichend wahrgenommen werden.',
+      'Ohne klare Abgrenzung könnte KI21 als zusätzliches System und Kontrollinstrument erscheinen.',
+      'Der wirtschaftliche Nutzen des Piloten ist plausibel, aber noch nicht bestätigt.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN',[
+      'die Geschäftsführerin keinen relevanten wirtschaftlichen Handlungsdruck sieht.',
+      'Sales Operations oder die Account Executives den zusätzlichen Pflegeaufwand als zu hoch bewerten.',
+      'parallel bereits eine verbindliche CRM-, Coaching- oder Prozessinitiative dasselbe Problem adressiert.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'WAS WIR NOCH WISSEN MÜSSEN',[
+      'Welche verlorenen Opportunities tatsächlich vermeidbar gewesen wären.',
+      'Welche Ergebnisse die Geschäftsführerin für eine Pilotfreigabe benötigt.',
+      'Wer neben der Geschäftsführerin wirtschaftlich mitentscheidet.',
+      'Wie gering der zusätzliche Pflegeaufwand für die Verkäufer sein muss.',
+      'Wann der gemeinsame Entscheidungstermin stattfindet.'
+    ]);
+    r=ki21ReplaceSectionV103(r,'WARUM DIESER HEBEL VORRANG HAT',['Der Vertriebsleiter erkennt das Problem, kann den Pilot aber nicht allein freigeben. Weiterer Verkaufsfortschritt entsteht deshalb nur, wenn wirtschaftlicher Handlungsdruck, Buying Center und Pilotentscheidung in einem gemeinsamen Kundentermin zusammengeführt werden.']);
+    r=ki21ReplaceSectionV103(r,'HÖCHSTER HEBEL',['Den Vertriebsleiter befähigen, einen gemeinsamen Entscheidungstermin mit Geschäftsführung und Sales Operations verbindlich zu organisieren.']);
+    r=ki21ReplaceSectionV103(r,'NÄCHSTE SCHRITTE',[
+      'Gemeinsamen Discovery- und Entscheidungstermin mit Vertriebsleitung, Geschäftsführung und Sales Operations verbindlich vereinbaren.',
+      'Vor dem Termin drei bis fünf möglicherweise vermeidbare verlorene Opportunities als Diskussionsgrundlage auswählen.',
+      'Im Termin Pilotziele, Erfolgskriterien, Rollen, Pflegeaufwand und nächsten Entscheidungsschritt gemeinsam bestätigen.'
+    ]);
+    const bc=[];
+    if(st.lostOpps)bc.push('38 größere verlorene Opportunities im vergangenen Geschäftsjahr bilden den wirtschaftlichen Ausgangspunkt.');
+    if(st.avgValue)bc.push('Der durchschnittlich erwartete jährliche Vertragswert liegt bei etwa 85.000 €; daraus darf noch kein bestätigter KI21-Nutzen abgeleitet werden.');
+    bc.push('Der Vertriebsleiter vermutet drei bis fünf grundsätzlich gewinnbare Opportunities; entgangener Umsatz und Deckungsbeitrag sind noch nicht bestätigt.');
+    bc.push('Erwarteter Kundennutzen: weniger vermeidbare Dealverluste, belastbarere Forecasts und geringerer Aufwand für manuelle Deal-Reviews.');
+    r=ki21ReplaceSectionV103(r,'BUSINESS CASE UND NUTZEN',bc);
+    r=ki21ReplaceSectionV103(r,'DARAUF ACHTEN',[
+      'Den Pilotpreis von 24.000 € nicht als Business Case oder bestätigten Kundennutzen behandeln.',
+      'Den Vertriebsleiter nicht mit dem wirtschaftlichen Entscheider gleichsetzen.',
+      'Keine Pilotfreigabe annehmen, bevor die Geschäftsführerin den Entscheidungsschritt ausdrücklich bestätigt.'
+    ]);
+  }
+  return r.replace(/Discovery Sprint ist freigegeben/gi,'Pilot noch nicht freigegeben')
+          .replace(/wirtschaftliche Entscheidung ist getroffen/gi,'wirtschaftliche Entscheidung ist noch offen')
+          .replace(/bereits erteilten Freigabe/gi,'noch offenen Pilotentscheidung')
+          .replace(/nach der Freigabe/gi,'vor der Pilotentscheidung')
+          .trim();
+}
+
 // ── v7.4.0 DEAL MEMORY ENGINE ────────────────────────────────────────────
 // Eine zentrale, persistente Wissensschicht zwischen Primärquellen und Ausgaben.
 // Cockpit-/Report-Texte sind Darstellungen; das Deal Memory hält den konsolidierten Deal-State.
@@ -2878,15 +2986,16 @@ function buildDealMemoryV740(baseReport,accId){
 }
 function ki21DecisionReadinessV750(memory){
   const e=memory.evidence||{};
+  const truth=memory.sourceTruth||ki21SourceTruthV103(memory.accId);
   const s=memory.sections||{};
   const business=(s['BUSINESS CASE UND NUTZEN']||[]).join(' ');
   const all=JSON.stringify(s)+' '+String(e.text||'');
   const checks=[
-    {label:'Sprint-Freigabe',ok:!!e.approved,weight:20},
+    {label:'Sprint-Freigabe',ok:!!e.approved&&!truth.negativeApproval,weight:20},
     {label:'Kundenziel bestätigt',ok:!!String(e.goal||'').trim(),weight:15},
-    {label:'Erfolgskriterium beschrieben',ok:!!String(e.success||'').trim(),weight:15},
-    {label:'Business Case beziffert',ok:/\d[\d\.]*\s*€/.test(business),weight:20},
-    {label:'Nächster Kundentermin',ok:/(starttermin|kickoff|termin)[^.!?]{0,80}(vereinbart|bestätigt|steht fest)/i.test(all),weight:15},
+    {label:'Erfolgskriterium beschrieben',ok:!!String(e.success||'').trim()&&!truth.successNotAgreed,weight:15},
+    {label:'Business Case bestätigt',ok:/\d[\d\.]*\s*€/.test(business)&&!truth.negativeApproval&&!truth.avoidableUnconfirmed,weight:20},
+    {label:'Nächster Kundentermin',ok:truth.nextMeetingConfirmed,weight:15},
     {label:'Zuständigkeiten beim Kunden',ok:/verantwortlich[^.!?]{0,80}(benannt|bestätigt|vereinbart)/i.test(all),weight:15}
   ];
   const score=Math.max(0,Math.min(100,checks.reduce((n,c)=>n+(c.ok?c.weight:0),0)));
@@ -3045,7 +3154,7 @@ function buildOpportunityTestReportV723(){
   const score=ki21TextV723('.cockpit-score-badge,.cockpit-score-click');
   const forecast=ki21TextV723('.ki21-forecast-v680,.ki21-forecast-card,.cockpit-forecast');
   const dealstatus=ki21TextV723('#ki21-dealstatus');
-  let report='KI21 OPPORTUNITY-TESTBERICHT\nInhaltliche Opportunity-Bewertung – keine Kundenunterlage\n';
+  let report='KI21 SALES DECISION BRIEF\nVerdichtete Vertriebsbewertung für die nächste Kundenentscheidung\n';
   report+='Version: '+KI21_VERSION+'\nOpportunity: '+(cust.firma||'Nicht benannt')+'\nErstellt: '+new Date().toLocaleString('de-DE');
   report+=section('Health & Forecast',[score?('Health Score: '+score):'',forecast?('Forecast: '+forecast):'',dealstatus?(dealstatus.replace(/^Dealstatus:\s*/i,'')):'']);
   report+=section('Aktuelles Lagebild',ki21TextsV723('.cockpit-v54-lagebild .cockpit-v5-summary-row'));
@@ -3068,12 +3177,14 @@ function buildOpportunityTestReportV723(){
     /Forecast-Begründungen/i.test(document.body.innerText)?'Messindikator: vollständigere Forecast-Begründungen':''
   ]);
   const fused=applyPrimaryEvidenceToReportV733(report.trim(),aid);
-  const memory=buildDealMemoryV740(fused,aid);
-  return renderOpportunityReportFromDealMemoryV740(fused,memory);
+  const guarded=ki21ApplyOpportunitySourceGuardV103(fused,aid);
+  const memory=buildDealMemoryV740(guarded,aid);
+  memory.sourceTruth=ki21SourceTruthV103(aid);
+  return renderOpportunityReportFromDealMemoryV740(guarded,memory);
 }
 function buildOpportunityTestReportPdfHtmlV723(report){
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return `<div style="font-family:Arial,sans-serif;color:#171717;line-height:1.5;font-size:11px;"><div style="border-bottom:3px solid #ff6b00;padding-bottom:10px;margin-bottom:15px;"><div style="font-size:20px;font-weight:800;color:#ff6b00;">KI21 KI21 Sales Decision Brief</div><div style="font-size:10px;color:#666;">Inhaltliche Opportunity-Bewertung – keine Kundenunterlage</div></div><div style="white-space:pre-wrap;">${esc(report)}</div></div>`;
+  return `<div style="font-family:Arial,sans-serif;color:#171717;line-height:1.5;font-size:11px;"><div style="border-bottom:3px solid #ff6b00;padding-bottom:10px;margin-bottom:15px;"><div style="font-size:20px;font-weight:800;color:#ff6b00;">KI21 Sales Decision Brief</div><div style="font-size:10px;color:#666;">Verdichtete Vertriebsbewertung für die nächste Kundenentscheidung</div></div><div style="white-space:pre-wrap;">${esc(report)}</div></div>`;
 }
 function showOpportunityTestReportV723(){
   const aid=state.activeId||LS.get('ki21_aid',null);
@@ -3119,13 +3230,13 @@ async function shareOpportunityReportTxtV725(report,filename){
   const file=new File([String(report||'')],filename,{type:'text/plain'});
   try{
     if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
-      await navigator.share({title:'KI21 KI21 Sales Decision Brief',files:[file]});
+      await navigator.share({title:'KI21 Sales Decision Brief',files:[file]});
       return;
     }
   }catch(e){if(e&&e.name==='AbortError')return;}
   try{
     if(navigator.share){
-      await navigator.share({title:'KI21 KI21 Sales Decision Brief',text:String(report||'')});
+      await navigator.share({title:'KI21 Sales Decision Brief',text:String(report||'')});
       return;
     }
   }catch(e){if(e&&e.name==='AbortError')return;}
@@ -14040,7 +14151,7 @@ function generateKundePDF(aid, cust){
     String(executiveReportV730||'').split('\n').forEach(raw=>{
       const line=String(raw||'').trim();
       if(!line)return;
-      if(line==='KI21 OPPORTUNITY-TESTBERICHT'||/^Inhaltliche Opportunity-Bewertung/.test(line)||/^Version:|^Opportunity:|^Erstellt:/.test(line))return;
+      if(line==='KI21 SALES DECISION BRIEF'||/^Inhaltliche Opportunity-Bewertung/.test(line)||/^Version:|^Opportunity:|^Erstellt:/.test(line))return;
       if(/^[A-ZÄÖÜ0-9 &/–—-]{4,}$/.test(line)&&!line.startsWith('•')){
         current={title:line,items:[]};sections.push(current);return;
       }
