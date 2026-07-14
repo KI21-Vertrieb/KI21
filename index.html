@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: v7.2.2-effect-chain-architecture-20260714 -->
+<!-- KI21_BUILD: v7.2.3-executive-prioritization-report-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 v7.2.2 Wirkungsarchitektur</title>
+<title>KI21 v7.2.3 Executive Priorisierung & Testbericht</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2432,6 +2432,18 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- v6.6.2: Commitment Intelligence, kostenlose Pilotforderung als dominanter Deal-State, einheitlicher zentraler Health Score. -->
 <!-- v7.2.1: Executive Language & Decision Consistency – konkrete Wirkung statt abstrakter Platzhalter, eine zentrale Restunsicherheit, konsistente Entscheidungsbedingungen und geschärfter Business Case. -->
 <!-- v7.2.2: Wirkungsarchitektur – Ausgangsproblem, Ziel, direkte Wirkung, Messindikator und Geschäftswirkung bleiben getrennt; neue Signale ergänzen die Wirkungskette, statt frühere Nutzenebenen zu verdrängen. -->
+<!-- v7.2.3: Executive Priorisierung & Opportunity-Testbericht – Vorrang des höchsten Hebels wird begründet; Zielwert und Messindikator bleiben getrennt; inhaltlicher Bericht kann kopiert oder als PDF exportiert werden. -->
+<style>
+.ki21-priority-reason-v723{margin-top:16px;padding:16px 17px;border-radius:16px;border:1px solid rgba(255,138,42,.32);background:linear-gradient(135deg,rgba(255,107,0,.12),rgba(255,255,255,.025))}
+.ki21-priority-reason-text-v723{margin-top:8px;font-size:13.2px;line-height:1.52;color:#f3f6fb;font-weight:720}
+.ki21-report-btn-v723{border:1px solid rgba(255,107,0,.55)!important;color:#ff9a45!important;background:rgba(255,107,0,.08)!important;font-weight:850!important;white-space:nowrap!important}
+.ki21-report-overlay-v723{position:fixed;inset:0;z-index:999990;background:rgba(5,8,13,.96);display:flex;flex-direction:column;padding:18px 14px max(24px,env(safe-area-inset-bottom))}
+.ki21-report-panel-v723{width:100%;max-width:620px;margin:auto;display:flex;flex-direction:column;min-height:0;max-height:94vh;border:1px solid rgba(139,148,158,.26);border-radius:18px;background:#161b22;overflow:hidden;box-shadow:0 22px 60px rgba(0,0,0,.5)}
+.ki21-report-head-v723{padding:15px 16px;border-bottom:1px solid #30363d}.ki21-report-title-v723{font-size:16px;font-weight:900;color:#f3f6fb}.ki21-report-sub-v723{font-size:10.5px;color:#8b949e;margin-top:3px}
+.ki21-report-preview-v723{flex:1;min-height:0;overflow:auto;white-space:pre-wrap;padding:15px 16px;color:#e6edf3;font-size:12px;line-height:1.55;background:#0d1117}
+.ki21-report-actions-v723{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-top:1px solid #30363d}.ki21-report-actions-v723 button:last-child{grid-column:1/-1}
+@media(max-width:390px){.ki21-priority-reason-text-v723{font-size:12.5px}.ki21-report-overlay-v723{padding:10px 8px max(16px,env(safe-area-inset-bottom))}}
+</style>
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -2578,6 +2590,84 @@ function buildSimplePdfHtml(title,text,cust){
   </div>`;
   return html;
 }
+
+
+// ── v7.2.3 INHALTLICHER OPPORTUNITY-TESTBERICHT ─────────────────────────
+function ki21TextV723(selector,root){
+  const el=(root||document).querySelector(selector);
+  return el?String(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim():'';
+}
+function ki21TextsV723(selector,root){
+  return Array.from((root||document).querySelectorAll(selector)).map(el=>String(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+}
+function buildOpportunityTestReportV723(){
+  const aid=state.activeId||LS.get('ki21_aid',null);
+  const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
+  const cust=(acc&&acc.cust)||{};
+  const section=(title,lines)=>{
+    const clean=(lines||[]).map(x=>String(x||'').trim()).filter(Boolean);
+    return clean.length?'\n\n'+title.toUpperCase()+'\n'+clean.map(x=>'• '+x).join('\n'):'';
+  };
+  const reasonBlocks=ki21TextsV723('.ki21-decision-reasoning');
+  const mini=ki21TextsV723('.ki21-decision-mini');
+  const score=ki21TextV723('.cockpit-score-badge,.cockpit-score-click');
+  const forecast=ki21TextV723('.ki21-forecast-v680,.ki21-forecast-card,.cockpit-forecast');
+  const dealstatus=ki21TextV723('#ki21-dealstatus');
+  let report='KI21 OPPORTUNITY-TESTBERICHT\nInhaltliche Opportunity-Bewertung – keine Kundenunterlage\n';
+  report+='Version: '+KI21_VERSION+'\nOpportunity: '+(cust.firma||'Nicht benannt')+'\nErstellt: '+new Date().toLocaleString('de-DE');
+  report+=section('Health & Forecast',[score?('Health Score: '+score):'',forecast?('Forecast: '+forecast):'',dealstatus?('Dealstatus: '+dealstatus):'']);
+  report+=section('Aktuelles Lagebild',ki21TextsV723('.cockpit-v54-lagebild .cockpit-v5-summary-row'));
+  report+=section('Deal-Entscheidung',[ki21TextV723('.ki21-decision-title')]);
+  report+=section('Empfohlene Deal-Strategie',[ki21TextV723('.ki21-decision-rec').replace(/^Empfohlene Deal-Strategie:\s*/i,'')]);
+  if(reasonBlocks[0])report+=section('Fakten, die dafür sprechen',[reasonBlocks[0].replace(/^DIESE FAKTEN SPRECHEN DAFÜR\s*/i,'')]);
+  if(mini[0])report+=section('Risiko einer Fehlentscheidung',[mini[0].replace(/^Wenn wir falsch entscheiden …\s*/i,'')]);
+  if(mini[1])report+=section('Stärkste Klärungsfrage',[mini[1].replace(/^Eine Antwort entscheidet jetzt\s*/i,'')]);
+  if(reasonBlocks[1])report+=section('Was spricht dagegen?',[reasonBlocks[1].replace(/^WAS SPRICHT DAGEGEN\?\s*/i,'')]);
+  if(reasonBlocks[2])report+=section('KI21 würde anders entscheiden, wenn',[reasonBlocks[2].replace(/^KI21 WÜRDE ANDERS ENTSCHEIDEN, WENN …\s*/i,'')]);
+  report+=section('Vertrauenscheck',ki21TextsV723('.ki21-trust-row-v690'));
+  report+=section('Höchste Restunsicherheit',ki21TextsV723('.ki21-confidence-gap-v693 .ki21-decision-reason'));
+  report+=section('Warum dieser Hebel Vorrang hat',[ki21TextV723('.ki21-priority-reason-text-v723')]);
+  report+=section('Höchster Hebel',[ki21TextV723('.ki21-next-action-text-v675')]);
+  report+=section('Nächste Schritte',ki21TextsV723('.cockpit-card-next .v53-task-text,.cockpit-card-next .cockpit-tile-item'));
+  report+=section('Business Case und Nutzen',ki21TextsV723('.cockpit-card-value .cockpit-business-anchor,.cockpit-card-value .cockpit-tile-item,.cockpit-card-value .v53-bc-benefit'));
+  report+=section('Darauf achten',ki21TextsV723('.cockpit-card-risk .cockpit-tile-item,.cockpit-card-risk .v53-risk-text'));
+  report+=section('Wirkungskette',[
+    /vollständigere Discovery-Ergebnisse/i.test(document.body.innerText)?'Primärwirkung: vollständigere Discovery-Ergebnisse':'',
+    /Forecast-Begründungen/i.test(document.body.innerText)?'Messindikator: vollständigere Forecast-Begründungen':''
+  ]);
+  return report.trim();
+}
+function buildOpportunityTestReportPdfHtmlV723(report){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<div style="font-family:Arial,sans-serif;color:#171717;line-height:1.5;font-size:11px;"><div style="border-bottom:3px solid #ff6b00;padding-bottom:10px;margin-bottom:15px;"><div style="font-size:20px;font-weight:800;color:#ff6b00;">KI21 Opportunity-Testbericht</div><div style="font-size:10px;color:#666;">Inhaltliche Opportunity-Bewertung – keine Kundenunterlage</div></div><div style="white-space:pre-wrap;">${esc(report)}</div></div>`;
+}
+function showOpportunityTestReportV723(){
+  const aid=state.activeId||LS.get('ki21_aid',null);
+  if(!aid){showKunde();return;}
+  const create=()=>{
+    const report=buildOpportunityTestReportV723();
+    const overlay=h('div',{className:'ki21-report-overlay-v723'});
+    const close=()=>{try{overlay.remove();}catch(e){}};
+    const panel=h('div',{className:'ki21-report-panel-v723'},
+      h('div',{className:'ki21-report-head-v723'},h('div',{className:'ki21-report-title-v723'},'Opportunity-Testbericht'),h('div',{className:'ki21-report-sub-v723'},'Vollständige inhaltliche Bewertung der aktuellen Opportunity')),
+      h('div',{className:'ki21-report-preview-v723'},report),
+      h('div',{className:'ki21-report-actions-v723'},
+        h('button',{className:'btn-o',onclick:()=>universalCopy(report,()=>alert('✅ Testbericht kopiert'))},'📋 Bericht kopieren'),
+        h('button',{className:'btn-o',onclick:()=>{
+          const acc=(state.accounts||[]).find(a=>a&&a.id===aid);
+          const name=((acc&&acc.cust&&acc.cust.firma)||'Opportunity').replace(/[^\wäöüÄÖÜß-]+/g,'_');
+          exportHtmlAsPdf(buildOpportunityTestReportPdfHtmlV723(report),'KI21_Testbericht_'+name+'.pdf');
+        }},'📄 Als PDF'),
+        h('button',{className:'btn',onclick:close},'Schließen')
+      )
+    );
+    overlay.appendChild(panel);document.body.appendChild(overlay);
+  };
+  if(document.querySelector('#ki21-visible-decision-core')){create();return;}
+  try{renderCockpitSnapshotLiteV4215();setTimeout(create,180);}
+  catch(e){alert('Der Testbericht konnte nicht erzeugt werden. Bitte zuerst das Cockpit öffnen.');}
+}
+
 
 // ── STATE ──────────────────────────────────────────────────
 // v4.232 Selectable SPIN Stable: Start lädt nur den minimal nötigen Opportunity-State.
@@ -8385,6 +8475,7 @@ function renderHomeLiteV4211(){
         renderScoreBadgeV4224(''),
         h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
       ),
+      h('button',{className:'btn ki21-report-btn-v723',onclick:showOpportunityTestReportV723},'Bericht'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -9620,6 +9711,7 @@ function renderCockpitSnapshotLiteV4215(){
         renderScoreBadgeV4224(''),
         h('div',{id:'ki21-dealstatus',className:'cockpit-dealstatus'},'Dealstatus wird aktualisiert')
       ),
+      h('button',{className:'btn ki21-report-btn-v723',onclick:showOpportunityTestReportV723},'Bericht'),
       h('button',{className:'btn',onclick:showSettings},'⚙')
     )
   );
@@ -9833,7 +9925,7 @@ function renderCockpitSnapshotLiteV4215(){
     const executiveTopic=(d,source)=>{
       const t=String(source||'').toLowerCase();
       if(!d)return 'offenen Punkt';
-      if(d.id==='discovery')return 'Discovery-Qualität';
+      if(d.id==='discovery')return 'vollständigere Discovery-Ergebnisse';
       if(d.id==='information')return 'Vollständigkeit der Opportunity-Informationen';
       if(d.id==='quality'){
         if(/forecast|prognose/.test(t))return 'Forecast-Begründungen';
@@ -9861,7 +9953,7 @@ function renderCockpitSnapshotLiteV4215(){
     const hasDiscoveryLayerV722=/(?:discovery|qualifizierung|bedarfsermittlung|kundengespräch)/.test(txt);
     const hasInformationLayerV722=/(?:opportunity[-\s]?(?:informationen|daten)|kundeninformationen|datenbasis|dokumentation|notizen)/.test(txt);
     const hasForecastIndicatorV722=/(?:forecast|prognose)/.test(txt);
-    const primaryEffectV722=hasDiscoveryLayerV722?'Discovery-Qualität':(hasInformationLayerV722?'Vollständigkeit der Opportunity-Informationen':topicPos);
+    const primaryEffectV722=hasDiscoveryLayerV722?'vollständigere Discovery-Ergebnisse':(hasInformationLayerV722?'Vollständigkeit der Opportunity-Informationen':topicPos);
     const measurementIndicatorV722=hasForecastIndicatorV722?'Forecast-Begründungen':'';
     const preserveBenefitV722=measurementIndicatorV722&&primaryEffectV722!==measurementIndicatorV722
       ?primaryEffectV722+' erhalten bleibt und sich dies weiterhin in vollständigen '+measurementIndicatorV722+' zeigt'
@@ -9902,7 +9994,7 @@ function renderCockpitSnapshotLiteV4215(){
         ],
         changes:[
           `der ${subject} dauerhaft in den vereinbarten Zielkorridor fällt und ${preserveBenefitV722}.`,
-          `die ${primaryEffectV722} durch die Anpassung deutlich zurückgeht oder der Messindikator schwächer wird.`,
+          `die ${primaryEffectV722} durch die Anpassung deutlich zurückgehen${measurementIndicatorV722?' oder die '+measurementIndicatorV722+' wieder schwächer werden':''}.`,
           'eine neue kaufentscheidende Bedingung oder ein stärkerer Engpass entsteht.'
         ],
         next:pilotContext&&currentNeg.id==='effort'
@@ -10088,6 +10180,18 @@ function renderCockpitSnapshotLiteV4215(){
   }catch(e){}
   let manualKpiForTrustV690='';
   try{manualKpiForTrustV690=(typeof getManualQuantifiedProblemV63==='function'?getManualQuantifiedProblemV63(aid):'')||'';}catch(e){}
+  // v7.2.3 Executive Priorisierung
+  const securedForPriorityV723=uniqV690([
+    /(?:pilot|test|proof of concept|poc)/.test(currentStateNormV712)?'der laufende Validierungsschritt':'',
+    /entscheidungstermin/.test(currentStateNormV712)&&/(bleibt|besteht|bestätigt|verbindlich)/.test(currentStateNormV712)?'der Entscheidungstermin':'',
+    manualKpiForTrustV690?'der bezifferte wirtschaftliche Handlungsdruck':'',
+    measurementFinalizedV701?'die vereinbarte Erfolgsmessung':'',
+    /(?:budget|freigabe)/.test(currentStateNormV712)&&/(bestätigt|freigegeben|vorhanden|gesichert)/.test(currentStateNormV712)?'die wirtschaftliche Freigabe':''
+  ]);
+  const priorityTopicV723=topicNeg||'aktuelle Engpass';
+  const priorityReasonV723=securedForPriorityV723.length
+    ?`${securedForPriorityV723.slice(0,4).join(', ')} verändern den Deal aktuell nicht mehr. Der kritische Punkt „${priorityTopicV723}“ hat Vorrang, weil er den nächsten verbindlichen Kundenschritt unmittelbar gefährdet.`
+    :`Der kritische Punkt „${priorityTopicV723}“ hat Vorrang, weil er den nächsten verbindlichen Kundenschritt stärker beeinflusst als die übrigen offenen Themen.`;
   const trustBarsV690=[
     {label:'Faktenlage',value:Math.min(5,Math.max(1,Math.round(confirmedFactsV690.length/2))),details:confirmedFactsV690},
     {label:'Entscheiderklarheit',value:/cfo|geschäftsführer|entscheider/.test(currentStateNormV712)?4:3,details:uniqV690([
@@ -10168,6 +10272,10 @@ function renderCockpitSnapshotLiteV4215(){
     h('div',{className:'ki21-confidence-gap-v693'},
       h('div',{className:'ki21-qe-label'},'WAS FEHLT BIS ZUR MAXIMALEN ENTSCHEIDUNGSSICHERHEIT?'),
       ...(missingForMaxV693.length?missingForMaxV693:['Keine kritische Lücke erkennbar.']).map(x=>h('div',{className:'ki21-decision-reason'},'• '+x))
+    ),
+    h('div',{className:'ki21-priority-reason-v723'},
+      h('div',{className:'ki21-qe-label'},'WARUM DIESER HEBEL JETZT VORRANG HAT'),
+      h('div',{className:'ki21-priority-reason-text-v723'},priorityReasonV723)
     ),
     h('div',{className:'ki21-next-action-v675'},
       h('div',{className:'ki21-leverage-label-v693'},'HÖCHSTER HEBEL'),
@@ -14902,7 +15010,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='v7.2.2 Wirkungsarchitektur';
+const KI21_VERSION='v7.2.3 Executive Priorisierung & Testbericht';
 
 
 function runKi21VersionMigration(){
