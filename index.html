@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.8-buying-center-confidence-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.9-pre-pilot-state-gate-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.8</title>
+<title>KI21 Pilot Core 1.0.9</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2558,6 +2558,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.5: Single Opportunity State – alle Primärdaten, Phasen, Ergebnisse und Deal-Memory-Inhalte sind strikt an den aktiven Opportunity-Container gebunden. -->
 <!-- Pilot Core 1.0.7: Pilot Freeze – Vertrauenscheck bewertet Buying Center und Business Case nur bei bestätigter Evidenz als gut/stark; widersprüchliche Kundenschritt-Formulierungen bereinigt. -->
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
+<!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -10853,7 +10854,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
     const affected=/((?:\d+|ein|eine|zwei|drei|vier|fünf|mehrere)\s+(?:von\s+\d+\s+)?(?:nutzer|anwender|personen|teams|kunden))/.exec(txt);
     const currentNeg=negative[0]||open[0];
     const currentPos=positive.find(x=>!currentNeg||x.id!==currentNeg.id)||positive[0];
-    const pilotContext=/(?:pilot|pilotwoche|pilotbetrieb)/.test(txt);
+    const pilotContext=/(?:pilot(?:betrieb|woche|phase)|pilot\s+(?:läuft|gestartet|aktiv|fortgesetzt)|im\s+pilot)/.test(txt)&&!/(?:pilot|pilotprojekt)[^.!?]{0,140}(?:noch\s+nicht|nicht)\s+(?:freigegeben|genehmigt|beauftragt|gestartet)|kein\s+budget\s+freigegeben/.test(txt);
     const lowerLabel=d=>String(d&&d.label||'Punkt').toLowerCase();
     // v7.2 Executive Language Engine: Die Entscheidungslogik bleibt semantisch,
     // die sichtbare Sprache benennt jedoch das konkrete Thema aus der Opportunity.
@@ -16067,7 +16068,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.8';
+const KI21_VERSION='Pilot Core 1.0.9';
 
 
 function runKi21VersionMigration(){
@@ -18156,5 +18157,141 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 </script>
 <!-- v7.2.9: Unified Deal State – semantische Soll-/Ist-Trennung, jüngster Istwert gewinnt, Health 100 nur ohne offene oder kritische Risiken. -->
+<script>
+// Pilot Core 1.0.9: Pre-Pilot State Gate
+// Verhindert, dass bloße Erwähnungen eines geplanten Piloten als laufender Pilot
+// interpretiert werden. Der aktive CRM-Import bleibt die letzte Wahrheit.
+(function(){
+  const _finalizeV108=ki21FinalizeReportFromPrimarySourceV103;
+  function sourceV109(accId){
+    let raw='';
+    try{raw=String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){}
+    if(!raw){try{raw=String(LS.get('ki21_import_raw_'+accId,'')||'');}catch(e){}}
+    return raw.replace(/\s+/g,' ').trim();
+  }
+  function hasPrePilotStateV109(t){
+    if(!t)return false;
+    const noApproval=/(?:pilot|pilotprojekt|investition|budget)[^.!?]{0,170}(?:noch\s+nicht|nicht|kein)[^.!?]{0,70}(?:freigegeben|genehmigt|bestätigt|vereinbart)/i.test(t)
+      || /für\s+ein\s+pilotprojekt\s+wurde\s+noch\s+kein\s+budget\s+freigegeben/i.test(t);
+    const dmOpen=/(?:geschäftsführer(?:in)?|wirtschaftlich(?:e|er)\s+entscheider(?:in)?)[^.!?]{0,180}(?:noch\s+nicht\s+eingebunden|noch\s+nicht\s+bewertet|identifiziert[^.!?]{0,60}noch\s+nicht)/i.test(t);
+    const meetingOpen=/(?:workshop|folgetermin|entscheidungstermin|termin)[^.!?]{0,160}(?:vorgeschlagen|noch\s+nicht\s+terminiert|noch\s+nicht\s+vereinbart|offen)/i.test(t);
+    return noApproval || (dmOpen&&meetingOpen);
+  }
+  function replaceV109(r,title,lines){return ki21ReplaceSectionV103(r,title,lines);}
+  function entityV109(t,re,fallback){const m=t.match(re);return m&&m[1]?m[1].trim():fallback;}
+  function applyPrePilotGateV109(report,accId){
+    let r=String(report||'');
+    const t=sourceV109(accId);
+    if(!hasPrePilotStateV109(t))return r;
+    const sponsor=entityV109(t,/(?:-\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+)\s*·\s*(?:Vertriebsleiter|fachlicher Sponsor)[^.!?]{0,80}(?:Sponsor|bestätigt)/i,'fachliche Sponsor');
+    const dm=entityV109(t,/(?:-\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+){1,2})\s*·\s*(?:Geschäftsführer(?:in)?|wirtschaftliche Entscheiderin)/i,'wirtschaftliche Entscheiderin');
+    const presales=/presales/i.test(t);
+    const tests=/(?:produkttest|technische workshops?)/i.test(t);
+    const crm=/dynamics\s*365/i.test(t)?'Dynamics 365':(/hubspot/i.test(t)?'HubSpot':'das bestehende CRM');
+    const rec='Einen gemeinsamen Discovery- und Entscheidungstermin mit Sponsor, wirtschaftlichem Entscheider'+(presales?' und Presales':'')+' verbindlich vereinbaren.';
+    r=replaceV109(r,'SALES SUMMARY',[
+      'Status: Der fachliche Sponsor bestätigt Handlungsbedarf; eine Pilotentscheidung liegt noch nicht vor.',
+      'Engpass: Die wirtschaftliche Entscheiderin ist noch nicht eingebunden; Budget, Erfolgskriterien und gemeinsamer Entscheidungstermin sind offen.',
+      'Empfehlung: '+rec
+    ]);
+    r=replaceV109(r,'HEALTH & FORECAST',['Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten']);
+    r=replaceV109(r,'ENTSCHEIDUNGSREIFE',[
+      '30 % · NIEDRIG für die Pilotentscheidung','⚠ Pilotbudget noch nicht freigegeben','✓ Fachlicher Sponsor bestätigt','⚠ Wirtschaftliche Entscheiderin noch nicht eingebunden','⚠ Erfolgskriterien noch nicht vereinbart','⚠ Gemeinsamer Entscheidungstermin noch nicht vereinbart','⚠ Business Case noch nicht bestätigt'
+    ]);
+    r=replaceV109(r,'VERTRIEBSEMPFEHLUNG',[rec]);
+    r=replaceV109(r,'WARUM KI21 GENAU DAS EMPFIEHLT',[
+      'Der fachliche Sponsor kann die Investition nicht allein freigeben.',
+      'Der wirtschaftliche Nutzen aus weniger Fehlqualifizierung, Presales-Aufwand und Forecast-Abweichungen ist noch nicht quantifiziert.',
+      'Verkaufsfortschritt entsteht jetzt durch eine gemeinsame Entscheidungssituation im Buying Center – nicht durch das Fortsetzen eines noch nicht gestarteten Piloten.'
+    ]);
+    r=replaceV109(r,'WARUM JETZT?',[
+      'Kundensicht: Vor der anstehenden Entscheidung über Forecast- und Effizienzmaßnahmen müssen Aufwand, Risiken und erwartete Wirkung belastbar eingeordnet werden.',
+      'Vertriebssicht: Ohne wirtschaftliche Entscheiderin, Budget und verbindlichen Termin bleibt der Pilotvorschlag unverbindlich.'
+    ]);
+    r=replaceV109(r,'AKTUELLES LAGEBILD',[
+      'CHANCE Der Vertriebsleiter sieht klaren Handlungsbedarf bei Opportunity-Bewertung, Forecast und effizientem Presales-Einsatz.',
+      'GRÖSSTER ENGPASS Die wirtschaftliche Entscheiderin ist noch nicht eingebunden; Pilotbudget und gemeinsamer Entscheidungstermin sind nicht bestätigt.'
+    ]);
+    r=replaceV109(r,'EMPFOHLENE VERKAUFSSTRATEGIE',[
+      '1. Priorität: Den Sponsor befähigen, einen gemeinsamen Discovery- und Entscheidungstermin mit Geschäftsführung und Presales verbindlich zu organisieren.',
+      '2. Priorität: Vermeidbare Produkttests, Presales-Tage und relevante Forecast-Abweichungen als wirtschaftliche Ausgangsbasis quantifizieren.',
+      '3. Priorität: Pilotziele, Erfolgskriterien, CRM-Rolle und akzeptablen Pflegeaufwand gemeinsam bestätigen, bevor ein Pilotangebot entschieden wird.'
+    ]);
+    r=replaceV109(r,'FAKTENBASIS',[
+      'Der Vertriebsleiter bestätigt Handlungsbedarf und ist als fachlicher Sponsor erkennbar.',
+      'Die Geschäftsführung fordert einen belastbareren Forecast, hat KI21 aber noch nicht bewertet.',
+      'Für das Pilotprojekt ist noch kein Budget freigegeben.',
+      'Ein gemeinsamer Workshop wurde vorgeschlagen, aber noch nicht terminiert.',
+      presales?'Presales-Aufwand für schlecht qualifizierte Opportunities wird intern kritisch diskutiert.':''
+    ]);
+    r=replaceV109(r,'VERTRIEBLICHE INTERPRETATION',[
+      'Das Interesse des Sponsors ist ein positives Signal, aber noch keine wirtschaftliche Kaufentscheidung.',
+      'Der aktuelle Engpass liegt in der fehlenden gemeinsamen Entscheidungssituation mit Geschäftsführung und Presales.',
+      'Ein Pilotstart wäre verfrüht, solange Budget, Business Case und Erfolgskriterien nicht bestätigt sind.'
+    ]);
+    r=replaceV109(r,'VERKAUFSRISIKO',[
+      'Wird KI21 zu früh als Pilot oder zusätzliches Tool positioniert, kann '+crm+' als ausreichende Alternative erscheinen und der erwartete Zusatzaufwand den Nutzen überlagern.'
+    ]);
+    r=replaceV109(r,'STÄRKSTE KLÄRUNGSFRAGE',[
+      'Welche messbaren Ergebnisse aus weniger vermeidbaren Presales-Einsätzen und realistischeren Forecasts benötigt die Geschäftsführerin, um den Pilot freizugeben?'
+    ]);
+    r=replaceV109(r,'WAS SPRICHT DAGEGEN?',[
+      crm+'-Pflichtfelder, strengere Freigabekriterien, Coaching oder zusätzliche Deal-Reviews können als ausreichend wahrgenommen werden.',
+      tests?'Produkttests und technische Workshops sind bei komplexen medizintechnischen Entscheidungen teilweise unverzichtbar.':'Ein Teil der heutigen Vertriebsunterstützung kann fachlich notwendig sein.',
+      'Account Manager könnten KI21 als zusätzliche Kontrolle oder Dokumentationspflicht wahrnehmen.'
+    ]);
+    r=replaceV109(r,'KI21 WÜRDE ANDERS EMPFEHLEN, WENN',[
+      'die Geschäftsführerin keinen relevanten wirtschaftlichen Handlungsdruck in Forecast oder Presales-Effizienz sieht.',
+      'die bestehenden CRM- und Freigabeprozesse das Problem bereits nachweisbar lösen.',
+      'der zusätzliche Pflegeaufwand von den Account Managern nicht akzeptiert wird.'
+    ]);
+    r=replaceV109(r,'VERTRAUENSCHECK',[
+      'Faktenlage TEILWEISE – Problemfelder und Stakeholder sind beschrieben; wirtschaftliche Auswirkungen fehlen.',
+      'Buying Center TEILWEISE – Sponsor und wirtschaftliche Entscheiderin sind identifiziert; Einbindung und weitere Rollen sind offen.',
+      'Business Case OFFEN – Presales-Aufwand, vermeidbare Tests und Forecast-Abweichungen sind noch nicht quantifiziert.',
+      'Erfolgskriterien OFFEN – Messbare Pilotziele und Verantwortliche sind noch nicht vereinbart.',
+      'Risiken bewertet GUT – CRM-Abgrenzung, Adoption und notwendige Produkttests sind als zentrale Risiken benannt.'
+    ]);
+    r=replaceV109(r,'WAS DER VERTRIEB NOCH KLÄREN MUSS',[
+      'Wirtschaftliche Entscheiderin und mögliche Mitentscheider verbindlich einbinden.',
+      'Presales-Tage, vermeidbare Produkttests und wirtschaftlich relevante Forecast-Abweichungen quantifizieren.',
+      'Gemeinsamen Discovery- und Entscheidungstermin vereinbaren.',
+      'Pilotziele, Erfolgskriterien, CRM-Rolle, Verantwortliche und akzeptablen Pflegeaufwand festlegen.',
+      'Verfügbares Pilotbudget bestätigen.'
+    ]);
+    r=replaceV109(r,'BUSINESS CASE UND KUNDENNUTZEN',[
+      'Presales-Aufwand für schlecht qualifizierte Opportunities und vermeidbare Produkttests bilden den wirtschaftlichen Ausgangspunkt.',
+      'Forecast-Abweichungen können zusätzliche Fehlsteuerung verursachen; ihre wirtschaftliche Relevanz ist noch zu quantifizieren.',
+      'Erwarteter Kundennutzen: weniger unnötige Presales-Einsätze, frühere Risikoklarheit, belastbarere Forecasts und kürzere Deal-Reviews.',
+      'Der Pilotpreis ist ein Angebotswert und kein bestätigter Business Case.'
+    ]);
+    r=replaceV109(r,'VERKAUFSHEBEL – PRIORISIERT',[
+      '1. Sponsor für einen gemeinsamen Entscheidungstermin mit Geschäftsführung und Presales aktivieren.',
+      '2. Zwei bis drei reale verlorene oder gefährdete Opportunities als wirtschaftliche Belege aufbereiten.',
+      '3. Pilotfreigabe an messbare Kriterien für Qualifizierung, Presales-Einsatz, Forecast und Pflegeaufwand knüpfen.'
+    ]);
+    r=replaceV109(r,'NÄCHSTE KUNDENSCHRITTE',[
+      'Gemeinsamen Discovery- und Entscheidungstermin mit Vertriebsleitung, Geschäftsführung und Presales verbindlich vereinbaren.',
+      'Vor dem Termin konkrete Presales-Tage, Produkttests und Forecast-Abweichungen aus ausgewählten Opportunities zusammentragen.',
+      'Im Termin Pilotziele, Erfolgskriterien, Rollen, CRM-Abgrenzung, Budget und nächsten Entscheidungsschritt bestätigen.'
+    ]);
+    r=replaceV109(r,'DARAUF ACHTEN',[
+      'Den fachlichen Sponsor nicht mit der wirtschaftlichen Freigabe gleichsetzen.',
+      'Den Pilotpreis nicht als Kundennutzen oder Business Case behandeln.',
+      'Notwendige Produkttests nicht pauschal reduzieren, sondern klare Qualifikationskriterien vor ihrem Einsatz definieren.',
+      'Keinen Pilotstart empfehlen, solange Budget und Entscheidung noch offen sind.'
+    ]);
+    return r.replace(/Pilot unverändert fortsetzen[^\n]*/gi,rec)
+      .replace(/Mit den betroffenen Pilotnutzern[^\n]*/gi,rec)
+      .replace(/Vollständigkeit der Opportunity-Informationen[^\n]*/gi,'')
+      .replace(/Forecast-Begründungen[^\n]*/gi,'')
+      .replace(/\n{3,}/g,'\n\n').trim();
+  }
+  ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+    const base=_finalizeV108(report,accId);
+    return applyPrePilotGateV109(base,accId);
+  };
+})();
+</script>
 </body>
 </html>
