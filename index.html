@@ -20183,7 +20183,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   function clean(v){return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim()}
-  function parseReport(){let report='';try{if(typeof buildOpportunityTestReportV723==='function')report=String(buildOpportunityTestReportV723()||'')}catch(e){}const sections={};let current='';report.replace(/\r/g,'').split('\n').forEach(line=>{const t=line.trim();if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){current=t;sections[current]=sections[current]||[];return}if(current){const c=clean(line);if(c)sections[current].push(c)}});return sections}
+  function parseReport(){let report='';try{if(typeof buildOpportunityTestReportSafelyV726==='function')report=String(buildOpportunityTestReportSafelyV726()||'');else if(typeof buildOpportunityTestReportV723==='function')report=String(buildOpportunityTestReportV723()||'')}catch(e){try{if(typeof buildOpportunityTestReportV723==='function')report=String(buildOpportunityTestReportV723()||'')}catch(_){}}const sections={};let current='';report.replace(/\r/g,'').split('\n').forEach(line=>{const t=line.trim();if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){current=t;sections[current]=sections[current]||[];return}if(current){const c=clean(line);if(c)sections[current].push(c)}});return sections}
   function pick(s,names){for(const n of names){if(s[n]&&s[n].length)return s[n].map(clean)}return[]}
   function section(label,lines){return {label,lines:(lines||[]).filter(Boolean)}}
   function details(kind){const s=parseReport();
