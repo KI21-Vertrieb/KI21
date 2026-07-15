@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.14-sales-execution-cockpit-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.0.15-executive-sales-cockpit-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.14</title>
+<title>KI21 Pilot Core 1.0.15</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11398,7 +11398,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.14 · Sales Execution Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.15 · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14859,6 +14859,84 @@ function generateKundePDF(aid, cust){
 
   html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div>
 
+
+
+<!-- Pilot Core 1.0.15: Executive Sales Cockpit – sechs Führungsfragen, keine Analyse ohne Handlung, keine sichtbaren Wiederholungen. -->
+<style>
+/* Pilot Core 1.0.15 – Executive Sales Cockpit */
+.ki21-exec15-stack{display:flex;flex-direction:column;gap:12px;margin:0 0 16px}
+.ki21-exec15-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.ki21-exec15-card{position:relative;overflow:hidden;border-radius:18px;padding:15px 14px 14px;border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.96),rgba(15,20,27,.94));box-shadow:0 12px 28px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.03)}
+.ki21-exec15-card.full{grid-column:1/-1}
+.ki21-exec15-card.business{border-color:rgba(86,211,144,.30);background:linear-gradient(145deg,rgba(17,39,34,.76),rgba(15,20,27,.94))}
+.ki21-exec15-card.watchout{border-color:rgba(255,123,114,.30);background:linear-gradient(145deg,rgba(44,24,27,.76),rgba(15,20,27,.94))}
+.ki21-exec15-card.inaction{border-color:rgba(210,153,34,.30);background:linear-gradient(145deg,rgba(46,37,18,.74),rgba(15,20,27,.94))}
+.ki21-exec15-card.success{border-color:rgba(88,166,255,.30);background:linear-gradient(145deg,rgba(19,31,45,.82),rgba(15,20,27,.94))}
+.ki21-exec15-kicker{font-size:9px;font-weight:950;letter-spacing:1.35px;text-transform:uppercase;color:#c9d1d9;margin-bottom:10px}
+.ki21-exec15-card.business .ki21-exec15-kicker{color:#56d390}.ki21-exec15-card.watchout .ki21-exec15-kicker{color:#ff7b72}.ki21-exec15-card.inaction .ki21-exec15-kicker{color:#e3b341}.ki21-exec15-card.success .ki21-exec15-kicker{color:#58a6ff}
+.ki21-exec15-sub{font-size:8.4px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#8b949e;margin:10px 0 6px}
+.ki21-exec15-sub:first-of-type{margin-top:0}
+.ki21-exec15-list{display:flex;flex-direction:column;gap:7px}
+.ki21-exec15-item{position:relative;padding-left:18px;font-size:11.8px;line-height:1.38;color:#edf2f7;font-weight:690}
+.ki21-exec15-item::before{position:absolute;left:1px;top:0;color:#8b949e;font-weight:950}
+.ki21-exec15-item.fact::before{content:'✓';color:#56d390}.ki21-exec15-item.open::before{content:'○';color:#e3b341}.ki21-exec15-item.warn::before{content:'!';color:#ff7b72}.ki21-exec15-item.loss::before{content:'–';color:#e3b341}.ki21-exec15-item.done::before{content:'✓';color:#58a6ff}
+.ki21-exec15-empty{font-size:11.3px;line-height:1.4;color:#8b949e;font-style:italic}
+.ki21-exec15-checks{display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(139,148,158,.18)}
+.ki21-exec15-check{display:flex;align-items:flex-start;gap:8px;font-size:10.8px;line-height:1.32;color:#dce3eb}.ki21-exec15-check span:first-child{font-weight:950;color:#8b949e}.ki21-exec15-check.ok span:first-child{color:#56d390}
+/* 1.0.15 zeigt im Cockpit nur die Führungsoberfläche. Alte Business-/Risiko-Karten werden durch Executive-Karten ersetzt. */
+.cockpit-v5-workgrid .cockpit-card-value,.cockpit-v5-workgrid .cockpit-card-risk{display:none!important}
+.ki21-action-command-v110{grid-column:1/-1!important;order:1!important}
+.ki21-action-command-v110 .cockpit-tile-label{font-size:9.5px!important;letter-spacing:1.35px!important}
+.ki21-action-command-v110 .cockpit-tile-item{font-size:12.2px!important;line-height:1.38!important;margin-bottom:8px!important}
+@media(max-width:390px){.ki21-exec15-grid{grid-template-columns:1fr;gap:9px}.ki21-exec15-card.full{grid-column:auto}.ki21-exec15-card{padding:13px 12px 12px;border-radius:16px}.ki21-exec15-item{font-size:11.3px}.ki21-exec15-stack{gap:10px}}
+</style>
+<script>
+(function(){
+  function esc15(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function uniq15(arr){const seen=new Set();return (arr||[]).map(x=>String(x||'').replace(/^[✓⚠○!\-•\s]+/,'').trim()).filter(x=>{const k=x.toLowerCase().replace(/[^a-z0-9äöüß€]+/g,' ').trim();if(!k||seen.has(k))return false;seen.add(k);return true;});}
+  function sections15(){
+    let report='';try{report=String(buildKi21TestReportV723(state&&state.activeId)||'');}catch(e){}
+    try{return ki21ParseReportSectionsV740(report).sections||{};}catch(e){return {};}
+  }
+  function isOpen15(x){return /(noch|offen|fehlt|nicht bestätigt|nicht quantifiziert|zu bestätigen|zu klären|orientierungswert|plausibel|vor .* nachweisen|unbekannt)/i.test(String(x||''));}
+  function top15(arr,n){return uniq15(arr).slice(0,n||3);}
+  function item15(text,cls){return '<div class="ki21-exec15-item '+cls+'">'+esc15(text)+'</div>';}
+  function card15(cls,title,body,full){return '<section class="ki21-exec15-card '+cls+(full?' full':'')+'"><div class="ki21-exec15-kicker">'+esc15(title)+'</div>'+body+'</section>';}
+  function render15(){
+    const app=document.getElementById('app');if(!app||!window.state||!state.activeId)return false;
+    const action=app.querySelector('.ki21-action-command-v110');const decision=app.querySelector('.ki21-decision-card');if(!action||!decision)return false;
+    const s=sections15();
+    // Entscheidungs-Checkliste: keine Fließtext-Wiederholung, sondern sichtbare Erreichungskriterien.
+    const oldChecks=decision.querySelector('.ki21-exec15-checks');if(oldChecks)oldChecks.remove();
+    let readiness=null;try{const mem=buildDealMemoryV740(buildKi21TestReportV723(state.activeId),state.activeId);readiness=ki21DecisionReadinessV750(mem);}catch(e){}
+    const checks=(readiness&&readiness.checks||[]).slice(0,5);
+    if(checks.length){const box=document.createElement('div');box.className='ki21-exec15-checks';box.innerHTML=checks.map(c=>'<div class="ki21-exec15-check '+(c.ok?'ok':'')+'"><span>'+(c.ok?'✓':'○')+'</span><span>'+esc15(c.label)+'</span></div>').join('');decision.appendChild(box);}
+    const label=action.querySelector('.cockpit-tile-label');if(label)label.textContent='Konkreter Verkaufsauftrag';
+    const old=app.querySelector('.ki21-exec15-stack');if(old)old.remove();
+    const business=uniq15(s['BUSINESS CASE UND KUNDENNUTZEN']||s['BUSINESS CASE UND NUTZEN']||[]);
+    const proven=top15(business.filter(x=>!isOpen15(x)&&!/angebotspreis|pilotpreis/i.test(x)),3);
+    const open=top15(business.filter(x=>isOpen15(x)||/angebotspreis|pilotpreis/i.test(x)),3);
+    const watch=top15([...(s['DARAUF ACHTEN']||[]),...(s['VERKAUFSRISIKO']||[]),...(s['WAS SPRICHT DAGEGEN?']||[])],3);
+    const inaction=top15([...(s['WARUM JETZT?']||[]),...(s['VERKAUFSRISIKO']||[])].map(x=>String(x).replace(/^(Kundensicht|Vertriebssicht):\s*/i,'')),3);
+    const command=s['KONKRETER VERKAUFSAUFTRAG']||[];
+    const successLine=command.find(x=>/^ERFOLG/i.test(x));
+    const success=top15([successLine?successLine.replace(/^ERFOLG[^:]*:\s*/i,''):'',...(checks.filter(c=>c.ok).map(c=>c.label))],5);
+    let businessBody='<div class="ki21-exec15-sub">Heute belegbar</div><div class="ki21-exec15-list">'+(proven.length?proven.map(x=>item15(x,'fact')).join(''):'<div class="ki21-exec15-empty">Noch kein wirtschaftlicher Beleg belastbar bestätigt.</div>')+'</div><div class="ki21-exec15-sub">Vor der Entscheidung noch nachweisen</div><div class="ki21-exec15-list">'+(open.length?open.map(x=>item15(x,'open')).join(''):'<div class="ki21-exec15-empty">Keine zusätzliche Nachweislücke erkannt.</div>')+'</div>';
+    let watchBody='<div class="ki21-exec15-list">'+(watch.length?watch.map(x=>item15(x,'warn')).join(''):'<div class="ki21-exec15-empty">Kein dominantes Dealrisiko erkannt.</div>')+'</div>';
+    let inactionBody='<div class="ki21-exec15-list">'+(inaction.length?inaction.map(x=>item15(x,'loss')).join(''):'<div class="ki21-exec15-empty">Momentum und Verbindlichkeit können verloren gehen.</div>')+'</div>';
+    let successBody='<div class="ki21-exec15-list">'+(success.length?success.map(x=>item15(x,'done')).join(''):'<div class="ki21-exec15-empty">Der nächste Kundenschritt ist verbindlich bestätigt.</div>')+'</div>';
+    const stack=document.createElement('div');stack.className='ki21-exec15-stack';stack.innerHTML='<div class="ki21-exec15-grid">'+card15('business','Executive Business Case',businessBody,true)+card15('watchout','Executive Watchout',watchBody,false)+card15('inaction','Wenn wir jetzt nicht handeln …',inactionBody,false)+card15('success','Daran erkennst du Erfolg',successBody,true)+'</div>';
+    action.parentNode.insertBefore(stack,action.nextSibling);
+    return true;
+  }
+  function schedule15(){clearTimeout(window.__ki21_exec15_t);window.__ki21_exec15_t=setTimeout(()=>{try{render15();}catch(e){console.warn('Pilot Core 1.0.15',e);}},90);}
+  const mo=new MutationObserver(schedule15);mo.observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('load',()=>setTimeout(schedule15,300));window.addEventListener('pageshow',schedule15);
+  const oldCockpit=window.renderCockpitLite;if(typeof oldCockpit==='function')window.renderCockpitLite=function(){const out=oldCockpit.apply(this,arguments);schedule15();return out;};
+  const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
+})();
+</script>
+
 </body></html>`;
 
   exportHtmlAsPdf(html,'KI21_Opportunity-Arbeitsdossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
@@ -16068,7 +16146,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.14';
+const KI21_VERSION='Pilot Core 1.0.15';
 
 
 function runKi21VersionMigration(){
