@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.3.0-executive-one-page-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.3.1-executive-one-page-data-fix-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.3.0 Executive One Page</title>
+<title>KI21 Pilot Core 1.3.1 Executive One Page</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.0 Executive One Page · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.1 Executive One Page · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.3.0 Executive One Page';
+const KI21_VERSION='Pilot Core 1.3.1 Executive One Page';
 
 
 function runKi21VersionMigration(){
@@ -20444,6 +20444,356 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }
     schedule130();
   });
+})();
+</script>
+
+<!-- Pilot Core 1.3.1: Datenquellen-Fix – vollständige Analyse zuerst, Verdichtung danach. -->
+<style>
+.ki21-130-root{display:none!important}
+.ki21-131-root{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin:0 0 18px;
+}
+</style>
+<script>
+(function(){
+  function clean131(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function parse131(report){
+    const meta=[]; const sections={}; let current='';
+    String(report||'').replace(/\r/g,'').split('\n').forEach(line=>{
+      const t=line.trim();
+      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
+        current=t;
+        sections[current]=sections[current]||[];
+        return;
+      }
+      if(!current){meta.push(line);return;}
+      const c=line.replace(/^•\s*/,'').trim();
+      if(c)sections[current].push(c);
+    });
+    return {meta,sections};
+  }
+  function label131(lines,label){
+    const row=(lines||[]).map(clean131)
+      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
+    return row?clean131(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
+  }
+  function strip131(v,label){
+    return clean131(v).replace(new RegExp('^'+label+':\\s*','i'),'');
+  }
+  function shorten131(v,max){
+    let s=clean131(v);
+    if(s.length<=max)return s;
+    const cut=s.slice(0,max);
+    const stop=Math.max(cut.lastIndexOf('. '),cut.lastIndexOf('; '),cut.lastIndexOf(', '));
+    return (stop>max*.55?cut.slice(0,stop+1):cut.replace(/\s+\S*$/,'')+' …').trim();
+  }
+  function aid131(){
+    try{return state.activeId||LS.get('ki21_aid',null);}catch(e){return null;}
+  }
+
+  /* Full analysis source. Never reads the already compacted one-page output. */
+  function richReport131(){
+    const aid=aid131();
+    let raw='';
+    try{
+      if(typeof buildKi21TestReportV723==='function'){
+        raw=String(buildKi21TestReportV723(aid)||'');
+      }
+    }catch(e){console.warn('1.3.1 raw analysis',e);}
+    if(!raw)return '';
+
+    try{
+      if(typeof ki21FinalizeReportFromPrimarySourceV103==='function'){
+        const finalized=ki21FinalizeReportFromPrimarySourceV103(raw,aid);
+        if(finalized)raw=String(finalized);
+      }
+    }catch(e){console.warn('1.3.1 final analysis',e);}
+    return raw;
+  }
+
+  function findSections131(s,names){
+    for(const name of names){
+      if(s[name]&&s[name].length)return s[name].map(clean131);
+    }
+    return [];
+  }
+  function derive131(){
+    const rich=richReport131();
+    const p=parse131(rich);
+    const s=p.sections||{};
+
+    const summary=findSections131(s,['SALES SUMMARY']);
+    const readiness=findSections131(s,['ENTSCHEIDUNGSREIFE','OPPORTUNITY SCORE']);
+    const health=findSections131(s,['OPPORTUNITY HEALTH','HEALTH & FORECAST']);
+    const forecast=findSections131(s,['EXECUTIVE FORECAST']);
+    const decision=findSections131(s,['NÄCHSTE KUNDENENTSCHEIDUNG','DEAL-ENTSCHEIDUNG']);
+    const command=findSections131(s,['KONKRETER VERKAUFSAUFTRAG']);
+    const business=findSections131(s,['BUSINESS CASE UND KUNDENNUTZEN','BUSINESS CASE']);
+
+    let status=label131(summary,'Status');
+    let blocker=label131(summary,'Engpass');
+    let recommendation=label131(summary,'Empfehlung');
+
+    if(!status){
+      const lage=findSections131(s,['AKTUELLES LAGEBILD']);
+      status=(lage.find(x=>/^CHANCE/i.test(x))||'').replace(/^CHANCE\s*/i,'');
+      blocker=blocker||(lage.find(x=>/^GRÖSSTER ENGPASS/i.test(x))||'').replace(/^GRÖSSTER ENGPASS\s*/i,'');
+    }
+
+    status=status
+      .replace(/Der fachliche Sponsor bestätigt Handlungsbedarf;\s*/i,'Sponsor bestätigt Handlungsbedarf. ')
+      .replace(/eine Pilotentscheidung liegt noch nicht vor\.?/i,'Pilotentscheidung noch offen.');
+    blocker=blocker
+      .replace(/Die wirtschaftliche Entscheiderin ist noch nicht eingebunden;\s*/i,'Wirtschaftliche Entscheiderin nicht eingebunden. ')
+      .replace(/Budget, Erfolgskriterien und gemeinsamer Entscheidungstermin sind offen\.?/i,'Budget und Erfolgskriterien offen.');
+
+    const scoreText=[...readiness,...health].join(' ');
+    const scoreHit=scoreText.match(/(\d{1,3})\s*%/);
+    let score=scoreHit?Number(scoreHit[1]):null;
+    if(score===null){
+      try{
+        const h=getOpportunityHealth(aid131());
+        if(h&&typeof h.score==='number')score=Math.round(h.score);
+      }catch(e){}
+    }
+    const scoreState=score===null?'Noch offen':score<40?'Niedrig':score<70?'Mittel':'Gut';
+
+    let forecastCurrent=label131(forecast,'Aktuell')
+      ||strip131(forecast.find(x=>/^AKTUELL:/i.test(x))||'','AKTUELL');
+    const forecastHit=forecastCurrent.match(/(\d{1,3})\s*%/);
+    let forecastScore=forecastHit?Number(forecastHit[1]):score;
+    if(!forecastCurrent&&forecastScore!==null)forecastCurrent=forecastScore+' % · Pilotentscheidung';
+
+    let forecastUp=label131(forecast,'Steigt, wenn')
+      ||(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'').replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
+    let forecastDown=label131(forecast,'Fällt, wenn')
+      ||(forecast.find(x=>/ABSTUFUNG/i.test(x))||'').replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
+
+    forecastUp=forecastUp
+      .replace(/Die wirtschaftliche Entscheiderin bestätigt den Budgetweg für den Pilot\.\s*/i,'Budgetweg bestätigt. ')
+      .replace(/Die wirtschaftliche Entscheiderin beteiligt sich aktiv an der Bewertung\.\s*/i,'Entscheiderin beteiligt. ')
+      .replace(/Kunde und Vertrieb vereinbaren messbare Pilotziele und Erfolgskriterien\.?/i,'Erfolgskriterien vereinbart.');
+    forecastDown=forecastDown
+      .replace(/Dr\. Lena Hoffmann erkennt keinen relevanten wirtschaftlichen Handlungsdruck\.?/i,'Kein wirtschaftlicher Handlungsdruck.');
+
+    if(!forecastUp)forecastUp='Entscheiderin beteiligt. Budgetweg bestätigt. Erfolgskriterien vereinbart.';
+    if(!forecastDown)forecastDown='Kein wirtschaftlicher Handlungsdruck.';
+
+    let nextDecision=decision[0]||recommendation;
+    if(!nextDecision)nextDecision='Kunde entscheidet über den gemeinsamen Discovery- und Entscheidungstermin.';
+    nextDecision=nextDecision
+      .replace(/^Erreicht,\s*wenn:\s*/i,'')
+      .replace(/^Der Kunde entscheidet,\s*/i,'Kunde entscheidet, ');
+    if(/beauftragt.*Pilotvorschlag/i.test(nextDecision)&&recommendation){
+      nextDecision=recommendation;
+    }
+
+    let success='';
+    if(decision[1])success=decision[1].replace(/^Erreicht,\s*wenn:\s*/i,'');
+    if(!success){
+      success=strip131(command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'',
+        'ERFOLG DES NÄCHSTEN SCHRITTS');
+    }
+    if(!success)success='Die Entscheiderin beauftragt einen konkreten Pilotvorschlag.';
+
+    const tasks=[
+      strip131(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN'),
+      strip131(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN'),
+      strip131(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN')
+    ];
+    const defaults=[
+      'Discovery-Termin mit Sponsor, Entscheiderin und Presales vereinbaren.',
+      'Drei reale Opportunities mit Forecast und Presales-Aufwand vorbereiten.',
+      'Business Case, Budgetweg und Pilotziele bestätigen.'
+    ];
+    const finalTasks=tasks.map((x,i)=>shorten131(x||defaults[i],115));
+
+    let businessStatus='Business Case noch nicht bestätigt.';
+    const openBC=business.find(x=>/noch nicht bestätigt|noch nicht quantifiziert|offen/i.test(x));
+    if(openBC)businessStatus=shorten131(openBC,120);
+
+    return {
+      rich,
+      status:status||'Sponsor bestätigt Handlungsbedarf. Pilotentscheidung noch offen.',
+      blocker:blocker||'Wirtschaftliche Entscheiderin nicht eingebunden. Budget und Erfolgskriterien offen.',
+      recommendation:recommendation||'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren.',
+      score,
+      scoreState,
+      forecastScore,
+      forecastState:forecastScore===null?'Noch offen':forecastScore<40?'Niedrig':forecastScore<70?'Mittel':'Gut',
+      forecastUp:shorten131(forecastUp,105),
+      forecastDown:shorten131(forecastDown,80),
+      nextDecision:shorten131(nextDecision,150),
+      success:shorten131(success,110),
+      tasks:finalTasks,
+      businessStatus
+    };
+  }
+
+  function section131(title,lines){
+    const a=(lines||[]).map(clean131).filter(Boolean);
+    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
+  }
+  function onePage131(){
+    const m=derive131();
+    let out='KI21 SALES DECISION BRIEF\nExecutive One-Page für die nächste Kundenentscheidung';
+    out+=section131('SALES SUMMARY',[
+      'Status: '+m.status,
+      'Engpass: '+m.blocker,
+      'Empfehlung: '+m.recommendation
+    ]);
+    out+=section131('OPPORTUNITY SCORE',[
+      (m.score===null?'–':m.score+' %')+' · '+m.scoreState,
+      'Qualifizierung · Buying Center · Business Case'
+    ]);
+    out+=section131('EXECUTIVE FORECAST',[
+      'Aktuell: '+(m.forecastScore===null?'–':m.forecastScore+' %')+' · '+m.forecastState,
+      'Steigt, wenn: '+m.forecastUp,
+      'Fällt, wenn: '+m.forecastDown
+    ]);
+    out+=section131('NÄCHSTE KUNDENENTSCHEIDUNG',[
+      m.nextDecision,
+      'Erreicht, wenn: '+m.success
+    ]);
+    out+=section131('KONKRETER VERKAUFSAUFTRAG',[
+      '1. Jetzt tun: '+m.tasks[0],
+      '2. Vorbereiten: '+m.tasks[1],
+      '3. Im Termin entscheiden: '+m.tasks[2]
+    ]);
+    out+=section131('BUSINESS CASE',[
+      m.businessStatus,
+      'Hebel: weniger Presales · besserer Forecast · kürzere Deal Reviews'
+    ]);
+    return out.trim();
+  }
+
+  /* Replace the previous compact report wrapper with a deterministic one-page result. */
+  window.buildOpportunityTestReportV723=function(){
+    try{return onePage131();}
+    catch(e){console.warn('One Page Report 1.3.1',e);return richReport131();}
+  };
+
+  function e131(tag,cls,text){
+    const e=document.createElement(tag);
+    if(cls)e.className=cls;
+    if(text!==undefined)e.textContent=text;
+    return e;
+  }
+  function render131(){
+    const app=document.getElementById('app');
+    const wrap=app&&app.querySelector('.wrap.cockpit-v612-compact');
+    const tabs=wrap&&wrap.querySelector('.ki21-mode-tabs');
+    if(!wrap||!tabs)return false;
+
+    const m=derive131();
+    wrap.querySelectorAll('.ki21-131-root').forEach(x=>x.remove());
+    const nav=tabs.parentElement;
+
+    [...wrap.children].forEach(child=>{
+      if(child!==nav && !child.classList.contains('ki21-131-root')){
+        child.classList.add('ki21-130-hidden');
+      }
+    });
+
+    const root=e131('div','ki21-131-root');
+
+    const summary=e131('section','ki21-130-card summary');
+    summary.appendChild(e131('div','ki21-130-kicker','Sales Summary'));
+    [
+      ['Status',m.status],
+      ['Größter Engpass',m.blocker],
+      ['Empfehlung',m.recommendation]
+    ].forEach(item=>{
+      const row=e131('div','ki21-130-summary-row');
+      row.append(e131('div','ki21-130-label',item[0]),e131('div','ki21-130-text',item[1]));
+      summary.appendChild(row);
+    });
+    root.appendChild(summary);
+
+    const metrics=e131('div','ki21-130-metrics');
+    const score=e131('div','ki21-130-metric');
+    score.append(
+      e131('div','ki21-130-metric-label','Opportunity Score'),
+      e131('div','ki21-130-metric-value',m.score===null?'–':m.score+' %'),
+      e131('div','ki21-130-metric-state',m.scoreState),
+      e131('div','ki21-130-metric-sub','Qualifizierung · Buying Center · Business Case')
+    );
+
+    const forecast=e131('div','ki21-130-metric forecast');
+    forecast.append(
+      e131('div','ki21-130-metric-label','Executive Forecast'),
+      e131('div','ki21-130-metric-value',m.forecastScore===null?'–':m.forecastScore+' %'),
+      e131('div','ki21-130-metric-state',m.forecastState),
+      e131('div','ki21-130-forecast-line up',m.forecastUp),
+      e131('div','ki21-130-forecast-line down',m.forecastDown)
+    );
+    metrics.append(score,forecast);
+    root.appendChild(metrics);
+
+    const decision=e131('section','ki21-130-card decision');
+    decision.append(
+      e131('div','ki21-130-kicker','Nächste Kundenentscheidung'),
+      e131('div','ki21-130-decision',m.nextDecision),
+      e131('div','ki21-130-success','Erfolgreich, wenn: '+m.success)
+    );
+    root.appendChild(decision);
+
+    const action=e131('section','ki21-130-card action');
+    action.appendChild(e131('div','ki21-130-kicker','Konkreter Verkaufsauftrag'));
+    const list=e131('div','ki21-130-actions');
+    ['Jetzt tun','Vorbereiten','Im Termin entscheiden'].forEach((title,i)=>{
+      const row=e131('div','ki21-130-action');
+      row.appendChild(e131('div','ki21-130-action-num',String(i+1)));
+      const body=e131('div','');
+      body.append(
+        e131('div','ki21-130-action-title',title),
+        e131('div','ki21-130-action-text',m.tasks[i])
+      );
+      row.appendChild(body);
+      list.appendChild(row);
+    });
+    action.appendChild(list);
+    root.appendChild(action);
+
+    const business=e131('section','ki21-130-card business');
+    business.append(
+      e131('div','ki21-130-kicker','Business Case'),
+      e131('div','ki21-130-business-status',m.businessStatus)
+    );
+    const chips=e131('div','ki21-130-benefits');
+    ['Weniger Presales','Besserer Forecast','Kürzere Deal Reviews']
+      .forEach(x=>chips.appendChild(e131('div','ki21-130-chip',x)));
+    business.appendChild(chips);
+    root.appendChild(business);
+
+    nav.insertAdjacentElement('afterend',root);
+    return true;
+  }
+
+  let busy131=false;
+  function schedule131(){
+    if(busy131)return;
+    busy131=true;
+    [300,650,1100,1700].forEach((ms,i)=>setTimeout(()=>{
+      try{render131();}catch(e){console.warn('Executive One Page 1.3.1',e);}
+      if(i===3)busy131=false;
+    },ms));
+  }
+
+  const old131=window.renderCockpitSnapshotLiteV4215;
+  if(typeof old131==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=old131.apply(this,arguments);
+      schedule131();
+      return out;
+    };
+  }
+  window.addEventListener('load',schedule131);
 })();
 </script>
 
