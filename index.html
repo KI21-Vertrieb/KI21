@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.1.0-pilot-ready-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.1.1-cockpit-report-sync-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.1.0</title>
+<title>KI21 Pilot Core 1.1.1</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.1.0';
+const KI21_VERSION='Pilot Core 1.1.1';
 
 
 function runKi21VersionMigration(){
@@ -19380,6 +19380,196 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       try{return refineV110(base);}catch(e){console.warn('Pilot Ready 1.1.0',e);return base;}
     };
   }
+})();
+</script>
+
+<!-- Pilot Core 1.1.1: Cockpit/Report Sync – Lagebild, Opportunity Health und Executive Forecast lesen dieselbe finalisierte Analyse wie der Testbericht. -->
+<style>
+.ki21-sync-grid-v111{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:0 0 12px;
+}
+.ki21-sync-card-v111{
+  min-width:0;
+  border:1px solid rgba(139,148,158,.22);
+  border-radius:16px;
+  padding:12px 13px;
+  background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(15,20,27,.88));
+  box-shadow:0 10px 26px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.ki21-sync-card-v111.health{
+  border-color:rgba(88,166,255,.28);
+  background:linear-gradient(145deg,rgba(18,31,46,.92),rgba(15,20,27,.88));
+}
+.ki21-sync-card-v111.forecast{
+  border-color:rgba(210,153,34,.30);
+  background:linear-gradient(145deg,rgba(45,34,17,.84),rgba(15,20,27,.88));
+}
+.ki21-sync-kicker-v111{
+  font-size:8.5px;
+  line-height:1.15;
+  font-weight:950;
+  letter-spacing:1.25px;
+  text-transform:uppercase;
+  margin-bottom:7px;
+}
+.ki21-sync-card-v111.health .ki21-sync-kicker-v111{color:#79b8ff}
+.ki21-sync-card-v111.forecast .ki21-sync-kicker-v111{color:#e3b341}
+.ki21-sync-main-v111{
+  font-size:13px;
+  line-height:1.3;
+  font-weight:900;
+  color:#f3f6fb;
+}
+.ki21-sync-row-v111{
+  position:relative;
+  padding-left:12px;
+  margin-top:7px;
+  font-size:10.7px;
+  line-height:1.34;
+  color:#c9d1d9;
+}
+.ki21-sync-row-v111::before{
+  content:'·';
+  position:absolute;
+  left:2px;
+  color:#8b949e;
+}
+.ki21-sync-row-v111.up::before{content:'↑';color:#56d390;font-weight:950}
+.ki21-sync-row-v111.down::before{content:'↓';color:#ff7b72;font-weight:950}
+.ki21-sync-card-v111.forecast .ki21-sync-row-v111:first-of-type{margin-top:8px}
+.cockpit-v54-lagebild.ki21-synced-v111 .cockpit-v5-summary-empty{display:none!important}
+@media(max-width:390px){
+  .ki21-sync-grid-v111{gap:8px}
+  .ki21-sync-card-v111{padding:10px 10px;border-radius:14px}
+  .ki21-sync-main-v111{font-size:11.8px}
+  .ki21-sync-row-v111{font-size:9.8px;line-height:1.28}
+}
+</style>
+<script>
+(function(){
+  function cleanV1111(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function getFinalReportV1111(){
+    try{
+      if(typeof buildOpportunityTestReportV723==='function'){
+        return String(buildOpportunityTestReportV723()||'');
+      }
+    }catch(e){}
+    try{
+      if(typeof buildKi21TestReportV723==='function'){
+        return String(buildKi21TestReportV723(state&&state.activeId)||'');
+      }
+    }catch(e){}
+    return '';
+  }
+  function parseV1111(){
+    const report=getFinalReportV1111();
+    if(!report)return {report:'',sections:{}};
+    try{return {report:report,sections:(ki21ParseReportSectionsV740(report).sections||{})};}
+    catch(e){return {report:report,sections:{}};}
+  }
+  function firstV1111(s,key){
+    return cleanV1111(((s&&s[key])||[])[0]||'');
+  }
+  function summaryValueV1111(s,label){
+    const row=((s&&s['SALES SUMMARY'])||[]).map(cleanV1111)
+      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
+    return row?cleanV1111(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
+  }
+  function makeV1111(tag,cls,text){
+    const el=document.createElement(tag);
+    if(cls)el.className=cls;
+    if(text!==undefined)el.textContent=text;
+    return el;
+  }
+  function syncLagebildV1111(s){
+    const box=document.querySelector('.cockpit-v54-lagebild');
+    if(!box)return;
+    let chance=summaryValueV1111(s,'Status');
+    let risk=summaryValueV1111(s,'Engpass');
+    if(!chance){
+      const rows=(s['AKTUELLES LAGEBILD']||[]).map(cleanV1111);
+      chance=(rows.find(x=>/^CHANCE/i.test(x))||'').replace(/^CHANCE\s*/i,'');
+      risk=(rows.find(x=>/^GRÖSSTER ENGPASS/i.test(x))||'').replace(/^GRÖSSTER ENGPASS\s*/i,'');
+    }
+    if(!chance&&!risk)return;
+    const body=box.querySelector('.cockpit-v5-summary-grid');
+    if(!body)return;
+    body.innerHTML='';
+    if(chance){
+      const row=makeV1111('div','cockpit-v5-summary-row chance');
+      row.append(
+        makeV1111('div','cockpit-v5-summary-label','Status'),
+        makeV1111('div','v53-summary-evidence executive-insight',chance)
+      );
+      body.appendChild(row);
+    }
+    if(risk){
+      const row=makeV1111('div','cockpit-v5-summary-row risk');
+      row.append(
+        makeV1111('div','cockpit-v5-summary-label','Größter Engpass'),
+        makeV1111('div','v53-summary-evidence',risk)
+      );
+      body.appendChild(row);
+    }
+    box.classList.add('ki21-synced-v111');
+  }
+  function buildSyncCardsV1111(s){
+    document.querySelectorAll('.ki21-sync-grid-v111').forEach(x=>x.remove());
+    const lage=document.querySelector('.cockpit-v54-lagebild');
+    if(!lage||!lage.parentNode)return;
+
+    const health=(s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[]).map(cleanV1111);
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(cleanV1111);
+    const forecast=(s['EXECUTIVE FORECAST']||[]).map(cleanV1111);
+
+    if(!health.length&&!readiness.length&&!forecast.length)return;
+
+    const grid=makeV1111('div','ki21-sync-grid-v111');
+
+    const healthCard=makeV1111('section','ki21-sync-card-v111 health');
+    healthCard.appendChild(makeV1111('div','ki21-sync-kicker-v111','Opportunity Health'));
+    healthCard.appendChild(makeV1111(
+      'div','ki21-sync-main-v111',
+      health[0]||readiness[0]||'Opportunity-Struktur wird bewertet'
+    ));
+    readiness.slice(1,4).forEach(x=>{
+      const row=makeV1111('div','ki21-sync-row-v111',x.replace(/^[✓⚠]\s*/,''));
+      healthCard.appendChild(row);
+    });
+
+    const forecastCard=makeV1111('section','ki21-sync-card-v111 forecast');
+    forecastCard.appendChild(makeV1111('div','ki21-sync-kicker-v111','Executive Forecast'));
+    let current=(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'').replace(/^AKTUELL:\s*/i,'');
+    forecastCard.appendChild(makeV1111('div','ki21-sync-main-v111',current||'Forecast noch nicht belastbar'));
+    const up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'').replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
+    const down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'').replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
+    if(up)forecastCard.appendChild(makeV1111('div','ki21-sync-row-v111 up',up));
+    if(down)forecastCard.appendChild(makeV1111('div','ki21-sync-row-v111 down',down));
+
+    grid.append(healthCard,forecastCard);
+    lage.insertAdjacentElement('afterend',grid);
+  }
+  function syncCockpitV1111(){
+    const parsed=parseV1111();
+    if(!parsed.report)return;
+    syncLagebildV1111(parsed.sections);
+    buildSyncCardsV1111(parsed.sections);
+  }
+
+  const priorRenderV1111=window.renderCockpitSnapshotLiteV4215;
+  if(typeof priorRenderV1111==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=priorRenderV1111.apply(this,arguments);
+      setTimeout(()=>{try{syncCockpitV1111();}catch(e){console.warn('Cockpit/Report Sync 1.1.1',e);}},30);
+      return out;
+    };
+  }
+  window.addEventListener('load',()=>setTimeout(()=>{try{syncCockpitV1111();}catch(e){}},300));
 })();
 </script>
 
