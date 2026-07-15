@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.1.3-actual-sync-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.1.4-cockpit-source-convergence-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.1.3</title>
+<title>KI21 Pilot Core 1.1.4</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.1.3 · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.1.4 · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.1.3';
+const KI21_VERSION='Pilot Core 1.1.4';
 
 
 function runKi21VersionMigration(){
@@ -19822,6 +19822,319 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     };
   }
   window.addEventListener('load',trigger113);
+})();
+</script>
+
+<!-- Pilot Core 1.1.4: Cockpit Source Convergence – finale Berichtsausgabe ersetzt Lagebild, Forecast und Verkaufsauftrag vollständig; keine additive Mehrfach-Nachbearbeitung. -->
+<style>
+.ki21-report-lage-v114 .cockpit-v5-summary-empty{display:none!important}
+.ki21-action-card-v114 .ki21-action-list-v110{margin-top:4px!important}
+.ki21-action-card-v114 .ki21-action-item-v110{overflow:hidden!important}
+.ki21-action-card-v114 .ki21-action-text-v110{
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+}
+</style>
+<script>
+(function(){
+  function clean114(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function escape114(v){
+    return String(v||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  }
+  function parseSections114(report){
+    const text=String(report||'').replace(/\r/g,'');
+    const lines=text.split('\n');
+    const meta=[]; const sections={}; let current='';
+    lines.forEach(line=>{
+      const t=line.trim();
+      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
+        current=t;
+        sections[current]=sections[current]||[];
+        return;
+      }
+      if(!current){meta.push(line);return;}
+      const c=line.replace(/^•\s*/,'').trim();
+      if(c)sections[current].push(c);
+    });
+    return {meta,sections};
+  }
+  function section114(title,lines){
+    const a=(lines||[]).map(clean114).filter(Boolean);
+    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
+  }
+  function normalizeFinalReport114(report){
+    let p=parseSections114(report);
+    const s=p.sections||{};
+
+    if(!s['OPPORTUNITY HEALTH']){
+      s['OPPORTUNITY HEALTH']=(s['HEALTH & FORECAST']||[]).length
+        ?s['HEALTH & FORECAST']
+        :['Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'];
+    }
+    delete s['HEALTH & FORECAST'];
+
+    if(s['DEAL-HYPOTHESE']&&s['DEAL-HYPOTHESE'].length){
+      s['DEAL-HYPOTHESE']=s['DEAL-HYPOTHESE'].map((x,i)=>{
+        let t=clean114(x)
+          .replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,
+                   'erkennt keinen relevanten wirtschaftlichen Handlungsdruck');
+        if(i===0){
+          t=t.replace(/^AKTUELLE DEAL-HYPOTHESE:\s*/i,'');
+          if(/^Nicht fehlendes Produktinteresse, sondern .+ der zentrale Kaufblocker ist\.?$/i.test(t)){
+            const core=t.replace(/^Nicht fehlendes Produktinteresse, sondern (.+) der zentrale Kaufblocker ist\.?$/i,'$1');
+            t='Der zentrale Kaufblocker ist aktuell nicht fehlendes Produktinteresse, sondern '+core+'.';
+          }
+          return 'AKTUELLE DEAL-HYPOTHESE: '+t;
+        }
+        return t;
+      });
+    }
+
+    if(s['EXECUTIVE DECISION CHAIN']){
+      s['EXECUTIVE DECISION CHAIN']=s['EXECUTIVE DECISION CHAIN']
+        .map(clean114).filter(x=>x!=='↓'&&x!=='   ↓');
+    }
+
+    if(s['EVIDENZBASIS']){
+      s['EVIDENZBASIS']=s['EVIDENZBASIS'].map(x=>
+        clean114(x).replace(/^BELASTBARE FAKTENBASIS:/i,'SOLIDE AUSGANGSBASIS:')
+      );
+    }
+
+    const order=[
+      'SALES SUMMARY','OPPORTUNITY HEALTH','ENTSCHEIDUNGSREIFE',
+      'DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN','WARUM JETZT?',
+      'KONKRETER VERKAUFSAUFTRAG','EXECUTIVE FORECAST','DEAL MOMENTUM',
+      'EXECUTIVE WATCHOUT','FAKTENBASIS','EVIDENZBASIS',
+      'STÄRKSTE KLÄRUNGSFRAGE','WAS SPRICHT DAGEGEN?',
+      'KI21 WÜRDE ANDERS EMPFEHLEN, WENN','VERTRAUENSCHECK',
+      'WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN',
+      'DARAUF ACHTEN'
+    ];
+
+    let out=(p.meta||[]).join('\n').trim();
+    const used=new Set();
+    order.forEach(k=>{
+      if(s[k]&&s[k].length){out+=section114(k,s[k]);used.add(k);}
+    });
+    Object.keys(s).forEach(k=>{
+      if(!used.has(k)&&s[k]&&s[k].length)out+=section114(k,s[k]);
+    });
+    return out.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  const originalReport114=window.buildOpportunityTestReportV723;
+  if(typeof originalReport114==='function'){
+    window.buildOpportunityTestReportV723=function(){
+      const raw=originalReport114.apply(this,arguments);
+      try{return normalizeFinalReport114(raw);}
+      catch(e){console.warn('Final Report Normalize 1.1.4',e);return raw;}
+    };
+  }
+
+  function finalReport114(){
+    try{
+      if(typeof window.buildOpportunityTestReportV723==='function'){
+        return String(window.buildOpportunityTestReportV723()||'');
+      }
+    }catch(e){console.warn('Final Report 1.1.4',e);}
+    return '';
+  }
+  function make114(tag,cls,text){
+    const e=document.createElement(tag);
+    if(cls)e.className=cls;
+    if(text!==undefined)e.textContent=text;
+    return e;
+  }
+  function summaryValue114(s,label){
+    const row=((s['SALES SUMMARY']||[]).map(clean114))
+      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
+    return row?clean114(row.replace(new RegExp('^'+escape114(label)+':\\s*','i'),'')):'';
+  }
+  function naturalForecastUp114(warnings){
+    const out=[];
+    const add=x=>{if(x&&!out.includes(x))out.push(x);};
+    warnings.forEach(w=>{
+      const x=clean114(w).replace(/^⚠\s*/,'');
+      if(/Pilotbudget/i.test(x))add('Budget und Entscheidungsweg für den Pilot werden bestätigt.');
+      else if(/wirtschaftliche Entscheiderin/i.test(x))add('Die wirtschaftliche Entscheiderin beteiligt sich aktiv an der Bewertung.');
+      else if(/Erfolgskriterien/i.test(x))add('Messbare Pilotziele und Erfolgskriterien werden gemeinsam vereinbart.');
+      else if(/Entscheidungstermin/i.test(x))add('Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.');
+      else if(/Business Case/i.test(x))add('Der wirtschaftliche Handlungsdruck wird bestätigt.');
+    });
+    return out.slice(0,3).join(' ');
+  }
+  function replaceLagebild114(app,s){
+    const box=app.querySelector('.cockpit-v54-lagebild');
+    if(!box)return null;
+
+    const status=summaryValue114(s,'Status');
+    const bottleneck=summaryValue114(s,'Engpass');
+    if(!status&&!bottleneck)return box;
+
+    let body=box.querySelector('.cockpit-v5-summary-grid');
+    if(!body){
+      body=make114('div','cockpit-v5-summary-grid');
+      box.appendChild(body);
+    }
+    body.innerHTML='';
+
+    if(status){
+      const row=make114('div','cockpit-v5-summary-row chance');
+      const content=make114('div','');
+      content.append(
+        make114('div','v53-summary-status','Aktueller Deal-Zustand'),
+        make114('div','v53-summary-evidence executive-insight',status)
+      );
+      row.append(make114('div','cockpit-v5-summary-label','Status'),content);
+      body.appendChild(row);
+    }
+    if(bottleneck){
+      const row=make114('div','cockpit-v5-summary-row risk');
+      const content=make114('div','');
+      content.append(
+        make114('div','v53-summary-status','Zentraler Kaufblocker'),
+        make114('div','v53-summary-evidence',bottleneck)
+      );
+      row.append(make114('div','cockpit-v5-summary-label','Größter Engpass'),content);
+      body.appendChild(row);
+    }
+    box.classList.add('ki21-report-lage-v114');
+    return box;
+  }
+  function replaceHealthForecast114(app,s,lage){
+    app.querySelectorAll('.ki21-sync-grid-v111,.ki21-sync-grid-v112,.ki21-sync-grid-v114')
+      .forEach(x=>x.remove());
+    if(!lage)return;
+
+    const health=(s['OPPORTUNITY HEALTH']||[]).map(clean114);
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean114);
+    const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean114);
+    const different=(s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[]).map(clean114);
+
+    const grid=make114('div','ki21-sync-grid-v111 ki21-sync-grid-v114');
+
+    const hc=make114('section','ki21-sync-card-v111 health');
+    hc.append(
+      make114('div','ki21-sync-kicker-v111','Opportunity Health'),
+      make114('div','ki21-sync-main-v111',
+        health[0]||'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten')
+    );
+    readiness.slice(1,4).forEach(x=>
+      hc.appendChild(make114('div','ki21-sync-row-v111',x.replace(/^[✓⚠]\s*/,'')))
+    );
+
+    const fc=make114('section','ki21-sync-card-v111 forecast');
+    fc.appendChild(make114('div','ki21-sync-kicker-v111','Executive Forecast'));
+    const current=(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'')
+      .replace(/^AKTUELL:\s*/i,'');
+    fc.appendChild(make114('div','ki21-sync-main-v111',
+      current||'Forecast noch nicht belastbar'));
+
+    let up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
+      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
+    if(!up)up=naturalForecastUp114(readiness.filter(x=>/^⚠/.test(x)));
+    let down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
+      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
+    if(!down)down=different[0]||'Der wirtschaftliche Handlungsdruck wird nicht bestätigt.';
+
+    if(up)fc.appendChild(make114('div','ki21-sync-row-v111 up',up));
+    if(down)fc.appendChild(make114('div','ki21-sync-row-v111 down',down));
+
+    grid.append(hc,fc);
+    lage.insertAdjacentElement('afterend',grid);
+  }
+  function replaceActionCard114(app,s){
+    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean114);
+    if(!command.length)return;
+
+    const card=app.querySelector('.cockpit-v5-workgrid .cockpit-card-next');
+    if(!card)return;
+
+    const now=(command.find(x=>/^JETZT TUN:/i.test(x))||'').replace(/^JETZT TUN:\s*/i,'');
+    const prepare=(command.find(x=>/^VORBEREITEN:/i.test(x))||'').replace(/^VORBEREITEN:\s*/i,'');
+    const decide=(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'').replace(/^IM TERMIN ENTSCHEIDEN:\s*/i,'');
+    const success=(command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'')
+      .replace(/^ERFOLG DES NÄCHSTEN SCHRITTS:\s*/i,'');
+
+    // Keep only the card header. Every old/generated task block is removed.
+    [...card.children].forEach(child=>{
+      if(!child.classList.contains('cockpit-tile-header'))child.remove();
+    });
+
+    const label=card.querySelector('.cockpit-tile-label');
+    if(label)label.textContent='Konkreter Verkaufsauftrag';
+    card.classList.add('ki21-action-command-v110','ki21-action-card-v114');
+
+    const list=make114('div','ki21-action-list-v110');
+    [
+      ['JETZT TUN',now],
+      ['VORBEREITEN',prepare],
+      ['IM TERMIN ENTSCHEIDEN',decide]
+    ].forEach((item,idx)=>{
+      if(!item[1])return;
+      const row=make114('div','ki21-action-item-v110'+(idx===0?' primary':''));
+      const num=make114('div','ki21-action-num-v110',String(idx+1));
+      const body=make114('div','');
+      body.append(
+        make114('div','ki21-action-kicker-v110',item[0]),
+        make114('div','ki21-action-text-v110',item[1])
+      );
+      row.append(num,body);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    if(success){
+      card.appendChild(make114('div','ki21-action-success-v110','Erfolg: '+success));
+    }
+  }
+  function converge114(){
+    const app=document.getElementById('app');
+    if(!app||!app.querySelector('.cockpit-v54-lagebild'))return false;
+    const report=finalReport114();
+    if(!report)return false;
+    const s=parseSections114(report).sections||{};
+    if(!Object.keys(s).length)return false;
+
+    const lage=replaceLagebild114(app,s);
+    replaceHealthForecast114(app,s,lage);
+    replaceActionCard114(app,s);
+    return true;
+  }
+  let running114=false;
+  function schedule114(){
+    if(running114)return;
+    running114=true;
+    [60,180,420,850,1400].forEach((ms,i)=>setTimeout(()=>{
+      try{converge114();}catch(e){console.warn('Cockpit Convergence 1.1.4',e);}
+      if(i===4)running114=false;
+    },ms));
+  }
+
+  const oldRender114=window.renderCockpitSnapshotLiteV4215;
+  if(typeof oldRender114==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=oldRender114.apply(this,arguments);
+      schedule114();
+      return out;
+    };
+  }
+
+  let timer114=null;
+  window.addEventListener('load',()=>{
+    const app=document.getElementById('app');
+    if(app){
+      new MutationObserver(()=>{
+        clearTimeout(timer114);
+        timer114=setTimeout(()=>{
+          if(app.querySelector('.cockpit-v54-lagebild'))schedule114();
+        },100);
+      }).observe(app,{childList:true,subtree:true});
+    }
+    schedule114();
+  });
 })();
 </script>
 
