@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.12-action-parser-fix-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.13-unified-sales-reasoning-20260714 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.12</title>
+<title>KI21 Pilot Core 1.0.13</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11398,7 +11398,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.12 · Action Parser Fix'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.13 · Unified Sales Reasoning'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16068,7 +16068,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.12';
+const KI21_VERSION='Pilot Core 1.0.13';
 
 
 function runKi21VersionMigration(){
@@ -18534,5 +18534,106 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.addEventListener('load',()=>setTimeout(()=>{try{renderV112();}catch(e){}},220));
 })();
 </script>
+
+<!-- Pilot Core 1.0.13: Unified Sales Reasoning – das gesamte Dossier wird aus derselben Deal-State- und Verkaufsauftragslogik erzeugt. -->
+<script>
+(function(){
+  function sourceV113(accId){try{return String(getOpportunityOnlySourceV6522(accId)||'');}catch(e){return '';}}
+  function sectionTextV113(text,heading,next){
+    const esc=heading.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const end=(next||[]).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    const re=new RegExp(esc+'\\s*:\\s*([\\s\\S]*?)'+(end?'(?=\\s*(?:'+end+')\\s*:|$)':'$'),'i');
+    const m=String(text||'').match(re);return m?m[1].trim():'';
+  }
+  function stakeholdersV113(text){
+    const sec=sectionTextV113(text,'Stakeholder',['Bisherige Erkenntnisse','Offene Punkte','Widersprüche und Risiken','Widersprüche','Risiken']);
+    return sec.split(/\n|\s+-\s+(?=[A-ZÄÖÜ])/).map(x=>x.replace(/^[-•]\s*/,'').trim()).filter(Boolean).map(line=>{
+      const f=line.split(/\s*·\s*/).map(x=>x.trim()).filter(Boolean);return {name:f[0]||'',detail:f.slice(1).join(' · ')};
+    }).filter(x=>x.name&&x.detail&&x.name.length<80);
+  }
+  function pickV113(list,re,fallback){const x=(list||[]).find(v=>re.test(v.detail)||re.test(v.name));return x&&x.name?x.name:fallback;}
+  function replaceV113(report,title,lines){
+    let r=String(report||'');const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp('(?:^|\\n\\n)'+esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)');
+    const block=title+'\n'+(lines||[]).filter(Boolean).map(x=>'• '+String(x).replace(/^•\s*/,'')).join('\n');
+    if(re.test(r))return r.replace(re,m=>m.startsWith('\n\n')?'\n\n'+block:block);
+    return (r.trim()+'\n\n'+block).trim();
+  }
+  function planV113(accId){
+    const t=sourceV113(accId);if(!t)return null;const low=t.toLowerCase();
+    const prePilot=/(noch kein budget freigegeben|pilotentscheidung liegt noch nicht vor|pilot.{0,100}noch nicht freigegeben|noch nicht eingebunden|workshop.{0,100}noch nicht terminiert|termin.{0,100}noch nicht vereinbart)/i.test(t);
+    if(!prePilot)return null;
+    const ppl=stakeholdersV113(t);
+    const sponsor=pickV113(ppl,/(fachlicher sponsor|\bsponsor\b|vertriebsleiter)/i,'Der fachliche Sponsor');
+    const dm=pickV113(ppl,/(wirtschaftliche entscheider|geschäftsführer|geschäftsführerin)/i,'der wirtschaftliche Entscheider');
+    const presales=pickV113(ppl,/(leiter presales|\bpresales\b)/i,'Presales');
+    const hasPresales=/presales/i.test(low),hasTests=/(produkttest|technische workshops?|workshops?)/i.test(low),hasForecast=/forecast/i.test(low),hasCRM=/(dynamics|hubspot|salesforce|crm)/i.test(low);
+    const participants=[dm];if(hasPresales&&presales&&!participants.includes(presales))participants.push(presales);
+    const now=sponsor+' vereinbart innerhalb der nächsten fünf Arbeitstage einen 60-minütigen Discovery- und Entscheidungstermin mit '+participants.join(' und ')+'.';
+    const prepareParts=[];
+    if(hasPresales)prepareParts.push('investierte Presales-Tage');
+    if(hasTests)prepareParts.push('Produkttests oder Workshops');
+    if(hasForecast)prepareParts.push('ursprüngliche Forecast-Einschätzung und tatsächlichen Ausgang');
+    prepareParts.push('fehlende Entscheider oder Qualifikationsinformationen');
+    const prepare='Vor dem Termin zwei bis drei reale verlorene oder gefährdete Opportunities auswählen und je Fall '+prepareParts.join(', ')+' dokumentieren.';
+    const decide='Im Termin wirtschaftlichen Handlungsdruck, messbare Pilotziele, Budgetweg, Verantwortliche'+(hasCRM?', CRM-Abgrenzung':'')+' und den nächsten Entscheidungsschritt bestätigen.';
+    const success=dm+' bestätigt den Entscheidungsprozess und beauftragt die Ausarbeitung eines konkreten Pilotvorschlags.';
+    const facts=[
+      sponsor+' bestätigt Handlungsbedarf, kann die Investition aber nicht allein freigeben.',
+      dm+' ist als wirtschaftliche Entscheiderin identifiziert, aber noch nicht in die Bewertung von KI21 eingebunden.',
+      hasPresales?'Presales-Aufwand für unzureichend qualifizierte Opportunities wird intern als Problem wahrgenommen.':'Die aktuelle Opportunity-Steuerung verursacht erkennbaren Handlungsbedarf.',
+      'Ein gemeinsamer Entscheidungstermin ist vorgeschlagen, aber noch nicht verbindlich vereinbart.',
+      'Pilotbudget, Erfolgskriterien und Verantwortliche sind noch offen.'
+    ];
+    const strategy=[
+      sponsor+' als Sponsor nutzen, um '+participants.join(' und ')+' in eine gemeinsame Entscheidungssituation zu bringen.',
+      'Vor dem Termin zwei bis drei reale Opportunities wirtschaftlich und vertrieblich aufbereiten, damit der Handlungsdruck nicht abstrakt bleibt.',
+      'Erst nach bestätigtem Handlungsdruck, Budgetweg und messbaren Erfolgskriterien einen konkreten Pilotvorschlag vorlegen.'
+    ];
+    const risk='Ein vorgezogener Pilotvorschlag kann als zusätzliches Tool oder neue Dokumentationspflicht wahrgenommen werden. Dann gewinnt '+(hasCRM?'das bestehende CRM':'eine interne Prozesslösung')+' als scheinbar ausreichende Alternative, bevor KI21 seinen wirtschaftlichen Beitrag belegen konnte.';
+    const question='Welche messbaren Ergebnisse aus '+(hasPresales?'weniger vermeidbaren Presales-Einsätzen':'besserer Opportunity-Qualifizierung')+(hasForecast?' und belastbareren Forecasts':'')+' benötigt '+dm+', um einen Pilot freizugeben?';
+    const against=[
+      hasCRM?'Erweiterte CRM-Pflichtfelder, Coaching oder interne Freigaberegeln können als günstigere Alternative erscheinen.':'Interne Prozessverbesserungen oder Coaching können als günstigere Alternative erscheinen.',
+      hasTests?'Notwendige Produkttests und technische Workshops dürfen nicht durch starre Qualifikationsregeln behindert werden.':'Verkäufer könnten zusätzliche Qualifikationsschritte als Belastung wahrnehmen.',
+      'Die Account Manager könnten KI21 als zusätzliche Kontrolle oder Dokumentationspflicht ablehnen.'
+    ];
+    const different=[
+      dm+' keinen relevanten wirtschaftlichen Handlungsdruck erkennt.',
+      'die bestehenden CRM-, Coaching- oder Freigabeprozesse das Problem bereits nachweisbar lösen.',
+      'der erforderliche Pflegeaufwand die Akzeptanz der Verkäufer gefährdet.'
+    ];
+    return {sponsor,dm,presales,now,prepare,decide,success,facts,strategy,risk,question,against,different,
+      why:'Der fachliche Sponsor erkennt das Problem, kann die Investition jedoch nicht allein freigeben. Der nächste Fortschritt entsteht daher nicht durch mehr Produktinformation, sondern durch eine gemeinsame Entscheidungssituation mit wirtschaftlicher Entscheiderin und den relevanten Einflussnehmern.',
+      lever:'Die wirtschaftliche Entscheiderin in eine gemeinsame Entscheidungssituation mit Sponsor'+(hasPresales?' und Presales':'')+' bringen.',
+      gaps:['Wirtschaftlichen Handlungsdruck anhand realer Opportunities belegen.','Budgetweg und Mitentscheider bestätigen.','Messbare Pilotziele, Erfolgskriterien und Verantwortliche vereinbaren.','Verbindlichen Entscheidungstermin festlegen.'],
+      trust:['Faktenlage TEILWEISE – Problemfelder und Stakeholder sind beschrieben; wirtschaftliche Auswirkungen müssen noch belegt werden.','Buying Center TEILWEISE – Sponsor und wirtschaftliche Entscheiderin sind identifiziert; Einbindung und weitere Rollen sind offen.','Business Case OFFEN – Der wirtschaftliche Effekt ist plausibel, aber noch nicht quantifiziert.','Erfolgskriterien OFFEN – Messbare Pilotziele und Verantwortliche sind noch nicht vereinbart.','Risiken bewertet GUT – Alternativen, Adoption und mögliche Prozesskonflikte sind konkret benannt.']};
+  }
+  function reorderV113(report){
+    const p=ki21ParseReportSectionsV740(report);const s=p.sections||{};const order=['SALES SUMMARY','HEALTH & FORECAST','ENTSCHEIDUNGSREIFE','AKTUELLES LAGEBILD','VERTRIEBSEMPFEHLUNG','KONKRETER VERKAUFSAUFTRAG','WARUM KI21 GENAU DAS EMPFIEHLT','EMPFOHLENE VERKAUFSSTRATEGIE','FAKTENBASIS','VERKAUFSRISIKO','STÄRKSTE KLÄRUNGSFRAGE','WAS SPRICHT DAGEGEN?','KI21 WÜRDE ANDERS EMPFEHLEN, WENN','VERTRAUENSCHECK','WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN','VERKAUFSHEBEL – PRIORISIERT','NÄCHSTE KUNDENSCHRITTE','DARAUF ACHTEN','VERTRIEBLICHE INTERPRETATION','WARUM JETZT?'];
+    let out=(p.meta||[]).join('\n').trim();const used=new Set();
+    order.forEach(k=>{if(s[k]&&s[k].length){out+='\n\n'+k+'\n'+s[k].map(x=>'• '+x).join('\n');used.add(k);}});
+    Object.keys(s).forEach(k=>{if(!used.has(k)&&s[k]&&s[k].length)out+='\n\n'+k+'\n'+s[k].map(x=>'• '+x).join('\n');});
+    return out.trim();
+  }
+  const prior=window.ki21FinalizeReportFromPrimarySourceV103;
+  if(typeof prior==='function')window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+    let r=prior(report,accId);const p=planV113(accId);if(!p)return r;
+    r=replaceV113(r,'EMPFOHLENE VERKAUFSSTRATEGIE',p.strategy.map((x,i)=>(i+1)+'. Priorität: '+x));
+    r=replaceV113(r,'FAKTENBASIS',p.facts);
+    r=replaceV113(r,'VERKAUFSRISIKO',[p.risk]);
+    r=replaceV113(r,'STÄRKSTE KLÄRUNGSFRAGE',[p.question]);
+    r=replaceV113(r,'WAS SPRICHT DAGEGEN?',p.against);
+    r=replaceV113(r,'KI21 WÜRDE ANDERS EMPFEHLEN, WENN',p.different);
+    r=replaceV113(r,'VERTRAUENSCHECK',p.trust);
+    r=replaceV113(r,'WAS DER VERTRIEB NOCH KLÄREN MUSS',p.gaps);
+    r=replaceV113(r,'WARUM KI21 GENAU DAS EMPFIEHLT',[p.why]);
+    r=replaceV113(r,'VERKAUFSHEBEL – PRIORISIERT',['1. '+p.lever,'2. '+p.prepare,'3. '+p.decide]);
+    r=replaceV113(r,'NÄCHSTE KUNDENSCHRITTE',[p.now,p.prepare,p.decide]);
+    r=replaceV113(r,'KONKRETER VERKAUFSAUFTRAG',['JETZT TUN: '+p.now,'VORBEREITEN: '+p.prepare,'IM TERMIN ENTSCHEIDEN: '+p.decide,'ERFOLG DES NÄCHSTEN SCHRITTS: '+p.success]);
+    return reorderV113(r).replace(/\n{3,}/g,'\n\n').trim();
+  };
+})();
+</script>
+
 </body>
 </html>
