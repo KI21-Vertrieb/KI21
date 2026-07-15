@@ -19762,8 +19762,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       el('div','ki21-clean-metric-label','Executive Forecast'),
       el('div','ki21-clean-metric-value',m.score+' %'),
       el('div','ki21-clean-metric-state',m.state),
-      el('div','ki21-clean-forecast-line up',m.up),
-      el('div','ki21-clean-forecast-line down',m.down)
+      el('div','ki21-clean-forecast-line up','Steigt, wenn: '+m.up),
+      el('div','ki21-clean-forecast-line down','Fällt, wenn: '+m.down)
     );
     metrics.append(score,forecast);
     root.appendChild(metrics);
@@ -19777,7 +19777,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     root.appendChild(decision);
 
     const action=el('section','ki21-clean-card action');
-    action.appendChild(el('div','ki21-clean-kicker','Konkreter Verkaufsauftrag'));
+    action.appendChild(el('div','ki21-clean-kicker','Nächster Deal-Schritt'));
     const list=el('div','ki21-clean-actions');
     ['Jetzt tun','Vorbereiten','Im Termin entscheiden'].forEach((title,i)=>{
       const row=el('div','ki21-clean-action');
@@ -20160,5 +20160,43 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
+<!-- Pilot Core 1.5.6 DRILLDOWN TEST: Deal-Schritt + optionaler Bottom-Sheet-Drill-down -->
+<style id="ki21-drilldown-v156">
+.ki21-clean-card.ki21-drillable,.ki21-clean-metric.ki21-drillable{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative}
+.ki21-clean-card.ki21-drillable::after,.ki21-clean-metric.ki21-drillable::after{content:'›';position:absolute;right:14px;top:13px;color:rgba(230,237,243,.34);font-size:19px;font-weight:900}
+.ki21-clean-card.ki21-drillable:active,.ki21-clean-metric.ki21-drillable:active{transform:translateY(1px)}
+.ki21-dd-overlay-v156{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:1000200;opacity:0;transition:opacity .18s ease}
+.ki21-dd-overlay-v156.visible{opacity:1}
+.ki21-dd-sheet-v156{position:fixed;left:0;right:0;bottom:0;z-index:1000201;max-height:82vh;overflow:auto;background:linear-gradient(180deg,#171d27,#0d121a);border:1px solid rgba(148,163,184,.22);border-bottom:0;border-radius:22px 22px 0 0;box-shadow:0 -22px 60px rgba(0,0,0,.48);transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);padding:0 16px max(24px,env(safe-area-inset-bottom))}
+.ki21-dd-sheet-v156.visible{transform:translateY(0)}
+.ki21-dd-handle-v156{width:42px;height:4px;border-radius:999px;background:rgba(201,209,217,.24);margin:11px auto 10px}
+.ki21-dd-head-v156{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:2px 0 12px;border-bottom:1px solid rgba(148,163,184,.16)}
+.ki21-dd-title-v156{font-size:16px;line-height:1.2;font-weight:900;color:#f4f7fb}
+.ki21-dd-sub-v156{font-size:10.5px;line-height:1.35;color:#9da7b3;margin-top:4px}
+.ki21-dd-close-v156{width:31px;height:31px;border-radius:999px;border:1px solid rgba(148,163,184,.22);background:rgba(255,255,255,.035);color:#dce3eb;font-size:17px;cursor:pointer;flex:0 0 auto}
+.ki21-dd-body-v156{padding:10px 0 4px}.ki21-dd-section-v156{padding:11px 0;border-top:1px solid rgba(148,163,184,.13)}.ki21-dd-section-v156:first-child{border-top:0}
+.ki21-dd-label-v156{font-size:9px;font-weight:950;letter-spacing:1.1px;text-transform:uppercase;color:#f28a3a;margin-bottom:6px}
+.ki21-dd-line-v156{position:relative;padding-left:14px;margin:0 0 7px;font-size:12.3px;line-height:1.42;color:#e6edf3}.ki21-dd-line-v156::before{content:'·';position:absolute;left:2px;color:#8b949e}
+.ki21-dd-empty-v156{font-size:12px;line-height:1.4;color:#8b949e;font-style:italic}
+@media(max-width:390px){.ki21-dd-sheet-v156{padding-left:14px;padding-right:14px}.ki21-dd-title-v156{font-size:15px}.ki21-dd-line-v156{font-size:11.8px}}
+</style>
+<script>
+(function(){
+  function clean(v){return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim()}
+  function parseReport(){let report='';try{if(typeof buildOpportunityTestReportV723==='function')report=String(buildOpportunityTestReportV723()||'')}catch(e){}const sections={};let current='';report.replace(/\r/g,'').split('\n').forEach(line=>{const t=line.trim();if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){current=t;sections[current]=sections[current]||[];return}if(current){const c=clean(line);if(c)sections[current].push(c)}});return sections}
+  function pick(s,names){for(const n of names){if(s[n]&&s[n].length)return s[n].map(clean)}return[]}
+  function section(label,lines){return {label,lines:(lines||[]).filter(Boolean)}}
+  function details(kind){const s=parseReport();
+    if(kind==='summary')return {title:'Sales Summary',sub:'Warum KI21 zu diesem Lagebild kommt',sections:[section('Bestätigte Fakten',pick(s,['FAKTENBASIS','EVIDENZBASIS']).slice(0,4)),section('Ableitung',pick(s,['DEAL-HYPOTHESE','VERTRIEBLICHE INTERPRETATION']).slice(0,3)),section('Noch offen',pick(s,['WAS DER VERTRIEB NOCH KLÄREN MUSS','WAS WIR NOCH WISSEN MÜSSEN']).slice(0,4))]};
+    if(kind==='score')return {title:'Opportunity Score',sub:'Welche Faktoren die aktuelle Bewertung tragen',sections:[section('Entscheidungsreife',pick(s,['ENTSCHEIDUNGSREIFE'])),section('Vertrauenscheck',pick(s,['VERTRAUENSCHECK']).slice(0,5)),section('Offene Punkte',pick(s,['WAS DER VERTRIEB NOCH KLÄREN MUSS']).slice(0,4))]};
+    if(kind==='forecast')return {title:'Executive Forecast',sub:'Was den Forecast nach oben oder unten verändert',sections:[section('Aktuell',pick(s,['EXECUTIVE FORECAST']).filter(x=>/^AKTUELL:/i.test(x))),section('Steigt, wenn',pick(s,['EXECUTIVE FORECAST']).filter(x=>/AUFSTUFUNG/i.test(x)).map(x=>x.replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,''))),section('Fällt, wenn',pick(s,['EXECUTIVE FORECAST']).filter(x=>/ABSTUFUNG/i.test(x)).map(x=>x.replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,''))),section('Momentum',pick(s,['DEAL MOMENTUM']).slice(0,4))]};
+    return {title:'Business Case',sub:'Wirtschaftliche Basis, Nutzen und noch fehlende Evidenz',sections:[section('Wirtschaftlicher Ausgangspunkt',pick(s,['BUSINESS CASE UND KUNDENNUTZEN','BUSINESS CASE UND NUTZEN']).slice(0,4)),section('Noch zu validieren',pick(s,['EVIDENZBASIS']).filter(x=>/validieren|noch|offen/i.test(x)).slice(0,3)),section('Darauf achten',pick(s,['DARAUF ACHTEN']).slice(0,4))]}
+  }
+  function close(){document.querySelectorAll('.ki21-dd-overlay-v156,.ki21-dd-sheet-v156').forEach(x=>x.classList.remove('visible'));setTimeout(()=>document.querySelectorAll('.ki21-dd-overlay-v156,.ki21-dd-sheet-v156').forEach(x=>x.remove()),230)}
+  function open(kind){close();const d=details(kind),ov=document.createElement('div'),sh=document.createElement('div');ov.className='ki21-dd-overlay-v156';sh.className='ki21-dd-sheet-v156';ov.onclick=close;sh.innerHTML='<div class="ki21-dd-handle-v156"></div><div class="ki21-dd-head-v156"><div><div class="ki21-dd-title-v156"></div><div class="ki21-dd-sub-v156"></div></div><button class="ki21-dd-close-v156" aria-label="Schließen">×</button></div><div class="ki21-dd-body-v156"></div>';sh.querySelector('.ki21-dd-title-v156').textContent=d.title;sh.querySelector('.ki21-dd-sub-v156').textContent=d.sub;sh.querySelector('.ki21-dd-close-v156').onclick=close;const body=sh.querySelector('.ki21-dd-body-v156');d.sections.forEach(sec=>{const box=document.createElement('div');box.className='ki21-dd-section-v156';const lab=document.createElement('div');lab.className='ki21-dd-label-v156';lab.textContent=sec.label;box.appendChild(lab);if(!sec.lines.length){const e=document.createElement('div');e.className='ki21-dd-empty-v156';e.textContent='Noch keine belastbare Information vorhanden.';box.appendChild(e)}else sec.lines.forEach(line=>{const p=document.createElement('div');p.className='ki21-dd-line-v156';p.textContent=line;box.appendChild(p)});body.appendChild(box)});document.body.append(ov,sh);requestAnimationFrame(()=>{ov.classList.add('visible');sh.classList.add('visible')})}
+  function bind(){const root=document.querySelector('.ki21-clean-root');if(!root)return false;const summary=root.querySelector('.ki21-clean-card.summary'),metrics=root.querySelectorAll('.ki21-clean-metric'),business=root.querySelector('.ki21-clean-card.business');[[summary,'summary'],[metrics[0],'score'],[metrics[1],'forecast'],[business,'business']].forEach(([node,kind])=>{if(!node||node.dataset.drillbound)return;node.dataset.drillbound='1';node.classList.add('ki21-drillable');node.setAttribute('role','button');node.setAttribute('aria-label','Details anzeigen');node.addEventListener('click',()=>open(kind))});return true}
+  const mo=new MutationObserver(()=>bind());mo.observe(document.documentElement,{subtree:true,childList:true});window.addEventListener('load',()=>setTimeout(bind,180),{once:true});
+})();
+</script>
 </body>
 </html>
