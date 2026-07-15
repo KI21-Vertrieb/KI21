@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS</title>
+<title>KI21 Pilot Core 1.6.1 BROWSER GUARD</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2603,9 +2603,16 @@ html,body,#app{background:radial-gradient(circle at 50% -12%,rgba(255,122,26,.07
 <script>
 window.addEventListener('error', function(e){
   try{
+    var message=String((e&&e.message)||'');
+    var source=String((e&&e.filename)||'');
+    // Browser-/Extension-Skripte (z. B. Brave Reader / Firefox-Kompatibilität)
+    // dürfen den KI21-Startbildschirm nicht als App-Fehler überschreiben.
+    if(/__firefox__|firefox.*reader|reader.*firefox/i.test(message) || /^(?:brave|moz|chrome)-extension:/i.test(source)){
+      return;
+    }
     var app=document.getElementById('app');
     if(app && app.innerText && app.innerText.indexOf('Lädt')!==-1){
-      app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht starten</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+String((e&&e.message)||'Unbekannter Fehler')+'</div></div>';
+      app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht starten</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+message+'</div></div>';
     }
   }catch(_){}
 });
@@ -14971,9 +14978,9 @@ function generateKundePDF(aid, cust){
 })();
 <\/script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.6.1 BROWSER GUARD -->
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14998,7 +15005,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15019,7 +15026,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  const VERSION='Pilot Core 1.6.1 BROWSER GUARD';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15889,7 +15896,7 @@ ${html}
 
 
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15910,7 +15917,7 @@ ${html}
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  const VERSION='Pilot Core 1.6.1 BROWSER GUARD';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16728,7 +16735,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+const KI21_VERSION='Pilot Core 1.6.1 BROWSER GUARD';
 
 
 function runKi21VersionMigration(){
@@ -20519,7 +20526,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20560,7 +20567,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20585,7 +20592,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20605,7 +20612,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.6.1 BROWSER GUARD — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20804,7 +20811,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  const VERSION='Pilot Core 1.6.1 BROWSER GUARD';
 
   function allStorageKeys(){
     const keys=[];
@@ -21017,7 +21024,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  const VERSION='Pilot Core 1.6.1 BROWSER GUARD';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
