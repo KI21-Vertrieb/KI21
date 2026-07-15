@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.2.1-structured-cockpit-stable-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.1.5-focus-cockpit-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.2.1</title>
+<title>KI21 Pilot Core 1.1.5 Focus</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.2.1 · Structured Opportunity Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.1.5 Focus · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14904,7 +14904,7 @@ function generateKundePDF(aid, cust){
   function item15(text,cls){return '<div class="ki21-exec15-item '+cls+'">'+esc15(text)+'</div>';}
   function card15(cls,title,body,full){return '<section class="ki21-exec15-card '+cls+(full?' full':'')+'"><div class="ki21-exec15-kicker">'+esc15(title)+'</div>'+body+'</section>';}
   function render15(){
-    const app=document.getElementById('app');if(!app||typeof state==='undefined'||!state.activeId)return false;
+    const app=document.getElementById('app');if(!app||!window.state||!state.activeId)return false;
     const action=app.querySelector('.ki21-action-command-v110');const decision=app.querySelector('.ki21-decision-card');if(!action||!decision)return false;
     const s=sections15();
     // Entscheidungs-Checkliste: keine Fließtext-Wiederholung, sondern sichtbare Erreichungskriterien.
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.2.1';
+const KI21_VERSION='Pilot Core 1.1.5 Focus';
 
 
 function runKi21VersionMigration(){
@@ -19383,1609 +19383,297 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<!-- Pilot Core 1.1.1: Cockpit/Report Sync – Lagebild, Opportunity Health und Executive Forecast lesen dieselbe finalisierte Analyse wie der Testbericht. -->
+<!-- Pilot Core 1.1.5 Focus: radikal reduziertes Pilot-Cockpit. -->
 <style>
-.ki21-sync-grid-v111{
+.ki21-focus-root{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin:0 0 18px;
+}
+.ki21-focus-hidden{display:none!important}
+.ki21-focus-strip{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
-  margin:0 0 12px;
 }
-.ki21-sync-card-v111{
-  min-width:0;
+.ki21-focus-card{
   border:1px solid rgba(139,148,158,.22);
-  border-radius:16px;
-  padding:12px 13px;
-  background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(15,20,27,.88));
-  box-shadow:0 10px 26px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);
+  border-radius:18px;
+  padding:15px;
+  background:linear-gradient(145deg,rgba(21,26,34,.97),rgba(12,17,24,.95));
+  box-shadow:0 12px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.03);
 }
-.ki21-sync-card-v111.health{
-  border-color:rgba(88,166,255,.28);
-  background:linear-gradient(145deg,rgba(18,31,46,.92),rgba(15,20,27,.88));
-}
-.ki21-sync-card-v111.forecast{
-  border-color:rgba(210,153,34,.30);
-  background:linear-gradient(145deg,rgba(45,34,17,.84),rgba(15,20,27,.88));
-}
-.ki21-sync-kicker-v111{
-  font-size:8.5px;
-  line-height:1.15;
-  font-weight:950;
-  letter-spacing:1.25px;
-  text-transform:uppercase;
-  margin-bottom:7px;
-}
-.ki21-sync-card-v111.health .ki21-sync-kicker-v111{color:#79b8ff}
-.ki21-sync-card-v111.forecast .ki21-sync-kicker-v111{color:#e3b341}
-.ki21-sync-main-v111{
-  font-size:13px;
-  line-height:1.3;
-  font-weight:900;
-  color:#f3f6fb;
-}
-.ki21-sync-row-v111{
-  position:relative;
-  padding-left:12px;
-  margin-top:7px;
-  font-size:10.7px;
-  line-height:1.34;
-  color:#c9d1d9;
-}
-.ki21-sync-row-v111::before{
-  content:'·';
-  position:absolute;
-  left:2px;
-  color:#8b949e;
-}
-.ki21-sync-row-v111.up::before{content:'↑';color:#56d390;font-weight:950}
-.ki21-sync-row-v111.down::before{content:'↓';color:#ff7b72;font-weight:950}
-.ki21-sync-card-v111.forecast .ki21-sync-row-v111:first-of-type{margin-top:8px}
-.cockpit-v54-lagebild.ki21-synced-v111 .cockpit-v5-summary-empty{display:none!important}
-@media(max-width:390px){
-  .ki21-sync-grid-v111{gap:8px}
-  .ki21-sync-card-v111{padding:10px 10px;border-radius:14px}
-  .ki21-sync-main-v111{font-size:11.8px}
-  .ki21-sync-row-v111{font-size:9.8px;line-height:1.28}
-}
-</style>
-<script>
-(function(){
-  function cleanV1111(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function getFinalReportV1111(){
-    try{
-      if(typeof buildOpportunityTestReportV723==='function'){
-        return String(buildOpportunityTestReportV723()||'');
-      }
-    }catch(e){}
-    try{
-      if(typeof buildKi21TestReportV723==='function'){
-        return String(buildKi21TestReportV723(state&&state.activeId)||'');
-      }
-    }catch(e){}
-    return '';
-  }
-  function parseV1111(){
-    const report=getFinalReportV1111();
-    if(!report)return {report:'',sections:{}};
-    try{return {report:report,sections:(ki21ParseReportSectionsV740(report).sections||{})};}
-    catch(e){return {report:report,sections:{}};}
-  }
-  function firstV1111(s,key){
-    return cleanV1111(((s&&s[key])||[])[0]||'');
-  }
-  function summaryValueV1111(s,label){
-    const row=((s&&s['SALES SUMMARY'])||[]).map(cleanV1111)
-      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
-    return row?cleanV1111(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
-  }
-  function makeV1111(tag,cls,text){
-    const el=document.createElement(tag);
-    if(cls)el.className=cls;
-    if(text!==undefined)el.textContent=text;
-    return el;
-  }
-  function syncLagebildV1111(s){
-    const box=document.querySelector('.cockpit-v54-lagebild');
-    if(!box)return;
-    let chance=summaryValueV1111(s,'Status');
-    let risk=summaryValueV1111(s,'Engpass');
-    if(!chance){
-      const rows=(s['AKTUELLES LAGEBILD']||[]).map(cleanV1111);
-      chance=(rows.find(x=>/^CHANCE/i.test(x))||'').replace(/^CHANCE\s*/i,'');
-      risk=(rows.find(x=>/^GRÖSSTER ENGPASS/i.test(x))||'').replace(/^GRÖSSTER ENGPASS\s*/i,'');
-    }
-    if(!chance&&!risk)return;
-    const body=box.querySelector('.cockpit-v5-summary-grid');
-    if(!body)return;
-    body.innerHTML='';
-    if(chance){
-      const row=makeV1111('div','cockpit-v5-summary-row chance');
-      row.append(
-        makeV1111('div','cockpit-v5-summary-label','Status'),
-        makeV1111('div','v53-summary-evidence executive-insight',chance)
-      );
-      body.appendChild(row);
-    }
-    if(risk){
-      const row=makeV1111('div','cockpit-v5-summary-row risk');
-      row.append(
-        makeV1111('div','cockpit-v5-summary-label','Größter Engpass'),
-        makeV1111('div','v53-summary-evidence',risk)
-      );
-      body.appendChild(row);
-    }
-    box.classList.add('ki21-synced-v111');
-  }
-  function buildSyncCardsV1111(s){
-    document.querySelectorAll('.ki21-sync-grid-v111').forEach(x=>x.remove());
-    const lage=document.querySelector('.cockpit-v54-lagebild');
-    if(!lage||!lage.parentNode)return;
-
-    const health=(s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[]).map(cleanV1111);
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(cleanV1111);
-    const forecast=(s['EXECUTIVE FORECAST']||[]).map(cleanV1111);
-
-    if(!health.length&&!readiness.length&&!forecast.length)return;
-
-    const grid=makeV1111('div','ki21-sync-grid-v111');
-
-    const healthCard=makeV1111('section','ki21-sync-card-v111 health');
-    healthCard.appendChild(makeV1111('div','ki21-sync-kicker-v111','Opportunity Health'));
-    healthCard.appendChild(makeV1111(
-      'div','ki21-sync-main-v111',
-      health[0]||readiness[0]||'Opportunity-Struktur wird bewertet'
-    ));
-    readiness.slice(1,4).forEach(x=>{
-      const row=makeV1111('div','ki21-sync-row-v111',x.replace(/^[✓⚠]\s*/,''));
-      healthCard.appendChild(row);
-    });
-
-    const forecastCard=makeV1111('section','ki21-sync-card-v111 forecast');
-    forecastCard.appendChild(makeV1111('div','ki21-sync-kicker-v111','Executive Forecast'));
-    let current=(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'').replace(/^AKTUELL:\s*/i,'');
-    forecastCard.appendChild(makeV1111('div','ki21-sync-main-v111',current||'Forecast noch nicht belastbar'));
-    const up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'').replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
-    const down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'').replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(up)forecastCard.appendChild(makeV1111('div','ki21-sync-row-v111 up',up));
-    if(down)forecastCard.appendChild(makeV1111('div','ki21-sync-row-v111 down',down));
-
-    grid.append(healthCard,forecastCard);
-    lage.insertAdjacentElement('afterend',grid);
-  }
-  function syncCockpitV1111(){
-    const parsed=parseV1111();
-    if(!parsed.report)return;
-    syncLagebildV1111(parsed.sections);
-    buildSyncCardsV1111(parsed.sections);
-  }
-
-  const priorRenderV1111=window.renderCockpitSnapshotLiteV4215;
-  if(typeof priorRenderV1111==='function'){
-    window.renderCockpitSnapshotLiteV4215=function(){
-      const out=priorRenderV1111.apply(this,arguments);
-      setTimeout(()=>{try{syncCockpitV1111();}catch(e){console.warn('Cockpit/Report Sync 1.1.1',e);}},30);
-      return out;
-    };
-  }
-  window.addEventListener('load',()=>setTimeout(()=>{try{syncCockpitV1111();}catch(e){}},300));
-})();
-</script>
-
-<!-- Pilot Core 1.1.2: Stable Cockpit Sync – Synchronisierung läuft nach allen Cockpit-Nachbearbeitungen erneut und reagiert auf DOM-Neurendering. -->
-<script>
-(function(){
-  function c112(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function report112(){
-    try{
-      if(typeof buildOpportunityTestReportV723==='function'){
-        return String(buildOpportunityTestReportV723()||'');
-      }
-    }catch(e){console.warn('1.1.2 Reportbasis',e);}
-    return '';
-  }
-  function sections112(){
-    const r=report112();
-    if(!r)return {};
-    try{return ki21ParseReportSectionsV740(r).sections||{};}catch(e){return {};}
-  }
-  function summary112(s,label){
-    const row=((s['SALES SUMMARY']||[]).map(c112))
-      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
-    return row?c112(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
-  }
-  function el112(tag,cls,text){
-    const e=document.createElement(tag);
-    if(cls)e.className=cls;
-    if(text!==undefined)e.textContent=text;
-    return e;
-  }
-  function sync112(){
-    const app=document.getElementById('app');
-    if(!app||!window.state||!state.activeId)return false;
-
-    const lage=app.querySelector('.cockpit-v54-lagebild');
-    if(!lage)return false;
-
-    const s=sections112();
-    if(!Object.keys(s).length)return false;
-
-    const status=summary112(s,'Status');
-    const bottleneck=summary112(s,'Engpass');
-    const body=lage.querySelector('.cockpit-v5-summary-grid');
-
-    if(body&&(status||bottleneck)){
-      body.innerHTML='';
-      if(status){
-        const row=el112('div','cockpit-v5-summary-row chance');
-        const content=el112('div','');
-        content.append(
-          el112('div','v53-summary-status','Aktueller Deal-Zustand'),
-          el112('div','v53-summary-evidence executive-insight',status)
-        );
-        row.append(el112('div','cockpit-v5-summary-label','Status'),content);
-        body.appendChild(row);
-      }
-      if(bottleneck){
-        const row=el112('div','cockpit-v5-summary-row risk');
-        const content=el112('div','');
-        content.append(
-          el112('div','v53-summary-status','Zentraler Kaufblocker'),
-          el112('div','v53-summary-evidence',bottleneck)
-        );
-        row.append(el112('div','cockpit-v5-summary-label','Größter Engpass'),content);
-        body.appendChild(row);
-      }
-      lage.classList.add('ki21-synced-v111');
-    }
-
-    app.querySelectorAll('.ki21-sync-grid-v111,.ki21-sync-grid-v112').forEach(x=>x.remove());
-
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(c112);
-    const health=(s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[]).map(c112);
-    const forecast=(s['EXECUTIVE FORECAST']||[]).map(c112);
-
-    if(!readiness.length&&!health.length&&!forecast.length)return true;
-
-    const grid=el112('div','ki21-sync-grid-v111 ki21-sync-grid-v112');
-
-    const hc=el112('section','ki21-sync-card-v111 health');
-    hc.appendChild(el112('div','ki21-sync-kicker-v111','Opportunity Health'));
-    hc.appendChild(el112('div','ki21-sync-main-v111',
-      health[0]||'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'
-    ));
-    readiness.slice(1,4).forEach(x=>{
-      hc.appendChild(el112('div','ki21-sync-row-v111',
-        x.replace(/^[✓⚠]\s*/,'')
-      ));
-    });
-
-    const fc=el112('section','ki21-sync-card-v111 forecast');
-    fc.appendChild(el112('div','ki21-sync-kicker-v111','Executive Forecast'));
-    const current=(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'')
-      .replace(/^AKTUELL:\s*/i,'');
-    fc.appendChild(el112('div','ki21-sync-main-v111',
-      current||'Forecast noch nicht belastbar'
-    ));
-    const up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
-      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
-    const down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
-      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(up)fc.appendChild(el112('div','ki21-sync-row-v111 up',up));
-    if(down)fc.appendChild(el112('div','ki21-sync-row-v111 down',down));
-
-    grid.append(hc,fc);
-    lage.insertAdjacentElement('afterend',grid);
-
-    return true;
-  }
-
-  let syncing112=false;
-  function schedule112(){
-    if(syncing112)return;
-    syncing112=true;
-    [80,220,500,900].forEach((ms,i)=>{
-      setTimeout(()=>{
-        try{sync112();}catch(e){console.warn('Stable Cockpit Sync 1.1.2',e);}
-        if(i===3)syncing112=false;
-      },ms);
-    });
-  }
-
-  const old112=window.renderCockpitSnapshotLiteV4215;
-  if(typeof old112==='function'){
-    window.renderCockpitSnapshotLiteV4215=function(){
-      const out=old112.apply(this,arguments);
-      schedule112();
-      return out;
-    };
-  }
-
-  let observerTimer112=null;
-  const observer112=new MutationObserver(()=>{
-    clearTimeout(observerTimer112);
-    observerTimer112=setTimeout(()=>{
-      const app=document.getElementById('app');
-      if(app&&app.querySelector('.cockpit-v54-lagebild')&&!app.querySelector('.ki21-sync-grid-v112')){
-        schedule112();
-      }
-    },120);
-  });
-
-  window.addEventListener('load',()=>{
-    const app=document.getElementById('app');
-    if(app)observer112.observe(app,{childList:true,subtree:true});
-    schedule112();
-  });
-})();
-</script>
-
-<!-- Pilot Core 1.1.3: Actual Sync Fix + finaler Report-Qualitätspass. -->
-<script>
-(function(){
-  function clean113(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function parse113(report){
-    try{return ki21ParseReportSectionsV740(String(report||''));}
-    catch(e){return {meta:[],sections:{}};}
-  }
-  function sec113(title,lines){
-    const a=(lines||[]).map(clean113).filter(Boolean);
-    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
-  }
-  function finalize113(report){
-    const p=parse113(report), s=p.sections||{};
-    const meta=(p.meta||[]).join('\n').trim();
-
-    // Ensure Opportunity Health exists.
-    if(!s['OPPORTUNITY HEALTH']){
-      const hf=s['HEALTH & FORECAST']||[];
-      s['OPPORTUNITY HEALTH']=hf.length?hf:['Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'];
-    }
-    delete s['HEALTH & FORECAST'];
-
-    // Fix central hypothesis grammar.
-    if(s['DEAL-HYPOTHESE']&&s['DEAL-HYPOTHESE'].length){
-      s['DEAL-HYPOTHESE']=s['DEAL-HYPOTHESE'].map((x,i)=>{
-        let t=clean113(x);
-        if(i===0){
-          t=t.replace(/^AKTUELLE DEAL-HYPOTHESE:\s*/i,'')
-             .replace(/^Nicht fehlendes Produktinteresse, sondern (.+) der zentrale Kaufblocker ist\.?$/i,
-                      'Der zentrale Kaufblocker ist aktuell nicht fehlendes Produktinteresse, sondern $1.');
-          return 'AKTUELLE DEAL-HYPOTHESE: '+t;
-        }
-        return t.replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,
-                         'erkennt keinen relevanten wirtschaftlichen Handlungsdruck');
-      });
-    }
-
-    // Remove standalone arrow bullets from text report.
-    if(s['EXECUTIVE DECISION CHAIN']){
-      s['EXECUTIVE DECISION CHAIN']=s['EXECUTIVE DECISION CHAIN']
-        .map(clean113).filter(x=>x!=='↓'&&x!=='   ↓');
-    }
-
-    // Evidence wording consistent with partial confidence.
-    if(s['EVIDENZBASIS']){
-      s['EVIDENZBASIS']=s['EVIDENZBASIS'].map(x=>
-        clean113(x).replace(/^BELASTBARE FAKTENBASIS:/i,'SOLIDE AUSGANGSBASIS:')
-      );
-    }
-
-    const order=[
-      'SALES SUMMARY','OPPORTUNITY HEALTH','ENTSCHEIDUNGSREIFE',
-      'DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN',
-      'WARUM JETZT?','KONKRETER VERKAUFSAUFTRAG',
-      'EXECUTIVE FORECAST','DEAL MOMENTUM','EXECUTIVE WATCHOUT',
-      'FAKTENBASIS','EVIDENZBASIS','STÄRKSTE KLÄRUNGSFRAGE',
-      'WAS SPRICHT DAGEGEN?','KI21 WÜRDE ANDERS EMPFEHLEN, WENN',
-      'VERTRAUENSCHECK','WAS DER VERTRIEB NOCH KLÄREN MUSS',
-      'BUSINESS CASE UND KUNDENNUTZEN','DARAUF ACHTEN'
-    ];
-    let out=meta;
-    const used=new Set();
-    order.forEach(k=>{
-      if(s[k]&&s[k].length){out+=sec113(k,s[k]);used.add(k);}
-    });
-    Object.keys(s).forEach(k=>{
-      if(!used.has(k)&&s[k]&&s[k].length)out+=sec113(k,s[k]);
-    });
-    return out.replace(/\n{3,}/g,'\n\n').trim();
-  }
-
-  const prior113=window.ki21FinalizeReportFromPrimarySourceV103;
-  if(typeof prior113==='function'){
-    window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
-      const base=prior113(report,accId);
-      try{return finalize113(base);}catch(e){console.warn('Report Finish 1.1.3',e);return base;}
-    };
-  }
-
-  // Direct guaranteed sync after page load and after every cockpit render.
-  function trigger113(){
-    [0,100,300,700,1200].forEach(ms=>setTimeout(()=>{
-      try{
-        if(typeof sync112==='function')sync112();
-      }catch(e){console.warn('Actual Cockpit Sync 1.1.3',e);}
-    },ms));
-  }
-  const old113=window.renderCockpitSnapshotLiteV4215;
-  if(typeof old113==='function'){
-    window.renderCockpitSnapshotLiteV4215=function(){
-      const out=old113.apply(this,arguments);
-      trigger113();
-      return out;
-    };
-  }
-  window.addEventListener('load',trigger113);
-})();
-</script>
-
-<!-- Pilot Core 1.1.4: Cockpit Source Convergence – finale Berichtsausgabe ersetzt Lagebild, Forecast und Verkaufsauftrag vollständig; keine additive Mehrfach-Nachbearbeitung. -->
-<style>
-.ki21-report-lage-v114 .cockpit-v5-summary-empty{display:none!important}
-.ki21-action-card-v114 .ki21-action-list-v110{margin-top:4px!important}
-.ki21-action-card-v114 .ki21-action-item-v110{overflow:hidden!important}
-.ki21-action-card-v114 .ki21-action-text-v110{
-  overflow-wrap:anywhere!important;
-  word-break:normal!important;
-}
-</style>
-<script>
-(function(){
-  function clean114(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function escape114(v){
-    return String(v||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  }
-  function parseSections114(report){
-    const text=String(report||'').replace(/\r/g,'');
-    const lines=text.split('\n');
-    const meta=[]; const sections={}; let current='';
-    lines.forEach(line=>{
-      const t=line.trim();
-      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
-        current=t;
-        sections[current]=sections[current]||[];
-        return;
-      }
-      if(!current){meta.push(line);return;}
-      const c=line.replace(/^•\s*/,'').trim();
-      if(c)sections[current].push(c);
-    });
-    return {meta,sections};
-  }
-  function section114(title,lines){
-    const a=(lines||[]).map(clean114).filter(Boolean);
-    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
-  }
-  function normalizeFinalReport114(report){
-    let p=parseSections114(report);
-    const s=p.sections||{};
-
-    if(!s['OPPORTUNITY HEALTH']){
-      s['OPPORTUNITY HEALTH']=(s['HEALTH & FORECAST']||[]).length
-        ?s['HEALTH & FORECAST']
-        :['Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'];
-    }
-    delete s['HEALTH & FORECAST'];
-
-    if(s['DEAL-HYPOTHESE']&&s['DEAL-HYPOTHESE'].length){
-      s['DEAL-HYPOTHESE']=s['DEAL-HYPOTHESE'].map((x,i)=>{
-        let t=clean114(x)
-          .replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,
-                   'erkennt keinen relevanten wirtschaftlichen Handlungsdruck');
-        if(i===0){
-          t=t.replace(/^AKTUELLE DEAL-HYPOTHESE:\s*/i,'');
-          if(/^Nicht fehlendes Produktinteresse, sondern .+ der zentrale Kaufblocker ist\.?$/i.test(t)){
-            const core=t.replace(/^Nicht fehlendes Produktinteresse, sondern (.+) der zentrale Kaufblocker ist\.?$/i,'$1');
-            t='Der zentrale Kaufblocker ist aktuell nicht fehlendes Produktinteresse, sondern '+core+'.';
-          }
-          return 'AKTUELLE DEAL-HYPOTHESE: '+t;
-        }
-        return t;
-      });
-    }
-
-    if(s['EXECUTIVE DECISION CHAIN']){
-      s['EXECUTIVE DECISION CHAIN']=s['EXECUTIVE DECISION CHAIN']
-        .map(clean114).filter(x=>x!=='↓'&&x!=='   ↓');
-    }
-
-    if(s['EVIDENZBASIS']){
-      s['EVIDENZBASIS']=s['EVIDENZBASIS'].map(x=>
-        clean114(x).replace(/^BELASTBARE FAKTENBASIS:/i,'SOLIDE AUSGANGSBASIS:')
-      );
-    }
-
-    const order=[
-      'SALES SUMMARY','OPPORTUNITY HEALTH','ENTSCHEIDUNGSREIFE',
-      'DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN','WARUM JETZT?',
-      'KONKRETER VERKAUFSAUFTRAG','EXECUTIVE FORECAST','DEAL MOMENTUM',
-      'EXECUTIVE WATCHOUT','FAKTENBASIS','EVIDENZBASIS',
-      'STÄRKSTE KLÄRUNGSFRAGE','WAS SPRICHT DAGEGEN?',
-      'KI21 WÜRDE ANDERS EMPFEHLEN, WENN','VERTRAUENSCHECK',
-      'WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN',
-      'DARAUF ACHTEN'
-    ];
-
-    let out=(p.meta||[]).join('\n').trim();
-    const used=new Set();
-    order.forEach(k=>{
-      if(s[k]&&s[k].length){out+=section114(k,s[k]);used.add(k);}
-    });
-    Object.keys(s).forEach(k=>{
-      if(!used.has(k)&&s[k]&&s[k].length)out+=section114(k,s[k]);
-    });
-    return out.replace(/\n{3,}/g,'\n\n').trim();
-  }
-
-  const originalReport114=window.buildOpportunityTestReportV723;
-  if(typeof originalReport114==='function'){
-    window.buildOpportunityTestReportV723=function(){
-      const raw=originalReport114.apply(this,arguments);
-      try{return normalizeFinalReport114(raw);}
-      catch(e){console.warn('Final Report Normalize 1.1.4',e);return raw;}
-    };
-  }
-
-  function finalReport114(){
-    try{
-      if(typeof window.buildOpportunityTestReportV723==='function'){
-        return String(window.buildOpportunityTestReportV723()||'');
-      }
-    }catch(e){console.warn('Final Report 1.1.4',e);}
-    return '';
-  }
-  function make114(tag,cls,text){
-    const e=document.createElement(tag);
-    if(cls)e.className=cls;
-    if(text!==undefined)e.textContent=text;
-    return e;
-  }
-  function summaryValue114(s,label){
-    const row=((s['SALES SUMMARY']||[]).map(clean114))
-      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
-    return row?clean114(row.replace(new RegExp('^'+escape114(label)+':\\s*','i'),'')):'';
-  }
-  function naturalForecastUp114(warnings){
-    const out=[];
-    const add=x=>{if(x&&!out.includes(x))out.push(x);};
-    warnings.forEach(w=>{
-      const x=clean114(w).replace(/^⚠\s*/,'');
-      if(/Pilotbudget/i.test(x))add('Budget und Entscheidungsweg für den Pilot werden bestätigt.');
-      else if(/wirtschaftliche Entscheiderin/i.test(x))add('Die wirtschaftliche Entscheiderin beteiligt sich aktiv an der Bewertung.');
-      else if(/Erfolgskriterien/i.test(x))add('Messbare Pilotziele und Erfolgskriterien werden gemeinsam vereinbart.');
-      else if(/Entscheidungstermin/i.test(x))add('Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.');
-      else if(/Business Case/i.test(x))add('Der wirtschaftliche Handlungsdruck wird bestätigt.');
-    });
-    return out.slice(0,3).join(' ');
-  }
-  function replaceLagebild114(app,s){
-    const box=app.querySelector('.cockpit-v54-lagebild');
-    if(!box)return null;
-
-    const status=summaryValue114(s,'Status');
-    const bottleneck=summaryValue114(s,'Engpass');
-    if(!status&&!bottleneck)return box;
-
-    let body=box.querySelector('.cockpit-v5-summary-grid');
-    if(!body){
-      body=make114('div','cockpit-v5-summary-grid');
-      box.appendChild(body);
-    }
-    body.innerHTML='';
-
-    if(status){
-      const row=make114('div','cockpit-v5-summary-row chance');
-      const content=make114('div','');
-      content.append(
-        make114('div','v53-summary-status','Aktueller Deal-Zustand'),
-        make114('div','v53-summary-evidence executive-insight',status)
-      );
-      row.append(make114('div','cockpit-v5-summary-label','Status'),content);
-      body.appendChild(row);
-    }
-    if(bottleneck){
-      const row=make114('div','cockpit-v5-summary-row risk');
-      const content=make114('div','');
-      content.append(
-        make114('div','v53-summary-status','Zentraler Kaufblocker'),
-        make114('div','v53-summary-evidence',bottleneck)
-      );
-      row.append(make114('div','cockpit-v5-summary-label','Größter Engpass'),content);
-      body.appendChild(row);
-    }
-    box.classList.add('ki21-report-lage-v114');
-    return box;
-  }
-  function replaceHealthForecast114(app,s,lage){
-    app.querySelectorAll('.ki21-sync-grid-v111,.ki21-sync-grid-v112,.ki21-sync-grid-v114')
-      .forEach(x=>x.remove());
-    if(!lage)return;
-
-    const health=(s['OPPORTUNITY HEALTH']||[]).map(clean114);
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean114);
-    const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean114);
-    const different=(s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[]).map(clean114);
-
-    const grid=make114('div','ki21-sync-grid-v111 ki21-sync-grid-v114');
-
-    const hc=make114('section','ki21-sync-card-v111 health');
-    hc.append(
-      make114('div','ki21-sync-kicker-v111','Opportunity Health'),
-      make114('div','ki21-sync-main-v111',
-        health[0]||'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten')
-    );
-    readiness.slice(1,4).forEach(x=>
-      hc.appendChild(make114('div','ki21-sync-row-v111',x.replace(/^[✓⚠]\s*/,'')))
-    );
-
-    const fc=make114('section','ki21-sync-card-v111 forecast');
-    fc.appendChild(make114('div','ki21-sync-kicker-v111','Executive Forecast'));
-    const current=(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'')
-      .replace(/^AKTUELL:\s*/i,'');
-    fc.appendChild(make114('div','ki21-sync-main-v111',
-      current||'Forecast noch nicht belastbar'));
-
-    let up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
-      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
-    if(!up)up=naturalForecastUp114(readiness.filter(x=>/^⚠/.test(x)));
-    let down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
-      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(!down)down=different[0]||'Der wirtschaftliche Handlungsdruck wird nicht bestätigt.';
-
-    if(up)fc.appendChild(make114('div','ki21-sync-row-v111 up',up));
-    if(down)fc.appendChild(make114('div','ki21-sync-row-v111 down',down));
-
-    grid.append(hc,fc);
-    lage.insertAdjacentElement('afterend',grid);
-  }
-  function replaceActionCard114(app,s){
-    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean114);
-    if(!command.length)return;
-
-    const card=app.querySelector('.cockpit-v5-workgrid .cockpit-card-next');
-    if(!card)return;
-
-    const now=(command.find(x=>/^JETZT TUN:/i.test(x))||'').replace(/^JETZT TUN:\s*/i,'');
-    const prepare=(command.find(x=>/^VORBEREITEN:/i.test(x))||'').replace(/^VORBEREITEN:\s*/i,'');
-    const decide=(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'').replace(/^IM TERMIN ENTSCHEIDEN:\s*/i,'');
-    const success=(command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'')
-      .replace(/^ERFOLG DES NÄCHSTEN SCHRITTS:\s*/i,'');
-
-    // Keep only the card header. Every old/generated task block is removed.
-    [...card.children].forEach(child=>{
-      if(!child.classList.contains('cockpit-tile-header'))child.remove();
-    });
-
-    const label=card.querySelector('.cockpit-tile-label');
-    if(label)label.textContent='Konkreter Verkaufsauftrag';
-    card.classList.add('ki21-action-command-v110','ki21-action-card-v114');
-
-    const list=make114('div','ki21-action-list-v110');
-    [
-      ['JETZT TUN',now],
-      ['VORBEREITEN',prepare],
-      ['IM TERMIN ENTSCHEIDEN',decide]
-    ].forEach((item,idx)=>{
-      if(!item[1])return;
-      const row=make114('div','ki21-action-item-v110'+(idx===0?' primary':''));
-      const num=make114('div','ki21-action-num-v110',String(idx+1));
-      const body=make114('div','');
-      body.append(
-        make114('div','ki21-action-kicker-v110',item[0]),
-        make114('div','ki21-action-text-v110',item[1])
-      );
-      row.append(num,body);
-      list.appendChild(row);
-    });
-    card.appendChild(list);
-    if(success){
-      card.appendChild(make114('div','ki21-action-success-v110','Erfolg: '+success));
-    }
-  }
-  function converge114(){
-    const app=document.getElementById('app');
-    if(!app||!app.querySelector('.cockpit-v54-lagebild'))return false;
-    const report=finalReport114();
-    if(!report)return false;
-    const s=parseSections114(report).sections||{};
-    if(!Object.keys(s).length)return false;
-
-    const lage=replaceLagebild114(app,s);
-    replaceHealthForecast114(app,s,lage);
-    replaceActionCard114(app,s);
-    return true;
-  }
-  let running114=false;
-  function schedule114(){
-    if(running114)return;
-    running114=true;
-    [60,180,420,850,1400].forEach((ms,i)=>setTimeout(()=>{
-      try{converge114();}catch(e){console.warn('Cockpit Convergence 1.1.4',e);}
-      if(i===4)running114=false;
-    },ms));
-  }
-
-  const oldRender114=window.renderCockpitSnapshotLiteV4215;
-  if(typeof oldRender114==='function'){
-    window.renderCockpitSnapshotLiteV4215=function(){
-      const out=oldRender114.apply(this,arguments);
-      schedule114();
-      return out;
-    };
-  }
-
-  let timer114=null;
-  window.addEventListener('load',()=>{
-    const app=document.getElementById('app');
-    if(app){
-      new MutationObserver(()=>{
-        clearTimeout(timer114);
-        timer114=setTimeout(()=>{
-          if(app.querySelector('.cockpit-v54-lagebild'))schedule114();
-        },100);
-      }).observe(app,{childList:true,subtree:true});
-    }
-    schedule114();
-  });
-})();
-</script>
-
-<!-- Pilot Core 1.2.0: Structured Opportunity Model – ein kompaktes Modell versorgt das Cockpit; alte additive Cockpit-Ausgaben werden vollständig ersetzt. -->
-<style>
-/* 1.2.0: old cockpit output is not a second source anymore */
-.cockpit-v120-active > .cockpit-v54-lagebild,
-.cockpit-v120-active > .ki21-sync-grid-v111,
-.cockpit-v120-active > .ki21-sync-grid-v112,
-.cockpit-v120-active > .ki21-sync-grid-v114,
-.cockpit-v120-active > .cockpit-v5-workgrid,
-.cockpit-v120-active > .cockpit-core-case,
-.cockpit-v120-active > .cockpit-deep-case-title,
-.cockpit-v120-active > .cockpit-economic-capture{
-  display:none!important;
-}
-.ki21-v120{
-  display:flex;
-  flex-direction:column;
-  gap:11px;
-  margin:0 0 14px;
-}
-.ki21-v120-top{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-}
-.ki21-v120-card{
-  border:1px solid rgba(139,148,158,.22);
-  border-radius:17px;
-  padding:13px;
-  background:linear-gradient(145deg,rgba(22,27,34,.96),rgba(14,19,26,.92));
-  box-shadow:0 10px 28px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);
-  min-width:0;
-}
-.ki21-v120-card.lage{border-color:rgba(88,166,255,.27)}
-.ki21-v120-card.score{border-color:rgba(86,211,144,.28)}
-.ki21-v120-card.forecast{border-color:rgba(210,153,34,.30)}
-.ki21-v120-card.decision{
+.ki21-focus-card.status{border-color:rgba(88,166,255,.28)}
+.ki21-focus-card.decision{
   border-color:rgba(167,139,250,.42);
   background:
-    radial-gradient(circle at 100% 0%,rgba(167,139,250,.18),transparent 35%),
-    linear-gradient(145deg,rgba(38,31,61,.96),rgba(18,20,31,.94));
+    radial-gradient(circle at 100% 0%,rgba(167,139,250,.18),transparent 34%),
+    linear-gradient(145deg,rgba(37,30,60,.98),rgba(17,19,30,.96));
 }
-.ki21-v120-card.action{
-  border-color:rgba(167,139,250,.34);
-  background:linear-gradient(145deg,rgba(36,30,57,.92),rgba(17,20,30,.94));
+.ki21-focus-card.action{
+  border-color:rgba(167,139,250,.30);
+  background:linear-gradient(145deg,rgba(32,27,50,.95),rgba(16,19,28,.96));
 }
-.ki21-v120-card.business{border-color:rgba(86,211,144,.24)}
-.ki21-v120-card.watchout{border-color:rgba(255,123,114,.25)}
-.ki21-v120-kicker{
-  font-size:8.7px;
+.ki21-focus-kicker{
+  font-size:9px;
   line-height:1.1;
   font-weight:950;
   letter-spacing:1.35px;
   text-transform:uppercase;
   color:#8b949e;
-  margin-bottom:7px;
+  margin-bottom:8px;
 }
-.ki21-v120-card.lage .ki21-v120-kicker{color:#79b8ff}
-.ki21-v120-card.score .ki21-v120-kicker{color:#56d390}
-.ki21-v120-card.forecast .ki21-v120-kicker{color:#e3b341}
-.ki21-v120-card.decision .ki21-v120-kicker,
-.ki21-v120-card.action .ki21-v120-kicker{color:#c8b7ff}
-.ki21-v120-card.business .ki21-v120-kicker{color:#56d390}
-.ki21-v120-card.watchout .ki21-v120-kicker{color:#ff7b72}
-.ki21-v120-head{
-  font-size:16px;
-  line-height:1.27;
-  font-weight:900;
-  letter-spacing:-.2px;
-  color:#f3f6fb;
+.ki21-focus-card.status .ki21-focus-kicker{color:#79b8ff}
+.ki21-focus-card.decision .ki21-focus-kicker,
+.ki21-focus-card.action .ki21-focus-kicker{color:#c9b9ff}
+.ki21-focus-status{
+  font-size:15px;
+  line-height:1.34;
+  font-weight:850;
+  color:#f2f5f8;
 }
-.ki21-v120-score{
-  font-size:30px;
-  line-height:1;
-  font-weight:950;
-  letter-spacing:-1px;
-  color:#fff;
-}
-.ki21-v120-score span{
-  font-size:11px;
-  letter-spacing:.1px;
-  color:#8fd9ad;
-  margin-left:3px;
-}
-.ki21-v120-sub{
-  margin-top:5px;
-  font-size:10.5px;
-  line-height:1.35;
-  color:#aeb8c4;
-}
-.ki21-v120-row{
-  margin-top:8px;
-  padding-top:8px;
+.ki21-focus-engpass{
+  margin-top:10px;
+  padding-top:10px;
   border-top:1px solid rgba(139,148,158,.16);
+  font-size:11.5px;
+  line-height:1.4;
+  color:#c9d1d9;
 }
-.ki21-v120-label{
-  font-size:7.8px;
+.ki21-focus-metric{
+  border:1px solid rgba(86,211,144,.25);
+  border-radius:16px;
+  padding:13px;
+  background:linear-gradient(145deg,rgba(18,35,30,.88),rgba(13,18,24,.95));
+}
+.ki21-focus-metric.forecast{
+  border-color:rgba(210,153,34,.28);
+  background:linear-gradient(145deg,rgba(38,29,15,.88),rgba(13,18,24,.95));
+}
+.ki21-focus-metric-label{
+  font-size:8px;
   font-weight:950;
-  letter-spacing:.9px;
+  letter-spacing:1.1px;
   text-transform:uppercase;
   color:#8b949e;
-  margin-bottom:3px;
+  margin-bottom:5px;
 }
-.ki21-v120-text{
-  font-size:11.4px;
-  line-height:1.35;
-  color:#e6edf3;
-  font-weight:720;
+.ki21-focus-metric-value{
+  font-size:23px;
+  line-height:1;
+  font-weight:950;
+  color:#fff;
 }
-.ki21-v120-forecast-event{
-  position:relative;
-  padding-left:15px;
-  margin-top:7px;
-  font-size:10.5px;
-  line-height:1.32;
-  color:#dce3eb;
+.ki21-focus-metric-sub{
+  margin-top:5px;
+  font-size:10px;
+  line-height:1.3;
+  color:#aeb8c4;
 }
-.ki21-v120-forecast-event.up::before{
-  content:'↑';position:absolute;left:0;color:#56d390;font-weight:950;
+.ki21-focus-decision{
+  font-size:22px;
+  line-height:1.22;
+  font-weight:950;
+  letter-spacing:-.35px;
+  color:#fff;
 }
-.ki21-v120-forecast-event.down::before{
-  content:'↓';position:absolute;left:0;color:#ff7b72;font-weight:950;
-}
-.ki21-v120-decision-success{
-  margin-top:11px;
-  padding:10px 11px;
+.ki21-focus-success{
+  margin-top:12px;
+  padding:11px 12px;
   border-left:3px solid #ff8a2a;
   border-radius:11px;
   background:rgba(255,107,0,.09);
-  font-size:10.8px;
-  line-height:1.36;
+  font-size:11px;
+  line-height:1.38;
   color:#e6edf3;
 }
-.ki21-v120-actions{
+.ki21-focus-actions{
   display:flex;
   flex-direction:column;
-  gap:8px;
-}
-.ki21-v120-action{
-  display:grid;
-  grid-template-columns:24px 1fr;
   gap:9px;
-  padding:10px;
-  border:1px solid rgba(167,139,250,.22);
-  border-radius:12px;
-  background:rgba(167,139,250,.055);
 }
-.ki21-v120-action-num{
-  width:24px;height:24px;border-radius:50%;
+.ki21-focus-action{
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:10px;
+  padding:11px;
+  border:1px solid rgba(167,139,250,.20);
+  border-radius:13px;
+  background:rgba(167,139,250,.05);
+}
+.ki21-focus-action-num{
+  width:28px;height:28px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   background:rgba(167,139,250,.18);
-  color:#d8caff;font-size:10px;font-weight:950;
+  color:#d7caff;
+  font-size:11px;
+  font-weight:950;
 }
-.ki21-v120-action-name{
-  font-size:7.8px;font-weight:950;letter-spacing:.9px;
-  text-transform:uppercase;color:#bba6ff;margin-bottom:3px;
+.ki21-focus-action-title{
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:#bca8ff;
+  margin-bottom:3px;
 }
-.ki21-v120-action-text{
-  font-size:11.4px;line-height:1.36;font-weight:760;color:#f3f6fb;
-}
-.ki21-v120-success{
-  margin-top:9px;padding:9px 10px;border-left:3px solid #56d390;
-  border-radius:10px;background:rgba(86,211,144,.08);
-  font-size:10.7px;line-height:1.35;color:#dce3eb;
-}
-.ki21-v120-bottom{
-  display:grid;grid-template-columns:1fr 1fr;gap:9px;
+.ki21-focus-action-text{
+  font-size:12px;
+  line-height:1.38;
+  color:#f3f6fb;
+  font-weight:760;
 }
 @media(max-width:390px){
-  .ki21-v120{gap:9px}
-  .ki21-v120-top,.ki21-v120-bottom{gap:7px}
-  .ki21-v120-card{padding:11px;border-radius:15px}
-  .ki21-v120-head{font-size:14.5px}
-  .ki21-v120-score{font-size:27px}
-  .ki21-v120-text,.ki21-v120-action-text{font-size:10.7px}
-  .ki21-v120-forecast-event{font-size:9.8px}
+  .ki21-focus-root{gap:10px}
+  .ki21-focus-strip{gap:8px}
+  .ki21-focus-card{padding:13px;border-radius:16px}
+  .ki21-focus-decision{font-size:20px}
+  .ki21-focus-action-text{font-size:11.2px}
 }
 </style>
 <script>
 (function(){
-  const V120={
-    model:null,
-    signature:''
-  };
-
-  function clean120(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function parse120(report){
-    const lines=String(report||'').replace(/\r/g,'').split('\n');
-    const sections={};let current='';
-    lines.forEach(line=>{
-      const t=line.trim();
-      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
-        current=t;sections[current]=sections[current]||[];return;
-      }
-      if(!current)return;
-      const c=line.replace(/^•\s*/,'').trim();
-      if(c)sections[current].push(c);
-    });
-    return sections;
-  }
-  function report120(){
-    try{
-      if(typeof buildOpportunityTestReportV723==='function'){
-        return String(buildOpportunityTestReportV723()||'');
-      }
-    }catch(e){console.warn('1.2.0 report source',e);}
-    return '';
-  }
-  function first120(s,key){
-    return clean120(((s[key]||[])[0])||'');
-  }
-  function byLabel120(lines,label){
-    const row=(lines||[]).map(clean120)
-      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
-    return row?clean120(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
-  }
-  function removeLabel120(v,label){
-    return clean120(v).replace(new RegExp('^'+label+':\\s*','i'),'');
-  }
-  function score120(s){
-    const r=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean120);
-    const hit=(r[0]||'').match(/(\d{1,3})\s*%/);
-    if(hit)return Math.max(0,Math.min(100,Number(hit[1])));
-    try{
-      const aid=state.activeId||LS.get('ki21_aid',null);
-      const h=aid&&getOpportunityHealth(aid);
-      if(h&&typeof h.score==='number')return Math.round(h.score);
-    }catch(e){}
-    return null;
-  }
-  function deriveUp120(readiness){
-    const out=[];
-    const add=x=>{if(x&&!out.includes(x))out.push(x);};
-    readiness.filter(x=>/^⚠/.test(x)).forEach(row=>{
-      const x=clean120(row).replace(/^⚠\s*/,'');
-      if(/budget/i.test(x))add('Budget- und Entscheidungsweg werden bestätigt.');
-      else if(/wirtschaftliche Entscheiderin|Entscheider/i.test(x))add('Die wirtschaftliche Entscheiderin beteiligt sich an der Bewertung.');
-      else if(/Erfolgskriterien/i.test(x))add('Messbare Pilotziele und Erfolgskriterien werden vereinbart.');
-      else if(/Termin/i.test(x))add('Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.');
-      else if(/Business Case/i.test(x))add('Der wirtschaftliche Handlungsdruck wird bestätigt.');
-    });
-    return out.slice(0,2).join(' ');
-  }
-  function buildModel120(){
-    const raw=report120();
-    const s=parse120(raw);
-    const summary=(s['SALES SUMMARY']||[]).map(clean120);
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean120);
-    const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean120);
-    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean120);
-    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||[]).map(clean120);
-
-    const status=byLabel120(summary,'Status');
-    const bottleneck=byLabel120(summary,'Engpass');
-    const recommendation=byLabel120(summary,'Empfehlung');
-    const score=score120(s);
-    const health=first120(s,'OPPORTUNITY HEALTH')
-      ||first120(s,'HEALTH & FORECAST')
-      ||'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten';
-
-    let forecastCurrent=removeLabel120(
-      forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'',
-      'AKTUELL'
-    );
-    if(!forecastCurrent&&score!==null)forecastCurrent=score+' % · Entscheidungsreife';
-    let forecastUp=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
-      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
-    if(!forecastUp)forecastUp=deriveUp120(readiness);
-    let forecastDown=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
-      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(!forecastDown){
-      const alt=(s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[]).map(clean120);
-      forecastDown=alt[0]||'Der wirtschaftliche Handlungsdruck wird nicht bestätigt.';
-    }
-
-    const decision=first120(s,'DEAL-ENTSCHEIDUNG')
-      ||recommendation
-      ||'Den nächsten verbindlichen Kundenschritt erreichen.';
-    const now=removeLabel120(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN');
-    const prepare=removeLabel120(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN');
-    const decide=removeLabel120(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN');
-    const success=removeLabel120(
-      command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'',
-      'ERFOLG DES NÄCHSTEN SCHRITTS'
-    );
-
-    let bc=business.find(x=>/^Erwarteter Kundennutzen:/i.test(x))
-      ||business.find(x=>/wirtschaftlichen Ausgangspunkt|Kundennutzen/i.test(x))
-      ||'Business Case noch nicht bestätigt.';
-    bc=bc.replace(/^Erwarteter Kundennutzen:\s*/i,'');
-
-    const watchout=first120(s,'EXECUTIVE WATCHOUT')
-      ||first120(s,'DARAUF ACHTEN')
-      ||'Sponsor, Entscheider und Business Case sauber trennen.';
-
-    const model={
-      version:'1.2.0',
-      status,bottleneck,recommendation,
-      opportunityScore:score,
-      health,
-      forecast:{
-        current:forecastCurrent,
-        up:forecastUp,
-        down:forecastDown
-      },
-      decision,
-      action:{now,prepare,decide,success},
-      businessCase:bc,
-      watchout
-    };
-    V120.model=model;
-    V120.signature=JSON.stringify(model);
-    try{
-      const aid=state.activeId||LS.get('ki21_aid',null);
-      if(aid)LS.set('ki21_structured_opportunity_'+aid,model);
-    }catch(e){}
-    return model;
-  }
-  function el120(tag,cls,text){
-    const e=document.createElement(tag);
-    if(cls)e.className=cls;
-    if(text!==undefined)e.textContent=text;
-    return e;
-  }
-  function row120(label,text){
-    const row=el120('div','ki21-v120-row');
-    row.append(
-      el120('div','ki21-v120-label',label),
-      el120('div','ki21-v120-text',text||'Noch offen')
-    );
-    return row;
-  }
-  function card120(cls,kicker){
-    const c=el120('section','ki21-v120-card '+cls);
-    c.appendChild(el120('div','ki21-v120-kicker',kicker));
-    return c;
-  }
-  function render120(){
-    const app=document.getElementById('app');
-    if(!app)return false;
-    const wrap=app.querySelector('.wrap.cockpit-v612-compact');
-    const tabs=wrap&&wrap.querySelector('.ki21-mode-tabs');
-    if(!wrap||!tabs)return false;
-
-    const model=buildModel120();
-    if(!model)return false;
-
-    wrap.classList.add('cockpit-v120-active');
-    wrap.querySelectorAll('.ki21-v120').forEach(x=>x.remove());
-
-    const root=el120('div','ki21-v120');
-
-    const top=el120('div','ki21-v120-top');
-
-    const lage=card120('lage','Lagebild');
-    lage.append(
-      el120('div','ki21-v120-head',model.status||'Deal-Zustand wird geprüft'),
-      row120('Größter Engpass',model.bottleneck||'Noch nicht eindeutig bestätigt')
-    );
-
-    const score=card120('score','Opportunity Score');
-    const scoreText=model.opportunityScore===null?'–':String(model.opportunityScore);
-    const scoreLine=el120('div','ki21-v120-score',scoreText);
-    scoreLine.appendChild(el120('span','',model.opportunityScore===null?'noch offen':'/ 100'));
-    score.append(
-      scoreLine,
-      el120('div','ki21-v120-sub',model.health)
-    );
-
-    top.append(lage,score);
-    root.appendChild(top);
-
-    const forecast=card120('forecast','Executive Forecast');
-    forecast.appendChild(el120('div','ki21-v120-head',
-      model.forecast.current||'Forecast noch nicht belastbar'));
-    if(model.forecast.up)forecast.appendChild(
-      el120('div','ki21-v120-forecast-event up',model.forecast.up)
-    );
-    if(model.forecast.down)forecast.appendChild(
-      el120('div','ki21-v120-forecast-event down',model.forecast.down)
-    );
-    root.appendChild(forecast);
-
-    const decision=card120('decision','Nächste Kundenentscheidung');
-    decision.appendChild(el120('div','ki21-v120-head',model.decision));
-    if(model.action.success){
-      decision.appendChild(el120('div','ki21-v120-decision-success',
-        'Entscheidung erreicht, wenn: '+model.action.success));
-    }
-    root.appendChild(decision);
-
-    const action=card120('action','Konkreter Verkaufsauftrag');
-    const actions=el120('div','ki21-v120-actions');
-    [
-      ['Jetzt tun',model.action.now],
-      ['Vorbereiten',model.action.prepare],
-      ['Im Termin entscheiden',model.action.decide]
-    ].forEach((item,idx)=>{
-      if(!item[1])return;
-      const a=el120('div','ki21-v120-action');
-      a.appendChild(el120('div','ki21-v120-action-num',String(idx+1)));
-      const body=el120('div','');
-      body.append(
-        el120('div','ki21-v120-action-name',item[0]),
-        el120('div','ki21-v120-action-text',item[1])
-      );
-      a.appendChild(body);
-      actions.appendChild(a);
-    });
-    action.appendChild(actions);
-    if(model.action.success){
-      action.appendChild(el120('div','ki21-v120-success','Erfolg: '+model.action.success));
-    }
-    root.appendChild(action);
-
-    const bottom=el120('div','ki21-v120-bottom');
-    const business=card120('business','Business Case');
-    business.appendChild(el120('div','ki21-v120-text',model.businessCase));
-    const watch=card120('watchout','Darauf achten');
-    watch.appendChild(el120('div','ki21-v120-text',model.watchout));
-    bottom.append(business,watch);
-    root.appendChild(bottom);
-
-    const navContainer=tabs.parentElement;
-    if(navContainer&&navContainer.parentElement===wrap){
-      navContainer.insertAdjacentElement('afterend',root);
-    }else{
-      tabs.insertAdjacentElement('afterend',root);
-    }
-    return true;
-  }
-
-  let lock120=false;
-  function schedule120(){
-    if(lock120)return;
-    lock120=true;
-    [0,80,220,500,900,1500].forEach((ms,i)=>setTimeout(()=>{
-      try{render120();}catch(e){console.warn('Structured Cockpit 1.2.0',e);}
-      if(i===5)lock120=false;
-    },ms));
-  }
-
-  const oldRender120=window.renderCockpitSnapshotLiteV4215;
-  if(typeof oldRender120==='function'){
-    window.renderCockpitSnapshotLiteV4215=function(){
-      const out=oldRender120.apply(this,arguments);
-      schedule120();
-      return out;
-    };
-  }
-
-  let timer120=null;
-  window.addEventListener('load',()=>{
-    const app=document.getElementById('app');
-    if(app){
-      new MutationObserver(()=>{
-        clearTimeout(timer120);
-        timer120=setTimeout(()=>{
-          if(app.querySelector('.wrap.cockpit-v612-compact'))schedule120();
-        },90);
-      }).observe(app,{childList:true,subtree:true});
-    }
-    schedule120();
-  });
-
-  window.KI21StructuredOpportunityModel=V120;
-})();
-</script>
-
-<!-- Pilot Core 1.2.1: Stable Structured Cockpit – Originalcockpit wird erst vollständig gelesen und danach als kompletter Altbaum ausgeblendet. -->
-<style>
-/* Descendant selectors: old cockpit areas are nested, not direct children. */
-.cockpit-v120-active .cockpit-v54-lagebild,
-.cockpit-v120-active .ki21-sync-grid-v111,
-.cockpit-v120-active .ki21-sync-grid-v112,
-.cockpit-v120-active .ki21-sync-grid-v114,
-.cockpit-v120-active .cockpit-v5-workgrid,
-.cockpit-v120-active .cockpit-core-case,
-.cockpit-v120-active .cockpit-deep-case-title,
-.cockpit-v120-active .cockpit-economic-capture,
-.cockpit-v120-active #ki21-visible-decision-core,
-.cockpit-v120-active .ki21-decision-core-v730,
-.cockpit-v120-active .ki21-priority-core-v723{
-  display:none!important;
-}
-/* The new structured cockpit must always remain visible. */
-.cockpit-v120-active .ki21-v120{
-  display:flex!important;
-}
-</style>
-<script>
-(function(){
-  const CACHE_KEY='ki21_v121_model_';
-
-  function clean121(v){
-    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
-  }
-  function parse121(report){
-    const sections={};let current='';
+  function cleanF(v){return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();}
+  function parseF(report){
+    const s={};let current='';
     String(report||'').replace(/\r/g,'').split('\n').forEach(line=>{
       const t=line.trim();
-      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
-        current=t;
-        sections[current]=sections[current]||[];
-        return;
-      }
+      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){current=t;s[current]=s[current]||[];return;}
       if(!current)return;
       const c=line.replace(/^•\s*/,'').trim();
-      if(c)sections[current].push(c);
+      if(c)s[current].push(c);
     });
-    return sections;
+    return s;
   }
-  function label121(lines,label){
-    const row=(lines||[]).map(clean121)
-      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
-    return row?clean121(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
+  function labelF(lines,label){
+    const row=(lines||[]).map(cleanF).find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
+    return row?cleanF(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
   }
-  function strip121(v,label){
-    return clean121(v).replace(new RegExp('^'+label+':\\s*','i'),'');
-  }
-  function getAid121(){
-    try{return state.activeId||LS.get('ki21_aid',null)||'';}catch(e){return '';}
-  }
-  function cache121(model){
-    const aid=getAid121();
-    if(!aid||!model)return;
-    try{LS.set(CACHE_KEY+aid,model);}catch(e){}
-  }
-  function cached121(){
-    const aid=getAid121();
-    if(!aid)return null;
-    try{return LS.get(CACHE_KEY+aid,null);}catch(e){return null;}
-  }
-  function hasUseful121(m){
-    if(!m)return false;
-    return Boolean(
-      m.status ||
-      m.bottleneck ||
-      m.opportunityScore!==null ||
-      (m.forecast&&m.forecast.current) ||
-      (m.action&&(m.action.now||m.action.prepare||m.action.decide))
-    );
-  }
-  function report121(){
+  function stripF(v,label){return cleanF(v).replace(new RegExp('^'+label+':\\s*','i'),'');}
+  function reportF(){
     try{
-      if(typeof buildOpportunityTestReportV723==='function'){
-        return String(buildOpportunityTestReportV723()||'');
-      }
-    }catch(e){console.warn('1.2.1 Berichtsbasis',e);}
+      if(typeof buildOpportunityTestReportV723==='function')return String(buildOpportunityTestReportV723()||'');
+    }catch(e){}
     return '';
   }
-  function score121(s){
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean121);
-    const hit=(readiness[0]||'').match(/(\d{1,3})\s*%/);
-    if(hit)return Math.max(0,Math.min(100,Number(hit[1])));
-    try{
-      const h=getOpportunityHealth(getAid121());
-      if(h&&typeof h.score==='number')return Math.round(h.score);
-    }catch(e){}
-    const badge=clean121(
-      (document.querySelector('.cockpit-score-badge,.cockpit-score-click')||{}).textContent||''
-    );
-    const badgeHit=badge.match(/(\d{1,3})\s*%?/);
-    return badgeHit?Number(badgeHit[1]):null;
-  }
-  function deriveUp121(readiness){
-    const out=[];
-    const add=x=>{if(x&&!out.includes(x))out.push(x);};
-    readiness.filter(x=>/^⚠/.test(x)).forEach(row=>{
-      const x=clean121(row).replace(/^⚠\s*/,'');
-      if(/budget/i.test(x))add('Budget- und Entscheidungsweg werden bestätigt.');
-      else if(/wirtschaftliche Entscheiderin|Entscheider/i.test(x))add('Die wirtschaftliche Entscheiderin beteiligt sich an der Bewertung.');
-      else if(/Erfolgskriterien/i.test(x))add('Messbare Pilotziele und Erfolgskriterien werden vereinbart.');
-      else if(/Termin/i.test(x))add('Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.');
-      else if(/Business Case/i.test(x))add('Der wirtschaftliche Handlungsdruck wird bestätigt.');
-    });
-    return out.slice(0,2).join(' ');
-  }
-  function modelFromReport121(raw){
-    const s=parse121(raw);
-    const summary=(s['SALES SUMMARY']||[]).map(clean121);
-    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean121);
-    const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean121);
-    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean121);
-    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||[]).map(clean121);
-
-    const status=label121(summary,'Status');
-    const bottleneck=label121(summary,'Engpass');
-    const recommendation=label121(summary,'Empfehlung');
-
-    let current=strip121(
-      forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'',
-      'AKTUELL'
-    );
-    let up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
-      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
-    if(!up)up=deriveUp121(readiness);
-    let down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
-      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(!down){
-      down=clean121(((s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[])[0])||
-        'Der wirtschaftliche Handlungsdruck wird nicht bestätigt.');
-    }
-
-    const score=score121(s);
-    if(!current&&score!==null)current=score+' % · Entscheidungsreife';
-
-    let businessCase=business.find(x=>/^Erwarteter Kundennutzen:/i.test(x))
-      ||business.find(x=>/wirtschaftlichen Ausgangspunkt|Kundennutzen/i.test(x))
-      ||'Business Case noch nicht bestätigt.';
-    businessCase=businessCase.replace(/^Erwarteter Kundennutzen:\s*/i,'');
-
+  function modelF(){
+    const s=parseF(reportF());
+    const summary=(s['SALES SUMMARY']||[]).map(cleanF);
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(cleanF);
+    const forecast=(s['EXECUTIVE FORECAST']||[]).map(cleanF);
+    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(cleanF);
+    const scoreMatch=(readiness[0]||'').match(/(\d{1,3})\s*%/);
+    const score=scoreMatch?Number(scoreMatch[1]):null;
     return {
-      version:'1.2.1',
-      status,
-      bottleneck,
-      recommendation,
-      opportunityScore:score,
-      health:clean121(((s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[])[0])||
-        'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'),
-      forecast:{current,up,down},
-      decision:clean121(((s['DEAL-ENTSCHEIDUNG']||[])[0])||recommendation||
-        'Den nächsten verbindlichen Kundenschritt erreichen.'),
-      action:{
-        now:strip121(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN'),
-        prepare:strip121(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN'),
-        decide:strip121(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN'),
-        success:strip121(
-          command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'',
-          'ERFOLG DES NÄCHSTEN SCHRITTS'
-        )
-      },
-      businessCase,
-      watchout:clean121(((s['EXECUTIVE WATCHOUT']||s['DARAUF ACHTEN']||[])[0])||
-        'Sponsor, Entscheider und Business Case sauber trennen.')
+      status:labelF(summary,'Status'),
+      bottleneck:labelF(summary,'Engpass'),
+      recommendation:labelF(summary,'Empfehlung'),
+      score,
+      health:cleanF(((s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[])[0])||''),
+      forecast:stripF(forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'','AKTUELL'),
+      decision:cleanF(((s['DEAL-ENTSCHEIDUNG']||[])[0])||labelF(summary,'Empfehlung')),
+      now:stripF(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN'),
+      prepare:stripF(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN'),
+      decide:stripF(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN'),
+      success:stripF(command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'','ERFOLG DES NÄCHSTEN SCHRITTS')
     };
   }
-  function modelFromVisibleDom121(){
-    const decision=clean121(
-      (document.querySelector('.ki21-decision-title')||{}).textContent||''
-    );
-    const taskTexts=[...document.querySelectorAll(
-      '.cockpit-card-next .v53-task-text,.cockpit-card-next .cockpit-tile-item'
-    )].map(x=>clean121(x.textContent)).filter(Boolean);
-
-    const useful=taskTexts.filter(x=>
-      x.length<700 &&
-      !/Budget:|Angebot:|Wettbewerb und Alternativen:|Stakeholder:/i.test(x)
-    );
-
-    return {
-      version:'1.2.1',
-      status:'',
-      bottleneck:'',
-      recommendation:'',
-      opportunityScore:score121({}),
-      health:'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten',
-      forecast:{current:'',up:'',down:''},
-      decision,
-      action:{
-        now:useful[0]||'',
-        prepare:useful[1]||'',
-        decide:useful[2]||'',
-        success:''
-      },
-      businessCase:'',
-      watchout:''
-    };
-  }
-  function capture121(wrap){
-    /* Temporarily reveal the original cockpit before reading it. */
-    wrap.classList.remove('cockpit-v120-active');
-
-    let model=null;
-    const raw=report121();
-    if(raw)model=modelFromReport121(raw);
-
-    if(!hasUseful121(model)){
-      const domModel=modelFromVisibleDom121();
-      const old=cached121();
-      model={
-        ...(old||{}),
-        ...domModel,
-        forecast:{
-          ...((old&&old.forecast)||{}),
-          ...(domModel.forecast||{})
-        },
-        action:{
-          ...((old&&old.action)||{}),
-          ...(domModel.action||{})
-        }
-      };
-    }
-
-    if(hasUseful121(model))cache121(model);
-    return hasUseful121(model)?model:cached121();
-  }
-  function el121(tag,cls,text){
-    const e=document.createElement(tag);
-    if(cls)e.className=cls;
-    if(text!==undefined)e.textContent=text;
-    return e;
-  }
-  function row121(label,text){
-    const r=el121('div','ki21-v120-row');
-    r.append(
-      el121('div','ki21-v120-label',label),
-      el121('div','ki21-v120-text',text||'Noch offen')
-    );
-    return r;
-  }
-  function card121(cls,kicker){
-    const c=el121('section','ki21-v120-card '+cls);
-    c.appendChild(el121('div','ki21-v120-kicker',kicker));
-    return c;
-  }
-  function renderModel121(wrap,tabs,m){
-    wrap.querySelectorAll('.ki21-v120').forEach(x=>x.remove());
-
-    const root=el121('div','ki21-v120');
-
-    const top=el121('div','ki21-v120-top');
-    const lage=card121('lage','Lagebild');
-    lage.append(
-      el121('div','ki21-v120-head',m.status||'Deal-Zustand wird geprüft'),
-      row121('Größter Engpass',m.bottleneck||'Noch nicht eindeutig bestätigt')
-    );
-
-    const score=card121('score','Opportunity Score');
-    const val=m.opportunityScore===null||m.opportunityScore===undefined?'–':String(m.opportunityScore);
-    const scoreLine=el121('div','ki21-v120-score',val);
-    scoreLine.appendChild(el121('span','',
-      m.opportunityScore===null||m.opportunityScore===undefined?'noch offen':'/ 100'
-    ));
-    score.append(scoreLine,el121('div','ki21-v120-sub',m.health||'Opportunity wird bewertet'));
-    top.append(lage,score);
-    root.appendChild(top);
-
-    const forecast=card121('forecast','Executive Forecast');
-    forecast.appendChild(el121('div','ki21-v120-head',
-      (m.forecast&&m.forecast.current)||'Forecast noch nicht belastbar'));
-    if(m.forecast&&m.forecast.up){
-      forecast.appendChild(el121('div','ki21-v120-forecast-event up',m.forecast.up));
-    }
-    if(m.forecast&&m.forecast.down){
-      forecast.appendChild(el121('div','ki21-v120-forecast-event down',m.forecast.down));
-    }
-    root.appendChild(forecast);
-
-    const decision=card121('decision','Nächste Kundenentscheidung');
-    decision.appendChild(el121('div','ki21-v120-head',
-      m.decision||m.recommendation||'Den nächsten verbindlichen Kundenschritt erreichen.'));
-    if(m.action&&m.action.success){
-      decision.appendChild(el121('div','ki21-v120-decision-success',
-        'Entscheidung erreicht, wenn: '+m.action.success));
-    }
-    root.appendChild(decision);
-
-    const action=card121('action','Konkreter Verkaufsauftrag');
-    const list=el121('div','ki21-v120-actions');
-    [
-      ['Jetzt tun',m.action&&m.action.now],
-      ['Vorbereiten',m.action&&m.action.prepare],
-      ['Im Termin entscheiden',m.action&&m.action.decide]
-    ].forEach((item,idx)=>{
-      if(!item[1])return;
-      const a=el121('div','ki21-v120-action');
-      a.appendChild(el121('div','ki21-v120-action-num',String(idx+1)));
-      const body=el121('div','');
-      body.append(
-        el121('div','ki21-v120-action-name',item[0]),
-        el121('div','ki21-v120-action-text',item[1])
-      );
-      a.appendChild(body);
-      list.appendChild(a);
-    });
-    action.appendChild(list);
-    if(m.action&&m.action.success){
-      action.appendChild(el121('div','ki21-v120-success','Erfolg: '+m.action.success));
-    }
-    root.appendChild(action);
-
-    const bottom=el121('div','ki21-v120-bottom');
-    const bc=card121('business','Business Case');
-    bc.appendChild(el121('div','ki21-v120-text',m.businessCase||'Business Case noch nicht bestätigt.'));
-    const wo=card121('watchout','Darauf achten');
-    wo.appendChild(el121('div','ki21-v120-text',
-      m.watchout||'Sponsor, Entscheider und Business Case sauber trennen.'));
-    bottom.append(bc,wo);
-    root.appendChild(bottom);
-
-    const navContainer=tabs.parentElement;
-    if(navContainer&&navContainer.parentElement===wrap){
-      navContainer.insertAdjacentElement('afterend',root);
-    }else{
-      tabs.insertAdjacentElement('afterend',root);
-    }
-
-    /* Hide the complete legacy cockpit only after the model is rendered. */
-    wrap.classList.add('cockpit-v120-active');
-  }
-  function run121(){
+  function eF(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+  function renderF(){
     const app=document.getElementById('app');
     const wrap=app&&app.querySelector('.wrap.cockpit-v612-compact');
     const tabs=wrap&&wrap.querySelector('.ki21-mode-tabs');
     if(!wrap||!tabs)return false;
 
-    const model=capture121(wrap);
-    if(!model)return false;
-    renderModel121(wrap,tabs,model);
+    const m=modelF();
+    if(!m.status&&!m.decision&&!m.now)return false;
+
+    wrap.querySelectorAll('.ki21-focus-root').forEach(x=>x.remove());
+
+    const nav=tabs.parentElement;
+    [...wrap.children].forEach(child=>{
+      if(child!==nav && !child.classList.contains('ki21-focus-root')){
+        child.classList.add('ki21-focus-hidden');
+      }
+    });
+
+    const root=eF('div','ki21-focus-root');
+
+    const status=eF('section','ki21-focus-card status');
+    status.append(
+      eF('div','ki21-focus-kicker','Lagebild'),
+      eF('div','ki21-focus-status',m.status||'Opportunity wird geprüft'),
+      eF('div','ki21-focus-engpass','Größter Engpass: '+(m.bottleneck||'noch offen'))
+    );
+    root.appendChild(status);
+
+    const strip=eF('div','ki21-focus-strip');
+    const score=eF('div','ki21-focus-metric');
+    score.append(
+      eF('div','ki21-focus-metric-label','Opportunity Score'),
+      eF('div','ki21-focus-metric-value',m.score===null?'–':m.score+' %'),
+      eF('div','ki21-focus-metric-sub',m.health||'Qualifizierung')
+    );
+    const forecast=eF('div','ki21-focus-metric forecast');
+    forecast.append(
+      eF('div','ki21-focus-metric-label','Executive Forecast'),
+      eF('div','ki21-focus-metric-value',m.forecast||'Noch offen'),
+      eF('div','ki21-focus-metric-sub','Pilotentscheidung')
+    );
+    strip.append(score,forecast);
+    root.appendChild(strip);
+
+    const decision=eF('section','ki21-focus-card decision');
+    decision.append(
+      eF('div','ki21-focus-kicker','Nächste Kundenentscheidung'),
+      eF('div','ki21-focus-decision',m.decision||m.recommendation||'Den nächsten verbindlichen Kundenschritt erreichen.')
+    );
+    if(m.success)decision.appendChild(eF('div','ki21-focus-success','Entscheidung erreicht, wenn: '+m.success));
+    root.appendChild(decision);
+
+    const action=eF('section','ki21-focus-card action');
+    action.appendChild(eF('div','ki21-focus-kicker','Konkreter Verkaufsauftrag'));
+    const list=eF('div','ki21-focus-actions');
+    [
+      ['Jetzt tun',m.now],
+      ['Vorbereiten',m.prepare],
+      ['Im Termin entscheiden',m.decide]
+    ].forEach((item,i)=>{
+      if(!item[1])return;
+      const row=eF('div','ki21-focus-action');
+      row.appendChild(eF('div','ki21-focus-action-num',String(i+1)));
+      const body=eF('div','');
+      body.append(eF('div','ki21-focus-action-title',item[0]),eF('div','ki21-focus-action-text',item[1]));
+      row.appendChild(body);
+      list.appendChild(row);
+    });
+    action.appendChild(list);
+    root.appendChild(action);
+
+    nav.insertAdjacentElement('afterend',root);
     return true;
   }
 
-  let busy121=false;
-  function schedule121(){
-    if(busy121)return;
-    busy121=true;
-    /* First useful capture after the legacy cockpit has finished rendering. */
-    [250,500,900,1500].forEach((ms,i)=>setTimeout(()=>{
-      try{run121();}catch(e){console.warn('Stable Structured Cockpit 1.2.1',e);}
-      if(i===3)busy121=false;
+  let busy=false;
+  function scheduleF(){
+    if(busy)return;
+    busy=true;
+    [250,500,900,1400].forEach((ms,i)=>setTimeout(()=>{
+      try{renderF();}catch(e){console.warn('Focus Cockpit 1.1.5',e);}
+      if(i===3)busy=false;
     },ms));
   }
 
-  const oldRender121=window.renderCockpitSnapshotLiteV4215;
-  if(typeof oldRender121==='function'){
+  const old=window.renderCockpitSnapshotLiteV4215;
+  if(typeof old==='function'){
     window.renderCockpitSnapshotLiteV4215=function(){
-      const out=oldRender121.apply(this,arguments);
-      schedule121();
+      const out=old.apply(this,arguments);
+      scheduleF();
       return out;
     };
   }
-
-  let mutationTimer121=null;
-  window.addEventListener('load',()=>{
-    const app=document.getElementById('app');
-    if(app){
-      new MutationObserver(()=>{
-        clearTimeout(mutationTimer121);
-        mutationTimer121=setTimeout(()=>{
-          const wrap=app.querySelector('.wrap.cockpit-v612-compact');
-          if(wrap&&!wrap.querySelector('.ki21-v120'))schedule121();
-        },180);
-      }).observe(app,{childList:true,subtree:true});
-    }
-    schedule121();
-  });
+  window.addEventListener('load',scheduleF);
 })();
 </script>
 
