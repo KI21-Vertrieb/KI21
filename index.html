@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.1.2-cockpit-sync-stable-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.1.3-actual-sync-fix-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.1.2</title>
+<title>KI21 Pilot Core 1.1.3</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.1.2 · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.1.3 · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14904,7 +14904,7 @@ function generateKundePDF(aid, cust){
   function item15(text,cls){return '<div class="ki21-exec15-item '+cls+'">'+esc15(text)+'</div>';}
   function card15(cls,title,body,full){return '<section class="ki21-exec15-card '+cls+(full?' full':'')+'"><div class="ki21-exec15-kicker">'+esc15(title)+'</div>'+body+'</section>';}
   function render15(){
-    const app=document.getElementById('app');if(!app||!window.state||!state.activeId)return false;
+    const app=document.getElementById('app');if(!app||typeof state==='undefined'||!state.activeId)return false;
     const action=app.querySelector('.ki21-action-command-v110');const decision=app.querySelector('.ki21-decision-card');if(!action||!decision)return false;
     const s=sections15();
     // Entscheidungs-Checkliste: keine Fließtext-Wiederholung, sondern sichtbare Erreichungskriterien.
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.1.2';
+const KI21_VERSION='Pilot Core 1.1.3';
 
 
 function runKi21VersionMigration(){
@@ -19720,6 +19720,108 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(app)observer112.observe(app,{childList:true,subtree:true});
     schedule112();
   });
+})();
+</script>
+
+<!-- Pilot Core 1.1.3: Actual Sync Fix + finaler Report-Qualitätspass. -->
+<script>
+(function(){
+  function clean113(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function parse113(report){
+    try{return ki21ParseReportSectionsV740(String(report||''));}
+    catch(e){return {meta:[],sections:{}};}
+  }
+  function sec113(title,lines){
+    const a=(lines||[]).map(clean113).filter(Boolean);
+    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
+  }
+  function finalize113(report){
+    const p=parse113(report), s=p.sections||{};
+    const meta=(p.meta||[]).join('\n').trim();
+
+    // Ensure Opportunity Health exists.
+    if(!s['OPPORTUNITY HEALTH']){
+      const hf=s['HEALTH & FORECAST']||[];
+      s['OPPORTUNITY HEALTH']=hf.length?hf:['Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'];
+    }
+    delete s['HEALTH & FORECAST'];
+
+    // Fix central hypothesis grammar.
+    if(s['DEAL-HYPOTHESE']&&s['DEAL-HYPOTHESE'].length){
+      s['DEAL-HYPOTHESE']=s['DEAL-HYPOTHESE'].map((x,i)=>{
+        let t=clean113(x);
+        if(i===0){
+          t=t.replace(/^AKTUELLE DEAL-HYPOTHESE:\s*/i,'')
+             .replace(/^Nicht fehlendes Produktinteresse, sondern (.+) der zentrale Kaufblocker ist\.?$/i,
+                      'Der zentrale Kaufblocker ist aktuell nicht fehlendes Produktinteresse, sondern $1.');
+          return 'AKTUELLE DEAL-HYPOTHESE: '+t;
+        }
+        return t.replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,
+                         'erkennt keinen relevanten wirtschaftlichen Handlungsdruck');
+      });
+    }
+
+    // Remove standalone arrow bullets from text report.
+    if(s['EXECUTIVE DECISION CHAIN']){
+      s['EXECUTIVE DECISION CHAIN']=s['EXECUTIVE DECISION CHAIN']
+        .map(clean113).filter(x=>x!=='↓'&&x!=='   ↓');
+    }
+
+    // Evidence wording consistent with partial confidence.
+    if(s['EVIDENZBASIS']){
+      s['EVIDENZBASIS']=s['EVIDENZBASIS'].map(x=>
+        clean113(x).replace(/^BELASTBARE FAKTENBASIS:/i,'SOLIDE AUSGANGSBASIS:')
+      );
+    }
+
+    const order=[
+      'SALES SUMMARY','OPPORTUNITY HEALTH','ENTSCHEIDUNGSREIFE',
+      'DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN',
+      'WARUM JETZT?','KONKRETER VERKAUFSAUFTRAG',
+      'EXECUTIVE FORECAST','DEAL MOMENTUM','EXECUTIVE WATCHOUT',
+      'FAKTENBASIS','EVIDENZBASIS','STÄRKSTE KLÄRUNGSFRAGE',
+      'WAS SPRICHT DAGEGEN?','KI21 WÜRDE ANDERS EMPFEHLEN, WENN',
+      'VERTRAUENSCHECK','WAS DER VERTRIEB NOCH KLÄREN MUSS',
+      'BUSINESS CASE UND KUNDENNUTZEN','DARAUF ACHTEN'
+    ];
+    let out=meta;
+    const used=new Set();
+    order.forEach(k=>{
+      if(s[k]&&s[k].length){out+=sec113(k,s[k]);used.add(k);}
+    });
+    Object.keys(s).forEach(k=>{
+      if(!used.has(k)&&s[k]&&s[k].length)out+=sec113(k,s[k]);
+    });
+    return out.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  const prior113=window.ki21FinalizeReportFromPrimarySourceV103;
+  if(typeof prior113==='function'){
+    window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+      const base=prior113(report,accId);
+      try{return finalize113(base);}catch(e){console.warn('Report Finish 1.1.3',e);return base;}
+    };
+  }
+
+  // Direct guaranteed sync after page load and after every cockpit render.
+  function trigger113(){
+    [0,100,300,700,1200].forEach(ms=>setTimeout(()=>{
+      try{
+        if(typeof sync112==='function')sync112();
+      }catch(e){console.warn('Actual Cockpit Sync 1.1.3',e);}
+    },ms));
+  }
+  const old113=window.renderCockpitSnapshotLiteV4215;
+  if(typeof old113==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=old113.apply(this,arguments);
+      trigger113();
+      return out;
+    };
+  }
+  window.addEventListener('load',trigger113);
 })();
 </script>
 
