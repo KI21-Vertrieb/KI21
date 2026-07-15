@@ -1,26 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.16-ios-startup-guard-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.0.18-script-boundary-fix-20260715 -->
 <html lang="de">
 <head>
-<script>
-// Pilot Core 1.0.17: iOS compatibility shims for injected browser/wallet scripts.
-// These neutral placeholders prevent third-party scripts from aborting while
-// accessing optional globals that KI21 itself does not use.
-(function(){
-  try{
-    if(typeof window.__firefox__==='undefined') window.__firefox__={};
-    if(typeof window.__firefox__.reader==='undefined') window.__firefox__.reader=null;
-  }catch(e){}
-  try{
-    if(typeof window.ethereum==='undefined') window.ethereum={};
-    if(!('selectedAddress' in window.ethereum)) window.ethereum.selectedAddress=undefined;
-  }catch(e){}
-})();
-</script>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.16</title>
+<title>KI21 Pilot Core 1.0.18</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2574,44 +2559,28 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.7: Pilot Freeze – Vertrauenscheck bewertet Buying Center und Business Case nur bei bestätigter Evidenz als gut/stark; widersprüchliche Kundenschritt-Formulierungen bereinigt. -->
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
+<!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
 
 <script>
-// Pilot Core 1.0.17: Browser-/Content-Blocker- und Wallet-Fehler dürfen den KI21-Start nicht abbrechen.
-// iOS-Browser können fremde Reader-Skripte injizieren, die z. B. auf
-// window.__firefox__.reader zugreifen. Solche Fehler gehören nicht zur App.
-window.__ki21StartupErrors=[];
 window.addEventListener('error', function(e){
   try{
-    var message=String((e&&e.message)||'Unbekannter Fehler');
-    var source=String((e&&e.filename)||'');
-    var injected=/__firefox__\.reader|window\.ethereum|selectedAddress|Script error|webkit-masked-url|safari-extension|content[- ]?block/i.test(message+' '+source);
-    if(!injected)window.__ki21StartupErrors.push(message);
-  }catch(_){}
-});
-window.addEventListener('unhandledrejection', function(e){
-  try{
-    var reason=e&&e.reason;
-    var message=String((reason&&reason.message)||reason||'Unbekannter Promise-Fehler');
-    if(!/__firefox__\.reader|window\.ethereum|selectedAddress|webkit-masked-url|safari-extension|content[- ]?block/i.test(message)){
-      window.__ki21StartupErrors.push(message);
+    var app=document.getElementById('app');
+    if(app && app.innerText && app.innerText.indexOf('Lädt')!==-1){
+      app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 konnte nicht starten</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+String((e&&e.message)||'Unbekannter Fehler')+'</div></div>';
     }
   }catch(_){}
 });
 setTimeout(function(){
   try{
     var app=document.getElementById('app');
-    // Nur dann einen KI21-Fehler anzeigen, wenn die App tatsächlich noch im
-    // Ladezustand hängt. Fremde Browserfehler verändern die Ansicht nicht.
     if(app && app.innerText && app.innerText.trim()==='Lädt...'){
-      var errors=(window.__ki21StartupErrors||[]).filter(Boolean);
-      var detail=errors.length?errors[errors.length-1]:'Die Initialisierung wurde nicht abgeschlossen.';
-      app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 lädt nicht vollständig</div><div style="font-size:13px;color:#8b949e;white-space:pre-wrap;">'+detail+'</div></div>';
+      app.innerHTML='<div class="wrap"><div style="color:#ff6b00;font-weight:800;margin-bottom:8px;">KI21 lädt nicht vollständig</div><div style="font-size:13px;color:#8b949e;">Bitte Seite neu laden. Falls das bleibt: localStorage/Syntax prüfen.</div></div>';
     }
   }catch(_){}
-},5000);
+},3500);
 </script>
 
 <script>
@@ -14967,7 +14936,7 @@ function generateKundePDF(aid, cust){
   const oldCockpit=window.renderCockpitLite;if(typeof oldCockpit==='function')window.renderCockpitLite=function(){const out=oldCockpit.apply(this,arguments);schedule15();return out;};
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
-</script>
+<\/script>
 
 </body></html>`;
 
