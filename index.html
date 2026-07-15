@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.3.5-score-forecast-source-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.4.0-final-pilot-freeze-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.3.5 Executive One Page</title>
+<title>KI21 Pilot Core 1.4.0 FINAL</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.5 Executive One Page · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.4.0 FINAL · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.3.5 Executive One Page';
+const KI21_VERSION='Pilot Core 1.4.0 FINAL';
 
 
 function runKi21VersionMigration(){
@@ -19588,8 +19588,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
     let down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
       .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
-    if(!up)up='Entscheiderin beteiligt. Budgetweg bestätigt. Erfolgskriterien vereinbart.';
-    if(!down)down='Kein wirtschaftlicher Handlungsdruck.';
+    if(!up)up='Entscheiderin beteiligt · Budget bestätigt · Erfolgskriterien vereinbart';
+    if(!down)down='Kein wirtschaftlicher Handlungsdruck bestätigt';
 
     const success=strip(
       command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'',
@@ -19663,7 +19663,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       el('div','ki21-clean-metric-label','Opportunity Score'),
       el('div','ki21-clean-metric-value',m.score+' %'),
       el('div','ki21-clean-metric-state',m.state),
-      el('div','ki21-clean-metric-sub','Qualifizierung · Buying Center · Business Case')
+      el('div','ki21-clean-metric-sub','Offen · Buying Center · Business Case · Erfolgskriterien')
     );
     const forecast=el('div','ki21-clean-metric forecast');
     forecast.append(
@@ -19680,7 +19680,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     decision.append(
       el('div','ki21-clean-kicker','Nächste Kundenentscheidung'),
       el('div','ki21-clean-decision',m.decision),
-      el('div','ki21-clean-success','Erfolgreich, wenn: '+m.success)
+      el('div','ki21-clean-success','Kundenentscheidung erreicht · '+m.success)
     );
     root.appendChild(decision);
 
@@ -19717,15 +19717,225 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(typeof original==='function'){
     window.renderCockpitSnapshotLiteV4215=function(){
       const out=original.apply(this,arguments);
-      setTimeout(render,250);
+      setTimeout(render,80);
       return out;
     };
   }
 
-  window.addEventListener('load',()=>setTimeout(render,350),{once:true});
-  window.addEventListener('pageshow',()=>setTimeout(render,200));
+  window.addEventListener('load',()=>setTimeout(render,120),{once:true});
 })();
 </script>
+
+<!-- Pilot Core 1.4.0 FINAL: Premium Visual Freeze -->
+<style>
+:root{
+  --ki21-final-orange:#f28a3a;
+  --ki21-final-card:rgba(18,23,31,.94);
+  --ki21-final-card-2:rgba(12,16,23,.96);
+}
+.ki21-clean-active{
+  padding-top:2px!important;
+  padding-bottom:max(30px,env(safe-area-inset-bottom))!important;
+}
+.ki21-clean-root{
+  gap:12px!important;
+  margin:0 0 10px!important;
+  animation:ki21FinalIn .18s ease-out both;
+}
+@keyframes ki21FinalIn{
+  from{opacity:.01;transform:translateY(3px)}
+  to{opacity:1;transform:none}
+}
+.ki21-clean-card{
+  border-radius:20px!important;
+  padding:17px 17px 16px!important;
+  border-color:rgba(148,163,184,.17)!important;
+  background:linear-gradient(145deg,var(--ki21-final-card),var(--ki21-final-card-2))!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+.ki21-clean-card.summary{
+  border-color:rgba(88,166,255,.22)!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(88,166,255,.09),transparent 34%),
+    linear-gradient(145deg,var(--ki21-final-card),var(--ki21-final-card-2))!important;
+}
+.ki21-clean-card.decision{
+  border-color:rgba(242,138,58,.35)!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(242,138,58,.16),transparent 35%),
+    linear-gradient(145deg,rgba(39,28,24,.96),rgba(15,18,25,.97))!important;
+}
+.ki21-clean-card.action{border-color:rgba(167,139,250,.25)!important}
+.ki21-clean-card.business{border-color:rgba(86,211,144,.23)!important}
+.ki21-clean-kicker{
+  margin-bottom:11px!important;
+  font-size:8.4px!important;
+  letter-spacing:1.65px!important;
+  color:rgba(203,213,225,.58)!important;
+}
+.ki21-clean-card.summary .ki21-clean-kicker{color:#78b7ff!important}
+.ki21-clean-card.decision .ki21-clean-kicker{color:var(--ki21-final-orange)!important}
+.ki21-clean-card.action .ki21-clean-kicker{color:#c7b7ff!important}
+.ki21-clean-card.business .ki21-clean-kicker{color:#77d9a4!important}
+.ki21-clean-summary-row{
+  padding:11px 0!important;
+  border-color:rgba(148,163,184,.12)!important;
+}
+.ki21-clean-label{
+  margin-bottom:4px!important;
+  font-size:7.5px!important;
+  letter-spacing:1.2px!important;
+  color:rgba(203,213,225,.48)!important;
+}
+.ki21-clean-text{
+  font-size:12.7px!important;
+  line-height:1.42!important;
+  font-weight:720!important;
+  letter-spacing:-.08px!important;
+  color:#f3f6fb!important;
+}
+.ki21-clean-metrics{gap:10px!important}
+.ki21-clean-metric{
+  min-height:164px!important;
+  border-radius:18px!important;
+  padding:15px 14px!important;
+  border-color:rgba(86,211,144,.22)!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(86,211,144,.08),transparent 36%),
+    linear-gradient(145deg,rgba(17,30,27,.94),rgba(12,17,23,.97))!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.19),inset 0 1px 0 rgba(255,255,255,.03)!important;
+}
+.ki21-clean-metric.forecast{
+  border-color:rgba(242,138,58,.26)!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(242,138,58,.10),transparent 36%),
+    linear-gradient(145deg,rgba(36,27,19,.94),rgba(12,17,23,.97))!important;
+}
+.ki21-clean-metric-label{
+  margin-bottom:9px!important;
+  font-size:7.6px!important;
+  letter-spacing:1.15px!important;
+}
+.ki21-clean-metric-value{
+  font-size:34px!important;
+  line-height:.95!important;
+  letter-spacing:-1.1px!important;
+}
+.ki21-clean-metric-state{
+  margin-top:8px!important;
+  font-size:10px!important;
+  letter-spacing:1.05px!important;
+}
+.ki21-clean-metric-sub{
+  margin-top:10px!important;
+  font-size:9.7px!important;
+  line-height:1.38!important;
+  color:rgba(203,213,225,.68)!important;
+}
+.ki21-clean-forecast-line{
+  margin-top:8px!important;
+  padding-left:1px!important;
+  font-size:9.7px!important;
+  line-height:1.34!important;
+  color:rgba(226,232,240,.82)!important;
+}
+.ki21-clean-forecast-line.up::before{color:#69d99c!important}
+.ki21-clean-forecast-line.down::before{color:#ff8c82!important}
+.ki21-clean-decision{
+  max-width:440px!important;
+  font-size:22px!important;
+  line-height:1.24!important;
+  letter-spacing:-.45px!important;
+}
+.ki21-clean-success{
+  margin-top:14px!important;
+  padding:11px 13px!important;
+  border-left:0!important;
+  border:1px solid rgba(242,138,58,.28)!important;
+  border-radius:13px!important;
+  background:linear-gradient(135deg,rgba(242,138,58,.13),rgba(242,138,58,.045))!important;
+  color:#f4f6f8!important;
+  font-size:10.8px!important;
+  line-height:1.4!important;
+  font-weight:700!important;
+}
+.ki21-clean-actions{gap:10px!important}
+.ki21-clean-action{
+  grid-template-columns:30px 1fr!important;
+  gap:11px!important;
+  padding:12px 13px!important;
+  border-radius:14px!important;
+  border-color:rgba(167,139,250,.18)!important;
+  background:rgba(167,139,250,.045)!important;
+}
+.ki21-clean-action-num{
+  width:30px!important;
+  height:30px!important;
+  background:linear-gradient(145deg,rgba(167,139,250,.26),rgba(167,139,250,.12))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+  font-size:11px!important;
+}
+.ki21-clean-action-title{
+  margin-bottom:4px!important;
+  font-size:7.5px!important;
+  letter-spacing:1.15px!important;
+}
+.ki21-clean-action-text{
+  font-size:11.8px!important;
+  line-height:1.4!important;
+  font-weight:730!important;
+}
+.ki21-clean-business-status{
+  position:relative!important;
+  padding-left:18px!important;
+  margin-bottom:12px!important;
+  font-size:13.2px!important;
+  font-weight:860!important;
+}
+.ki21-clean-business-status::before{
+  content:'○';
+  position:absolute;
+  left:0;
+  top:-1px;
+  color:var(--ki21-final-orange);
+  font-weight:950;
+}
+.ki21-clean-benefits{gap:7px!important}
+.ki21-clean-chip{
+  padding:7px 9px!important;
+  border-radius:10px!important;
+  border-color:rgba(86,211,144,.18)!important;
+  background:rgba(86,211,144,.055)!important;
+  font-size:9.4px!important;
+  color:rgba(235,241,247,.88)!important;
+}
+.ki21-mode-tabs{margin-bottom:11px!important}
+.ki21-mode-tab,.ki21-mode-add{border-radius:13px!important}
+.tagline{
+  display:block!important;
+  margin-top:18px!important;
+  color:rgba(148,163,184,.34)!important;
+  font-size:8.7px!important;
+  letter-spacing:.8px!important;
+}
+@media(max-width:390px){
+  .ki21-clean-root{gap:10px!important}
+  .ki21-clean-card{padding:14px 14px 13px!important;border-radius:18px!important}
+  .ki21-clean-summary-row{padding:9px 0!important}
+  .ki21-clean-text{font-size:11.8px!important}
+  .ki21-clean-metrics{gap:8px!important}
+  .ki21-clean-metric{min-height:154px!important;padding:13px 12px!important;border-radius:16px!important}
+  .ki21-clean-metric-value{font-size:30px!important}
+  .ki21-clean-metric-sub,.ki21-clean-forecast-line{font-size:9px!important}
+  .ki21-clean-decision{font-size:19.5px!important}
+  .ki21-clean-action{grid-template-columns:27px 1fr!important;padding:10px 11px!important}
+  .ki21-clean-action-num{width:27px!important;height:27px!important}
+  .ki21-clean-action-text{font-size:10.9px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .ki21-clean-root{animation:none!important}
+}
+</style>
 
 </body>
 </html>
