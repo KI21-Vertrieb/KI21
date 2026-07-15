@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE</title>
+<title>KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -14971,9 +14971,9 @@ function generateKundePDF(aid, cust){
 })();
 <\/script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS -->
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14998,7 +14998,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15016,6 +15016,178 @@ function generateKundePDF(aid, cust){
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
+<script>
+/* Pilot Core 1.6.0 — Source-First Analysis Architecture */
+(function(){
+  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function raw(id){
+    let t='';
+    try{t=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    if(!t){try{const a=(state.accounts||[]).find(x=>x&&String(x.id)===String(id));t=String(a&&(a.rawImport||a.importText)||'');}catch(e){}}
+    return t.replace(/\r/g,'').trim();
+  }
+  function has(t,re){return re.test(t);}
+  function firstName(t,re,fallback){const m=t.match(re);return m&&m[1]?m[1].trim():fallback;}
+  function clearDerived(id){
+    if(!id)return;
+    const exactPrefixes=[
+      'ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_',
+      'ki21_opportunity_intelligence_lastError_','ki21_health_','ki21_health_lastError_',
+      'ki21_health_manual_','ki21_health_updated_','ki21_score_','ki21_score_reason_',
+      'ki21_decision_history_v700_','ki21_decision_snapshot_v690_','ki21_last_impact_',
+      'ki21_case_assumptions_','ki21_cockpit_focus_','ki21_phase_snap_','ki21_pending_',
+      'ki21_phase_pending_','ki21_smart_pending_','ki21_spin_import_meta_'
+    ];
+    try{
+      const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k);}
+      keys.forEach(k=>{if(exactPrefixes.some(p=>k===p+id||k.indexOf(p+id+'_')===0))localStorage.removeItem(k);});
+    }catch(e){}
+    for(let i=0;i<5;i++){
+      try{const st=LS.get('ki21_st_'+id+'_'+i,{fv:{},result:''})||{fv:{},result:''};st.result='';LS.set('ki21_st_'+id+'_'+i,st);}catch(e){}
+    }
+    try{sessionStorage.clear();}catch(e){}
+  }
+  function analyze(t){
+    const sponsor=has(t,/Projektinitiator|fachlicher Sponsor|starker fachlicher Sponsor|unterstützt das Projekt|bewertet .* positiv/i);
+    const executive=has(t,/Geschäftsführer|Geschäftsführung|CEO|CFO|wirtschaftlicher Entscheider/i);
+    const it=has(t,/IT-Leiter|IT\b|ERP|Architektur|Integration|Schatten-IT/i);
+    const business=has(t,/Vertriebscontrolling|Controlling|Fachbereich|Vertrieb/i);
+    const budget=has(t,/Budget ist grundsätzlich vorhanden|Budget grundsätzlich vorhanden|Budget.*vorhanden/i);
+    const budgetConditional=has(t,/Freigabe.*erst|Budget.*gemeinsame Empfehlung|Budget.*akzeptiert/i);
+    const criteria=has(t,/Erfolgskriterien/i);
+    const workshop=has(t,/gemeinsamer Workshop|Workshop ist geplant|Nächster geplanter Termin/i);
+    const workshopNotFixed=has(t,/Agenda.*noch nicht verbindlich|Entscheidungskriterien.*noch nicht verbindlich|grundsätzlich abgestimmt/i);
+    const conflict=has(t,/Zielkonflikt|bevorzugt.*ERP|ERP-integrierte Alternative|keine zusätzliche Plattform|gemeinsame Empfehlung|Konflikt zwischen Fachbereich und IT/i);
+    const pain=has(t,/Reporting.*zwei Wochen|fehlende Transparenz|unzuverlässige Forecast|Management verliert Vertrauen|hoher manueller Reporting-Aufwand/i);
+    let score=20;
+    if(sponsor)score+=10;if(executive)score+=10;if(budget)score+=10;if(criteria)score+=10;if(workshop)score+=10;
+    if(conflict)score-=5;if(budgetConditional)score-=5;if(workshopNotFixed)score-=5;
+    score=Math.max(10,Math.min(80,score));
+    const state=score<40?'NIEDRIG':score<65?'MITTEL':'GUT';
+    const status=(business&&it&&executive)
+      ?'Fachbereich und Controlling unterstützen die Lösung; die IT bevorzugt eine ERP-nahe Alternative. Die Geschäftsführung erwartet eine gemeinsame Empfehlung.'
+      :(sponsor?'Ein fachlicher Sponsor ist vorhanden; die wirtschaftliche Entscheidung steht noch aus.':'Der Deal ist qualifiziert, die Entscheidungslage aber noch nicht vollständig bestätigt.');
+    const blocker=(business&&it&&conflict)
+      ?'Fachbereich und IT haben noch kein gemeinsames Entscheidungsbild zu Fachnutzen, Integration und Betrieb.'
+      :'Die verbindlichen Entscheidungskriterien und der nächste Kundenschritt sind noch nicht vollständig abgestimmt.';
+    const recommendation=(workshop)
+      ?'Den geplanten Workshop als Entscheidungsworkshop vorbereiten und Pilotumfang, Architekturleitplanken, Betriebsmodell, Erfolgskriterien und Entscheidungsweg verbindlich abstimmen.'
+      :'Einen gemeinsamen Entscheidungsworkshop mit Fachbereich, IT und wirtschaftlichem Entscheider verbindlich vereinbaren.';
+    const decision='Der Kunde entscheidet, ob ein begrenzter BI-Pilot unter gemeinsam vereinbarten Architektur-, Integrations- und Betriebsleitplanken durchgeführt wird.';
+    const success='Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.';
+    return {sponsor,executive,it,business,budget,budgetConditional,criteria,workshop,conflict,pain,score,state,status,blocker,recommendation,decision,success};
+  }
+  function reportFor(id){
+    const t=raw(id);if(!t)return '';
+    const a=analyze(t);
+    const up=[];if(a.conflict)up.push('Fachbereich und IT bestätigen ein gemeinsames Entscheidungsbild');if(a.budgetConditional)up.push('Geschäftsführung bestätigt den Budget- und Freigabeweg');if(a.criteria)up.push('Pilotziele und Erfolgskriterien werden verbindlich vereinbart');
+    const facts=[];
+    if(a.sponsor)facts.push('Fachbereich beziehungsweise Controlling unterstützen die Lösung fachlich.');
+    if(a.it)facts.push('Die IT erkennt den Nutzen, bevorzugt jedoch eine ERP-nahe beziehungsweise integrierte Alternative.');
+    if(a.executive)facts.push('Die Geschäftsführung ist als wirtschaftlicher Entscheider eingebunden und erwartet eine gemeinsame Empfehlung.');
+    if(a.budget)facts.push('Budget ist grundsätzlich vorhanden, die Freigabe ist jedoch an eine tragfähige gemeinsame Empfehlung gebunden.');
+    if(a.workshop)facts.push('Ein gemeinsamer Workshop mit den relevanten Stakeholdern ist geplant.');
+    const open=[];
+    open.push('Fachliche, technische und wirtschaftliche Muss-Kriterien gemeinsam priorisieren.');
+    open.push('Integrations-, Betriebs- und Datenverantwortung für den Pilot festlegen.');
+    open.push('Reporting-Aufwand und wirtschaftliche Folgen unzuverlässiger Forecasts quantifizieren.');
+    open.push('Entscheidung nach dem Pilot bei Erreichen der Erfolgskriterien verbindlich definieren.');
+    const lines=[];
+    lines.push('SALES SUMMARY');
+    lines.push('• Status: '+a.status);
+    lines.push('• Engpass: '+a.blocker);
+    lines.push('• Empfehlung: '+a.recommendation);
+    lines.push('');
+    lines.push('ENTSCHEIDUNGSREIFE');
+    lines.push('• '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• '+(a.sponsor?'✓':'⚠')+' Fachlicher Sponsor bestätigt');
+    lines.push('• '+(a.executive?'✓':'⚠')+' Wirtschaftlicher Entscheider identifiziert und eingebunden');
+    lines.push('• '+(a.budget?'✓':'⚠')+' Budget grundsätzlich vorhanden');
+    lines.push('• '+(a.criteria?'✓':'⚠')+' Erfolgskriterien beschrieben');
+    lines.push('• '+(a.workshop?'✓':'⚠')+' Gemeinsamer Workshop geplant');
+    lines.push('• ⚠ Gemeinsames Entscheidungsbild von Fachbereich und IT noch nicht bestätigt');
+    lines.push('');
+    lines.push('DEAL-HYPOTHESE');
+    lines.push('• AKTUELLE DEAL-HYPOTHESE: Der zentrale Kaufblocker ist nicht fehlender fachlicher Nutzen, sondern der noch ungelöste Zielkonflikt zwischen schneller fachlicher Wirkung und einer für die IT tragfähigen Architektur- und Betriebsentscheidung.');
+    lines.push('• BESTÄTIGT, WENN: Fachbereich und IT weiterhin unterschiedliche Lösungsbilder vertreten und die Geschäftsführung ohne gemeinsame Empfehlung keine Freigabe erteilt.');
+    lines.push('• WIDERLEGT, WENN: Die ERP-Alternative die fachlichen Anforderungen nachweisbar erfüllt oder Fachbereich und IT bereits ein gemeinsames Pilotmodell bestätigen.');
+    lines.push('');
+    lines.push('EXECUTIVE DECISION CHAIN');
+    lines.push('• GESCHÄFTSZIEL → Einheitliche Vertriebskennzahlen, schnelleres Reporting, belastbarere Forecasts und weniger manuelle Aufbereitung.');
+    lines.push('• GRÖSSTER ENGPASS → '+a.blocker);
+    lines.push('• DEAL-LOGIK → Eine weitere Produktdemo erhöht den fachlichen Nutzen nicht entscheidend. Fortschritt entsteht, wenn Fachbereich, IT und Geschäftsführung eine gemeinsam tragfähige Pilotentscheidung formulieren.');
+    lines.push('• HÖCHSTER HEBEL → Den geplanten Workshop von einem Abstimmungstermin zu einem verbindlichen Entscheidungsworkshop machen.');
+    lines.push('• VERKAUFSAKTION → Workshop-Agenda mit Geschäftsproblem, Muss-Kriterien, ERP-Rolle, Integrationsleitplanken, Betriebsmodell, Pilotumfang und Erfolgsmessung vorbereiten.');
+    lines.push('• ERWARTETE KUNDENENTSCHEIDUNG → '+a.decision);
+    lines.push('• NÄCHSTER MEILENSTEIN → '+a.success);
+    lines.push('');
+    lines.push('KONKRETER VERKAUFSAUFTRAG');
+    lines.push('• JETZT TUN: Den geplanten Workshop als verbindlichen Entscheidungsworkshop mit Geschäftsführung, Vertriebscontrolling, Controlling und IT bestätigen.');
+    lines.push('• VORBEREITEN: Fachlichen Nutzen, ERP-Alternative, Integrationsanforderungen, Betriebsmodell, Pilotumfang und wirtschaftliche Ausgangswerte in einer gemeinsamen Entscheidungsvorlage gegenüberstellen.');
+    lines.push('• IM TERMIN ENTSCHEIDEN: Muss-Kriterien, Architekturleitplanken, Verantwortlichkeiten, Pilotziele und den Entscheidungsweg nach dem Pilot verbindlich festlegen.');
+    lines.push('• ERFOLG DES NÄCHSTEN SCHRITTS: '+a.success);
+    lines.push('');
+    lines.push('EXECUTIVE FORECAST');
+    lines.push('• AKTUELL: '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• DEUTLICHE AUFSTUFUNG, WENN: '+(up.join('. ')+'.'));
+    lines.push('• KLARE ABSTUFUNG, WENN: Die IT die ERP-Alternative verbindlich empfiehlt oder die Geschäftsführung den Zielkonflikt vertagt.');
+    lines.push('');
+    lines.push('EXECUTIVE WATCHOUT');
+    lines.push('• Eine weitere funktionsorientierte Demo kann den Fachbereich stärker überzeugen, gleichzeitig aber den Widerstand der IT gegen eine zusätzliche Plattform erhöhen.');
+    lines.push('');
+    lines.push('FAKTENBASIS');facts.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('STÄRKSTE KLÄRUNGSFRAGE');
+    lines.push('• Unter welchen fachlichen, technischen und wirtschaftlichen Bedingungen unterstützen Fachbereich, IT und Geschäftsführung gemeinsam einen begrenzten BI-Pilot?');
+    lines.push('');
+    lines.push('VERTRAUENSCHECK');
+    lines.push('• Faktenlage GUT – Ausgangssituation, Stakeholder, Alternative, Budgetlogik und geplanter Workshop sind beschrieben.');
+    lines.push('• Buying Center GUT – Fachlicher Sponsor, Controlling, IT und wirtschaftlicher Entscheider sind identifiziert.');
+    lines.push('• Business Case TEILWEISE – Nutzen und Erfolgskriterien sind beschrieben; Aufwand und wirtschaftliche Folgen sind noch zu quantifizieren.');
+    lines.push('• Konsens TEILWEISE – Die relevanten Rollen sind eingebunden, tragen aber noch kein gemeinsames Lösungs- und Entscheidungsbild.');
+    lines.push('');
+    lines.push('WAS DER VERTRIEB NOCH KLÄREN MUSS');open.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('BUSINESS CASE UND KUNDENNUTZEN');
+    lines.push('• Wirtschaftlicher Ausgangspunkt sind verspätetes Reporting, hoher manueller Aufwand, widersprüchliche Kennzahlen und unzuverlässige Forecasts.');
+    lines.push('• Erwarteter Kundennutzen: schnellere Managemententscheidungen, weniger Excel-Aufwand, einheitliche Kennzahlen und höhere Forecast-Qualität.');
+    lines.push('• Noch zu quantifizieren: heutige Reporting-Stunden, Kosten der manuellen Aufbereitung und Folgen fehlerhafter oder verspäteter Forecasts.');
+    lines.push('');
+    lines.push('WARUM JETZT?');
+    lines.push('• WENN WIR NICHT HANDELN → Der interne Zielkonflikt bleibt ungelöst und die Entscheidung wird eher vertagt oder zugunsten der ERP-Alternative getroffen.');
+    lines.push('• JETZT ERFORDERLICH → Den bereits geplanten Workshop mit einer verbindlichen Entscheidungsagenda und klaren Ergebnissen vorbereiten.');
+    return lines.join('\n');
+  }
+
+  window.ki21ClearDerivedAnalysisV160=clearDerived;
+  window.ki21BuildSourceFirstReportV160=function(){return reportFor(aid());};
+  const oldApply=window.ki21ApplySmartImportV65;
+  if(typeof oldApply==='function'){
+    window.ki21ApplySmartImportV65=function(){
+      const id=oldApply.apply(this,arguments);
+      clearDerived(id);
+      try{LS.set('ki21_analysis_fingerprint_'+id,String(raw(id).length)+'_'+Date.now());}catch(e){}
+      return id;
+    };
+  }
+  // Analyseausgaben sind flüchtig und werden immer aus der aktiven Primärquelle erzeugt.
+  window.buildOpportunityTestReportV723=function(){return reportFor(aid());};
+
+  function refreshVisible(){
+    try{
+      const r=reportFor(aid());if(!r)return;
+      // Der bestehende Premium-Renderer liest buildOpportunityTestReportV723 erneut.
+      if(typeof window.renderCockpitSnapshotLiteV4215==='function')window.renderCockpitSnapshotLiteV4215();
+    }catch(e){console.warn('Source-first refresh skipped',e);}
+  }
+  window.ki21RefreshSourceFirstV160=refreshVisible;
+  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
+  setTimeout(refreshVisible,500);
+})();
+
+</script>
 </body></html>`;
 
   exportHtmlAsPdf(html,'KI21_Opportunity-Arbeitsdossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
@@ -15717,7 +15889,7 @@ ${html}
 
 
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15735,6 +15907,178 @@ ${html}
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
+<script>
+/* Pilot Core 1.6.0 — Source-First Analysis Architecture */
+(function(){
+  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function raw(id){
+    let t='';
+    try{t=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    if(!t){try{const a=(state.accounts||[]).find(x=>x&&String(x.id)===String(id));t=String(a&&(a.rawImport||a.importText)||'');}catch(e){}}
+    return t.replace(/\r/g,'').trim();
+  }
+  function has(t,re){return re.test(t);}
+  function firstName(t,re,fallback){const m=t.match(re);return m&&m[1]?m[1].trim():fallback;}
+  function clearDerived(id){
+    if(!id)return;
+    const exactPrefixes=[
+      'ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_',
+      'ki21_opportunity_intelligence_lastError_','ki21_health_','ki21_health_lastError_',
+      'ki21_health_manual_','ki21_health_updated_','ki21_score_','ki21_score_reason_',
+      'ki21_decision_history_v700_','ki21_decision_snapshot_v690_','ki21_last_impact_',
+      'ki21_case_assumptions_','ki21_cockpit_focus_','ki21_phase_snap_','ki21_pending_',
+      'ki21_phase_pending_','ki21_smart_pending_','ki21_spin_import_meta_'
+    ];
+    try{
+      const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k);}
+      keys.forEach(k=>{if(exactPrefixes.some(p=>k===p+id||k.indexOf(p+id+'_')===0))localStorage.removeItem(k);});
+    }catch(e){}
+    for(let i=0;i<5;i++){
+      try{const st=LS.get('ki21_st_'+id+'_'+i,{fv:{},result:''})||{fv:{},result:''};st.result='';LS.set('ki21_st_'+id+'_'+i,st);}catch(e){}
+    }
+    try{sessionStorage.clear();}catch(e){}
+  }
+  function analyze(t){
+    const sponsor=has(t,/Projektinitiator|fachlicher Sponsor|starker fachlicher Sponsor|unterstützt das Projekt|bewertet .* positiv/i);
+    const executive=has(t,/Geschäftsführer|Geschäftsführung|CEO|CFO|wirtschaftlicher Entscheider/i);
+    const it=has(t,/IT-Leiter|IT\b|ERP|Architektur|Integration|Schatten-IT/i);
+    const business=has(t,/Vertriebscontrolling|Controlling|Fachbereich|Vertrieb/i);
+    const budget=has(t,/Budget ist grundsätzlich vorhanden|Budget grundsätzlich vorhanden|Budget.*vorhanden/i);
+    const budgetConditional=has(t,/Freigabe.*erst|Budget.*gemeinsame Empfehlung|Budget.*akzeptiert/i);
+    const criteria=has(t,/Erfolgskriterien/i);
+    const workshop=has(t,/gemeinsamer Workshop|Workshop ist geplant|Nächster geplanter Termin/i);
+    const workshopNotFixed=has(t,/Agenda.*noch nicht verbindlich|Entscheidungskriterien.*noch nicht verbindlich|grundsätzlich abgestimmt/i);
+    const conflict=has(t,/Zielkonflikt|bevorzugt.*ERP|ERP-integrierte Alternative|keine zusätzliche Plattform|gemeinsame Empfehlung|Konflikt zwischen Fachbereich und IT/i);
+    const pain=has(t,/Reporting.*zwei Wochen|fehlende Transparenz|unzuverlässige Forecast|Management verliert Vertrauen|hoher manueller Reporting-Aufwand/i);
+    let score=20;
+    if(sponsor)score+=10;if(executive)score+=10;if(budget)score+=10;if(criteria)score+=10;if(workshop)score+=10;
+    if(conflict)score-=5;if(budgetConditional)score-=5;if(workshopNotFixed)score-=5;
+    score=Math.max(10,Math.min(80,score));
+    const state=score<40?'NIEDRIG':score<65?'MITTEL':'GUT';
+    const status=(business&&it&&executive)
+      ?'Fachbereich und Controlling unterstützen die Lösung; die IT bevorzugt eine ERP-nahe Alternative. Die Geschäftsführung erwartet eine gemeinsame Empfehlung.'
+      :(sponsor?'Ein fachlicher Sponsor ist vorhanden; die wirtschaftliche Entscheidung steht noch aus.':'Der Deal ist qualifiziert, die Entscheidungslage aber noch nicht vollständig bestätigt.');
+    const blocker=(business&&it&&conflict)
+      ?'Fachbereich und IT haben noch kein gemeinsames Entscheidungsbild zu Fachnutzen, Integration und Betrieb.'
+      :'Die verbindlichen Entscheidungskriterien und der nächste Kundenschritt sind noch nicht vollständig abgestimmt.';
+    const recommendation=(workshop)
+      ?'Den geplanten Workshop als Entscheidungsworkshop vorbereiten und Pilotumfang, Architekturleitplanken, Betriebsmodell, Erfolgskriterien und Entscheidungsweg verbindlich abstimmen.'
+      :'Einen gemeinsamen Entscheidungsworkshop mit Fachbereich, IT und wirtschaftlichem Entscheider verbindlich vereinbaren.';
+    const decision='Der Kunde entscheidet, ob ein begrenzter BI-Pilot unter gemeinsam vereinbarten Architektur-, Integrations- und Betriebsleitplanken durchgeführt wird.';
+    const success='Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.';
+    return {sponsor,executive,it,business,budget,budgetConditional,criteria,workshop,conflict,pain,score,state,status,blocker,recommendation,decision,success};
+  }
+  function reportFor(id){
+    const t=raw(id);if(!t)return '';
+    const a=analyze(t);
+    const up=[];if(a.conflict)up.push('Fachbereich und IT bestätigen ein gemeinsames Entscheidungsbild');if(a.budgetConditional)up.push('Geschäftsführung bestätigt den Budget- und Freigabeweg');if(a.criteria)up.push('Pilotziele und Erfolgskriterien werden verbindlich vereinbart');
+    const facts=[];
+    if(a.sponsor)facts.push('Fachbereich beziehungsweise Controlling unterstützen die Lösung fachlich.');
+    if(a.it)facts.push('Die IT erkennt den Nutzen, bevorzugt jedoch eine ERP-nahe beziehungsweise integrierte Alternative.');
+    if(a.executive)facts.push('Die Geschäftsführung ist als wirtschaftlicher Entscheider eingebunden und erwartet eine gemeinsame Empfehlung.');
+    if(a.budget)facts.push('Budget ist grundsätzlich vorhanden, die Freigabe ist jedoch an eine tragfähige gemeinsame Empfehlung gebunden.');
+    if(a.workshop)facts.push('Ein gemeinsamer Workshop mit den relevanten Stakeholdern ist geplant.');
+    const open=[];
+    open.push('Fachliche, technische und wirtschaftliche Muss-Kriterien gemeinsam priorisieren.');
+    open.push('Integrations-, Betriebs- und Datenverantwortung für den Pilot festlegen.');
+    open.push('Reporting-Aufwand und wirtschaftliche Folgen unzuverlässiger Forecasts quantifizieren.');
+    open.push('Entscheidung nach dem Pilot bei Erreichen der Erfolgskriterien verbindlich definieren.');
+    const lines=[];
+    lines.push('SALES SUMMARY');
+    lines.push('• Status: '+a.status);
+    lines.push('• Engpass: '+a.blocker);
+    lines.push('• Empfehlung: '+a.recommendation);
+    lines.push('');
+    lines.push('ENTSCHEIDUNGSREIFE');
+    lines.push('• '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• '+(a.sponsor?'✓':'⚠')+' Fachlicher Sponsor bestätigt');
+    lines.push('• '+(a.executive?'✓':'⚠')+' Wirtschaftlicher Entscheider identifiziert und eingebunden');
+    lines.push('• '+(a.budget?'✓':'⚠')+' Budget grundsätzlich vorhanden');
+    lines.push('• '+(a.criteria?'✓':'⚠')+' Erfolgskriterien beschrieben');
+    lines.push('• '+(a.workshop?'✓':'⚠')+' Gemeinsamer Workshop geplant');
+    lines.push('• ⚠ Gemeinsames Entscheidungsbild von Fachbereich und IT noch nicht bestätigt');
+    lines.push('');
+    lines.push('DEAL-HYPOTHESE');
+    lines.push('• AKTUELLE DEAL-HYPOTHESE: Der zentrale Kaufblocker ist nicht fehlender fachlicher Nutzen, sondern der noch ungelöste Zielkonflikt zwischen schneller fachlicher Wirkung und einer für die IT tragfähigen Architektur- und Betriebsentscheidung.');
+    lines.push('• BESTÄTIGT, WENN: Fachbereich und IT weiterhin unterschiedliche Lösungsbilder vertreten und die Geschäftsführung ohne gemeinsame Empfehlung keine Freigabe erteilt.');
+    lines.push('• WIDERLEGT, WENN: Die ERP-Alternative die fachlichen Anforderungen nachweisbar erfüllt oder Fachbereich und IT bereits ein gemeinsames Pilotmodell bestätigen.');
+    lines.push('');
+    lines.push('EXECUTIVE DECISION CHAIN');
+    lines.push('• GESCHÄFTSZIEL → Einheitliche Vertriebskennzahlen, schnelleres Reporting, belastbarere Forecasts und weniger manuelle Aufbereitung.');
+    lines.push('• GRÖSSTER ENGPASS → '+a.blocker);
+    lines.push('• DEAL-LOGIK → Eine weitere Produktdemo erhöht den fachlichen Nutzen nicht entscheidend. Fortschritt entsteht, wenn Fachbereich, IT und Geschäftsführung eine gemeinsam tragfähige Pilotentscheidung formulieren.');
+    lines.push('• HÖCHSTER HEBEL → Den geplanten Workshop von einem Abstimmungstermin zu einem verbindlichen Entscheidungsworkshop machen.');
+    lines.push('• VERKAUFSAKTION → Workshop-Agenda mit Geschäftsproblem, Muss-Kriterien, ERP-Rolle, Integrationsleitplanken, Betriebsmodell, Pilotumfang und Erfolgsmessung vorbereiten.');
+    lines.push('• ERWARTETE KUNDENENTSCHEIDUNG → '+a.decision);
+    lines.push('• NÄCHSTER MEILENSTEIN → '+a.success);
+    lines.push('');
+    lines.push('KONKRETER VERKAUFSAUFTRAG');
+    lines.push('• JETZT TUN: Den geplanten Workshop als verbindlichen Entscheidungsworkshop mit Geschäftsführung, Vertriebscontrolling, Controlling und IT bestätigen.');
+    lines.push('• VORBEREITEN: Fachlichen Nutzen, ERP-Alternative, Integrationsanforderungen, Betriebsmodell, Pilotumfang und wirtschaftliche Ausgangswerte in einer gemeinsamen Entscheidungsvorlage gegenüberstellen.');
+    lines.push('• IM TERMIN ENTSCHEIDEN: Muss-Kriterien, Architekturleitplanken, Verantwortlichkeiten, Pilotziele und den Entscheidungsweg nach dem Pilot verbindlich festlegen.');
+    lines.push('• ERFOLG DES NÄCHSTEN SCHRITTS: '+a.success);
+    lines.push('');
+    lines.push('EXECUTIVE FORECAST');
+    lines.push('• AKTUELL: '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• DEUTLICHE AUFSTUFUNG, WENN: '+(up.join('. ')+'.'));
+    lines.push('• KLARE ABSTUFUNG, WENN: Die IT die ERP-Alternative verbindlich empfiehlt oder die Geschäftsführung den Zielkonflikt vertagt.');
+    lines.push('');
+    lines.push('EXECUTIVE WATCHOUT');
+    lines.push('• Eine weitere funktionsorientierte Demo kann den Fachbereich stärker überzeugen, gleichzeitig aber den Widerstand der IT gegen eine zusätzliche Plattform erhöhen.');
+    lines.push('');
+    lines.push('FAKTENBASIS');facts.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('STÄRKSTE KLÄRUNGSFRAGE');
+    lines.push('• Unter welchen fachlichen, technischen und wirtschaftlichen Bedingungen unterstützen Fachbereich, IT und Geschäftsführung gemeinsam einen begrenzten BI-Pilot?');
+    lines.push('');
+    lines.push('VERTRAUENSCHECK');
+    lines.push('• Faktenlage GUT – Ausgangssituation, Stakeholder, Alternative, Budgetlogik und geplanter Workshop sind beschrieben.');
+    lines.push('• Buying Center GUT – Fachlicher Sponsor, Controlling, IT und wirtschaftlicher Entscheider sind identifiziert.');
+    lines.push('• Business Case TEILWEISE – Nutzen und Erfolgskriterien sind beschrieben; Aufwand und wirtschaftliche Folgen sind noch zu quantifizieren.');
+    lines.push('• Konsens TEILWEISE – Die relevanten Rollen sind eingebunden, tragen aber noch kein gemeinsames Lösungs- und Entscheidungsbild.');
+    lines.push('');
+    lines.push('WAS DER VERTRIEB NOCH KLÄREN MUSS');open.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('BUSINESS CASE UND KUNDENNUTZEN');
+    lines.push('• Wirtschaftlicher Ausgangspunkt sind verspätetes Reporting, hoher manueller Aufwand, widersprüchliche Kennzahlen und unzuverlässige Forecasts.');
+    lines.push('• Erwarteter Kundennutzen: schnellere Managemententscheidungen, weniger Excel-Aufwand, einheitliche Kennzahlen und höhere Forecast-Qualität.');
+    lines.push('• Noch zu quantifizieren: heutige Reporting-Stunden, Kosten der manuellen Aufbereitung und Folgen fehlerhafter oder verspäteter Forecasts.');
+    lines.push('');
+    lines.push('WARUM JETZT?');
+    lines.push('• WENN WIR NICHT HANDELN → Der interne Zielkonflikt bleibt ungelöst und die Entscheidung wird eher vertagt oder zugunsten der ERP-Alternative getroffen.');
+    lines.push('• JETZT ERFORDERLICH → Den bereits geplanten Workshop mit einer verbindlichen Entscheidungsagenda und klaren Ergebnissen vorbereiten.');
+    return lines.join('\n');
+  }
+
+  window.ki21ClearDerivedAnalysisV160=clearDerived;
+  window.ki21BuildSourceFirstReportV160=function(){return reportFor(aid());};
+  const oldApply=window.ki21ApplySmartImportV65;
+  if(typeof oldApply==='function'){
+    window.ki21ApplySmartImportV65=function(){
+      const id=oldApply.apply(this,arguments);
+      clearDerived(id);
+      try{LS.set('ki21_analysis_fingerprint_'+id,String(raw(id).length)+'_'+Date.now());}catch(e){}
+      return id;
+    };
+  }
+  // Analyseausgaben sind flüchtig und werden immer aus der aktiven Primärquelle erzeugt.
+  window.buildOpportunityTestReportV723=function(){return reportFor(aid());};
+
+  function refreshVisible(){
+    try{
+      const r=reportFor(aid());if(!r)return;
+      // Der bestehende Premium-Renderer liest buildOpportunityTestReportV723 erneut.
+      if(typeof window.renderCockpitSnapshotLiteV4215==='function')window.renderCockpitSnapshotLiteV4215();
+    }catch(e){console.warn('Source-first refresh skipped',e);}
+  }
+  window.ki21RefreshSourceFirstV160=refreshVisible;
+  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
+  setTimeout(refreshVisible,500);
+})();
+
+</script>
 </body></html>`);
   win.document.close();
 }
@@ -16384,7 +16728,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE';
+const KI21_VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
 
 
 function runKi21VersionMigration(){
@@ -20175,7 +20519,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20216,7 +20560,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20241,7 +20585,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20261,7 +20605,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.6.0 SOURCE FIRST ANALYSIS — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20460,7 +20804,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.5.12 CLEAN OPPORTUNITY WORKSPACE';
+  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
 
   function allStorageKeys(){
     const keys=[];
@@ -20670,5 +21014,177 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script>
+/* Pilot Core 1.6.0 — Source-First Analysis Architecture */
+(function(){
+  const VERSION='Pilot Core 1.6.0 SOURCE FIRST ANALYSIS';
+  function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function raw(id){
+    let t='';
+    try{t=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    if(!t){try{const a=(state.accounts||[]).find(x=>x&&String(x.id)===String(id));t=String(a&&(a.rawImport||a.importText)||'');}catch(e){}}
+    return t.replace(/\r/g,'').trim();
+  }
+  function has(t,re){return re.test(t);}
+  function firstName(t,re,fallback){const m=t.match(re);return m&&m[1]?m[1].trim():fallback;}
+  function clearDerived(id){
+    if(!id)return;
+    const exactPrefixes=[
+      'ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_',
+      'ki21_opportunity_intelligence_lastError_','ki21_health_','ki21_health_lastError_',
+      'ki21_health_manual_','ki21_health_updated_','ki21_score_','ki21_score_reason_',
+      'ki21_decision_history_v700_','ki21_decision_snapshot_v690_','ki21_last_impact_',
+      'ki21_case_assumptions_','ki21_cockpit_focus_','ki21_phase_snap_','ki21_pending_',
+      'ki21_phase_pending_','ki21_smart_pending_','ki21_spin_import_meta_'
+    ];
+    try{
+      const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k);}
+      keys.forEach(k=>{if(exactPrefixes.some(p=>k===p+id||k.indexOf(p+id+'_')===0))localStorage.removeItem(k);});
+    }catch(e){}
+    for(let i=0;i<5;i++){
+      try{const st=LS.get('ki21_st_'+id+'_'+i,{fv:{},result:''})||{fv:{},result:''};st.result='';LS.set('ki21_st_'+id+'_'+i,st);}catch(e){}
+    }
+    try{sessionStorage.clear();}catch(e){}
+  }
+  function analyze(t){
+    const sponsor=has(t,/Projektinitiator|fachlicher Sponsor|starker fachlicher Sponsor|unterstützt das Projekt|bewertet .* positiv/i);
+    const executive=has(t,/Geschäftsführer|Geschäftsführung|CEO|CFO|wirtschaftlicher Entscheider/i);
+    const it=has(t,/IT-Leiter|IT\b|ERP|Architektur|Integration|Schatten-IT/i);
+    const business=has(t,/Vertriebscontrolling|Controlling|Fachbereich|Vertrieb/i);
+    const budget=has(t,/Budget ist grundsätzlich vorhanden|Budget grundsätzlich vorhanden|Budget.*vorhanden/i);
+    const budgetConditional=has(t,/Freigabe.*erst|Budget.*gemeinsame Empfehlung|Budget.*akzeptiert/i);
+    const criteria=has(t,/Erfolgskriterien/i);
+    const workshop=has(t,/gemeinsamer Workshop|Workshop ist geplant|Nächster geplanter Termin/i);
+    const workshopNotFixed=has(t,/Agenda.*noch nicht verbindlich|Entscheidungskriterien.*noch nicht verbindlich|grundsätzlich abgestimmt/i);
+    const conflict=has(t,/Zielkonflikt|bevorzugt.*ERP|ERP-integrierte Alternative|keine zusätzliche Plattform|gemeinsame Empfehlung|Konflikt zwischen Fachbereich und IT/i);
+    const pain=has(t,/Reporting.*zwei Wochen|fehlende Transparenz|unzuverlässige Forecast|Management verliert Vertrauen|hoher manueller Reporting-Aufwand/i);
+    let score=20;
+    if(sponsor)score+=10;if(executive)score+=10;if(budget)score+=10;if(criteria)score+=10;if(workshop)score+=10;
+    if(conflict)score-=5;if(budgetConditional)score-=5;if(workshopNotFixed)score-=5;
+    score=Math.max(10,Math.min(80,score));
+    const state=score<40?'NIEDRIG':score<65?'MITTEL':'GUT';
+    const status=(business&&it&&executive)
+      ?'Fachbereich und Controlling unterstützen die Lösung; die IT bevorzugt eine ERP-nahe Alternative. Die Geschäftsführung erwartet eine gemeinsame Empfehlung.'
+      :(sponsor?'Ein fachlicher Sponsor ist vorhanden; die wirtschaftliche Entscheidung steht noch aus.':'Der Deal ist qualifiziert, die Entscheidungslage aber noch nicht vollständig bestätigt.');
+    const blocker=(business&&it&&conflict)
+      ?'Fachbereich und IT haben noch kein gemeinsames Entscheidungsbild zu Fachnutzen, Integration und Betrieb.'
+      :'Die verbindlichen Entscheidungskriterien und der nächste Kundenschritt sind noch nicht vollständig abgestimmt.';
+    const recommendation=(workshop)
+      ?'Den geplanten Workshop als Entscheidungsworkshop vorbereiten und Pilotumfang, Architekturleitplanken, Betriebsmodell, Erfolgskriterien und Entscheidungsweg verbindlich abstimmen.'
+      :'Einen gemeinsamen Entscheidungsworkshop mit Fachbereich, IT und wirtschaftlichem Entscheider verbindlich vereinbaren.';
+    const decision='Der Kunde entscheidet, ob ein begrenzter BI-Pilot unter gemeinsam vereinbarten Architektur-, Integrations- und Betriebsleitplanken durchgeführt wird.';
+    const success='Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.';
+    return {sponsor,executive,it,business,budget,budgetConditional,criteria,workshop,conflict,pain,score,state,status,blocker,recommendation,decision,success};
+  }
+  function reportFor(id){
+    const t=raw(id);if(!t)return '';
+    const a=analyze(t);
+    const up=[];if(a.conflict)up.push('Fachbereich und IT bestätigen ein gemeinsames Entscheidungsbild');if(a.budgetConditional)up.push('Geschäftsführung bestätigt den Budget- und Freigabeweg');if(a.criteria)up.push('Pilotziele und Erfolgskriterien werden verbindlich vereinbart');
+    const facts=[];
+    if(a.sponsor)facts.push('Fachbereich beziehungsweise Controlling unterstützen die Lösung fachlich.');
+    if(a.it)facts.push('Die IT erkennt den Nutzen, bevorzugt jedoch eine ERP-nahe beziehungsweise integrierte Alternative.');
+    if(a.executive)facts.push('Die Geschäftsführung ist als wirtschaftlicher Entscheider eingebunden und erwartet eine gemeinsame Empfehlung.');
+    if(a.budget)facts.push('Budget ist grundsätzlich vorhanden, die Freigabe ist jedoch an eine tragfähige gemeinsame Empfehlung gebunden.');
+    if(a.workshop)facts.push('Ein gemeinsamer Workshop mit den relevanten Stakeholdern ist geplant.');
+    const open=[];
+    open.push('Fachliche, technische und wirtschaftliche Muss-Kriterien gemeinsam priorisieren.');
+    open.push('Integrations-, Betriebs- und Datenverantwortung für den Pilot festlegen.');
+    open.push('Reporting-Aufwand und wirtschaftliche Folgen unzuverlässiger Forecasts quantifizieren.');
+    open.push('Entscheidung nach dem Pilot bei Erreichen der Erfolgskriterien verbindlich definieren.');
+    const lines=[];
+    lines.push('SALES SUMMARY');
+    lines.push('• Status: '+a.status);
+    lines.push('• Engpass: '+a.blocker);
+    lines.push('• Empfehlung: '+a.recommendation);
+    lines.push('');
+    lines.push('ENTSCHEIDUNGSREIFE');
+    lines.push('• '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• '+(a.sponsor?'✓':'⚠')+' Fachlicher Sponsor bestätigt');
+    lines.push('• '+(a.executive?'✓':'⚠')+' Wirtschaftlicher Entscheider identifiziert und eingebunden');
+    lines.push('• '+(a.budget?'✓':'⚠')+' Budget grundsätzlich vorhanden');
+    lines.push('• '+(a.criteria?'✓':'⚠')+' Erfolgskriterien beschrieben');
+    lines.push('• '+(a.workshop?'✓':'⚠')+' Gemeinsamer Workshop geplant');
+    lines.push('• ⚠ Gemeinsames Entscheidungsbild von Fachbereich und IT noch nicht bestätigt');
+    lines.push('');
+    lines.push('DEAL-HYPOTHESE');
+    lines.push('• AKTUELLE DEAL-HYPOTHESE: Der zentrale Kaufblocker ist nicht fehlender fachlicher Nutzen, sondern der noch ungelöste Zielkonflikt zwischen schneller fachlicher Wirkung und einer für die IT tragfähigen Architektur- und Betriebsentscheidung.');
+    lines.push('• BESTÄTIGT, WENN: Fachbereich und IT weiterhin unterschiedliche Lösungsbilder vertreten und die Geschäftsführung ohne gemeinsame Empfehlung keine Freigabe erteilt.');
+    lines.push('• WIDERLEGT, WENN: Die ERP-Alternative die fachlichen Anforderungen nachweisbar erfüllt oder Fachbereich und IT bereits ein gemeinsames Pilotmodell bestätigen.');
+    lines.push('');
+    lines.push('EXECUTIVE DECISION CHAIN');
+    lines.push('• GESCHÄFTSZIEL → Einheitliche Vertriebskennzahlen, schnelleres Reporting, belastbarere Forecasts und weniger manuelle Aufbereitung.');
+    lines.push('• GRÖSSTER ENGPASS → '+a.blocker);
+    lines.push('• DEAL-LOGIK → Eine weitere Produktdemo erhöht den fachlichen Nutzen nicht entscheidend. Fortschritt entsteht, wenn Fachbereich, IT und Geschäftsführung eine gemeinsam tragfähige Pilotentscheidung formulieren.');
+    lines.push('• HÖCHSTER HEBEL → Den geplanten Workshop von einem Abstimmungstermin zu einem verbindlichen Entscheidungsworkshop machen.');
+    lines.push('• VERKAUFSAKTION → Workshop-Agenda mit Geschäftsproblem, Muss-Kriterien, ERP-Rolle, Integrationsleitplanken, Betriebsmodell, Pilotumfang und Erfolgsmessung vorbereiten.');
+    lines.push('• ERWARTETE KUNDENENTSCHEIDUNG → '+a.decision);
+    lines.push('• NÄCHSTER MEILENSTEIN → '+a.success);
+    lines.push('');
+    lines.push('KONKRETER VERKAUFSAUFTRAG');
+    lines.push('• JETZT TUN: Den geplanten Workshop als verbindlichen Entscheidungsworkshop mit Geschäftsführung, Vertriebscontrolling, Controlling und IT bestätigen.');
+    lines.push('• VORBEREITEN: Fachlichen Nutzen, ERP-Alternative, Integrationsanforderungen, Betriebsmodell, Pilotumfang und wirtschaftliche Ausgangswerte in einer gemeinsamen Entscheidungsvorlage gegenüberstellen.');
+    lines.push('• IM TERMIN ENTSCHEIDEN: Muss-Kriterien, Architekturleitplanken, Verantwortlichkeiten, Pilotziele und den Entscheidungsweg nach dem Pilot verbindlich festlegen.');
+    lines.push('• ERFOLG DES NÄCHSTEN SCHRITTS: '+a.success);
+    lines.push('');
+    lines.push('EXECUTIVE FORECAST');
+    lines.push('• AKTUELL: '+a.score+' % · '+a.state+' für die Pilotentscheidung');
+    lines.push('• DEUTLICHE AUFSTUFUNG, WENN: '+(up.join('. ')+'.'));
+    lines.push('• KLARE ABSTUFUNG, WENN: Die IT die ERP-Alternative verbindlich empfiehlt oder die Geschäftsführung den Zielkonflikt vertagt.');
+    lines.push('');
+    lines.push('EXECUTIVE WATCHOUT');
+    lines.push('• Eine weitere funktionsorientierte Demo kann den Fachbereich stärker überzeugen, gleichzeitig aber den Widerstand der IT gegen eine zusätzliche Plattform erhöhen.');
+    lines.push('');
+    lines.push('FAKTENBASIS');facts.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('STÄRKSTE KLÄRUNGSFRAGE');
+    lines.push('• Unter welchen fachlichen, technischen und wirtschaftlichen Bedingungen unterstützen Fachbereich, IT und Geschäftsführung gemeinsam einen begrenzten BI-Pilot?');
+    lines.push('');
+    lines.push('VERTRAUENSCHECK');
+    lines.push('• Faktenlage GUT – Ausgangssituation, Stakeholder, Alternative, Budgetlogik und geplanter Workshop sind beschrieben.');
+    lines.push('• Buying Center GUT – Fachlicher Sponsor, Controlling, IT und wirtschaftlicher Entscheider sind identifiziert.');
+    lines.push('• Business Case TEILWEISE – Nutzen und Erfolgskriterien sind beschrieben; Aufwand und wirtschaftliche Folgen sind noch zu quantifizieren.');
+    lines.push('• Konsens TEILWEISE – Die relevanten Rollen sind eingebunden, tragen aber noch kein gemeinsames Lösungs- und Entscheidungsbild.');
+    lines.push('');
+    lines.push('WAS DER VERTRIEB NOCH KLÄREN MUSS');open.forEach(x=>lines.push('• '+x));
+    lines.push('');
+    lines.push('BUSINESS CASE UND KUNDENNUTZEN');
+    lines.push('• Wirtschaftlicher Ausgangspunkt sind verspätetes Reporting, hoher manueller Aufwand, widersprüchliche Kennzahlen und unzuverlässige Forecasts.');
+    lines.push('• Erwarteter Kundennutzen: schnellere Managemententscheidungen, weniger Excel-Aufwand, einheitliche Kennzahlen und höhere Forecast-Qualität.');
+    lines.push('• Noch zu quantifizieren: heutige Reporting-Stunden, Kosten der manuellen Aufbereitung und Folgen fehlerhafter oder verspäteter Forecasts.');
+    lines.push('');
+    lines.push('WARUM JETZT?');
+    lines.push('• WENN WIR NICHT HANDELN → Der interne Zielkonflikt bleibt ungelöst und die Entscheidung wird eher vertagt oder zugunsten der ERP-Alternative getroffen.');
+    lines.push('• JETZT ERFORDERLICH → Den bereits geplanten Workshop mit einer verbindlichen Entscheidungsagenda und klaren Ergebnissen vorbereiten.');
+    return lines.join('\n');
+  }
+
+  window.ki21ClearDerivedAnalysisV160=clearDerived;
+  window.ki21BuildSourceFirstReportV160=function(){return reportFor(aid());};
+  const oldApply=window.ki21ApplySmartImportV65;
+  if(typeof oldApply==='function'){
+    window.ki21ApplySmartImportV65=function(){
+      const id=oldApply.apply(this,arguments);
+      clearDerived(id);
+      try{LS.set('ki21_analysis_fingerprint_'+id,String(raw(id).length)+'_'+Date.now());}catch(e){}
+      return id;
+    };
+  }
+  // Analyseausgaben sind flüchtig und werden immer aus der aktiven Primärquelle erzeugt.
+  window.buildOpportunityTestReportV723=function(){return reportFor(aid());};
+
+  function refreshVisible(){
+    try{
+      const r=reportFor(aid());if(!r)return;
+      // Der bestehende Premium-Renderer liest buildOpportunityTestReportV723 erneut.
+      if(typeof window.renderCockpitSnapshotLiteV4215==='function')window.renderCockpitSnapshotLiteV4215();
+    }catch(e){console.warn('Source-first refresh skipped',e);}
+  }
+  window.ki21RefreshSourceFirstV160=refreshVisible;
+  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
+  setTimeout(refreshVisible,500);
+})();
+
+</script>
 </body>
 </html>
