@@ -2,6 +2,21 @@
 <!-- KI21_BUILD: pilot-core-1.0.16-ios-startup-guard-20260715 -->
 <html lang="de">
 <head>
+<script>
+// Pilot Core 1.0.17: iOS compatibility shims for injected browser/wallet scripts.
+// These neutral placeholders prevent third-party scripts from aborting while
+// accessing optional globals that KI21 itself does not use.
+(function(){
+  try{
+    if(typeof window.__firefox__==='undefined') window.__firefox__={};
+    if(typeof window.__firefox__.reader==='undefined') window.__firefox__.reader=null;
+  }catch(e){}
+  try{
+    if(typeof window.ethereum==='undefined') window.ethereum={};
+    if(!('selectedAddress' in window.ethereum)) window.ethereum.selectedAddress=undefined;
+  }catch(e){}
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -2564,7 +2579,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
 
 <script>
-// Pilot Core 1.0.16: Browser-/Content-Blocker-Fehler dürfen den KI21-Start nicht abbrechen.
+// Pilot Core 1.0.17: Browser-/Content-Blocker- und Wallet-Fehler dürfen den KI21-Start nicht abbrechen.
 // iOS-Browser können fremde Reader-Skripte injizieren, die z. B. auf
 // window.__firefox__.reader zugreifen. Solche Fehler gehören nicht zur App.
 window.__ki21StartupErrors=[];
@@ -2572,7 +2587,7 @@ window.addEventListener('error', function(e){
   try{
     var message=String((e&&e.message)||'Unbekannter Fehler');
     var source=String((e&&e.filename)||'');
-    var injected=/__firefox__\.reader|Script error|webkit-masked-url|safari-extension|content[- ]?block/i.test(message+' '+source);
+    var injected=/__firefox__\.reader|window\.ethereum|selectedAddress|Script error|webkit-masked-url|safari-extension|content[- ]?block/i.test(message+' '+source);
     if(!injected)window.__ki21StartupErrors.push(message);
   }catch(_){}
 });
@@ -2580,7 +2595,7 @@ window.addEventListener('unhandledrejection', function(e){
   try{
     var reason=e&&e.reason;
     var message=String((reason&&reason.message)||reason||'Unbekannter Promise-Fehler');
-    if(!/__firefox__\.reader|webkit-masked-url|safari-extension|content[- ]?block/i.test(message)){
+    if(!/__firefox__\.reader|window\.ethereum|selectedAddress|webkit-masked-url|safari-extension|content[- ]?block/i.test(message)){
       window.__ki21StartupErrors.push(message);
     }
   }catch(_){}
