@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.19-decision-logic-core-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.0.20-pilot-freeze-candidate-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.19</title>
+<title>KI21 Pilot Core 1.0.20</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.15';
+const KI21_VERSION='Pilot Core 1.0.20';
 
 
 function runKi21VersionMigration(){
@@ -18998,6 +18998,196 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
       const base=priorV119(report,accId);
       try{return rebuildV119(base);}catch(e){console.warn('Decision Logic Core 1.0.19',e);return base;}
+    };
+  }
+})();
+</script>
+
+<!-- Pilot Core 1.0.20: Pilot Freeze Candidate – natürliche Forecast-Sprache, visuelle Decision Chain, Momentum-Sequenz, klare Warum-jetzt-Logik, qualitative Evidenz und Trennung von Health und Forecast. -->
+<script>
+(function(){
+  function cleanV120(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function parseV120(report){
+    return ki21ParseReportSectionsV740(String(report||''));
+  }
+  function sectionV120(title,lines){
+    const a=(lines||[]).map(cleanV120).filter(Boolean);
+    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
+  }
+  function replaceSectionV120(report,title,lines){
+    let r=String(report||'');
+    const body=(lines||[]).map(cleanV120).filter(Boolean).map(x=>'• '+x).join('\n');
+    const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)');
+    const block=body?title+'\n'+body:'';
+    if(re.test(r))r=r.replace(re,block);
+    else if(block)r+='\n\n'+block;
+    return r;
+  }
+  function removeSectionV120(report,title){
+    const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return String(report||'').replace(
+      new RegExp('\\n?\\n?'+esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)'),
+      ''
+    );
+  }
+  function firstV120(s,key){
+    return cleanV120(((s&&s[key])||[])[0]||'');
+  }
+  function findV120(s,key,re){
+    return ((s&&s[key])||[]).map(cleanV120).find(x=>re.test(x))||'';
+  }
+  function noDotV120(v){
+    return cleanV120(v).replace(/[.!?]+$/,'');
+  }
+  function sentenceV120(v){
+    let s=cleanV120(v);
+    if(!s)return '';
+    s=s.charAt(0).toUpperCase()+s.slice(1);
+    return /[.!?]$/.test(s)?s:s+'.';
+  }
+  function warningEventV120(w){
+    const x=noDotV120(String(w||'').replace(/^⚠\s*/,''));
+    if(/Pilotbudget.*nicht freigegeben/i.test(x))return 'Die wirtschaftliche Entscheiderin bestätigt den Budgetweg für einen Pilot.';
+    if(/wirtschaftliche Entscheiderin.*nicht eingebunden/i.test(x))return 'Die wirtschaftliche Entscheiderin beteiligt sich aktiv an der Bewertung.';
+    if(/Erfolgskriterien.*nicht vereinbart/i.test(x))return 'Kunde und Vertrieb verabschieden messbare Pilotziele und Erfolgskriterien.';
+    if(/Entscheidungstermin.*nicht vereinbart/i.test(x))return 'Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.';
+    if(/Business Case.*nicht bestätigt/i.test(x))return 'Der Kunde bestätigt den wirtschaftlichen Handlungsdruck und die erwartete Wirkung.';
+    if(/Termin.*nicht/i.test(x))return 'Der nächste Kundentermin wird verbindlich bestätigt.';
+    return sentenceV120(x.replace(/noch nicht|nicht|offen/gi,'').replace(/\s+/g,' ').trim());
+  }
+  function falseConditionV120(v){
+    let x=noDotV120(v);
+    if(/^[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+\s+keinen/i.test(x)){
+      return sentenceV120(x);
+    }
+    if(/^[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+\s+/i.test(x)){
+      return sentenceV120(x);
+    }
+    return sentenceV120(x);
+  }
+  function refineV120(report){
+    let r=String(report||'');
+    let p=parseV120(r),s=p.sections||{};
+
+    // Health and Forecast answer different questions.
+    const health=(s['HEALTH & FORECAST']||[]).map(cleanV120);
+    if(health.length){
+      r=removeSectionV120(r,'HEALTH & FORECAST');
+      r=replaceSectionV120(r,'OPPORTUNITY HEALTH',health);
+    }
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Deal hypothesis: grammatical, concise, genuinely testable.
+    const hyp=(s['DEAL-HYPOTHESE']||[]).map(cleanV120);
+    if(hyp.length){
+      const base=hyp[0];
+      const trueLine=(hyp.find(x=>/^DIE HYPOTHESE STIMMT/i.test(x))||'').replace(/^DIE HYPOTHESE STIMMT,\s*WENN:\s*/i,'');
+      let falseLine=(hyp.find(x=>/^DIE HYPOTHESE WAR FALSCH/i.test(x))||'').replace(/^DIE HYPOTHESE WAR FALSCH,\s*WENN:\s*/i,'');
+      falseLine=falseLine.replace(/Dr\. Lena Hoffmann keinen/g,'Dr. Lena Hoffmann erkennt keinen');
+      r=replaceSectionV120(r,'DEAL-HYPOTHESE',[
+        base,
+        'BESTÄTIGT, WENN: '+trueLine,
+        'WIDERLEGT, WENN: '+falseLine
+      ]);
+    }
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Decision Chain: same content, visually scannable as one causal path.
+    const chain=(s['EXECUTIVE DECISION CHAIN']||[]).map(cleanV120);
+    if(chain.length){
+      const get=label=>{
+        const x=chain.find(v=>v.toUpperCase().startsWith(label+':'))||'';
+        return cleanV120(x.replace(new RegExp('^'+label+':\\s*','i'),''));
+      };
+      r=replaceSectionV120(r,'EXECUTIVE DECISION CHAIN',[
+        'GESCHÄFTSZIEL → '+get('GESCHÄFTSZIEL'),
+        '↓',
+        'GRÖSSTER ENGPASS → '+get('ENGPASS'),
+        '↓',
+        'DEAL-LOGIK → '+get('LOGIK'),
+        '↓',
+        'HÖCHSTER HEBEL → '+get('HEBEL'),
+        '↓',
+        'VERKAUFSAKTION → '+get('AKTION'),
+        '↓',
+        'ERWARTETE KUNDENENTSCHEIDUNG → '+get('ERWARTETE KUNDENENTSCHEIDUNG'),
+        '↓',
+        'NÄCHSTER MEILENSTEIN → '+get('DANACH')
+      ]);
+    }
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Natural event-based forecast, no mechanically transformed warnings.
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(cleanV120);
+    const warnings=readiness.filter(x=>/^⚠/.test(x));
+    const different=(s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[]).map(cleanV120);
+    if(readiness.length){
+      const current=readiness[0];
+      const ups=warnings.slice(0,3).map(warningEventV120);
+      r=replaceSectionV120(r,'EXECUTIVE FORECAST',[
+        'AKTUELL: '+current,
+        'DEUTLICHE AUFSTUFUNG, WENN: '+ups.join(' '),
+        'KLARE ABSTUFUNG, WENN: '+falseConditionV120(different[0]||'Der wirtschaftliche Entscheider erkennt keinen ausreichenden Handlungsdruck.'),
+        'ZEITLOGIK: Health beschreibt die strukturelle Qualität der Opportunity; der Forecast bewertet den Abschluss im geplanten Zeitraum.'
+      ]);
+    }
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Momentum as a compact deal ECG, not three repeated prose blocks.
+    const positives=readiness.filter(x=>/^✓/.test(x)).map(x=>x.replace(/^✓\s*/,''));
+    const summary=(s['SALES SUMMARY']||[]).map(cleanV120);
+    const bottleneck=(summary.find(x=>/^Engpass:/i.test(x))||'').replace(/^Engpass:\s*/i,'');
+    const assignment=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(cleanV120);
+    const nextDecision=(assignment.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'')
+      .replace(/^ERFOLG DES NÄCHSTEN SCHRITTS:\s*/i,'');
+    r=replaceSectionV120(r,'DEAL MOMENTUM',[
+      '↑ TREIBER: '+sentenceV120(positives[0]||'Der fachliche Sponsor bestätigt Handlungsbedarf'),
+      '↓ BREMSE: '+sentenceV120(bottleneck||'Das wirtschaftliche Buying Center ist noch nicht vollständig eingebunden'),
+      '■ BLOCKADE: Solange Budgetweg, Erfolgskriterien und Entscheidungstermin offen sind, entsteht keine belastbare Pilotentscheidung.',
+      '↑ NÄCHSTER IMPULS: '+sentenceV120(nextDecision||'Der Kunde bestätigt den nächsten verbindlichen Entscheidungsschritt')
+    ]);
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Killer card: why now in three causal lines, without adding another parallel risk section.
+    const inaction=firstV120(s,'WENN WIR JETZT NICHT HANDELN');
+    const assignmentNow=(assignment.find(x=>/^JETZT TUN:/i.test(x))||'').replace(/^JETZT TUN:\s*/i,'');
+    r=removeSectionV120(r,'WENN WIR JETZT NICHT HANDELN');
+    r=replaceSectionV120(r,'WARUM JETZT?',[
+      'WENN WIR JETZT NICHT HANDELN: '+sentenceV120(inaction),
+      'WAHRSCHEINLICHE FOLGE: Die Opportunity bleibt in einer unverbindlichen Bewertung, verliert Momentum und verschiebt sich eher, als dass sie aktiv entschieden wird.',
+      'DESHALB MUSS JETZT: '+sentenceV120(assignmentNow||'Der nächste gemeinsame Entscheidungstermin verbindlich vereinbart werden')
+    ]);
+
+    p=parseV120(r);s=p.sections||{};
+
+    // Evidence: qualitative transparency, no fake percentages.
+    const facts=(s['FAKTENBASIS']||[]).map(cleanV120);
+    const hypothesis=firstV120(s,'DEAL-HYPOTHESE');
+    const open=(s['WAS DER VERTRIEB NOCH KLÄREN MUSS']||[]).map(cleanV120);
+    const directLevel=facts.length>=4?'ÜBERWIEGEND DIREKTE FAKTEN':facts.length>=2?'MEHRERE DIREKTE FAKTEN':'BEGRENZTE DIREKTE FAKTEN';
+    r=replaceSectionV120(r,'EVIDENZBASIS',[
+      directLevel+': '+sentenceV120(facts.slice(0,2).join(' ')),
+      'ERGÄNZENDE SALES-MUSTER: Die Empfehlung nutzt bekannte Buying-Center- und Entscheidungslogik, soweit die bestätigten Fakten dafür sprechen.',
+      'ZENTRALE ARBEITSHYPOTHESE: '+sentenceV120(hypothesis),
+      'NOCH ZU VALIDIEREN: '+sentenceV120(open.slice(0,2).join(' · '))
+    ]);
+
+    return r.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  const priorV120=window.ki21FinalizeReportFromPrimarySourceV103;
+  if(typeof priorV120==='function'){
+    window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+      const base=priorV120(report,accId);
+      try{return refineV120(base);}catch(e){console.warn('Pilot Freeze Candidate 1.0.20',e);return base;}
     };
   }
 })();
