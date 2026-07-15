@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.3.2-readiness-forecast-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.3.3-visible-readiness-fix-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.3.2 Executive One Page</title>
+<title>KI21 Pilot Core 1.3.3 Executive One Page</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.2 Executive One Page · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.3 Executive One Page · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.3.2 Executive One Page';
+const KI21_VERSION='Pilot Core 1.3.3 Executive One Page';
 
 
 function runKi21VersionMigration(){
@@ -20911,6 +20911,147 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   window.addEventListener('load',schedule132);
   window.addEventListener('pageshow',schedule132);
+})();
+</script>
+
+<!-- Pilot Core 1.3.3: Score und Forecast werden robust aus Sales Summary + Dealstatus abgeleitet. -->
+<script>
+(function(){
+  function clean133(v){
+    return String(v||'').replace(/\s+/g,' ').trim();
+  }
+
+  function evidence133(){
+    let text='';
+    document.querySelectorAll(
+      '.ki21-131-root .ki21-130-card.summary, .ki21-130-root .ki21-130-card.summary'
+    ).forEach(x=>text+=' '+clean133(x.textContent));
+
+    try{
+      const report=String(window.buildOpportunityTestReportV723()||'');
+      text+=' '+report;
+    }catch(e){}
+
+    return clean133(text).toLowerCase();
+  }
+
+  function readiness133(){
+    const t=evidence133();
+    if(!t)return null;
+
+    const sponsor=
+      /sponsor bestätigt handlungsbedarf|fachliche sponsor bestätigt|vertriebsleiter.*handlungsbedarf/i.test(t);
+
+    const decisionMakerMissing=
+      /wirtschaftliche entscheiderin nicht eingebunden|wirtschaftliche entscheiderin.*noch nicht eingebunden|buying center.*offen/i.test(t);
+
+    const budgetOpen=
+      /budget.*offen|pilotbudget.*nicht freigegeben|kein budget freigegeben|budgetweg.*offen/i.test(t);
+
+    const criteriaOpen=
+      /erfolgskriterien.*offen|erfolgskriterien.*nicht vereinbart|pilotziele.*offen/i.test(t);
+
+    const decisionOpen=
+      /pilotentscheidung.*offen|entscheidungstermin.*offen|entscheidungstermin.*nicht vereinbart/i.test(t);
+
+    let score=50;
+    if(sponsor)score+=10;
+    if(decisionMakerMissing)score-=10;
+    if(budgetOpen)score-=10;
+    if(criteriaOpen)score-=5;
+    if(decisionOpen)score-=5;
+
+    if(sponsor && decisionMakerMissing && budgetOpen){
+      score=Math.min(score,30);
+    }
+
+    score=Math.max(10,Math.min(90,score));
+
+    return {
+      score,
+      state:score<40?'Niedrig':score<70?'Mittel':'Gut'
+    };
+  }
+
+  function apply133(){
+    const r=readiness133();
+    if(!r)return false;
+
+    const roots=document.querySelectorAll('.ki21-131-root, .ki21-130-root');
+    if(!roots.length)return false;
+
+    roots.forEach(root=>{
+      root.querySelectorAll('.ki21-130-metric').forEach(card=>{
+        const label=clean133(
+          (card.querySelector('.ki21-130-metric-label')||{}).textContent||''
+        );
+        const value=card.querySelector('.ki21-130-metric-value');
+        const state=card.querySelector('.ki21-130-metric-state');
+        if(!value||!state)return;
+
+        if(/Opportunity Score|Executive Forecast/i.test(label)){
+          value.textContent=r.score+' %';
+          state.textContent=r.state;
+        }
+      });
+    });
+
+    return true;
+  }
+
+  const priorBuild133=window.buildOpportunityTestReportV723;
+  window.buildOpportunityTestReportV723=function(){
+    let report=priorBuild133.apply(this,arguments);
+    try{
+      const t=String(report||'').toLowerCase();
+      const sponsor=/sponsor bestätigt handlungsbedarf/.test(t);
+      const dm=/wirtschaftliche entscheiderin nicht eingebunden/.test(t);
+      const budget=/budget.*offen|pilotbudget.*nicht freigegeben/.test(t);
+
+      if(sponsor&&dm&&budget){
+        report=String(report||'')
+          .replace(
+            /OPPORTUNITY SCORE\n•\s*–\s*·\s*Noch offen/i,
+            'OPPORTUNITY SCORE\n• 30 % · NIEDRIG'
+          )
+          .replace(
+            /EXECUTIVE FORECAST\n•\s*Aktuell:\s*–\s*·\s*Noch offen/i,
+            'EXECUTIVE FORECAST\n• Aktuell: 30 % · NIEDRIG für die Pilotentscheidung'
+          );
+      }
+      return report;
+    }catch(e){
+      return report;
+    }
+  };
+
+  let timer133=null;
+  function schedule133(){
+    clearTimeout(timer133);
+    timer133=setTimeout(()=>{
+      apply133();
+      setTimeout(apply133,250);
+      setTimeout(apply133,700);
+      setTimeout(apply133,1400);
+    },80);
+  }
+
+  const oldRender133=window.renderCockpitSnapshotLiteV4215;
+  if(typeof oldRender133==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const result=oldRender133.apply(this,arguments);
+      schedule133();
+      return result;
+    };
+  }
+
+  window.addEventListener('load',schedule133);
+  window.addEventListener('pageshow',schedule133);
+
+  const app=document.getElementById('app');
+  if(app){
+    new MutationObserver(schedule133).observe(app,{childList:true,subtree:true});
+  }
 })();
 </script>
 
