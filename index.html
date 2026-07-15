@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.13-unified-sales-reasoning-20260714 -->
+<!-- KI21_BUILD: pilot-core-1.0.14-sales-execution-cockpit-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.13</title>
+<title>KI21 Pilot Core 1.0.14</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11398,7 +11398,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.13 · Unified Sales Reasoning'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.0.14 · Sales Execution Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16068,7 +16068,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.13';
+const KI21_VERSION='Pilot Core 1.0.14';
 
 
 function runKi21VersionMigration(){
@@ -18632,6 +18632,109 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     r=replaceV113(r,'KONKRETER VERKAUFSAUFTRAG',['JETZT TUN: '+p.now,'VORBEREITEN: '+p.prepare,'IM TERMIN ENTSCHEIDEN: '+p.decide,'ERFOLG DES NÄCHSTEN SCHRITTS: '+p.success]);
     return reorderV113(r).replace(/\n{3,}/g,'\n\n').trim();
   };
+})();
+</script>
+
+
+<!-- Pilot Core 1.0.14: Sales Execution Cockpit – nächste Kundenentscheidung und konkreter Verkaufsauftrag im Zentrum; alte Analyse-Langstrecke aus dem Cockpit entfernt. -->
+<style>
+/* Pilot Core 1.0.14 – Sales Execution Cockpit */
+.ki21-decision-card.ki21-execution-decision-v114{
+  padding:18px 17px 16px!important;
+  border-radius:20px!important;
+  border:1px solid rgba(167,139,250,.48)!important;
+  background:radial-gradient(circle at 95% 5%,rgba(167,139,250,.22),transparent 34%),linear-gradient(145deg,rgba(38,29,61,.98),rgba(18,22,31,.97))!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.04)!important;
+  margin:0 0 12px!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.ki21-exec-kicker-v114{font-size:9px;font-weight:950;letter-spacing:1.55px;text-transform:uppercase;color:#ff9a45;margin-bottom:9px}
+.ki21-exec-question-v114{font-size:10.2px;font-weight:850;color:#aeb8c4;margin-bottom:5px}
+.ki21-exec-decision-v114{font-size:21px;line-height:1.20;font-weight:950;letter-spacing:-.48px;color:#f7f8fb;margin-bottom:14px}
+.ki21-exec-meta-v114{display:flex;flex-wrap:wrap;gap:7px}
+.ki21-exec-chip-v114{font-size:9.7px;font-weight:850;border-radius:999px;padding:5px 8px;border:1px solid rgba(139,148,158,.25);background:rgba(255,255,255,.035);color:#c9d1d9}
+.ki21-exec-chip-v114.readiness{border-color:rgba(210,153,34,.34);background:rgba(210,153,34,.09);color:#e3b341}
+.ki21-exec-chip-v114.confidence{border-color:rgba(86,211,144,.34);background:rgba(86,211,144,.09);color:#56d390}
+.ki21-exec-target-v114{margin-top:12px;padding:10px 11px;border-radius:12px;border-left:3px solid #ff8a2a;background:rgba(255,107,0,.075);font-size:11.7px;line-height:1.38;color:#edf2f7;font-weight:720}
+.ki21-exec-target-v114 b{color:#ff9a45}
+.ki21-action-command-v110{margin-top:0!important;margin-bottom:14px!important}
+/* Alte lange Entscheidungs-Unterbereiche sind in 1.0.14 im Cockpit bewusst nicht sichtbar. */
+.ki21-decision-card.ki21-execution-decision-v114 .ki21-decision-rec,
+.ki21-decision-card.ki21-execution-decision-v114 .ki21-decision-grid,
+.ki21-decision-card.ki21-execution-decision-v114 .ki21-qe-row,
+.ki21-decision-card.ki21-execution-decision-v114 .ki21-decision-more,
+.ki21-decision-card.ki21-execution-decision-v114 .ki21-decision-head{display:none!important}
+@media(max-width:390px){
+  .ki21-decision-card.ki21-execution-decision-v114{padding:15px 14px 14px!important;border-radius:18px!important}
+  .ki21-exec-decision-v114{font-size:18.5px;line-height:1.19}
+  .ki21-exec-target-v114{font-size:11.1px}
+}
+</style>
+<script>
+(function(){
+  function srcV114(){try{return String(getOpportunityOnlySourceV6522(state&&state.activeId)||'');}catch(e){return '';}}
+  function sectionV114(text,heading,next){
+    const esc=heading.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const end=(next||[]).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    const re=new RegExp(esc+'\\s*:\\s*([\\s\\S]*?)'+(end?'(?=\\s*(?:'+end+')\\s*:|$)':'$'),'i');
+    const m=String(text||'').match(re);return m?m[1].trim():'';
+  }
+  function peopleV114(text){
+    const sec=sectionV114(text,'Stakeholder',['Bisherige Erkenntnisse','Offene Punkte','Widersprüche und Risiken','Widersprüche','Risiken']);
+    return sec.split(/\n|\s+-\s+(?=[A-ZÄÖÜ])/).map(x=>x.replace(/^[-•]\s*/,'').trim()).filter(Boolean).map(line=>{
+      const f=line.split(/\s*·\s*/).map(x=>x.trim()).filter(Boolean);return {name:f[0]||'',detail:f.slice(1).join(' · ')};
+    }).filter(x=>x.name&&x.detail&&x.name.length<80);
+  }
+  function pickV114(list,re,fallback){const x=(list||[]).find(v=>re.test(v.detail)||re.test(v.name));return x&&x.name?x.name:fallback;}
+  function planV114(){
+    const t=srcV114();if(!t)return null;const ppl=peopleV114(t);
+    const sponsor=pickV114(ppl,/(fachlicher sponsor|\bsponsor\b|vertriebsleiter)/i,'Der fachliche Sponsor');
+    const dm=pickV114(ppl,/(wirtschaftliche entscheider|geschäftsführer|geschäftsführerin)/i,'der wirtschaftliche Entscheider');
+    const presales=pickV114(ppl,/(leiter presales|\bpresales\b)/i,'Presales');
+    const hasPresales=/presales/i.test(t);
+    const participants=[dm];if(hasPresales&&presales&&!participants.includes(presales))participants.push(presales);
+    const prePilot=/(noch kein budget freigegeben|pilotentscheidung liegt noch nicht vor|pilot.{0,100}noch nicht freigegeben|noch nicht eingebunden|workshop.{0,100}noch nicht terminiert|termin.{0,100}noch nicht vereinbart)/i.test(t);
+    if(prePilot){
+      return {
+        decision:'Der Kunde entscheidet, einen gemeinsamen Discovery- und Entscheidungstermin mit '+participants.join(' und ')+' durchzuführen.',
+        target:dm+' bestätigt im Termin den wirtschaftlichen Handlungsdruck und den Auftrag, einen konkreten Pilotvorschlag auszuarbeiten.',
+        readiness:'Pilotentscheidung offen',confidence:'Empfehlungssicherheit: Hoch'
+      };
+    }
+    let report='';try{report=String(buildKi21TestReportV723(state.activeId)||'');}catch(e){}
+    const parsed=typeof ki21ParseReportSectionsV740==='function'?ki21ParseReportSectionsV740(report):{sections:{}};
+    const s=parsed.sections||{};
+    const action=(s['KONKRETER VERKAUFSAUFTRAG']||[]).find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'';
+    const success=(s['KONKRETER VERKAUFSAUFTRAG']||[]).find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'';
+    return {
+      decision:(action.replace(/^IM TERMIN ENTSCHEIDEN:\s*/i,'')||'Der Kunde bestätigt den nächsten verbindlichen Entscheidungsschritt.'),
+      target:(success.replace(/^ERFOLG DES NÄCHSTEN SCHRITTS:\s*/i,'')||'Der nächste Kundenschritt ist verbindlich bestätigt.'),
+      readiness:'Nächste Entscheidung klären',confidence:'Empfehlungssicherheit: Mittel'
+    };
+  }
+  function escV114(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function renderV114(){
+    const app=document.getElementById('app');if(!app)return false;
+    const card=app.querySelector('.ki21-decision-card');if(!card)return false;
+    const p=planV114();if(!p)return false;
+    card.classList.add('ki21-execution-decision-v114');
+    card.innerHTML='<div class="ki21-exec-kicker-v114">Nächste Kundenentscheidung</div>'+
+      '<div class="ki21-exec-question-v114">Welche Entscheidung muss der Kunde als Nächstes treffen?</div>'+
+      '<div class="ki21-exec-decision-v114">'+escV114(p.decision)+'</div>'+
+      '<div class="ki21-exec-meta-v114"><span class="ki21-exec-chip-v114 confidence">'+escV114(p.confidence)+'</span><span class="ki21-exec-chip-v114 readiness">'+escV114(p.readiness)+'</span></div>'+
+      '<div class="ki21-exec-target-v114"><b>Entscheidung erreicht, wenn:</b> '+escV114(p.target)+'</div>';
+    const action=app.querySelector('.ki21-action-command-v110');
+    if(action&&card.parentNode&&action!==card.nextElementSibling)card.parentNode.insertBefore(action,card.nextSibling);
+    return true;
+  }
+  const observer=new MutationObserver(()=>{clearTimeout(window.__ki21_v114_t);window.__ki21_v114_t=setTimeout(()=>{try{renderV114();}catch(e){console.warn('Sales Execution Cockpit 1.0.14',e);}},40);});
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('load',()=>setTimeout(()=>{try{renderV114();}catch(e){}},260));
+  const oldCockpit=window.renderCockpitLite;
+  if(typeof oldCockpit==='function')window.renderCockpitLite=function(){const out=oldCockpit.apply(this,arguments);setTimeout(()=>{try{renderV114();}catch(e){}},0);return out;};
+  const oldStation=window.renderStation;
+  if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);setTimeout(()=>{try{renderV114();}catch(e){}},0);return out;};
 })();
 </script>
 
