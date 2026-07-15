@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.18-script-boundary-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.0.19-decision-logic-core-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.18</title>
+<title>KI21 Pilot Core 1.0.19</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -18814,6 +18814,192 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(typeof oldCockpit==='function')window.renderCockpitLite=function(){const out=oldCockpit.apply(this,arguments);setTimeout(()=>{try{renderV114();}catch(e){}},0);return out;};
   const oldStation=window.renderStation;
   if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);setTimeout(()=>{try{renderV114();}catch(e){}},0);return out;};
+})();
+</script>
+
+<!-- Pilot Core 1.0.19: Decision Logic Core – Deal-Hypothese, Executive Decision Chain, ereignisbasierter Forecast, Momentum, Untätigkeitsprognose und Evidenzbasis. -->
+<script>
+(function(){
+  function cleanV119(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function firstV119(s,key){
+    const a=(s&&s[key])||[];
+    return cleanV119(a[0]||'');
+  }
+  function findV119(s,key,re){
+    return ((s&&s[key])||[]).map(cleanV119).find(x=>re.test(x))||'';
+  }
+  function stripPrefixV119(v,re){
+    return cleanV119(v).replace(re,'').trim();
+  }
+  function sentenceV119(v){
+    let s=cleanV119(v);
+    if(!s)return '';
+    s=s.charAt(0).toUpperCase()+s.slice(1);
+    return /[.!?]$/.test(s)?s:s+'.';
+  }
+  function lowerStartV119(v){
+    const s=cleanV119(v);
+    return s?s.charAt(0).toLowerCase()+s.slice(1):'';
+  }
+  function sectionV119(title,lines){
+    const clean=(lines||[]).map(cleanV119).filter(Boolean);
+    return clean.length?'\n\n'+title+'\n'+clean.map(x=>'• '+x).join('\n'):'';
+  }
+  function uniqueV119(lines){
+    const seen=new Set();
+    return (lines||[]).map(cleanV119).filter(x=>{
+      const k=x.toLowerCase().replace(/[^a-z0-9äöüß€]+/g,' ').replace(/\s+/g,' ').trim();
+      if(!k||seen.has(k))return false;
+      seen.add(k);return true;
+    });
+  }
+  function buildLogicV119(report){
+    const parsed=ki21ParseReportSectionsV740(report);
+    const s=parsed.sections||{};
+    const summary=(s['SALES SUMMARY']||[]).map(cleanV119);
+    const status=stripPrefixV119(summary.find(x=>/^Status:/i.test(x))||firstV119(s,'AKTUELLES LAGEBILD'),/^Status:\s*/i)
+      .replace(/^CHANCE\s*/i,'');
+    const bottleneck=stripPrefixV119(summary.find(x=>/^Engpass:/i.test(x))||findV119(s,'AKTUELLES LAGEBILD',/^GRÖSSTER ENGPASS/i),/^Engpass:\s*/i)
+      .replace(/^GRÖSSTER ENGPASS\s*/i,'');
+    const recommendation=stripPrefixV119(summary.find(x=>/^Empfehlung:/i.test(x))||firstV119(s,'VERTRIEBSEMPFEHLUNG'),/^Empfehlung:\s*/i);
+    const why=firstV119(s,'WARUM KI21 GENAU DAS EMPFIEHLT');
+    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||[]).map(cleanV119);
+    const customerValue=business.find(x=>/Erwarteter Kundennutzen:/i.test(x))
+      || business.find(x=>/Nutzen|Wirkung|Effekt/i.test(x))
+      || 'Der Kunde will das wirtschaftlich relevante Vertriebsproblem mit vertretbarem Aufwand lösen.';
+    const actionNow=stripPrefixV119(findV119(s,'KONKRETER VERKAUFSAUFTRAG',/^JETZT TUN:/i),/^JETZT TUN:\s*/i)
+      || firstV119(s,'NÄCHSTE KUNDENSCHRITTE');
+    const decision=stripPrefixV119(findV119(s,'KONKRETER VERKAUFSAUFTRAG',/^IM TERMIN ENTSCHEIDEN:/i),/^IM TERMIN ENTSCHEIDEN:\s*/i)
+      || recommendation;
+    const success=stripPrefixV119(findV119(s,'KONKRETER VERKAUFSAUFTRAG',/^ERFOLG DES NÄCHSTEN SCHRITTS:/i),/^ERFOLG DES NÄCHSTEN SCHRITTS:\s*/i)
+      || 'Der Kunde bestätigt den nächsten verbindlichen Entscheidungsschritt.';
+    const lever=stripPrefixV119(firstV119(s,'VERKAUFSHEBEL – PRIORISIERT'),/^\d+\.\s*/)
+      || recommendation;
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(cleanV119);
+    const readinessHeadline=readiness[0]||'Entscheidungsreife noch nicht belastbar';
+    const missing=readiness.filter(x=>/^⚠/.test(x)).map(x=>x.replace(/^⚠\s*/,''));
+    const positives=readiness.filter(x=>/^✓/.test(x)).map(x=>x.replace(/^✓\s*/,''));
+    const facts=(s['FAKTENBASIS']||[]).map(cleanV119);
+    const alternatives=(s['WAS SPRICHT DAGEGEN?']||[]).map(cleanV119);
+    const different=(s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[]).map(cleanV119);
+
+    let blocker='fehlende wirtschaftliche Priorisierung';
+    if(/entscheider|buying center|entscheidungssituation/i.test(bottleneck))blocker='die fehlende Einbindung des wirtschaftlichen Buying Centers';
+    else if(/budget/i.test(bottleneck))blocker='der noch offene wirtschaftliche Entscheidungs- und Budgetweg';
+    else if(/erfolgskriter|business case/i.test(bottleneck))blocker='der noch nicht bestätigte Business Case';
+    else if(bottleneck)blocker=lowerStartV119(bottleneck).replace(/[.!?]$/,'');
+
+    const hypothesis='KI21 geht aktuell davon aus, dass nicht fehlendes Produktinteresse, sondern '+blocker+' der zentrale Kaufblocker ist.';
+    const trueSignals=uniqueV119([
+      missing.some(x=>/entscheider|buying center/i.test(x))?'Der wirtschaftliche Entscheider beteiligt sich aktiv an der Bewertung.':'Der Kunde bestätigt den vorgeschlagenen Entscheidungsweg.',
+      missing.some(x=>/budget|business case/i.test(x))?'Budgetweg und wirtschaftlicher Handlungsdruck werden konkret bestätigt.':'Der Kunde priorisiert den wirtschaftlichen Nutzen gegenüber weiterer Produktinformation.',
+      decision?'Die erwartete Kundenentscheidung wird im nächsten Termin tatsächlich getroffen.':''
+    ]);
+    const falseSignals=uniqueV119([
+      alternatives[0]?'Eine bestehende Alternative wird als ausreichend bestätigt.':'Technische oder produktbezogene Einwände bleiben der dominierende Blocker.',
+      different[0]||'Der wirtschaftliche Entscheider erkennt keinen ausreichenden Handlungsdruck.',
+      'Der Sponsor verliert Aktivität oder kann keinen verbindlichen Kundenschritt herstellen.'
+    ]);
+
+    const decisionChain=[
+      'GESCHÄFTSZIEL: '+stripPrefixV119(customerValue,/^Erwarteter Kundennutzen:\s*/i),
+      'ENGPASS: '+sentenceV119(bottleneck||'Der nächste verbindliche Kundenschritt fehlt.'),
+      'LOGIK: '+sentenceV119(why||'Zusätzliche Produktinformation beseitigt den aktuellen Kaufblocker nicht.'),
+      'HEBEL: '+sentenceV119(lever),
+      'AKTION: '+sentenceV119(actionNow),
+      'ERWARTETE KUNDENENTSCHEIDUNG: '+sentenceV119(decision),
+      'DANACH: '+sentenceV119(success)
+    ];
+
+    const upEvents=missing.slice(0,2).map(x=>'↑ '+sentenceV119(x.replace(/noch nicht|offen/gi,'verbindlich bestätigen')));
+    if(upEvents.length<2)upEvents.push('↑ Der Kunde bestätigt Business Case und nächsten Entscheidungsschritt.');
+    const downEvent='↓ '+sentenceV119(different[0]||'Der wirtschaftliche Entscheider erkennt keinen ausreichenden Handlungsdruck.');
+    const forecast=[
+      'AKTUELL: '+readinessHeadline,
+      'AUFSTUFUNG, WENN: '+upEvents.join(' '),
+      'ABSTUFUNG, WENN: '+downEvent
+    ];
+
+    const momentum=[
+      positives[0]?'↑ MOMENTUM STEIGT: '+sentenceV119(positives[0]):'↑ MOMENTUM STEIGT: '+sentenceV119(status||'Der fachliche Kontakt bestätigt Handlungsbedarf.'),
+      '↓ MOMENTUM FÄLLT: '+sentenceV119(bottleneck||'Der nächste verbindliche Kundenschritt fehlt.'),
+      '↑ MOMENTUM STEIGT WIEDER: '+sentenceV119(decision||'Der Kunde bestätigt die nächste Entscheidung.')
+    ];
+
+    let inaction='Ohne den nächsten verbindlichen Entscheidungsschritt bleibt die Opportunity in einer unverbindlichen Bewertungsphase und verliert Momentum.';
+    if(/budget|wirtschaftlich|entscheider/i.test(bottleneck)){
+      inaction='Ohne Einbindung des wirtschaftlichen Entscheiders und bestätigten Budgetweg wird der Pilot mit hoher Wahrscheinlichkeit in eine längere Evaluierung übergehen oder auf einen späteren Budgetzyklus verschoben.';
+    }else if(/termin/i.test(bottleneck)){
+      inaction='Ohne verbindlichen Kundentermin verliert die Opportunity Momentum; offene Punkte werden vertagt und die Entscheidung verschiebt sich wahrscheinlich.';
+    }
+
+    const evidence=[
+      'DIREKT BESTÄTIGT: '+sentenceV119(facts.slice(0,2).join(' ')),
+      'KI21-ABLEITUNG: '+sentenceV119(hypothesis),
+      'NOCH ZU PRÜFEN: '+sentenceV119(missing.slice(0,2).join(' · ')||'Die zentrale Deal-Hypothese muss im nächsten Kundenschritt bestätigt oder widerlegt werden.')
+    ];
+
+    return {
+      parsed,s,status,bottleneck,recommendation,hypothesis,trueSignals,falseSignals,
+      decisionChain,forecast,momentum,inaction,evidence
+    };
+  }
+  function rebuildV119(report){
+    const x=buildLogicV119(report);
+    const p=x.parsed,s=x.s;
+    const order=[
+      'SALES SUMMARY','HEALTH & FORECAST','ENTSCHEIDUNGSREIFE',
+      'DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN','KONKRETER VERKAUFSAUFTRAG',
+      'EXECUTIVE FORECAST','DEAL MOMENTUM','WENN WIR JETZT NICHT HANDELN',
+      'EXECUTIVE WATCHOUT','FAKTENBASIS','EVIDENZBASIS',
+      'STÄRKSTE KLÄRUNGSFRAGE','WAS SPRICHT DAGEGEN?',
+      'KI21 WÜRDE ANDERS EMPFEHLEN, WENN','VERTRAUENSCHECK',
+      'WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN','DARAUF ACHTEN'
+    ];
+    const generated={
+      'DEAL-HYPOTHESE':[
+        x.hypothesis,
+        'DIE HYPOTHESE STIMMT, WENN: '+x.trueSignals.join(' '),
+        'DIE HYPOTHESE WAR FALSCH, WENN: '+x.falseSignals.join(' ')
+      ],
+      'EXECUTIVE DECISION CHAIN':x.decisionChain,
+      'EXECUTIVE FORECAST':x.forecast,
+      'DEAL MOMENTUM':x.momentum,
+      'WENN WIR JETZT NICHT HANDELN':[x.inaction],
+      'EXECUTIVE WATCHOUT':[
+        firstV119(s,'VERKAUFSRISIKO')||'Eine scheinbar schnelle Aktion kann den Deal verschlechtern, wenn sie den zentralen Kaufblocker nicht löst.'
+      ],
+      'EVIDENZBASIS':x.evidence
+    };
+    const suppressed=new Set([
+      'VERTRIEBSEMPFEHLUNG','WARUM KI21 GENAU DAS EMPFIEHLT',
+      'EMPFOHLENE VERKAUFSSTRATEGIE','VERKAUFSHEBEL – PRIORISIERT',
+      'NÄCHSTE KUNDENSCHRITTE','VERTRIEBLICHE INTERPRETATION',
+      'WARUM JETZT?','AKTUELLES LAGEBILD','VERKAUFSRISIKO'
+    ]);
+    let out=(p.meta||[]).join('\n').trim();
+    const used=new Set();
+    order.forEach(k=>{
+      const lines=generated[k]||s[k]||[];
+      if(lines.length){out+=sectionV119(k,lines);used.add(k);}
+    });
+    Object.keys(s).forEach(k=>{
+      if(!used.has(k)&&!suppressed.has(k)&&s[k]&&s[k].length){
+        out+=sectionV119(k,s[k]);
+      }
+    });
+    return out.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  const priorV119=window.ki21FinalizeReportFromPrimarySourceV103;
+  if(typeof priorV119==='function'){
+    window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+      const base=priorV119(report,accId);
+      try{return rebuildV119(base);}catch(e){console.warn('Decision Logic Core 1.0.19',e);return base;}
+    };
+  }
 })();
 </script>
 
