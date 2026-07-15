@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.0.20-pilot-freeze-candidate-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.1.0-pilot-ready-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.0.20</title>
+<title>KI21 Pilot Core 1.1.0</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.0.20';
+const KI21_VERSION='Pilot Core 1.1.0';
 
 
 function runKi21VersionMigration(){
@@ -19188,6 +19188,196 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
       const base=priorV120(report,accId);
       try{return refineV120(base);}catch(e){console.warn('Pilot Freeze Candidate 1.0.20',e);return base;}
+    };
+  }
+})();
+</script>
+
+<!-- Pilot Core 1.1.0: Pilot Ready – Managementfragen, Executive-Sprache, verdichtete Reihenfolge, bereinigte Decision Chain und finaler Sprachqualitäts-Pass. -->
+<script>
+(function(){
+  function cleanV110(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function parseV110(report){
+    return ki21ParseReportSectionsV740(String(report||''));
+  }
+  function sentenceV110(v){
+    let s=cleanV110(v);
+    if(!s)return '';
+    s=s.charAt(0).toUpperCase()+s.slice(1);
+    return /[.!?]$/.test(s)?s:s+'.';
+  }
+  function sectionV110(title,lines){
+    const a=(lines||[]).map(cleanV110).filter(Boolean);
+    return a.length?'\n\n'+title+'\n'+a.map(x=>'• '+x).join('\n'):'';
+  }
+  function replaceSectionV110(report,title,lines){
+    let r=String(report||'');
+    const body=(lines||[]).map(cleanV110).filter(Boolean).map(x=>'• '+x).join('\n');
+    const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)');
+    const block=body?title+'\n'+body:'';
+    if(re.test(r))r=r.replace(re,block);
+    else if(block)r+='\n\n'+block;
+    return r;
+  }
+  function removeSectionV110(report,title){
+    const esc=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return String(report||'').replace(
+      new RegExp('\\n?\\n?'+esc+'\\n[\\s\\S]*?(?=\\n\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]+\\n|$)'),
+      ''
+    );
+  }
+  function firstV110(s,key){
+    return cleanV110(((s&&s[key])||[])[0]||'');
+  }
+  function extractLabelV110(lines,label){
+    const row=(lines||[]).map(cleanV110).find(x=>x.toUpperCase().startsWith(label.toUpperCase()+':'));
+    return row?cleanV110(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
+  }
+  function polishGrammarV110(v){
+    return cleanV110(v)
+      .replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,'erkennt keinen relevanten wirtschaftlichen Handlungsdruck')
+      .replace(/für einen Pilot/gi,'für den Pilot')
+      .replace(/Kunde und Vertrieb verabschieden/gi,'Kunde und Vertrieb vereinbaren')
+      .replace(/wirtschaftlichem Entscheider/gi,'wirtschaftlicher Entscheiderin')
+      .replace(/\s+·\s+/g,' · ');
+  }
+  function refineV110(report){
+    let r=String(report||'');
+    let p=parseV110(r),s=p.sections||{};
+
+    // 1) Opportunity Health direkt nach Sales Summary.
+    const health=(s['OPPORTUNITY HEALTH']||[]).map(polishGrammarV110);
+    r=removeSectionV110(r,'OPPORTUNITY HEALTH');
+
+    // 2) Deal-Hypothese souveräner und ohne KI-Einleitung.
+    const hyp=(s['DEAL-HYPOTHESE']||[]).map(polishGrammarV110);
+    if(hyp.length){
+      let core=hyp[0]
+        .replace(/^KI21 geht aktuell davon aus,\s*dass\s*/i,'')
+        .replace(/^Aktuelle Deal-Hypothese:\s*/i,'');
+      core=sentenceV110(core);
+      const confirmed=hyp.find(x=>/^BESTÄTIGT, WENN:/i.test(x))||'';
+      const disproved=hyp.find(x=>/^WIDERLEGT, WENN:/i.test(x))||'';
+      r=replaceSectionV110(r,'DEAL-HYPOTHESE',[
+        'AKTUELLE DEAL-HYPOTHESE: '+core,
+        polishGrammarV110(confirmed),
+        polishGrammarV110(disproved)
+      ]);
+    }
+
+    p=parseV110(r);s=p.sections||{};
+
+    // 3) Decision Chain ohne einzelne Pfeil-Bullets.
+    const chain=(s['EXECUTIVE DECISION CHAIN']||[]).map(polishGrammarV110).filter(x=>x!=='↓');
+    if(chain.length){
+      const labels=[
+        'GESCHÄFTSZIEL','GRÖSSTER ENGPASS','DEAL-LOGIK',
+        'HÖCHSTER HEBEL','VERKAUFSAKTION',
+        'ERWARTETE KUNDENENTSCHEIDUNG','NÄCHSTER MEILENSTEIN'
+      ];
+      const compact=[];
+      labels.forEach((label,i)=>{
+        const row=chain.find(x=>x.toUpperCase().startsWith(label+' →'));
+        if(row){
+          compact.push(row);
+          if(i<labels.length-1)compact.push('   ↓');
+        }
+      });
+      r=replaceSectionV110(r,'EXECUTIVE DECISION CHAIN',compact);
+    }
+
+    p=parseV110(r);s=p.sections||{};
+
+    // 4) Forecast nur als Managementaussage; Methodikzeile entfernen.
+    const forecast=(s['EXECUTIVE FORECAST']||[]).map(polishGrammarV110)
+      .filter(x=>!/^ZEITLOGIK:/i.test(x));
+    if(forecast.length){
+      r=replaceSectionV110(r,'EXECUTIVE FORECAST',forecast);
+    }
+
+    p=parseV110(r);s=p.sections||{};
+
+    // 5) Evidenzbasis vertriebsnah benennen.
+    const ev=(s['EVIDENZBASIS']||[]).map(polishGrammarV110);
+    if(ev.length){
+      const rows=ev.map(x=>{
+        if(/^ÜBERWIEGEND DIREKTE FAKTEN:/i.test(x))return x.replace(/^ÜBERWIEGEND DIREKTE FAKTEN:/i,'BELASTBARE FAKTENBASIS:');
+        if(/^MEHRERE DIREKTE FAKTEN:/i.test(x))return x.replace(/^MEHRERE DIREKTE FAKTEN:/i,'SOLIDE FAKTENBASIS:');
+        if(/^BEGRENZTE DIREKTE FAKTEN:/i.test(x))return x.replace(/^BEGRENZTE DIREKTE FAKTEN:/i,'NOCH BEGRENZTE FAKTENBASIS:');
+        return x;
+      });
+      r=replaceSectionV110(r,'EVIDENZBASIS',rows);
+    }
+
+    p=parseV110(r);s=p.sections||{};
+
+    // 6) Why now gets one concise causal chain, not repeated prose.
+    const why=(s['WARUM JETZT?']||[]).map(polishGrammarV110);
+    if(why.length){
+      const noAction=extractLabelV110(why,'WENN WIR JETZT NICHT HANDELN');
+      const consequence=extractLabelV110(why,'WAHRSCHEINLICHE FOLGE');
+      const now=extractLabelV110(why,'DESHALB MUSS JETZT');
+      r=replaceSectionV110(r,'WARUM JETZT?',[
+        'WENN WIR NICHT HANDELN → '+sentenceV110(noAction),
+        'WAHRSCHEINLICHE FOLGE → '+sentenceV110(consequence),
+        'JETZT ERFORDERLICH → '+sentenceV110(now)
+      ]);
+    }
+
+    // 7) Global language polish.
+    r=polishGrammarV110(r);
+
+    // 8) Final order around the five management questions.
+    p=parseV110(r);s=p.sections||{};
+    const meta=(p.meta||[]).join('\n').trim();
+    const order=[
+      'SALES SUMMARY',
+      'OPPORTUNITY HEALTH',
+      'ENTSCHEIDUNGSREIFE',
+      'DEAL-HYPOTHESE',
+      'EXECUTIVE DECISION CHAIN',
+      'KONKRETER VERKAUFSAUFTRAG',
+      'EXECUTIVE FORECAST',
+      'DEAL MOMENTUM',
+      'WARUM JETZT?',
+      'EXECUTIVE WATCHOUT',
+      'FAKTENBASIS',
+      'EVIDENZBASIS',
+      'STÄRKSTE KLÄRUNGSFRAGE',
+      'WAS SPRICHT DAGEGEN?',
+      'KI21 WÜRDE ANDERS EMPFEHLEN, WENN',
+      'VERTRAUENSCHECK',
+      'WAS DER VERTRIEB NOCH KLÄREN MUSS',
+      'BUSINESS CASE UND KUNDENNUTZEN',
+      'DARAUF ACHTEN'
+    ];
+    let out=meta;
+    const used=new Set();
+    order.forEach(k=>{
+      if(s[k]&&s[k].length){
+        out+=sectionV110(k,s[k]);
+        used.add(k);
+      }
+    });
+    Object.keys(s).forEach(k=>{
+      if(!used.has(k)&&s[k]&&s[k].length)out+=sectionV110(k,s[k]);
+    });
+
+    return out
+      .replace(/Dr\. Lena Hoffmann keinen/gi,'Dr. Lena Hoffmann erkennt keinen')
+      .replace(/erkennt keinen relevanten wirtschaftlichen Handlungsdruck erkennt/gi,'erkennt keinen relevanten wirtschaftlichen Handlungsdruck')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+  }
+
+  const priorV110=window.ki21FinalizeReportFromPrimarySourceV103;
+  if(typeof priorV110==='function'){
+    window.ki21FinalizeReportFromPrimarySourceV103=function(report,accId){
+      const base=priorV110(report,accId);
+      try{return refineV110(base);}catch(e){console.warn('Pilot Ready 1.1.0',e);return base;}
     };
   }
 })();
