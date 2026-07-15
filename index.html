@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.3.1-executive-one-page-data-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.3.2-readiness-forecast-fix-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.3.1 Executive One Page</title>
+<title>KI21 Pilot Core 1.3.2 Executive One Page</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.1 Executive One Page · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.3.2 Executive One Page · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.3.1 Executive One Page';
+const KI21_VERSION='Pilot Core 1.3.2 Executive One Page';
 
 
 function runKi21VersionMigration(){
@@ -20794,6 +20794,123 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     };
   }
   window.addEventListener('load',schedule131);
+})();
+</script>
+
+<!-- Pilot Core 1.3.2: Readiness-/Forecast-Fix aus Originalinformationen. -->
+<script>
+(function(){
+  function source132(){
+    let raw='';
+    try{
+      const aid=state.activeId||LS.get('ki21_aid',null);
+      if(typeof getOpportunityOnlySourceV6522==='function'){
+        raw=String(getOpportunityOnlySourceV6522(aid)||'');
+      }
+      if(!raw)raw=String(LS.get('ki21_import_raw_'+aid,'')||'');
+    }catch(e){}
+    return raw.replace(/\s+/g,' ').trim();
+  }
+
+  function readiness132(){
+    const t=source132().toLowerCase();
+    if(!t)return null;
+
+    const sponsor=/(sponsor|vertriebsleiter)[^.!?]{0,160}(bestätigt|sieht|erkennt)[^.!?]{0,100}(handlungsbedarf|problem|bedarf)/i.test(t);
+    const dmMissing=/(wirtschaftlich(?:e|er)\s+entscheider(?:in)?|geschäftsführer(?:in)?|geschäftsführung)[^.!?]{0,180}(noch nicht eingebunden|noch nicht bewertet|nicht eingebunden|nicht bewertet)/i.test(t);
+    const budgetOpen=/(pilot|pilotprojekt|investition|budget)[^.!?]{0,180}(noch kein|kein|nicht)[^.!?]{0,90}(budget|freigegeben|genehmigt|bestätigt)/i.test(t)
+      || /noch kein budget freigegeben/i.test(t);
+    const criteriaOpen=/(erfolgskriterien|pilotziele)[^.!?]{0,130}(offen|noch nicht|nicht vereinbart|fehlen)/i.test(t);
+    const meetingOpen=/(entscheidungstermin|workshop|termin)[^.!?]{0,160}(noch nicht vereinbart|noch nicht terminiert|offen|vorgeschlagen)/i.test(t);
+    const businessOpen=/(business case|wirtschaftlicher effekt|wirtschaftliche auswirkung)[^.!?]{0,160}(offen|noch nicht|nicht quantifiziert|nicht bestätigt)/i.test(t);
+
+    let score=50;
+    if(sponsor)score+=10;
+    if(dmMissing)score-=10;
+    if(budgetOpen)score-=10;
+    if(criteriaOpen)score-=5;
+    if(meetingOpen)score-=5;
+    if(businessOpen)score-=5;
+
+    score=Math.max(10,Math.min(90,score));
+
+    // Pre-pilot with sponsor but without economic decision path is deliberately capped low.
+    if(sponsor && dmMissing && budgetOpen)score=Math.min(score,30);
+
+    return {
+      score,
+      state:score<40?'Niedrig':score<70?'Mittel':'Gut',
+      sponsor,dmMissing,budgetOpen,criteriaOpen,meetingOpen,businessOpen
+    };
+  }
+
+  const previousBuild132=window.buildOpportunityTestReportV723;
+  window.buildOpportunityTestReportV723=function(){
+    let report=previousBuild132.apply(this,arguments);
+    try{
+      const r=readiness132();
+      if(!r)return report;
+
+      report=String(report||'');
+      report=report.replace(
+        /OPPORTUNITY SCORE\n•\s*–\s*·\s*Noch offen/i,
+        'OPPORTUNITY SCORE\n• '+r.score+' % · '+r.state.toUpperCase()
+      );
+      report=report.replace(
+        /EXECUTIVE FORECAST\n•\s*Aktuell:\s*–\s*·\s*Noch offen/i,
+        'EXECUTIVE FORECAST\n• Aktuell: '+r.score+' % · '+r.state.toUpperCase()+' für die Pilotentscheidung'
+      );
+      return report;
+    }catch(e){
+      console.warn('Readiness Report Fix 1.3.2',e);
+      return report;
+    }
+  };
+
+  function patchVisible132(){
+    try{
+      const r=readiness132();
+      if(!r)return;
+
+      document.querySelectorAll('.ki21-131-root .ki21-130-metric').forEach(card=>{
+        const label=(card.querySelector('.ki21-130-metric-label')||{}).textContent||'';
+        const value=card.querySelector('.ki21-130-metric-value');
+        const state=card.querySelector('.ki21-130-metric-state');
+        if(!value||!state)return;
+
+        if(/Opportunity Score/i.test(label)){
+          value.textContent=r.score+' %';
+          state.textContent=r.state;
+        }
+        if(/Executive Forecast/i.test(label)){
+          value.textContent=r.score+' %';
+          state.textContent=r.state;
+        }
+      });
+    }catch(e){console.warn('Readiness UI Fix 1.3.2',e);}
+  }
+
+  let t132=null;
+  function schedule132(){
+    clearTimeout(t132);
+    t132=setTimeout(()=>{
+      patchVisible132();
+      setTimeout(patchVisible132,350);
+      setTimeout(patchVisible132,900);
+    },150);
+  }
+
+  const oldRender132=window.renderCockpitSnapshotLiteV4215;
+  if(typeof oldRender132==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=oldRender132.apply(this,arguments);
+      schedule132();
+      return out;
+    };
+  }
+
+  window.addEventListener('load',schedule132);
+  window.addEventListener('pageshow',schedule132);
 })();
 </script>
 
