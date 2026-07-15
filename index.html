@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.2.0-structured-opportunity-model-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.2.1-structured-cockpit-stable-20260715 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.2.0</title>
+<title>KI21 Pilot Core 1.2.1</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -11399,7 +11399,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.2.0 · Structured Opportunity Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.2.1 · Structured Opportunity Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -16147,7 +16147,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.2.0';
+const KI21_VERSION='Pilot Core 1.2.1';
 
 
 function runKi21VersionMigration(){
@@ -20605,6 +20605,387 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });
 
   window.KI21StructuredOpportunityModel=V120;
+})();
+</script>
+
+<!-- Pilot Core 1.2.1: Stable Structured Cockpit – Originalcockpit wird erst vollständig gelesen und danach als kompletter Altbaum ausgeblendet. -->
+<style>
+/* Descendant selectors: old cockpit areas are nested, not direct children. */
+.cockpit-v120-active .cockpit-v54-lagebild,
+.cockpit-v120-active .ki21-sync-grid-v111,
+.cockpit-v120-active .ki21-sync-grid-v112,
+.cockpit-v120-active .ki21-sync-grid-v114,
+.cockpit-v120-active .cockpit-v5-workgrid,
+.cockpit-v120-active .cockpit-core-case,
+.cockpit-v120-active .cockpit-deep-case-title,
+.cockpit-v120-active .cockpit-economic-capture,
+.cockpit-v120-active #ki21-visible-decision-core,
+.cockpit-v120-active .ki21-decision-core-v730,
+.cockpit-v120-active .ki21-priority-core-v723{
+  display:none!important;
+}
+/* The new structured cockpit must always remain visible. */
+.cockpit-v120-active .ki21-v120{
+  display:flex!important;
+}
+</style>
+<script>
+(function(){
+  const CACHE_KEY='ki21_v121_model_';
+
+  function clean121(v){
+    return String(v||'').replace(/^•\s*/,'').replace(/\s+/g,' ').trim();
+  }
+  function parse121(report){
+    const sections={};let current='';
+    String(report||'').replace(/\r/g,'').split('\n').forEach(line=>{
+      const t=line.trim();
+      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
+        current=t;
+        sections[current]=sections[current]||[];
+        return;
+      }
+      if(!current)return;
+      const c=line.replace(/^•\s*/,'').trim();
+      if(c)sections[current].push(c);
+    });
+    return sections;
+  }
+  function label121(lines,label){
+    const row=(lines||[]).map(clean121)
+      .find(x=>x.toLowerCase().startsWith(label.toLowerCase()+':'));
+    return row?clean121(row.replace(new RegExp('^'+label+':\\s*','i'),'')):'';
+  }
+  function strip121(v,label){
+    return clean121(v).replace(new RegExp('^'+label+':\\s*','i'),'');
+  }
+  function getAid121(){
+    try{return state.activeId||LS.get('ki21_aid',null)||'';}catch(e){return '';}
+  }
+  function cache121(model){
+    const aid=getAid121();
+    if(!aid||!model)return;
+    try{LS.set(CACHE_KEY+aid,model);}catch(e){}
+  }
+  function cached121(){
+    const aid=getAid121();
+    if(!aid)return null;
+    try{return LS.get(CACHE_KEY+aid,null);}catch(e){return null;}
+  }
+  function hasUseful121(m){
+    if(!m)return false;
+    return Boolean(
+      m.status ||
+      m.bottleneck ||
+      m.opportunityScore!==null ||
+      (m.forecast&&m.forecast.current) ||
+      (m.action&&(m.action.now||m.action.prepare||m.action.decide))
+    );
+  }
+  function report121(){
+    try{
+      if(typeof buildOpportunityTestReportV723==='function'){
+        return String(buildOpportunityTestReportV723()||'');
+      }
+    }catch(e){console.warn('1.2.1 Berichtsbasis',e);}
+    return '';
+  }
+  function score121(s){
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean121);
+    const hit=(readiness[0]||'').match(/(\d{1,3})\s*%/);
+    if(hit)return Math.max(0,Math.min(100,Number(hit[1])));
+    try{
+      const h=getOpportunityHealth(getAid121());
+      if(h&&typeof h.score==='number')return Math.round(h.score);
+    }catch(e){}
+    const badge=clean121(
+      (document.querySelector('.cockpit-score-badge,.cockpit-score-click')||{}).textContent||''
+    );
+    const badgeHit=badge.match(/(\d{1,3})\s*%?/);
+    return badgeHit?Number(badgeHit[1]):null;
+  }
+  function deriveUp121(readiness){
+    const out=[];
+    const add=x=>{if(x&&!out.includes(x))out.push(x);};
+    readiness.filter(x=>/^⚠/.test(x)).forEach(row=>{
+      const x=clean121(row).replace(/^⚠\s*/,'');
+      if(/budget/i.test(x))add('Budget- und Entscheidungsweg werden bestätigt.');
+      else if(/wirtschaftliche Entscheiderin|Entscheider/i.test(x))add('Die wirtschaftliche Entscheiderin beteiligt sich an der Bewertung.');
+      else if(/Erfolgskriterien/i.test(x))add('Messbare Pilotziele und Erfolgskriterien werden vereinbart.');
+      else if(/Termin/i.test(x))add('Ein gemeinsamer Entscheidungstermin wird verbindlich vereinbart.');
+      else if(/Business Case/i.test(x))add('Der wirtschaftliche Handlungsdruck wird bestätigt.');
+    });
+    return out.slice(0,2).join(' ');
+  }
+  function modelFromReport121(raw){
+    const s=parse121(raw);
+    const summary=(s['SALES SUMMARY']||[]).map(clean121);
+    const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean121);
+    const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean121);
+    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean121);
+    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||[]).map(clean121);
+
+    const status=label121(summary,'Status');
+    const bottleneck=label121(summary,'Engpass');
+    const recommendation=label121(summary,'Empfehlung');
+
+    let current=strip121(
+      forecast.find(x=>/^AKTUELL:/i.test(x))||readiness[0]||'',
+      'AKTUELL'
+    );
+    let up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
+      .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
+    if(!up)up=deriveUp121(readiness);
+    let down=(forecast.find(x=>/ABSTUFUNG/i.test(x))||'')
+      .replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,'');
+    if(!down){
+      down=clean121(((s['KI21 WÜRDE ANDERS EMPFEHLEN, WENN']||[])[0])||
+        'Der wirtschaftliche Handlungsdruck wird nicht bestätigt.');
+    }
+
+    const score=score121(s);
+    if(!current&&score!==null)current=score+' % · Entscheidungsreife';
+
+    let businessCase=business.find(x=>/^Erwarteter Kundennutzen:/i.test(x))
+      ||business.find(x=>/wirtschaftlichen Ausgangspunkt|Kundennutzen/i.test(x))
+      ||'Business Case noch nicht bestätigt.';
+    businessCase=businessCase.replace(/^Erwarteter Kundennutzen:\s*/i,'');
+
+    return {
+      version:'1.2.1',
+      status,
+      bottleneck,
+      recommendation,
+      opportunityScore:score,
+      health:clean121(((s['OPPORTUNITY HEALTH']||s['HEALTH & FORECAST']||[])[0])||
+        'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten'),
+      forecast:{current,up,down},
+      decision:clean121(((s['DEAL-ENTSCHEIDUNG']||[])[0])||recommendation||
+        'Den nächsten verbindlichen Kundenschritt erreichen.'),
+      action:{
+        now:strip121(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN'),
+        prepare:strip121(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN'),
+        decide:strip121(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN'),
+        success:strip121(
+          command.find(x=>/^ERFOLG DES NÄCHSTEN SCHRITTS:/i.test(x))||'',
+          'ERFOLG DES NÄCHSTEN SCHRITTS'
+        )
+      },
+      businessCase,
+      watchout:clean121(((s['EXECUTIVE WATCHOUT']||s['DARAUF ACHTEN']||[])[0])||
+        'Sponsor, Entscheider und Business Case sauber trennen.')
+    };
+  }
+  function modelFromVisibleDom121(){
+    const decision=clean121(
+      (document.querySelector('.ki21-decision-title')||{}).textContent||''
+    );
+    const taskTexts=[...document.querySelectorAll(
+      '.cockpit-card-next .v53-task-text,.cockpit-card-next .cockpit-tile-item'
+    )].map(x=>clean121(x.textContent)).filter(Boolean);
+
+    const useful=taskTexts.filter(x=>
+      x.length<700 &&
+      !/Budget:|Angebot:|Wettbewerb und Alternativen:|Stakeholder:/i.test(x)
+    );
+
+    return {
+      version:'1.2.1',
+      status:'',
+      bottleneck:'',
+      recommendation:'',
+      opportunityScore:score121({}),
+      health:'Qualifizierung · Buying Center, Business Case und Pilotentscheidung vorbereiten',
+      forecast:{current:'',up:'',down:''},
+      decision,
+      action:{
+        now:useful[0]||'',
+        prepare:useful[1]||'',
+        decide:useful[2]||'',
+        success:''
+      },
+      businessCase:'',
+      watchout:''
+    };
+  }
+  function capture121(wrap){
+    /* Temporarily reveal the original cockpit before reading it. */
+    wrap.classList.remove('cockpit-v120-active');
+
+    let model=null;
+    const raw=report121();
+    if(raw)model=modelFromReport121(raw);
+
+    if(!hasUseful121(model)){
+      const domModel=modelFromVisibleDom121();
+      const old=cached121();
+      model={
+        ...(old||{}),
+        ...domModel,
+        forecast:{
+          ...((old&&old.forecast)||{}),
+          ...(domModel.forecast||{})
+        },
+        action:{
+          ...((old&&old.action)||{}),
+          ...(domModel.action||{})
+        }
+      };
+    }
+
+    if(hasUseful121(model))cache121(model);
+    return hasUseful121(model)?model:cached121();
+  }
+  function el121(tag,cls,text){
+    const e=document.createElement(tag);
+    if(cls)e.className=cls;
+    if(text!==undefined)e.textContent=text;
+    return e;
+  }
+  function row121(label,text){
+    const r=el121('div','ki21-v120-row');
+    r.append(
+      el121('div','ki21-v120-label',label),
+      el121('div','ki21-v120-text',text||'Noch offen')
+    );
+    return r;
+  }
+  function card121(cls,kicker){
+    const c=el121('section','ki21-v120-card '+cls);
+    c.appendChild(el121('div','ki21-v120-kicker',kicker));
+    return c;
+  }
+  function renderModel121(wrap,tabs,m){
+    wrap.querySelectorAll('.ki21-v120').forEach(x=>x.remove());
+
+    const root=el121('div','ki21-v120');
+
+    const top=el121('div','ki21-v120-top');
+    const lage=card121('lage','Lagebild');
+    lage.append(
+      el121('div','ki21-v120-head',m.status||'Deal-Zustand wird geprüft'),
+      row121('Größter Engpass',m.bottleneck||'Noch nicht eindeutig bestätigt')
+    );
+
+    const score=card121('score','Opportunity Score');
+    const val=m.opportunityScore===null||m.opportunityScore===undefined?'–':String(m.opportunityScore);
+    const scoreLine=el121('div','ki21-v120-score',val);
+    scoreLine.appendChild(el121('span','',
+      m.opportunityScore===null||m.opportunityScore===undefined?'noch offen':'/ 100'
+    ));
+    score.append(scoreLine,el121('div','ki21-v120-sub',m.health||'Opportunity wird bewertet'));
+    top.append(lage,score);
+    root.appendChild(top);
+
+    const forecast=card121('forecast','Executive Forecast');
+    forecast.appendChild(el121('div','ki21-v120-head',
+      (m.forecast&&m.forecast.current)||'Forecast noch nicht belastbar'));
+    if(m.forecast&&m.forecast.up){
+      forecast.appendChild(el121('div','ki21-v120-forecast-event up',m.forecast.up));
+    }
+    if(m.forecast&&m.forecast.down){
+      forecast.appendChild(el121('div','ki21-v120-forecast-event down',m.forecast.down));
+    }
+    root.appendChild(forecast);
+
+    const decision=card121('decision','Nächste Kundenentscheidung');
+    decision.appendChild(el121('div','ki21-v120-head',
+      m.decision||m.recommendation||'Den nächsten verbindlichen Kundenschritt erreichen.'));
+    if(m.action&&m.action.success){
+      decision.appendChild(el121('div','ki21-v120-decision-success',
+        'Entscheidung erreicht, wenn: '+m.action.success));
+    }
+    root.appendChild(decision);
+
+    const action=card121('action','Konkreter Verkaufsauftrag');
+    const list=el121('div','ki21-v120-actions');
+    [
+      ['Jetzt tun',m.action&&m.action.now],
+      ['Vorbereiten',m.action&&m.action.prepare],
+      ['Im Termin entscheiden',m.action&&m.action.decide]
+    ].forEach((item,idx)=>{
+      if(!item[1])return;
+      const a=el121('div','ki21-v120-action');
+      a.appendChild(el121('div','ki21-v120-action-num',String(idx+1)));
+      const body=el121('div','');
+      body.append(
+        el121('div','ki21-v120-action-name',item[0]),
+        el121('div','ki21-v120-action-text',item[1])
+      );
+      a.appendChild(body);
+      list.appendChild(a);
+    });
+    action.appendChild(list);
+    if(m.action&&m.action.success){
+      action.appendChild(el121('div','ki21-v120-success','Erfolg: '+m.action.success));
+    }
+    root.appendChild(action);
+
+    const bottom=el121('div','ki21-v120-bottom');
+    const bc=card121('business','Business Case');
+    bc.appendChild(el121('div','ki21-v120-text',m.businessCase||'Business Case noch nicht bestätigt.'));
+    const wo=card121('watchout','Darauf achten');
+    wo.appendChild(el121('div','ki21-v120-text',
+      m.watchout||'Sponsor, Entscheider und Business Case sauber trennen.'));
+    bottom.append(bc,wo);
+    root.appendChild(bottom);
+
+    const navContainer=tabs.parentElement;
+    if(navContainer&&navContainer.parentElement===wrap){
+      navContainer.insertAdjacentElement('afterend',root);
+    }else{
+      tabs.insertAdjacentElement('afterend',root);
+    }
+
+    /* Hide the complete legacy cockpit only after the model is rendered. */
+    wrap.classList.add('cockpit-v120-active');
+  }
+  function run121(){
+    const app=document.getElementById('app');
+    const wrap=app&&app.querySelector('.wrap.cockpit-v612-compact');
+    const tabs=wrap&&wrap.querySelector('.ki21-mode-tabs');
+    if(!wrap||!tabs)return false;
+
+    const model=capture121(wrap);
+    if(!model)return false;
+    renderModel121(wrap,tabs,model);
+    return true;
+  }
+
+  let busy121=false;
+  function schedule121(){
+    if(busy121)return;
+    busy121=true;
+    /* First useful capture after the legacy cockpit has finished rendering. */
+    [250,500,900,1500].forEach((ms,i)=>setTimeout(()=>{
+      try{run121();}catch(e){console.warn('Stable Structured Cockpit 1.2.1',e);}
+      if(i===3)busy121=false;
+    },ms));
+  }
+
+  const oldRender121=window.renderCockpitSnapshotLiteV4215;
+  if(typeof oldRender121==='function'){
+    window.renderCockpitSnapshotLiteV4215=function(){
+      const out=oldRender121.apply(this,arguments);
+      schedule121();
+      return out;
+    };
+  }
+
+  let mutationTimer121=null;
+  window.addEventListener('load',()=>{
+    const app=document.getElementById('app');
+    if(app){
+      new MutationObserver(()=>{
+        clearTimeout(mutationTimer121);
+        mutationTimer121=setTimeout(()=>{
+          const wrap=app.querySelector('.wrap.cockpit-v612-compact');
+          if(wrap&&!wrap.querySelector('.ki21-v120'))schedule121();
+        },180);
+      }).observe(app,{childList:true,subtree:true});
+    }
+    schedule121();
+  });
 })();
 </script>
 
