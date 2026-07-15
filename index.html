@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.5.8 PREMIUM FINAL</title>
+<title>KI21 Pilot Core 1.5.9 PREMIUM FINAL</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -11428,7 +11428,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.5.8 PREMIUM FINAL · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.5.9 PREMIUM FINAL · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14967,9 +14967,9 @@ function generateKundePDF(aid, cust){
 })();
 <\/script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.5.8 PREMIUM FINAL -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.5.9 PREMIUM FINAL -->
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14994,7 +14994,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15713,7 +15713,7 @@ ${html}
 
 
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15834,6 +15834,129 @@ function getCoreEnginesV660(){
   ];
 }
 
+
+
+// ── PILOT CORE 1.5.9 AUTOMATIC COMPANY KNOWLEDGE ──────────────────────
+// Ein Unternehmensprofil ist die einzige manuell gepflegte Quelle.
+// KI21 strukturiert und verteilt dieses Wissen automatisch auf alle Core Engines.
+function ki21SplitListV159(text){
+  return String(text||'').split(/\n|;|•|\u2022|\|/).map(x=>x.trim().replace(/^[-–—]\s*/, '')).filter(Boolean);
+}
+function ki21FindFieldV159(text, labels){
+  const src=String(text||'');
+  for(const label of labels){
+    const esc=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const m=src.match(new RegExp('(?:^|\\n)\\s*'+esc+'\\s*:\\s*([^\\n]+)','i'));
+    if(m&&m[1].trim())return m[1].trim();
+  }
+  return '';
+}
+function ki21ExtractCompanyKnowledgeLocalV159(profile,offer){
+  const raw=[String(profile||'').trim(),String(offer||'').trim()].filter(Boolean).join('\n\n');
+  const field=(...labels)=>ki21FindFieldV159(raw,labels);
+  const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const collectAfter=(labels)=>{
+    const result=[];
+    const rx=new RegExp('^('+labels.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\\s*:?\\s*(.*)$','i');
+    let collecting=false;
+    for(const line of lines){
+      const m=line.match(rx);
+      if(m){collecting=true;if(m[2])result.push(...ki21SplitListV159(m[2]));continue;}
+      if(collecting){
+        if(/^[A-ZÄÖÜ][A-Za-zÄÖÜäöüß &\/-]{2,35}:\s*/.test(line))break;
+        if(/^#{1,4}\s+/.test(line))break;
+        result.push(...ki21SplitListV159(line));
+      }
+    }
+    return [...new Set(result)].slice(0,20);
+  };
+  const companyName=field('Unternehmen','Firma','Company') || (lines[0]&&!lines[0].includes(':')?lines[0]:'');
+  const industry=field('Branche','Industrie','Industry');
+  const positioning=field('Positionierung','Kurzbeschreibung','Differenzierung');
+  const targetCustomers=ki21SplitListV159(field('Zielkunden','Zielgruppe')).concat(collectAfter(['Zielkunden','Zielgruppe']));
+  const targetRoles=ki21SplitListV159(field('Zielrollen','Ansprechpartner','Buying Center')).concat(collectAfter(['Zielrollen','Ansprechpartner','Buying Center']));
+  const typicalProblems=ki21SplitListV159(field('Typische Probleme','Probleme','Herausforderungen')).concat(collectAfter(['Typische Probleme','Probleme','Herausforderungen']));
+  const benefits=ki21SplitListV159(field('Typischer Kundennutzen','Kundennutzen','Nutzen','Vorteile')).concat(collectAfter(['Typischer Kundennutzen','Kundennutzen','Nutzen','Vorteile']));
+  const competitors=ki21SplitListV159(field('Wettbewerb','Wettbewerber','Alternativen')).concat(collectAfter(['Wettbewerb','Wettbewerber','Alternativen']));
+  const principles=ki21SplitListV159(field('Prinzipien','Produktprinzipien','Arbeitsweise')).concat(collectAfter(['Prinzipien','Produktprinzipien','Arbeitsweise']));
+  const objections=ki21SplitListV159(field('Typische Einwände','Einwände')).concat(collectAfter(['Typische Einwände','Einwände']));
+  const products=[];
+  const productSections=collectAfter(['Angebot und Leistungen','Angebot & Leistungen','Produkte','Lösungen','Leistungen']);
+  productSections.forEach(x=>products.push({name:x,role:'',price:'',description:''}));
+  if(!products.length && offer){
+    ki21SplitListV159(offer).slice(0,12).forEach(x=>products.push({name:x,role:'',price:'',description:''}));
+  }
+  const unique=a=>[...new Set((a||[]).map(x=>String(x||'').trim()).filter(Boolean))];
+  return {
+    companyName,industry,positioning,
+    targetCustomers:unique(targetCustomers),targetRoles:unique(targetRoles),products,
+    typicalProblems:unique(typicalProblems),benefits:unique(benefits),competitors:unique(competitors),
+    references:collectAfter(['Referenzen','Kundenbeispiele']),salesMethod:field('Typischer Vertriebsansatz','Vertriebsansatz','Vertriebsmethodik','Einführungsansatz'),
+    principles:unique(principles),objections:unique(objections),raw
+  };
+}
+function ki21BuildCompanyIntelligenceLocalV159(structured){
+  const s=structured||{};
+  const products=(s.products||[]).map(p=>p&&p.name).filter(Boolean);
+  const target=[...(s.targetCustomers||[]),...(s.targetRoles||[])].filter(Boolean);
+  const lines=[];
+  if(s.positioning||s.companyName)lines.push('KERNPROFIL:\nInsight: '+(s.positioning||s.companyName)+'\nStatus: Aus Unternehmenswissen abgeleitet');
+  const add=(title,label,arr)=>{const vals=[...new Set((arr||[]).filter(Boolean))].slice(0,8);if(vals.length){lines.push(title+':');vals.forEach(x=>lines.push(label+': '+x+'\nStatus: Aus Unternehmenswissen abgeleitet'));}};
+  add('VERTRIEBSMUSTER','Pattern',[
+    ...(s.typicalProblems||[]).map(x=>'Zielkunden adressieren häufig: '+x),
+    ...(s.benefits||[]).map(x=>'Wertargument: '+x),
+    s.salesMethod?'Verkaufs- und Einführungsansatz: '+s.salesMethod:''
+  ]);
+  add('DISCOVERY-FRAGEN','Frage',(s.typicalProblems||[]).map(x=>'Wie zeigt sich „'+x+'“ heute konkret, und welche wirtschaftliche oder operative Folge entsteht daraus?'));
+  add('STAKEHOLDER','Rolle',s.targetRoles||[]);
+  add('EINWÄNDE','Einwand',[...(s.objections||[]),...(s.competitors||[]).map(x=>'Alternative oder Wettbewerb: '+x)]);
+  add('ERFOLGSFAKTOREN','Pattern',[
+    ...(s.benefits||[]).map(x=>'Erfolg muss den Nutzen „'+x+'“ messbar machen.'),
+    ...(s.principles||[])
+  ]);
+  const engineProfiles={
+    sales:{problems:s.typicalProblems||[],benefits:s.benefits||[],method:s.salesMethod||''},
+    decision:{milestones:['Problem und Handlungsdruck bestätigen','Entscheidungskriterien abstimmen','Buying Center einbinden','nächsten Kundenschritt verbindlich vereinbaren']},
+    buyingCenter:{roles:s.targetRoles||[],targetCustomers:s.targetCustomers||[]},
+    businessCase:{valueDrivers:s.benefits||[],problemDrivers:s.typicalProblems||[]},
+    negotiation:{objections:s.objections||[],alternatives:s.competitors||[]},
+    risk:{risks:[...(s.objections||[]),...(s.competitors||[])]},
+    change:{adoptionDrivers:[...(s.principles||[]),...(s.benefits||[])]},
+    industry:{industry:s.industry||'',patterns:s.typicalProblems||[]},
+    consensus:{stakeholderGoals:s.targetRoles||[],sharedOutcomes:s.benefits||[]}
+  };
+  return {
+    branche:s.industry||'',produkte:products.join(', '),ziel:target.join('; '),region:s.region||'DACH',
+    inhalt:lines.join('\n\n'),erstellt:true,datum:new Date().toLocaleDateString('de-DE'),
+    source:'companyProfileAuto',sourceHash:simpleHash(JSON.stringify(s)),
+    derived:{summary:s.positioning||'',salesPatterns:s.typicalProblems||[],discoveryQuestions:(s.typicalProblems||[]).map(x=>'Wie zeigt sich '+x+' konkret?'),stakeholders:s.targetRoles||[],objections:[...(s.objections||[]),...(s.competitors||[])],successFactors:[...(s.benefits||[]),...(s.principles||[])]},
+    engineProfiles
+  };
+}
+async function ki21SaveAndBuildCompanyV159(profile,offer,statusCb){
+  const raw=[String(profile||'').trim(),String(offer||'').trim()].filter(Boolean).join('\n\n');
+  if(!raw)throw new Error('Bitte Unternehmensprofil oder Angebot eingeben.');
+  LS.set('ki21_mu',{profil:String(profile||''),bausteine:String(offer||'')});
+  let structured=ki21ExtractCompanyKnowledgeLocalV159(profile,offer);
+  let source='local';
+  if(LS.get('ki21_apikey','')){
+    try{
+      if(statusCb)statusCb('⏳ Unternehmenswissen wird vollständig analysiert …');
+      const prompt=`Du bist der KI21 Company Knowledge Builder. Strukturiere ausschließlich die folgenden vom Nutzer gelieferten Unternehmensinformationen. Erfinde nichts. Übernimm ALLE Informationen; fasse nur semantisch gleiche Aussagen zusammen.\n\nGib NUR gültiges JSON zurück, ohne Markdown:\n{\n  "companyName":"",\n  "industry":"",\n  "positioning":"",\n  "targetCustomers":[],\n  "targetRoles":[],\n  "products":[{"name":"","role":"","price":"","description":""}],\n  "typicalProblems":[],\n  "benefits":[],\n  "competitors":[],\n  "references":[],\n  "salesMethod":"",\n  "principles":[],\n  "objections":[]\n}\n\nQUELLE:\n${raw}`;
+      const result=await callClaude(prompt);
+      const cleaned=String(result||'').replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();
+      const ai=JSON.parse(cleaned);
+      structured={...structured,...ai,raw};source='ai';
+    }catch(e){console.warn('Automatische Unternehmensstrukturierung nutzt lokalen Fallback',e);}
+  }
+  const knowledge={raw,structured,updatedAt:new Date().toLocaleString('de-DE'),source};
+  LS.set('ki21_company_knowledge',knowledge);
+  const intel=ki21BuildCompanyIntelligenceLocalV159(structured);
+  LS.set('ki21_intelligence',intel);
+  LS.set('ki21_company_engine_profiles',intel.engineProfiles);
+  return {knowledge,intel};
+}
+
 function showMeinUnternehmen(initialTab){
   let profil=LS.get('ki21_mu',{}).profil||'';
   let bausteine=LS.get('ki21_mu',{}).bausteine||'';
@@ -15904,6 +16027,11 @@ function showMeinUnternehmen(initialTab){
   if(intel.produkte)intelProdukte.value=intel.produkte;
   if(intel.ziel)intelZiel.value=intel.ziel;
   if(intel.region)intelRegion.value=intel.region;
+  // Automatisch aus dem zentralen Unternehmenswissen füllen; keine Doppelpflege.
+  if(!intelBranche.value && companyKnowledgeForIntel.structured)intelBranche.value=companyKnowledgeForIntel.structured.industry||'';
+  if(!intelProdukte.value && companyKnowledgeForIntel.structured)intelProdukte.value=(companyKnowledgeForIntel.structured.products||[]).map(p=>p.name).filter(Boolean).join(', ');
+  if(!intelZiel.value && companyKnowledgeForIntel.structured)intelZiel.value=[...(companyKnowledgeForIntel.structured.targetCustomers||[]),...(companyKnowledgeForIntel.structured.targetRoles||[])].join('; ');
+  if(!intelRegion.value)intelRegion.value='DACH';
 
   const intelResult=h('div',{style:{display:intel.inhalt?'block':'none',marginTop:'10px'}});
   const intelBody=h('div',{style:{lineHeight:'1.5',maxHeight:'280px',overflowY:'auto',background:'#0d1117',borderRadius:'6px',padding:'10px'}});
@@ -16228,12 +16356,23 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
 
   const content=h('div',{},tabRow,d1,d2,d3,d4,
     h('div',{className:'modal-row',style:{marginTop:'12px'}},
-      h('button',{className:'btn-o',style:{flex:'1'},onclick:(e)=>{
-        LS.set('ki21_mu',{profil,bausteine});
+      h('button',{className:'btn-o',style:{flex:'1'},onclick:async(e)=>{
         const btn=e&&e.currentTarget;
-        if(btn){const oldText=btn.textContent;btn.textContent='✓ Gespeichert';btn.disabled=true;setTimeout(()=>{btn.textContent=oldText;btn.disabled=false;},1200);}
+        const oldText=btn?btn.textContent:'Speichern';
+        try{
+          if(btn){btn.disabled=true;btn.textContent='⏳ Wissen wird aufgebaut …';}
+          const result=await ki21SaveAndBuildCompanyV159(profil,bausteine,(msg)=>{if(btn)btn.textContent=msg;});
+          companyKnowledge=result.knowledge;intel=result.intel;
+          intelBranche.value=intel.branche||'';intelProdukte.value=intel.produkte||'';intelZiel.value=intel.ziel||'';intelRegion.value=intel.region||'DACH';
+          intelBody.innerHTML=renderBranchenwissen(intel.inhalt||'');intelResult.style.display='block';
+          updateIntelStatus('✅ Unternehmenswissen gespeichert und KI21 Intelligence automatisch aktualisiert.');
+          if(btn){btn.textContent='✓ Alles gespeichert';setTimeout(()=>{btn.textContent=oldText;btn.disabled=false;},1800);}
+        }catch(err){
+          console.error(err);alert(String(err&&err.message||err));
+          if(btn){btn.textContent=oldText;btn.disabled=false;}
+        }
       }},
-        'Speichern'),
+        'Speichern & Intelligence aktualisieren'),
       h('button',{className:'btn',onclick:()=>m.remove()},'Abbrechen')
     )
   );
@@ -16241,7 +16380,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.5.8 PREMIUM FINAL';
+const KI21_VERSION='Pilot Core 1.5.9 PREMIUM FINAL';
 
 
 function runKi21VersionMigration(){
@@ -19820,7 +19959,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<!-- Pilot Core 1.5.8 PREMIUM FINAL: Premium Visual Freeze -->
+<!-- Pilot Core 1.5.9 PREMIUM FINAL: Premium Visual Freeze -->
 <style>
 :root{
   --ki21-final-orange:#f28a3a;
@@ -20032,7 +20171,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20073,7 +20212,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20098,7 +20237,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20118,7 +20257,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.5.8 PREMIUM FINAL — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.5.9 PREMIUM FINAL — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20162,7 +20301,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- Pilot Core 1.5.8 PREMIUM FINAL: Deal-Schritt + Drill-down + Consensus Engine -->
+<!-- Pilot Core 1.5.9 PREMIUM FINAL: Deal-Schritt + Drill-down + Consensus Engine -->
 <style id="ki21-drilldown-v156">
 .ki21-clean-card.ki21-drillable,.ki21-clean-metric.ki21-drillable{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative}
 .ki21-clean-card.ki21-drillable::after,.ki21-clean-metric.ki21-drillable::after{content:'›';position:absolute;right:14px;top:13px;color:rgba(230,237,243,.34);font-size:19px;font-weight:900}
