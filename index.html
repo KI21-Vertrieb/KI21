@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.5.4 PREMIUM FINAL</title>
+<title>KI21 Pilot Core 1.5.5 PREMIUM FINAL</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Design Freeze -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Design Freeze -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -3480,14 +3480,21 @@ function buildOpportunityTestReportSafelyV726(){
 }
 function showKi21CopyToastV150(){
   try{
-    const old=document.querySelector('.ki21-copy-toast-v150');
-    if(old)old.remove();
-    const toast=document.createElement('div');
-    toast.className='ki21-copy-toast-v150';
-    toast.textContent='✓ Testbericht kopiert';
-    document.body.appendChild(toast);
-    requestAnimationFrame(()=>toast.classList.add('visible'));
-    setTimeout(()=>{toast.classList.remove('visible');setTimeout(()=>toast.remove(),220);},2000);
+    const buttons=[...document.querySelectorAll('.ki21-report-link-v725')];
+    buttons.forEach(btn=>{
+      if(!btn.dataset.ki21OriginalLabel)btn.dataset.ki21OriginalLabel=btn.textContent||'Testbericht kopieren';
+      btn.textContent='✓ Testbericht kopiert';
+      btn.classList.add('is-copied-v155');
+      btn.disabled=true;
+    });
+    clearTimeout(window.__ki21CopyStateTimerV155);
+    window.__ki21CopyStateTimerV155=setTimeout(()=>{
+      buttons.forEach(btn=>{
+        btn.textContent=btn.dataset.ki21OriginalLabel||'Testbericht kopieren';
+        btn.classList.remove('is-copied-v155');
+        btn.disabled=false;
+      });
+    },2000);
   }catch(e){}
 }
 function showOpportunityTestReportV726(){
@@ -11420,7 +11427,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.5.4 PREMIUM FINAL · Executive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 1.5.5 PREMIUM FINAL · Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -14959,9 +14966,9 @@ function generateKundePDF(aid, cust){
 })();
 <\/script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.5.4 PREMIUM FINAL -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.5.5 PREMIUM FINAL -->
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14986,7 +14993,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15705,7 +15712,7 @@ ${html}
 
 
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -16232,7 +16239,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.5.4 PREMIUM FINAL';
+const KI21_VERSION='Pilot Core 1.5.5 PREMIUM FINAL';
 
 
 function runKi21VersionMigration(){
@@ -18976,7 +18983,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     else if(/erfolgskriter|business case/i.test(bottleneck))blocker='der noch nicht bestätigte Business Case';
     else if(bottleneck)blocker=lowerStartV119(bottleneck).replace(/[.!?]$/,'');
 
-    const hypothesis='KI21 geht aktuell davon aus, dass nicht fehlendes Produktinteresse, sondern '+blocker+' der zentrale Kaufblocker ist.';
+    const hypothesis='Der zentrale Kaufblocker ist nicht fehlendes Produktinteresse, sondern '+blocker+'.';
     const trueSignals=uniqueV119([
       missing.some(x=>/entscheider|buying center/i.test(x))?'Der wirtschaftliche Entscheider beteiligt sich aktiv an der Bewertung.':'Der Kunde bestätigt den vorgeschlagenen Entscheidungsweg.',
       missing.some(x=>/budget|business case/i.test(x))?'Budgetweg und wirtschaftlicher Handlungsdruck werden konkret bestätigt.':'Der Kunde priorisiert den wirtschaftlichen Nutzen gegenüber weiterer Produktinformation.',
@@ -19702,7 +19709,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       state:state(score),
       up:shorten(up,105),
       down:shorten(down,80),
-      decision:'Kunde entscheidet über den gemeinsamen Discovery- und Entscheidungstermin.',
+      decision:'Kunde bestätigt den gemeinsamen Discovery- und Entscheidungstermin.',
       success:shorten(success,110),
       tasks,
       businessStatus
@@ -19811,7 +19818,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<!-- Pilot Core 1.5.4 PREMIUM FINAL: Premium Visual Freeze -->
+<!-- Pilot Core 1.5.5 PREMIUM FINAL: Premium Visual Freeze -->
 <style>
 :root{
   --ki21-final-orange:#f28a3a;
@@ -20023,7 +20030,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20064,7 +20071,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20089,7 +20096,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.5.4 PREMIUM FINAL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20107,5 +20114,51 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
+
+
+<!-- KI21 Pilot Core 1.5.5 PREMIUM FINAL — Final Hierarchy & Copy Feedback -->
+<style id="ki21-final-hierarchy-v155">
+/* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
+.ki21-clean-kicker{
+  font-size:13px!important;
+  font-weight:950!important;
+  letter-spacing:1.9px!important;
+}
+.ki21-clean-label{
+  font-size:10.4px!important;
+  font-weight:850!important;
+  color:#aeb8c6!important;
+}
+.ki21-clean-text{
+  font-size:13.5px!important;
+  line-height:1.44!important;
+  font-weight:690!important;
+  color:#f3f6fb!important;
+}
+.ki21-clean-business-status{
+  font-size:14.4px!important;
+  line-height:1.4!important;
+  font-weight:720!important;
+}
+.ki21-clean-chip{
+  font-size:11.1px!important;
+  line-height:1.25!important;
+  font-weight:680!important;
+  padding:8px 11px!important;
+}
+.ki21-report-link-v725.is-copied-v155{
+  color:#69d99c!important;
+  opacity:1!important;
+}
+.ki21-report-link-v725:disabled{cursor:default!important;}
+@media(max-width:390px){
+  .ki21-clean-kicker{font-size:12.2px!important;}
+  .ki21-clean-label{font-size:9.9px!important;}
+  .ki21-clean-text{font-size:12.9px!important;line-height:1.42!important;}
+  .ki21-clean-business-status{font-size:13.8px!important;}
+  .ki21-clean-chip{font-size:10.7px!important;padding:8px 10px!important;}
+}
+</style>
+
 </body>
 </html>
