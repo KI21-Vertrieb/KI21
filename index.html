@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE</title>
+<title>KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -12782,6 +12782,19 @@ function renderStation(sitId){
   const sit=SITS[sitId];
   const KEY='ki21_st_'+state.activeId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
+
+  // v2.3.1: Phase 4/5 use the same durable persistence principle as Phase 1/2.
+  // A later empty render or stale local state must never erase the last valid output.
+  if((sitId===3||sitId===4)&&state.activeId){
+    const backupKey='ki21_phase_output_v231_'+state.activeId+'_'+sitId;
+    const saved=String(LS.get(backupKey,'')||'').trim();
+    const current=String(data.result||'').trim();
+    if(saved.length>=120&&saved.length>current.length){
+      data.result=saved;
+      LS.set(KEY,data);
+    }
+  }
+
   let loading=false;
   // v4.213: Phase 4/5 dürfen beim reinen Öffnen nicht durch Health/Cockpit-
   // Aufbereitung blockieren. Schwere Berechnung erst beim bewussten Cockpit-Öffnen
@@ -12798,6 +12811,9 @@ function renderStation(sitId){
     if(kind==='result'){
       fresh.summary='';
       fresh.detail='';
+      if((sitId===3||sitId===4)&&state.activeId){
+        LS.set('ki21_phase_output_v231_'+state.activeId+'_'+sitId,'');
+      }
     }
     // Wenn beide Ergebnisarten leer sind, alle KI-Ausgabe-Metadaten bereinigen, Eingaben aber behalten.
     if(!fresh.result&&!fresh.result2){
@@ -13523,6 +13539,9 @@ function renderStation(sitId){
           }
         }
         LS.set(KEY,data);
+        if((sitId===3||sitId===4)&&state.activeId&&String(finalResult||'').trim().length>=120){
+          LS.set('ki21_phase_output_v231_'+state.activeId+'_'+sitId,finalResult);
+        }
         if(state.activeId){
           await refreshOpportunityHealth(state.activeId);
           const freshHealth=getOpportunityHealth(state.activeId);
@@ -14983,8 +15002,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE -->
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15008,7 +15027,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15029,7 +15048,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15886,7 +15905,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+const KI21_VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
 
 
 function runKi21VersionMigration(){
@@ -19592,7 +19611,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19632,7 +19651,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19656,7 +19675,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19674,7 +19693,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -19876,7 +19895,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
 
   function allStorageKeys(){
     const keys=[];
@@ -20087,7 +20106,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20298,7 +20317,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20500,7 +20519,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20616,7 +20635,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -20713,7 +20732,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -20797,7 +20816,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -20821,7 +20840,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -20912,7 +20931,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21084,7 +21103,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.3.0 WORKSPACE ISOLATION & CLOSING ENGINE';
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -21211,7 +21230,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
       'ki21_health_','ki21_health_lastError_','ki21_health_manual_',
       'ki21_score_','ki21_score_reason_','ki21_case_assumptions_',
       'ki21_decision_','ki21_phase_','ki21_pending_','ki21_smart_pending_',
-      'ki21_spin_','ki21_cockpit_','ki21_v200_phase2_'
+      'ki21_spin_','ki21_cockpit_','ki21_v200_phase2_','ki21_phase_output_v231_'
     ];
     keys().forEach(function(k){
       if(prefixes.some(function(p){
@@ -21322,6 +21341,55 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     purgeForeignPhase5();
     syncVersion();
   },true);
+})();
+</script>
+
+<script id="ki21-v231-phase45-persistence-guard">
+(function(){
+  'use strict';
+
+  const VERSION='Pilot Core 2.3.1 PHASE 4/5 PERSISTENCE FIX';
+  window.KI21_VERSION=VERSION;
+
+  function capture(){
+    try{
+      if(!window.state||!state.activeId)return;
+      const sitId=Number(state.currentSitId);
+      if(sitId!==3&&sitId!==4)return;
+
+      const key='ki21_st_'+state.activeId+'_'+sitId;
+      const data=LS.get(key,{fv:{},result:''})||{fv:{},result:''};
+      const result=String(data.result||'').trim();
+      if(result.length>=120){
+        LS.set('ki21_phase_output_v231_'+state.activeId+'_'+sitId,result);
+      }
+    }catch(e){}
+  }
+
+  document.addEventListener('click',function(){
+    capture();
+  },true);
+
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden)capture();
+  },true);
+
+  window.addEventListener('pagehide',capture,true);
+
+  function syncVersion(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.querySelectorAll('.tagline').forEach(function(el){
+        el.textContent=VERSION;
+      });
+    }catch(e){}
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',syncVersion,{once:true});
+  }else{
+    syncVersion();
+  }
 })();
 </script>
 </body>
