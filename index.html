@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.7.2-health-forecast-stable-renderer-20260716 -->
+<!-- KI21_BUILD: pilot-core-1.7.3-single-state-phase2-persistence-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.7.2 HEALTH & FORECAST STABLE RENDERER</title>
+<title>KI21 Pilot Core 1.7.3 SINGLE STATE & PHASE 2 PERSISTENCE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2596,6 +2596,10 @@ html,body,#app{background:radial-gradient(circle at 50% -12%,rgba(255,122,26,.07
 @media(max-width:390px){.cockpit-tile-label{font-size:9.8px!important}.cockpit-v5-summary-kicker{font-size:9.5px!important}.phase-screen-title{font-size:22px!important}}
 </style>
 
+
+<style id="ki21-v173-first-paint-guard">
+.cockpit-v54-lagebild{display:none!important;}
+</style>
 </head>
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;">Lädt...</div></div>
@@ -13477,7 +13481,7 @@ function renderStation(sitId){
       });
       if(result){
         let finalResult=(sitId===1)
-          ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
+          ?cleanGenericPhase2OutputV4199(result,state.activeId)
           :((sitId===3)
             ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
             :((sitId===4)
@@ -14875,7 +14879,7 @@ function generateKundePDF(aid, cust){
     let result=data.result||'';
     if(result){
       if(i===0)result=buildStructuredPhase1DossierV4191(aid);
-      else if(i===1)result=cleanPhase2Output(buildStructuredPhase2OutputV4190(aid));
+      else if(i===1)result=cleanGenericPhase2OutputV4199(result,aid);
       else if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
       else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
       else result=sanitizeDossierEarlyPhaseV4190(sanitizeFinalOutputV4188(aid,result,'dossier'),aid);
@@ -20710,12 +20714,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.ki21PurgePhase2V171=purgeContaminatedPhase2;
 
   function refresh(){purgeContaminatedPhase2();syncScoresAndVersion();}
-  const mo=new MutationObserver(()=>{clearTimeout(window.__ki21v171t);window.__ki21v171t=setTimeout(refresh,20);});
-  mo.observe(document.documentElement,{subtree:true,childList:true});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(refresh,50),{once:true});else setTimeout(refresh,50);
-  window.addEventListener('pageshow',()=>setTimeout(refresh,80));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refresh,80);});
-  setInterval(refresh,1500);
+  // 1.7.3: konkurrierende Dauer-Observer und Polling-Schleifen deaktiviert.
+  // Die zentrale 1.7.3-Synchronisierung übernimmt Render und Persistenz ereignisbasiert.
   document.title='KI21 '+VERSION;
   try{document.documentElement.setAttribute('data-ki21-version','1.7.1');}catch(e){}
 })();
@@ -20724,7 +20724,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <!-- KI21 Pilot Core 1.7.2 — Stable Renderer & Independent Health/Forecast -->
 <style id="ki21-v172-stable-renderer">
 /* Der veraltete Zwischenrenderer darf vor dem finalen Cockpit nicht mehr kurz sichtbar werden. */
-.cockpit-v54-lagebild,.ki21-v170-learned{display:none!important;}
+.cockpit-v54-lagebild{display:none!important;}
+.ki21-v170-learned{display:block!important;}
 </style>
 <script>
 (function(){
@@ -20830,15 +20831,194 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   // Der alte 1.7.1-Synchronisierer darf Forecast nicht wieder auf Health setzen.
   window.ki21SyncScoresV171=function(){sync();};
 
-  let timer=0;
-  const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,25);});
-  observer.observe(document.documentElement,{subtree:true,childList:true});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,40),{once:true});else setTimeout(sync,40);
-  window.addEventListener('pageshow',()=>setTimeout(sync,60));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sync,60);});
-  setInterval(sync,1200);
+  // 1.7.3: kein eigener MutationObserver und kein Polling mehr.
+  // Synchronisierung erfolgt zentral und einmalig nach relevanten Zustandsänderungen.
   document.title='KI21 '+VERSION;
   try{document.documentElement.setAttribute('data-ki21-version','1.7.2');}catch(e){}
+})();
+</script>
+
+<!-- KI21 Pilot Core 1.7.3 — Single State & Phase 2 Persistence -->
+<style id="ki21-v173-style">
+.cockpit-v54-lagebild{display:none!important;}
+.ki21-v170-learned{display:block!important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.7.3 SINGLE STATE & PHASE 2 PERSISTENCE';
+  window.KI21_VERSION=VERSION;
+  let syncing=false, scheduled=false;
+
+  function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function baseModel(){try{return typeof window.ki21OpportunityModelV170==='function'?window.ki21OpportunityModelV170():null;}catch(e){return null;}}
+  function level(v){return v>=75?'GUT':v>=45?'MITTEL':'NIEDRIG';}
+
+  function scorePair(m){
+    m=m||{};
+    let health=20;
+    if(m.sponsor)health+=8;
+    if(m.executive)health+=10;
+    if(m.budget)health+=8;
+    if(m.workshop)health+=6;
+    if(m.itConditions)health+=6;
+    if(m.hours)health+=5;
+    if(m.damage)health+=5;
+    if(m.success)health+=6;
+    if(m.quantified)health+=4;
+    if(m.conflict)health-=2;
+    if(m.conflict)health=Math.min(health,72);
+    if(!m.success)health=Math.min(health,68);
+    health=Math.max(15,Math.min(92,Math.round(health)));
+
+    let forecast=15;
+    if(m.sponsor)forecast+=5;
+    if(m.executive)forecast+=8;
+    if(m.budget)forecast+=6;
+    if(m.workshop)forecast+=5;
+    if(m.itConditions)forecast+=5;
+    if(m.success)forecast+=4;
+    if(m.damage)forecast+=2;
+    if(m.quantified)forecast+=2;
+    if(m.conflict)forecast-=4;
+    if(m.conflict)forecast=Math.min(forecast,55);
+    if(!m.workshop)forecast=Math.min(forecast,50);
+    if(!m.success)forecast=Math.min(forecast,55);
+    forecast=Math.max(5,Math.min(90,Math.round(forecast)));
+    return {health,forecast};
+  }
+  window.ki21ScoresV173=function(){return scorePair(baseModel());};
+
+  function hasConfirmedEconomicImpact(text){
+    text=String(text||'');
+    // Budget values are not economic benefit. A confirmed value needs impact context and a clear period or event.
+    const impact=/(kosten|schaden|bestandsbindung|überstunden|umplanung|einspar|aufwand|arbeitsstunden|wirtschaftliche belastung)/i;
+    const value=/\b\d{1,3}(?:\.\d{3})*(?:,\d+)?\s*€\b/i;
+    const period=/(pro\s+(?:monat|jahr|fall)|monatlich|jährlich|einmalig|je\s+fall|im\s+jahr)/i;
+    return impact.test(text)&&value.test(text)&&period.test(text);
+  }
+
+  function syncReportText(report,m,s){
+    let r=String(report||'');
+    r=r.replace(/(ENTSCHEIDUNGSREIFE\n•\s*)\d{1,3}\s*%\s*·\s*(?:GUT|MITTEL|NIEDRIG)/i,'$1'+s.health+' % · '+level(s.health));
+    r=r.replace(/(EXECUTIVE FORECAST\n•\s*AKTUELL:\s*)\d{1,3}\s*%\s*·\s*(?:GUT|MITTEL|NIEDRIG)/i,'$1'+s.forecast+' % · '+level(s.forecast));
+    const confirmed=hasConfirmedEconomicImpact(m&&m.text);
+    if(!confirmed){
+      r=r.replace(/Business Case belastbar quantifiziert/gi,'Business Case teilweise quantifiziert');
+    }
+    return r;
+  }
+
+  // Report wrapper: one source for Health, Forecast and Business-Case maturity.
+  const reportFns=['ki21BuildOpportunityReportV170','buildOpportunityTestReportV723','ki21BuildSourceFirstReportV160'];
+  reportFns.forEach(name=>{
+    const old=window[name];
+    if(typeof old!=='function'||old.__ki21v173)return;
+    const wrapped=function(){
+      let r='';try{r=old.apply(this,arguments);}catch(e){r='';}
+      const m=baseModel()||{};return syncReportText(r,m,scorePair(m));
+    };
+    wrapped.__ki21v173=true;window[name]=wrapped;
+  });
+
+  function phase2Key(id){return 'ki21_st_'+id+'_1';}
+  function phase2BackupKey(id){return 'ki21_phase2_persist_v173_'+id;}
+  function nonEmptyResult(v){return !!(v&&typeof v==='object'&&String(v.result||'').trim());}
+
+  // General persistence rule: a generated Phase-2 result can only be replaced by another non-empty result.
+  // Emptying is only possible through the explicit reset function below.
+  try{
+    if(window.LS&&typeof LS.set==='function'&&!LS.set.__ki21v173){
+      const rawSet=LS.set.bind(LS);
+      const guarded=function(key,value){
+        try{
+          const m=String(key||'').match(/^ki21_st_(.+)_1$/);
+          if(m&&!window.__ki21AllowPhase2Reset){
+            const old=LS.get(key,null);
+            if(nonEmptyResult(old)&&value&&typeof value==='object'&&!String(value.result||'').trim()){
+              value={...value,result:old.result,prompt:value.prompt||old.prompt,generatedAt:value.generatedAt||old.generatedAt};
+            }
+            if(nonEmptyResult(value))rawSet(phase2BackupKey(m[1]),{result:value.result,prompt:value.prompt||'',generatedAt:value.generatedAt||Date.now()});
+          }
+        }catch(e){}
+        return rawSet(key,value);
+      };
+      guarded.__ki21v173=true;LS.set=guarded;
+    }
+  }catch(e){}
+
+  function restorePhase2(){
+    const id=aid();if(!id)return;
+    try{
+      const key=phase2Key(id),data=LS.get(key,{fv:{},result:''}),backup=LS.get(phase2BackupKey(id),null);
+      if(!nonEmptyResult(data)&&backup&&String(backup.result||'').trim()){
+        LS.set(key,{...(data||{}),result:backup.result,prompt:backup.prompt||'',generatedAt:backup.generatedAt||Date.now()});
+      }else if(nonEmptyResult(data)){
+        LS.set(phase2BackupKey(id),{result:data.result,prompt:data.prompt||'',generatedAt:data.generatedAt||Date.now()});
+      }
+    }catch(e){}
+  }
+
+  window.ki21ResetPhase2ResultV173=function(id){
+    id=id||aid();if(!id)return false;
+    try{
+      window.__ki21AllowPhase2Reset=true;
+      const key=phase2Key(id),data=LS.get(key,{fv:{}})||{fv:{}};
+      LS.set(key,{...data,result:'',prompt:'',generatedAt:0});
+      try{localStorage.removeItem(phase2BackupKey(id));}catch(e){}
+      return true;
+    }finally{window.__ki21AllowPhase2Reset=false;}
+  };
+
+  function syncDom(){
+    if(syncing)return;syncing=true;
+    try{
+      restorePhase2();
+      const m=baseModel();if(!m)return;
+      const s=scorePair(m);
+      document.querySelectorAll('.score-pill-v667.health .score-value-v667').forEach(el=>el.textContent=s.health+'/100');
+      document.querySelectorAll('.score-pill-v667.forecast .score-value-v667').forEach(el=>el.textContent=s.forecast+'%');
+      const metrics=document.querySelectorAll('.ki21-clean-metric');
+      if(metrics[0]){
+        const v=metrics[0].querySelector('.ki21-clean-metric-value');if(v)v.textContent=s.health+' %';
+        const st=metrics[0].querySelector('.ki21-clean-metric-state');if(st)st.textContent=level(s.health);
+        const sub=metrics[0].querySelector('.ki21-clean-metric-sub');if(sub)sub.textContent='Dealqualität · Faktenbasis · Buying Center · Business Case';
+      }
+      if(metrics[1]){
+        const v=metrics[1].querySelector('.ki21-clean-metric-value');if(v)v.textContent=s.forecast+' %';
+        const st=metrics[1].querySelector('.ki21-clean-metric-state');if(st)st.textContent=level(s.forecast);
+      }
+      document.querySelectorAll('.tagline').forEach(el=>el.textContent=VERSION);
+      document.querySelectorAll('.cockpit-v54-lagebild').forEach(el=>{el.style.display='none';el.setAttribute('aria-hidden','true');});
+      try{
+        const id=aid();if(id){
+          LS.set('ki21_health_'+id,{...(LS.get('ki21_health_'+id,{})||{}),score:s.health,scoreSource:'health_v173',ts:Date.now()});
+          LS.set('ki21_forecast_'+id,{probability:s.forecast,scoreSource:'forecast_v173',ts:Date.now()});
+        }
+      }catch(e){}
+    }finally{syncing=false;}
+  }
+  function schedule(){
+    if(scheduled)return;scheduled=true;
+    requestAnimationFrame(()=>{scheduled=false;syncDom();});
+  }
+  window.ki21SyncV173=schedule;
+
+  // Relevant lifecycle events only; no polling and no global mutation render loop.
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+  window.addEventListener('pageshow',schedule);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
+  window.addEventListener('focus',schedule);
+
+  // Refresh wrapper schedules one final UI synchronization after the current state has settled.
+  const oldRefresh=window.refreshOpportunityHealth;
+  if(typeof oldRefresh==='function'&&!oldRefresh.__ki21v173){
+    const wrapped=async function(){const r=await oldRefresh.apply(this,arguments);schedule();return r;};
+    wrapped.__ki21v173=true;window.refreshOpportunityHealth=wrapped;
+  }
+
+  document.title='KI21 '+VERSION;
+  try{document.documentElement.setAttribute('data-ki21-version','1.7.3');}catch(e){}
 })();
 </script>
 
