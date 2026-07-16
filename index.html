@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.6.4-start-fix-20260715 -->
+<!-- KI21_BUILD: pilot-core-1.6.6-cockpit-reasoning-fix-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.6.5 SETTINGS START FIX</title>
+<title>KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -14968,9 +14968,9 @@ function generateKundePDF(aid, cust){
 })();
 </script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.6.5 SETTINGS START FIX -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX -->
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14995,7 +14995,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15016,7 +15016,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.6.5 SETTINGS START FIX';
+  const VERSION='Pilot Core 1.6.6 COCKPIT REASONING FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15185,11 +15185,8 @@ function generateKundePDF(aid, cust){
 })();
 
 </script>
-</body></html>`;
 
-  exportHtmlAsPdf(html,'KI21_Opportunity-Arbeitsdossier_'+(cust.firma||'Kunde').replace(/\s+/g,'_')+'.pdf');
-}
-
+<script>
 function showEditKunde(acc){showNeuerKunde(acc.cust,acc.id);}
 
 function showStkModal(sitId,sitTitle){
@@ -15217,866 +15214,20 @@ function showStkModal(sitId,sitTitle){
 }
 
 function showPDF(title,text,cust){
-  const lines=text.split('\n');
-  let html='';
-  lines.forEach(line=>{
+  const safeTitle=String(title||'KI21 Bericht');
+  const safeText=String(text||'');
+  const safeCompany=String(cust&&cust.firma||'');
+  const esc=v=>String(v||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const body=safeText.split('\n').map(line=>{
     const t=line.trim();
-    if(!t){html+='<br>';return;}
-    // Headings
-    if(t.startsWith('# ')){html+=`<h1>${t.slice(2)}</h1>`;return;}
-    if(t.startsWith('## ')){html+=`<h2>${t.slice(3)}</h2>`;return;}
-    // Score line
-    if(t.match(/SCORE:\s*\d+\/10/i)){html+=`<p class="score">${t}</p>`;return;}
-    // Section headers (ALL CAPS ending with :)
-    if(t===t.toUpperCase()&&t.endsWith(':')&&t.length>3){html+=`<h3>${t}</h3>`;return;}
-    // BESTÄTIGT / ANNAHME / KLÄREN
-    if(t.startsWith('BESTÄTIGT:')||t.startsWith('ANNAHME:')||t.startsWith('KLÄREN:')){
-      const parts=t.split(':');
-      html+=`<p><strong>${parts[0]}:</strong>${parts.slice(1).join(':')}</p>`;return;
-    }
-    // TODO / Nächster Schritt line
-    if(t.startsWith('→ TODO')||t.startsWith('→')||t.startsWith('NÄCHSTER SCHRITT DIESE WOCHE')||t.startsWith('NÄCHSTE AKTION')){html+=`<p class="todo">${t}</p>`;return;}
-    // Numbered items
-    if(t.match(/^\d+\./)){html+=`<p class="item">${t}</p>`;return;}
-    // Normal
-    html+=`<p>${t}</p>`;
-  });
-
+    if(!t)return '<div style="height:8px"></div>';
+    if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t))return '<h2>'+esc(t)+'</h2>';
+    return '<p>'+esc(t).replace(/^•\s*/,'• ')+'</p>';
+  }).join('');
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>KI21 – ${title}</title>
-<style>
-  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a1a;
-    max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;}
-  .header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px;}
-  .header h1{font-size:20px;color:#ff6b00;margin:0 0 4px;}
-  .header .meta{font-size:11px;color:#666;}
-  h1{font-size:16px;color:#ff6b00;margin:16px 0 4px;}
-  h2{font-size:14px;color:#333;margin:14px 0 4px;}
-  h3{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
-    color:#666;margin:16px 0 4px;border-bottom:1px solid #eee;padding-bottom:4px;}
-  p{margin:4px 0;}
-  p.score{font-weight:700;font-size:13px;color:#ff6b00;margin:8px 0;}
-  p.item{padding-left:12px;}
-  p.todo{background:#fff8f0;border-left:3px solid #ff6b00;padding:6px 10px;margin:12px 0;font-weight:600;}
-  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #eee;
-    font-size:10px;color:#999;text-align:center;}
-  @media print{body{margin:20px;}.no-print{display:none;}}
-
-
-/* v4.139: Erkenntnis-Button als kompakter Action-Chip, nicht mehr als Hero-Button */
-.cockpit-btn-row{align-items:center !important;justify-content:flex-start !important;gap:6px !important;}
-.cockpit-btn-primary{flex:0 0 auto !important;width:auto !important;min-height:28px !important;padding:5px 10px !important;border-radius:999px !important;font-size:10.5px !important;line-height:1 !important;box-shadow:none !important;}
-.cockpit-btn-secondary{min-height:30px !important;padding:6px 9px !important;font-size:10.5px !important;line-height:1.15 !important;}
-.cockpit-next-card{padding:8px 10px !important;margin-bottom:8px !important;}
-.cockpit-next-text,.cockpit-next-placeholder{font-size:11px !important;line-height:1.22 !important;margin-bottom:7px !important;-webkit-line-clamp:2 !important;}
-.cockpit-tile{padding:9px 9px !important;}
-.cockpit-tile-item{font-size:11px !important;line-height:1.22 !important;}
-
-
-
-/* v4.259 Deduplicated Analysis Cards: erster Screen bleibt Steuerung, darunter große Vertiefungskacheln */
-.cockpit-one-screen{
-  height:auto !important;
-  max-height:none !important;
-  overflow:visible !important;
-  display:block !important;
-  padding-bottom:18px !important;
-}
-.cockpit-one-screen .cockpit-grid{
-  margin-bottom:18px !important;
-}
-.cockpit-deep-case-title{
-  font-size:9px !important;
-  font-weight:950 !important;
-  letter-spacing:1.35px !important;
-  text-transform:uppercase !important;
-  color:rgba(201,209,217,.62) !important;
-  margin:2px 0 8px !important;
-}
-.cockpit-core-case{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:12px !important;
-  margin:0 0 16px !important;
-}
-.cockpit-core-card{
-  border-radius:18px !important;
-  padding:15px 15px 14px !important;
-  min-height:166px !important;
-}
-.cockpit-core-label{
-  font-size:9.2px !important;
-  letter-spacing:1.45px !important;
-  margin-bottom:7px !important;
-}
-.cockpit-core-head{
-  font-size:15.2px !important;
-  line-height:1.18 !important;
-  margin-bottom:10px !important;
-  -webkit-line-clamp:2 !important;
-}
-.cockpit-core-evidence{
-  font-size:11.5px !important;
-  line-height:1.34 !important;
-  display:block !important;
-  -webkit-line-clamp:unset !important;
-  overflow:visible !important;
-  margin-bottom:8px !important;
-  color:rgba(230,237,243,.78) !important;
-}
-.cockpit-core-list{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:6px !important;
-  margin-top:8px !important;
-}
-.cockpit-core-point{
-  position:relative !important;
-  padding-left:15px !important;
-  font-size:12.2px !important;
-  line-height:1.36 !important;
-  color:#edf2f7 !important;
-}
-.cockpit-core-point::before{
-  content:'·' !important;
-  position:absolute !important;
-  left:2px !important;
-  top:0 !important;
-  color:rgba(230,237,243,.48) !important;
-}
-.cockpit-core-note{
-  margin-top:10px !important;
-  padding-top:8px !important;
-  border-top:1px solid rgba(139,148,158,.16) !important;
-  font-size:11px !important;
-  line-height:1.34 !important;
-  color:rgba(201,209,217,.66) !important;
-}
-@media(max-width:390px){
-  .cockpit-one-screen{height:auto !important;max-height:none !important;overflow:visible !important;padding-left:12px !important;padding-right:12px !important;}
-  .cockpit-core-case{gap:10px !important;margin-bottom:14px !important;}
-  .cockpit-core-card{padding:13px 13px 12px !important;min-height:158px !important;border-radius:16px !important;}
-  .cockpit-core-label{font-size:8.5px !important;letter-spacing:1.15px !important;margin-bottom:6px !important;}
-  .cockpit-core-head{font-size:14px !important;line-height:1.16 !important;margin-bottom:8px !important;}
-  .cockpit-core-evidence{font-size:11px !important;line-height:1.30 !important;margin-bottom:7px !important;}
-  .cockpit-core-point{font-size:11.5px !important;line-height:1.32 !important;}
-}
-
-
-
-/* v4.259 Deduplicated Analysis Cards: manuelle Monatswerte, keine automatische Benchmark-Umrechnung */
-.cockpit-economic-capture{
-  margin:12px 0 18px !important;
-  background:linear-gradient(145deg,rgba(22,27,34,.94),rgba(17,22,29,.82)) !important;
-  border:1px solid rgba(255,107,0,.22) !important;
-  border-radius:18px !important;
-  padding:14px !important;
-  box-shadow:0 8px 22px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025) !important;
-}
-.cockpit-economic-kicker{
-  font-size:8.8px !important;
-  font-weight:900 !important;
-  letter-spacing:1.35px !important;
-  text-transform:uppercase !important;
-  color:#ff8a2a !important;
-  margin-bottom:5px !important;
-}
-.cockpit-economic-title{
-  font-size:14px !important;
-  line-height:1.24 !important;
-  font-weight:900 !important;
-  color:#f3f6fb !important;
-  margin-bottom:5px !important;
-}
-.cockpit-economic-help{
-  font-size:11px !important;
-  line-height:1.42 !important;
-  color:rgba(230,237,243,.64) !important;
-  margin-bottom:11px !important;
-}
-.cockpit-economic-row{
-  border-top:1px solid rgba(139,148,158,.16) !important;
-  padding:11px 0 !important;
-}
-.cockpit-economic-row:first-of-type{border-top:0 !important;padding-top:0 !important;}
-.cockpit-economic-row-head{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:space-between !important;
-  gap:10px !important;
-  margin-bottom:7px !important;
-}
-.cockpit-economic-label{
-  font-size:12.2px !important;
-  line-height:1.32 !important;
-  font-weight:800 !important;
-  color:#edf2f7 !important;
-}
-.cockpit-economic-status{
-  flex:0 0 auto !important;
-  font-size:9.4px !important;
-  line-height:1 !important;
-  font-weight:900 !important;
-  color:#8b949e !important;
-  border:1px solid rgba(139,148,158,.22) !important;
-  border-radius:999px !important;
-  padding:4px 7px !important;
-  background:rgba(139,148,158,.07) !important;
-}
-.cockpit-economic-status.filled{
-  color:#3fb950 !important;
-  border-color:rgba(46,160,67,.35) !important;
-  background:rgba(46,160,67,.10) !important;
-}
-.cockpit-economic-input-wrap{
-  display:flex !important;
-  align-items:center !important;
-  gap:8px !important;
-}
-.cockpit-economic-input-wrap input{
-  flex:1 1 auto !important;
-  min-height:34px !important;
-  border-radius:10px !important;
-  font-size:12px !important;
-  font-weight:800 !important;
-  border-left:3px solid rgba(255,107,0,.55) !important;
-}
-.cockpit-economic-suffix{
-  flex:0 0 auto !important;
-  color:#c9d1d9 !important;
-  font-size:11px !important;
-  font-weight:850 !important;
-}
-.cockpit-economic-benchmark{
-  margin-top:6px !important;
-  font-size:10.6px !important;
-  line-height:1.36 !important;
-  color:rgba(230,237,243,.62) !important;
-  border-left:2px solid rgba(255,107,0,.45) !important;
-  padding-left:8px !important;
-}
-.cockpit-economic-benchmark b{color:#ff8a2a !important;}
-.cockpit-economic-summary{
-  margin-top:10px !important;
-  border-top:1px solid rgba(255,107,0,.24) !important;
-  padding-top:10px !important;
-  display:flex !important;
-  flex-direction:column !important;
-  gap:5px !important;
-}
-.cockpit-economic-summary-line{
-  display:flex !important;
-  justify-content:space-between !important;
-  gap:10px !important;
-  font-size:11.3px !important;
-  line-height:1.35 !important;
-  color:#c9d1d9 !important;
-}
-.cockpit-economic-summary-line strong{color:#f3f6fb !important;}
-.cockpit-economic-add{
-  margin-top:10px !important;
-  width:100% !important;
-  border:1px solid rgba(255,107,0,.34) !important;
-  background:rgba(255,107,0,.07) !important;
-  color:#ff8a2a !important;
-  border-radius:10px !important;
-  min-height:32px !important;
-  font-size:11px !important;
-  font-weight:850 !important;
-  cursor:pointer !important;
-}
-.cockpit-economic-note{
-  margin-top:9px !important;
-  font-size:10px !important;
-  line-height:1.36 !important;
-  color:rgba(230,237,243,.50) !important;
-}
-.cockpit-economic-actions{
-  display:flex !important;
-  align-items:center !important;
-  gap:7px !important;
-  flex:0 0 auto !important;
-}
-.cockpit-economic-delete{
-  border:1px solid rgba(248,81,73,.35) !important;
-  color:#ff7b72 !important;
-  background:rgba(248,81,73,.08) !important;
-  border-radius:999px !important;
-  width:26px !important;
-  height:26px !important;
-  min-width:26px !important;
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  font-size:13px !important;
-  font-weight:900 !important;
-  cursor:pointer !important;
-}
-.cockpit-economic-delete:active{transform:translateY(1px) !important;}
-.cockpit-economic-orient-btn{
-  margin-top:7px !important;
-  border:1px solid rgba(255,107,0,.34) !important;
-  color:#ff8a2a !important;
-  background:rgba(255,107,0,.06) !important;
-  border-radius:9px !important;
-  min-height:29px !important;
-  padding:6px 9px !important;
-  font-size:10.5px !important;
-  line-height:1.1 !important;
-  font-weight:850 !important;
-  cursor:pointer !important;
-}
-.cockpit-economic-orient-btn:disabled{
-  opacity:.55 !important;
-  cursor:not-allowed !important;
-}
-.cockpit-economic-orientation{
-  margin-top:7px !important;
-  font-size:10.8px !important;
-  line-height:1.35 !important;
-  color:rgba(230,237,243,.76) !important;
-  border:1px solid rgba(255,107,0,.18) !important;
-  border-left:2px solid rgba(255,107,0,.62) !important;
-  border-radius:9px !important;
-  padding:7px 8px !important;
-  background:rgba(255,107,0,.045) !important;
-  white-space:pre-wrap !important;
-}
-.cockpit-economic-orient-head{
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:8px !important;
-  margin-bottom:4px !important;
-}
-.cockpit-economic-orient-title{
-  color:#ff8a2a !important;
-  font-size:9.6px !important;
-  font-weight:900 !important;
-  letter-spacing:.8px !important;
-  text-transform:uppercase !important;
-}
-.cockpit-economic-orient-hide{
-  border:0 !important;
-  background:transparent !important;
-  color:rgba(230,237,243,.48) !important;
-  font-size:10px !important;
-  font-weight:800 !important;
-  cursor:pointer !important;
-  padding:2px 3px !important;
-}
-.cockpit-economic-orient-hide:active{color:#ff8a2a !important;}
-.cockpit-economic-orientation b{color:#ff8a2a !important;}
-@media(max-width:390px){
-  .cockpit-economic-capture{padding:12px !important;border-radius:16px !important;}
-  .cockpit-economic-title{font-size:13.2px !important;}
-  .cockpit-economic-help{font-size:10.5px !important;}
-  .cockpit-economic-label{font-size:11.6px !important;}
-}
-
-
-/* v4.255: KI21-entwickelte Dashboard-Punkte übergangsweise in Orange markieren */
-.cockpit-tile-item.cockpit-ki21-inline,
-.cockpit-tile-link.cockpit-ki21-inline{
-  color:#ff8a2a !important;
-  font-weight:820 !important;
-}
-.cockpit-tile-item.cockpit-ki21-inline::before,
-.cockpit-tile-link.cockpit-ki21-inline::before,
-.cockpit-tile-item.cockpit-ki21-inline::after,
-.cockpit-tile-link.cockpit-ki21-inline::after{
-  color:#ff8a2a !important;
-}
-.bs-row.bs-kind-ki21 .bs-glyph,
-.bs-row.bs-kind-ki21 .bs-row-arrow{
-  color:#ff8a2a !important;
-  opacity:1 !important;
-}
-.bs-row.bs-kind-ki21{
-  color:#ff8a2a !important;
-}
-
-
-
-/* v5.3 Executive Intelligence: Task-, KPI- und Insight-Polish */
-.v53-task-list{display:flex;flex-direction:column;gap:9px;}
-.v53-task{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.22);border-radius:12px;background:rgba(167,139,250,.055);}
-.v53-task-primary{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.38);}
-.v53-task-box{width:17px;height:17px;border:1.5px solid rgba(230,237,243,.48);border-radius:4px;flex:0 0 auto;margin-top:2px;}
-.v53-task-text{font-size:12.7px;line-height:1.36;color:#f3f6fb;font-weight:760;}
-.v53-task-primary .v53-task-text{font-weight:900;}
-.v53-bc-value{font-size:28px;line-height:1.02;font-weight:950;letter-spacing:-.7px;color:#fff;margin:2px 0 7px;}
-.v53-bc-sub{font-size:9.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#56d390;margin-bottom:10px;}
-.v53-bc-divider{height:1px;background:rgba(139,148,158,.18);margin:9px 0;}
-.v53-bc-benefit{display:flex;gap:8px;align-items:flex-start;font-size:11.8px;line-height:1.35;color:#e6edf3;margin:7px 0;}
-.v53-bc-benefit::before{content:'✓';color:#56d390;font-weight:950;}
-.v53-risk-group{margin-bottom:10px;}
-.v53-risk-label{font-size:8.8px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff7b72;margin-bottom:5px;}
-.v53-risk-label.secondary{color:#d29922;}
-.v53-risk-text{font-size:12.3px;line-height:1.38;color:#edf2f7;}
-.v53-summary-status{font-size:20px;font-weight:950;color:#f3f6fb;line-height:1.12;margin-bottom:3px;}
-.v53-summary-evidence{font-size:11.5px;color:#c9d1d9;line-height:1.35;}
-.v53-summary-evidence span{display:inline-block;margin-right:5px;}
-
-
-
-/* v6.1.3 Header Polish: zwei klare Header-Ebenen, kompaktere Navigation und kleinere To-do-Checkboxen */
-.cockpit-header{
-  display:grid !important;
-  grid-template-columns:minmax(0,1fr) auto auto !important;
-  grid-template-areas:
-    "brand score settings"
-    "company status status" !important;
-  column-gap:8px !important;
-  row-gap:3px !important;
-  align-items:center !important;
-  min-height:70px !important;
-  padding:9px 14px 8px !important;
-}
-.cockpit-header-left,
-.cockpit-header-right,
-.cockpit-score-stack{
-  display:contents !important;
-}
-.cockpit-header .cockpit-brand,
-.cockpit-header .ki21-logo-left{
-  grid-area:brand !important;
-  align-self:center !important;
-  margin:0 !important;
-}
-.cockpit-header .cockpit-opp-link,
-.cockpit-header .cockpit-opp-name,
-.cockpit-header .cockpit-opp-placeholder{
-  grid-area:company !important;
-  max-width:100% !important;
-  min-width:0 !important;
-  font-size:16px !important;
-  line-height:1.15 !important;
-}
-.cockpit-header .cockpit-score-badge,
-.cockpit-header .cockpit-score-click{
-  grid-area:score !important;
-  align-self:center !important;
-}
-.cockpit-header-right > .btn{
-  grid-area:settings !important;
-  align-self:center !important;
-}
-.cockpit-dealstatus{
-  grid-area:status !important;
-  display:block !important;
-  justify-self:end !important;
-  align-self:center !important;
-  max-width:min(310px,58vw) !important;
-  min-height:10px !important;
-  margin:0 !important;
-  padding:0 !important;
-  font-size:8.4px !important;
-  line-height:1.15 !important;
-  color:rgba(201,209,217,.72) !important;
-  text-align:right !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-}
-.ki21-mode-tabs{
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(92px,.78fr) !important;
-  gap:6px !important;
-}
-.ki21-mode-add{
-  min-width:0 !important;
-  padding-left:7px !important;
-  padding-right:7px !important;
-}
-.cockpit-v611-stable .cockpit-card-next .cockpit-v61-task,
-.cockpit-v611-stable .cockpit-card-next .cockpit-next-primary{
-  padding-left:32px !important;
-}
-.cockpit-v611-stable .cockpit-card-next .cockpit-v61-task::before,
-.cockpit-v611-stable .cockpit-card-next .cockpit-next-primary::before{
-  left:11px !important;
-  width:12px !important;
-  height:12px !important;
-  border-width:1.4px !important;
-  border-radius:3px !important;
-}
-@media(max-width:390px){
-  .cockpit-header{
-    grid-template-columns:minmax(0,1fr) auto auto !important;
-    min-height:68px !important;
-    padding:8px 12px 7px !important;
-    column-gap:6px !important;
-    row-gap:2px !important;
-  }
-  .cockpit-header .cockpit-opp-link,
-  .cockpit-header .cockpit-opp-name,
-  .cockpit-header .cockpit-opp-placeholder{
-    font-size:15px !important;
-  }
-  .cockpit-dealstatus{
-    max-width:55vw !important;
-    font-size:7.5px !important;
-  }
-  .ki21-mode-tabs{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(86px,.75fr) !important;
-    gap:5px !important;
-  }
-  .ki21-mode-tab,.ki21-mode-add{
-    font-size:10.4px !important;
-    padding-left:6px !important;
-    padding-right:6px !important;
-  }
-}
-</style>
-
-<style>
-/* v6.1.4 Header Rebuild: normaler Layoutfluss ohne Überlappung */
-.cockpit-header{
-  display:grid !important;
-  grid-template-columns:minmax(0,1fr) auto auto !important;
-  grid-template-areas:
-    "brand score settings"
-    "company company company"
-    "status status status" !important;
-  column-gap:8px !important;
-  row-gap:4px !important;
-  align-items:center !important;
-  min-height:86px !important;
-  padding:9px 14px 9px !important;
-}
-.cockpit-header-left,.cockpit-header-right,.cockpit-score-stack{display:contents !important;}
-.cockpit-header .cockpit-brand,.cockpit-header .ki21-logo-left{grid-area:brand !important;}
-.cockpit-header .cockpit-score-badge,.cockpit-header .cockpit-score-click{grid-area:score !important;}
-.cockpit-header-right > .btn{grid-area:settings !important;}
-.cockpit-header .cockpit-opp-link,.cockpit-header .cockpit-opp-name,.cockpit-header .cockpit-opp-placeholder{
-  grid-area:company !important;
-  display:block !important;
-  width:100% !important;
-  max-width:100% !important;
-  min-width:0 !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  white-space:nowrap !important;
-  font-size:16px !important;
-  line-height:1.18 !important;
-}
-.cockpit-dealstatus{
-  grid-area:status !important;
-  display:block !important;
-  justify-self:start !important;
-  width:100% !important;
-  max-width:100% !important;
-  min-height:12px !important;
-  margin:0 !important;
-  padding:0 !important;
-  font-size:9px !important;
-  line-height:1.2 !important;
-  color:rgba(201,209,217,.72) !important;
-  text-align:left !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-}
-@media(max-width:390px){
-  .cockpit-header{min-height:82px !important;padding:8px 12px 8px !important;row-gap:3px !important;}
-  .cockpit-header .cockpit-opp-link,.cockpit-header .cockpit-opp-name,.cockpit-header .cockpit-opp-placeholder{font-size:15px !important;}
-  .cockpit-dealstatus{font-size:8.2px !important;}
-}
-</style>
-
-<style>
-/* v6.5.16 Cockpit Stability & Live Decision Update */
-.cockpit-business-amount,
-.v53-bc-value{
-  font-size:22px !important;
-  line-height:1.08 !important;
-  letter-spacing:-.35px !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  word-break:normal !important;
-  overflow-wrap:normal !important;
-}
-.cockpit-business-anchor{
-  padding-right:30px !important;
-}
-@media(max-width:390px){
-  .cockpit-business-amount,
-  .v53-bc-value{
-    font-size:19px !important;
-    letter-spacing:-.25px !important;
-  }
-}
-</style>
-
-
-<style>
-/* v6.5.13 */
-.v53-bc-value,.cockpit-business-amount{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:21px!important;line-height:1.12!important;}
-.ki21-fulltext-body{overflow-wrap:anywhere;white-space:pre-wrap;}
-.v53-task,.v53-bc-benefit,.v53-risk-text,.cockpit-tile-item,.cockpit-tile-link{cursor:pointer;}
-</style>
-
-
-<style>
-/* v6.5.18 */
-.cockpit-business-amount,.v53-bc-value{
-  font-size:24px !important;
-  line-height:1.05 !important;
-  letter-spacing:-.35px !important;
-  overflow-wrap:anywhere !important;
-}
-</style>
-
-
-<style>
-/* v6.5.19 – schnelle Interaktion auf iOS/Brave */
-button,
-[role="button"],
-.cockpit-tile-item,
-.cockpit-tile-link,
-.v53-task,
-.v53-bc-benefit,
-.v53-risk-text{
-  touch-action:manipulation !important;
-  -webkit-tap-highlight-color:transparent;
-}
-</style>
-
-
-<style>
-/* v6.5.20 – Actionable Intelligence */
-.ki21-detail-body{font-size:16px !important;line-height:1.55 !important;}
-</style>
-
-
-<style>
-/* v6.5.21 – Semantic Value Roles */
-.ki21-detail-body{
-  font-size:16px !important;
-  line-height:1.56 !important;
-  white-space:pre-wrap !important;
-}
-</style>
-
-
-<style>
-/* v6.5.24 – Actionable Sales Intelligence */
-.ki21-detail-body{
-  font-size:16px !important;
-  line-height:1.58 !important;
-  white-space:pre-wrap !important;
-}
-</style>
-
-</head><body>
-<div class="header">
-  <h1>KI21 – ${title}</h1>
-  <div class="meta">${cust&&cust.firma?cust.firma+' · ':''}${cust&&cust.ap?cust.ap+' · ':''}${new Date().toLocaleDateString('de-DE')}</div>
-</div>
-${html}
-<div class="footer">Vertriebsdokumentation · ki21-vertrieb.github.io</div>
-<div class="no-print" style="text-align:center;margin-top:20px;">
-  <button onclick="window.print()" style="background:#ff6b00;color:#fff;border:none;
-    padding:10px 24px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
-    Als PDF speichern
-  </button>
-</div>
-
-
-
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Executive Typography Hierarchy -->
-<style id="ki21-executive-typography-v154">
-/* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
-.ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
-.ki21-clean-label{color:#aeb8c6!important;font-weight:950!important;opacity:1!important;}
-.ki21-clean-text{font-size:15.2px!important;line-height:1.46!important;font-weight:790!important;color:#f5f7fb!important;}
-.ki21-clean-metric-label{color:#aeb8c6!important;font-weight:950!important;opacity:1!important;}
-.ki21-clean-metric-sub,.ki21-clean-forecast-line{color:#b9c3d0!important;font-weight:520!important;}
-.ki21-clean-action-title{font-weight:950!important;color:#cdbfff!important;}
-.ki21-clean-action-text{font-size:14.1px!important;line-height:1.42!important;font-weight:780!important;color:#f5f7fb!important;}
-.ki21-clean-business-status{font-weight:880!important;color:#f5f7fb!important;}
-.ki21-report-link-v725{font-weight:900!important;color:#d7dee8!important;}
-.cockpit-dealstatus{color:#aeb8c6!important;font-weight:760!important;}
-@media(max-width:390px){
-  .ki21-clean-text{font-size:14.5px!important;line-height:1.44!important;}
-  .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
-}
-</style>
-<script>
-/* Pilot Core 1.6.0 — Source-First Analysis Architecture */
-(function(){
-  const VERSION='Pilot Core 1.6.5 SETTINGS START FIX';
-  function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
-  function raw(id){
-    let t='';
-    try{t=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
-    if(!t){try{const a=(state.accounts||[]).find(x=>x&&String(x.id)===String(id));t=String(a&&(a.rawImport||a.importText)||'');}catch(e){}}
-    return t.replace(/\r/g,'').trim();
-  }
-  function has(t,re){return re.test(t);}
-  function firstName(t,re,fallback){const m=t.match(re);return m&&m[1]?m[1].trim():fallback;}
-  function clearDerived(id){
-    if(!id)return;
-    const exactPrefixes=[
-      'ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_',
-      'ki21_opportunity_intelligence_lastError_','ki21_health_','ki21_health_lastError_',
-      'ki21_health_manual_','ki21_health_updated_','ki21_score_','ki21_score_reason_',
-      'ki21_decision_history_v700_','ki21_decision_snapshot_v690_','ki21_last_impact_',
-      'ki21_case_assumptions_','ki21_cockpit_focus_','ki21_phase_snap_','ki21_pending_',
-      'ki21_phase_pending_','ki21_smart_pending_','ki21_spin_import_meta_'
-    ];
-    try{
-      const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k);}
-      keys.forEach(k=>{if(exactPrefixes.some(p=>k===p+id||k.indexOf(p+id+'_')===0))localStorage.removeItem(k);});
-    }catch(e){}
-    for(let i=0;i<5;i++){
-      try{const st=LS.get('ki21_st_'+id+'_'+i,{fv:{},result:''})||{fv:{},result:''};st.result='';LS.set('ki21_st_'+id+'_'+i,st);}catch(e){}
-    }
-    try{sessionStorage.clear();}catch(e){}
-  }
-  function analyze(t){
-    const sponsor=has(t,/Projektinitiator|fachlicher Sponsor|starker fachlicher Sponsor|unterstützt das Projekt|bewertet .* positiv/i);
-    const executive=has(t,/Geschäftsführer|Geschäftsführung|CEO|CFO|wirtschaftlicher Entscheider/i);
-    const it=has(t,/IT-Leiter|IT\b|ERP|Architektur|Integration|Schatten-IT/i);
-    const business=has(t,/Vertriebscontrolling|Controlling|Fachbereich|Vertrieb/i);
-    const budget=has(t,/Budget ist grundsätzlich vorhanden|Budget grundsätzlich vorhanden|Budget.*vorhanden/i);
-    const budgetConditional=has(t,/Freigabe.*erst|Budget.*gemeinsame Empfehlung|Budget.*akzeptiert/i);
-    const criteria=has(t,/Erfolgskriterien/i);
-    const workshop=has(t,/gemeinsamer Workshop|Workshop ist geplant|Nächster geplanter Termin/i);
-    const workshopNotFixed=has(t,/Agenda.*noch nicht verbindlich|Entscheidungskriterien.*noch nicht verbindlich|grundsätzlich abgestimmt/i);
-    const conflict=has(t,/Zielkonflikt|bevorzugt.*ERP|ERP-integrierte Alternative|keine zusätzliche Plattform|gemeinsame Empfehlung|Konflikt zwischen Fachbereich und IT/i);
-    const pain=has(t,/Reporting.*zwei Wochen|fehlende Transparenz|unzuverlässige Forecast|Management verliert Vertrauen|hoher manueller Reporting-Aufwand/i);
-    let score=20;
-    if(sponsor)score+=10;if(executive)score+=10;if(budget)score+=10;if(criteria)score+=10;if(workshop)score+=10;
-    if(conflict)score-=5;if(budgetConditional)score-=5;if(workshopNotFixed)score-=5;
-    score=Math.max(10,Math.min(80,score));
-    const state=score<40?'NIEDRIG':score<65?'MITTEL':'GUT';
-    const status=(business&&it&&executive)
-      ?'Fachbereich und Controlling unterstützen die Lösung; die IT bevorzugt eine ERP-nahe Alternative. Die Geschäftsführung erwartet eine gemeinsame Empfehlung.'
-      :(sponsor?'Ein fachlicher Sponsor ist vorhanden; die wirtschaftliche Entscheidung steht noch aus.':'Der Deal ist qualifiziert, die Entscheidungslage aber noch nicht vollständig bestätigt.');
-    const blocker=(business&&it&&conflict)
-      ?'Fachbereich und IT haben noch kein gemeinsames Entscheidungsbild zu Fachnutzen, Integration und Betrieb.'
-      :'Die verbindlichen Entscheidungskriterien und der nächste Kundenschritt sind noch nicht vollständig abgestimmt.';
-    const recommendation=(workshop)
-      ?'Den geplanten Workshop als Entscheidungsworkshop vorbereiten und Pilotumfang, Architekturleitplanken, Betriebsmodell, Erfolgskriterien und Entscheidungsweg verbindlich abstimmen.'
-      :'Einen gemeinsamen Entscheidungsworkshop mit Fachbereich, IT und wirtschaftlichem Entscheider verbindlich vereinbaren.';
-    const decision='Der Kunde entscheidet, ob ein begrenzter BI-Pilot unter gemeinsam vereinbarten Architektur-, Integrations- und Betriebsleitplanken durchgeführt wird.';
-    const success='Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.';
-    return {sponsor,executive,it,business,budget,budgetConditional,criteria,workshop,conflict,pain,score,state,status,blocker,recommendation,decision,success};
-  }
-  function reportFor(id){
-    const t=raw(id);if(!t)return '';
-    const a=analyze(t);
-    const up=[];if(a.conflict)up.push('Fachbereich und IT bestätigen ein gemeinsames Entscheidungsbild');if(a.budgetConditional)up.push('Geschäftsführung bestätigt den Budget- und Freigabeweg');if(a.criteria)up.push('Pilotziele und Erfolgskriterien werden verbindlich vereinbart');
-    const facts=[];
-    if(a.sponsor)facts.push('Fachbereich beziehungsweise Controlling unterstützen die Lösung fachlich.');
-    if(a.it)facts.push('Die IT erkennt den Nutzen, bevorzugt jedoch eine ERP-nahe beziehungsweise integrierte Alternative.');
-    if(a.executive)facts.push('Die Geschäftsführung ist als wirtschaftlicher Entscheider eingebunden und erwartet eine gemeinsame Empfehlung.');
-    if(a.budget)facts.push('Budget ist grundsätzlich vorhanden, die Freigabe ist jedoch an eine tragfähige gemeinsame Empfehlung gebunden.');
-    if(a.workshop)facts.push('Ein gemeinsamer Workshop mit den relevanten Stakeholdern ist geplant.');
-    const open=[];
-    open.push('Fachliche, technische und wirtschaftliche Muss-Kriterien gemeinsam priorisieren.');
-    open.push('Integrations-, Betriebs- und Datenverantwortung für den Pilot festlegen.');
-    open.push('Reporting-Aufwand und wirtschaftliche Folgen unzuverlässiger Forecasts quantifizieren.');
-    open.push('Entscheidung nach dem Pilot bei Erreichen der Erfolgskriterien verbindlich definieren.');
-    const lines=[];
-    lines.push('SALES SUMMARY');
-    lines.push('• Status: '+a.status);
-    lines.push('• Engpass: '+a.blocker);
-    lines.push('• Empfehlung: '+a.recommendation);
-    lines.push('');
-    lines.push('ENTSCHEIDUNGSREIFE');
-    lines.push('• '+a.score+' % · '+a.state+' für die Pilotentscheidung');
-    lines.push('• '+(a.sponsor?'✓':'⚠')+' Fachlicher Sponsor bestätigt');
-    lines.push('• '+(a.executive?'✓':'⚠')+' Wirtschaftlicher Entscheider identifiziert und eingebunden');
-    lines.push('• '+(a.budget?'✓':'⚠')+' Budget grundsätzlich vorhanden');
-    lines.push('• '+(a.criteria?'✓':'⚠')+' Erfolgskriterien beschrieben');
-    lines.push('• '+(a.workshop?'✓':'⚠')+' Gemeinsamer Workshop geplant');
-    lines.push('• ⚠ Gemeinsames Entscheidungsbild von Fachbereich und IT noch nicht bestätigt');
-    lines.push('');
-    lines.push('DEAL-HYPOTHESE');
-    lines.push('• AKTUELLE DEAL-HYPOTHESE: Der zentrale Kaufblocker ist nicht fehlender fachlicher Nutzen, sondern der noch ungelöste Zielkonflikt zwischen schneller fachlicher Wirkung und einer für die IT tragfähigen Architektur- und Betriebsentscheidung.');
-    lines.push('• BESTÄTIGT, WENN: Fachbereich und IT weiterhin unterschiedliche Lösungsbilder vertreten und die Geschäftsführung ohne gemeinsame Empfehlung keine Freigabe erteilt.');
-    lines.push('• WIDERLEGT, WENN: Die ERP-Alternative die fachlichen Anforderungen nachweisbar erfüllt oder Fachbereich und IT bereits ein gemeinsames Pilotmodell bestätigen.');
-    lines.push('');
-    lines.push('EXECUTIVE DECISION CHAIN');
-    lines.push('• GESCHÄFTSZIEL → Einheitliche Vertriebskennzahlen, schnelleres Reporting, belastbarere Forecasts und weniger manuelle Aufbereitung.');
-    lines.push('• GRÖSSTER ENGPASS → '+a.blocker);
-    lines.push('• DEAL-LOGIK → Eine weitere Produktdemo erhöht den fachlichen Nutzen nicht entscheidend. Fortschritt entsteht, wenn Fachbereich, IT und Geschäftsführung eine gemeinsam tragfähige Pilotentscheidung formulieren.');
-    lines.push('• HÖCHSTER HEBEL → Den geplanten Workshop von einem Abstimmungstermin zu einem verbindlichen Entscheidungsworkshop machen.');
-    lines.push('• VERKAUFSAKTION → Workshop-Agenda mit Geschäftsproblem, Muss-Kriterien, ERP-Rolle, Integrationsleitplanken, Betriebsmodell, Pilotumfang und Erfolgsmessung vorbereiten.');
-    lines.push('• ERWARTETE KUNDENENTSCHEIDUNG → '+a.decision);
-    lines.push('• NÄCHSTER MEILENSTEIN → '+a.success);
-    lines.push('');
-    lines.push('KONKRETER VERKAUFSAUFTRAG');
-    lines.push('• JETZT TUN: Den geplanten Workshop als verbindlichen Entscheidungsworkshop mit Geschäftsführung, Vertriebscontrolling, Controlling und IT bestätigen.');
-    lines.push('• VORBEREITEN: Fachlichen Nutzen, ERP-Alternative, Integrationsanforderungen, Betriebsmodell, Pilotumfang und wirtschaftliche Ausgangswerte in einer gemeinsamen Entscheidungsvorlage gegenüberstellen.');
-    lines.push('• IM TERMIN ENTSCHEIDEN: Muss-Kriterien, Architekturleitplanken, Verantwortlichkeiten, Pilotziele und den Entscheidungsweg nach dem Pilot verbindlich festlegen.');
-    lines.push('• ERFOLG DES NÄCHSTEN SCHRITTS: '+a.success);
-    lines.push('');
-    lines.push('EXECUTIVE FORECAST');
-    lines.push('• AKTUELL: '+a.score+' % · '+a.state+' für die Pilotentscheidung');
-    lines.push('• DEUTLICHE AUFSTUFUNG, WENN: '+(up.join('. ')+'.'));
-    lines.push('• KLARE ABSTUFUNG, WENN: Die IT die ERP-Alternative verbindlich empfiehlt oder die Geschäftsführung den Zielkonflikt vertagt.');
-    lines.push('');
-    lines.push('EXECUTIVE WATCHOUT');
-    lines.push('• Eine weitere funktionsorientierte Demo kann den Fachbereich stärker überzeugen, gleichzeitig aber den Widerstand der IT gegen eine zusätzliche Plattform erhöhen.');
-    lines.push('');
-    lines.push('FAKTENBASIS');facts.forEach(x=>lines.push('• '+x));
-    lines.push('');
-    lines.push('STÄRKSTE KLÄRUNGSFRAGE');
-    lines.push('• Unter welchen fachlichen, technischen und wirtschaftlichen Bedingungen unterstützen Fachbereich, IT und Geschäftsführung gemeinsam einen begrenzten BI-Pilot?');
-    lines.push('');
-    lines.push('VERTRAUENSCHECK');
-    lines.push('• Faktenlage GUT – Ausgangssituation, Stakeholder, Alternative, Budgetlogik und geplanter Workshop sind beschrieben.');
-    lines.push('• Buying Center GUT – Fachlicher Sponsor, Controlling, IT und wirtschaftlicher Entscheider sind identifiziert.');
-    lines.push('• Business Case TEILWEISE – Nutzen und Erfolgskriterien sind beschrieben; Aufwand und wirtschaftliche Folgen sind noch zu quantifizieren.');
-    lines.push('• Konsens TEILWEISE – Die relevanten Rollen sind eingebunden, tragen aber noch kein gemeinsames Lösungs- und Entscheidungsbild.');
-    lines.push('');
-    lines.push('WAS DER VERTRIEB NOCH KLÄREN MUSS');open.forEach(x=>lines.push('• '+x));
-    lines.push('');
-    lines.push('BUSINESS CASE UND KUNDENNUTZEN');
-    lines.push('• Wirtschaftlicher Ausgangspunkt sind verspätetes Reporting, hoher manueller Aufwand, widersprüchliche Kennzahlen und unzuverlässige Forecasts.');
-    lines.push('• Erwarteter Kundennutzen: schnellere Managemententscheidungen, weniger Excel-Aufwand, einheitliche Kennzahlen und höhere Forecast-Qualität.');
-    lines.push('• Noch zu quantifizieren: heutige Reporting-Stunden, Kosten der manuellen Aufbereitung und Folgen fehlerhafter oder verspäteter Forecasts.');
-    lines.push('');
-    lines.push('WARUM JETZT?');
-    lines.push('• WENN WIR NICHT HANDELN → Der interne Zielkonflikt bleibt ungelöst und die Entscheidung wird eher vertagt oder zugunsten der ERP-Alternative getroffen.');
-    lines.push('• JETZT ERFORDERLICH → Den bereits geplanten Workshop mit einer verbindlichen Entscheidungsagenda und klaren Ergebnissen vorbereiten.');
-    return lines.join('\n');
-  }
-
-  window.ki21ClearDerivedAnalysisV160=clearDerived;
-  window.ki21BuildSourceFirstReportV160=function(){return reportFor(aid());};
-  const oldApply=window.ki21ApplySmartImportV65;
-  if(typeof oldApply==='function'){
-    window.ki21ApplySmartImportV65=function(){
-      const id=oldApply.apply(this,arguments);
-      clearDerived(id);
-      try{LS.set('ki21_analysis_fingerprint_'+id,String(raw(id).length)+'_'+Date.now());}catch(e){}
-      return id;
-    };
-  }
-  // Analyseausgaben sind flüchtig und werden immer aus der aktiven Primärquelle erzeugt.
-  window.buildOpportunityTestReportV723=function(){return reportFor(aid());};
-
-  function refreshVisible(){
-    try{
-      const r=reportFor(aid());if(!r)return;
-      // Der bestehende Premium-Renderer liest buildOpportunityTestReportV723 erneut.
-      if(typeof window.renderCockpitSnapshotLiteV4215==='function')window.renderCockpitSnapshotLiteV4215();
-    }catch(e){console.warn('Source-first refresh skipped',e);}
-  }
-  window.ki21RefreshSourceFirstV160=refreshVisible;
-  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
-  setTimeout(refreshVisible,500);
-})();
-
-</script>
-</body></html>`);
+  if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
+  win.document.open();
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
   win.document.close();
 }
 
@@ -16725,7 +15876,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.6.5 SETTINGS START FIX';
+const KI21_VERSION='Pilot Core 1.6.6 COCKPIT REASONING FIX';
 
 
 function runKi21VersionMigration(){
@@ -20135,8 +19286,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const summary=(s['SALES SUMMARY']||[]).map(clean);
     const readiness=(s['ENTSCHEIDUNGSREIFE']||[]).map(clean);
     const forecast=(s['EXECUTIVE FORECAST']||[]).map(clean);
-    const command=(s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean);
-    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||[]).map(clean);
+    const command=(s['NÄCHSTER DEAL-SCHRITT']||s['KONKRETER VERKAUFSAUFTRAG']||[]).map(clean);
+    const business=(s['BUSINESS CASE UND KUNDENNUTZEN']||s['BUSINESS CASE UND NUTZEN']||[]).map(clean);
+    const chain=(s['EXECUTIVE DECISION CHAIN']||[]).map(clean);
+    const hypothesis=(s['DEAL-HYPOTHESE']||[]).map(clean);
 
     let status=label(summary,'Status')
       .replace(/Der fachliche Sponsor bestätigt Handlungsbedarf;\s*/i,'Sponsor bestätigt Handlungsbedarf. ')
@@ -20187,6 +19340,27 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const open=business.find(x=>/noch nicht bestätigt|noch nicht quantifiziert|offen/i.test(x));
     if(open)businessStatus=shorten(open,120);
 
+    const fullLogic=strip(chain.find(x=>/^DEAL-LOGIK/i.test(x))||'','DEAL-LOGIK')
+      ||strip(hypothesis.find(x=>/^AKTUELLE DEAL-HYPOTHESE/i.test(x))||'','AKTUELLE DEAL-HYPOTHESE');
+    let rationale='Der Engpass liegt im Entscheidungsprozess, nicht im Produkt.';
+    if(/produktdemo|weitere demo/i.test(fullLogic))rationale='Eine weitere Demo löst den aktuellen Kaufblocker nicht.';
+    else if(/konsens|entscheidungsbild|zielkonflikt/i.test(fullLogic))rationale='Der Kaufblocker ist das fehlende gemeinsame Entscheidungsbild.';
+    else if(fullLogic)rationale=shorten(fullLogic,86);
+
+    const expectedDecision=strip(
+      chain.find(x=>/^ERWARTETE KUNDENENTSCHEIDUNG/i.test(x))||'',
+      'ERWARTETE KUNDENENTSCHEIDUNG'
+    );
+
+    const businessText=business.join(' ').toLowerCase();
+    const benefits=[];
+    if(/reporting|manuell|excel/.test(businessText))benefits.push('Weniger Reporting-Aufwand');
+    if(/einheitlich.*kennzahl|kennzahlen/.test(businessText))benefits.push('Einheitliche Kennzahlen');
+    if(/forecast/.test(businessText))benefits.push('Höhere Forecast-Qualität');
+    if(/managemententscheidung|schnellere.*entscheidung/.test(businessText))benefits.push('Schnellere Entscheidungen');
+    if(/presales/.test(businessText))benefits.push('Weniger Presales');
+    if(!benefits.length)benefits.push('Nutzen quantifizieren','Business Case bestätigen','Entscheidung absichern');
+
     return {
       status:status||'Sponsor bestätigt Handlungsbedarf. Pilotentscheidung noch offen.',
       blocker:blocker||'Wirtschaftliche Entscheiderin nicht eingebunden. Budget und Erfolgskriterien offen.',
@@ -20195,10 +19369,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       state:state(score),
       up:shorten(up,105),
       down:shorten(down,80),
-      decision:'Kunde bestätigt den gemeinsamen Discovery- und Entscheidungstermin.',
-      success:shorten(success,110),
+      decision:shorten(expectedDecision||'Kunde bestätigt den Entscheidungsworkshop und dessen verbindliche Entscheidungsagenda.',150),
+      success:shorten(success,125),
+      rationale,
+      fullLogic:fullLogic||rationale,
       tasks,
-      businessStatus
+      businessStatus,
+      benefits:[...new Set(benefits)].slice(0,3)
     };
   }
   function el(tag,cls,text){
@@ -20226,13 +19403,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     summary.appendChild(el('div','ki21-clean-kicker','Sales Summary'));
     [
       ['Status',m.status],
-      ['Größter Engpass',m.blocker],
-      ['Empfehlung',m.recommendation]
+      ['Größter Engpass',m.blocker]
     ].forEach(item=>{
       const row=el('div','ki21-clean-summary-row');
       row.append(el('div','ki21-clean-label',item[0]),el('div','ki21-clean-text',item[1]));
       summary.appendChild(row);
     });
+    const why=el('div','ki21-clean-reason-row');
+    why.setAttribute('role','button');
+    why.setAttribute('aria-label','Begründung im Drill-down anzeigen');
+    why.append(el('div','ki21-clean-reason-label','Warum dieser Schritt?'),el('div','ki21-clean-reason-text',m.rationale),el('div','ki21-clean-reason-arrow','›'));
+    summary.appendChild(why);
+    const rec=el('div','ki21-clean-summary-row');
+    rec.append(el('div','ki21-clean-label','Empfehlung'),el('div','ki21-clean-text',m.recommendation));
+    summary.appendChild(rec);
     root.appendChild(summary);
 
     const metrics=el('div','ki21-clean-metrics');
@@ -20282,8 +19466,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       el('div','ki21-clean-business-status',m.businessStatus)
     );
     const chips=el('div','ki21-clean-benefits');
-    ['Weniger Presales','Besserer Forecast','Kürzere Deal Reviews']
-      .forEach(x=>chips.appendChild(el('div','ki21-clean-chip',x)));
+    m.benefits.forEach(x=>chips.appendChild(el('div','ki21-clean-chip',x)));
     business.appendChild(chips);
     root.appendChild(business);
 
@@ -20516,7 +19699,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20557,7 +19740,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20582,7 +19765,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20602,7 +19785,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.6.5 SETTINGS START FIX — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20647,6 +19830,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 <!-- Pilot Core 1.5.9 PREMIUM FINAL: Deal-Schritt + Drill-down + Consensus Engine -->
+<style id="ki21-cockpit-reason-v166">
+.ki21-clean-reason-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;margin:2px 0 0;padding:10px 0;border-top:1px solid rgba(148,163,184,.14);cursor:pointer;touch-action:manipulation}
+.ki21-clean-reason-label{font-size:9px;font-weight:950;letter-spacing:.9px;text-transform:uppercase;color:#f28a3a;white-space:nowrap}
+.ki21-clean-reason-text{min-width:0;font-size:11.8px;line-height:1.34;font-weight:720;color:#dce3eb}
+.ki21-clean-reason-arrow{font-size:20px;font-weight:900;color:rgba(242,138,58,.82)}
+.ki21-clean-reason-row:active{background:rgba(242,138,58,.06);border-radius:10px}
+@media(max-width:390px){.ki21-clean-reason-row{grid-template-columns:1fr auto;gap:5px 8px}.ki21-clean-reason-label{grid-column:1/-1}.ki21-clean-reason-text{font-size:11.3px}}
+</style>
+
 <style id="ki21-drilldown-v156">
 .ki21-clean-card.ki21-drillable,.ki21-clean-metric.ki21-drillable{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative}
 .ki21-clean-card.ki21-drillable::after,.ki21-clean-metric.ki21-drillable::after{content:'›';position:absolute;right:14px;top:13px;color:rgba(230,237,243,.34);font-size:19px;font-weight:900}
@@ -20694,7 +19886,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function pick(s,names){for(const n of names){if(s[n]&&s[n].length)return s[n].map(clean)}return[]}
   function section(label,lines){return {label,lines:(lines||[]).filter(Boolean)}}
   function details(kind){const s=parseReport();
-    if(kind==='summary')return {title:'Sales Summary',sub:'Warum KI21 zu diesem Lagebild kommt',sections:[section('Bestätigte Fakten',pick(s,['FAKTENBASIS','EVIDENZBASIS']).slice(0,4)),section('Ableitung',pick(s,['DEAL-HYPOTHESE','VERTRIEBLICHE INTERPRETATION']).slice(0,3)),section('Noch offen',pick(s,['WAS DER VERTRIEB NOCH KLÄREN MUSS','WAS WIR NOCH WISSEN MÜSSEN']).slice(0,4))]};
+    if(kind==='summary')return {title:'Warum dieser Schritt?',sub:'Die Entscheidungslogik hinter der Empfehlung',sections:[section('KI21-Begründung',pick(s,['EXECUTIVE DECISION CHAIN']).filter(x=>/^DEAL-LOGIK/i.test(x)).map(x=>x.replace(/^DEAL-LOGIK\s*[→:]?\s*/i,''))),section('Bestätigte Fakten',pick(s,['FAKTENBASIS','EVIDENZBASIS']).slice(0,4)),section('Was die Empfehlung ändern würde',pick(s,['DEAL-HYPOTHESE']).filter(x=>/^WIDERLEGT/i.test(x)).map(x=>x.replace(/^WIDERLEGT,?\s*WENN:\s*/i,''))),section('Noch offen',pick(s,['WAS DER VERTRIEB NOCH KLÄREN MUSS','WAS WIR NOCH WISSEN MÜSSEN']).slice(0,4))]};
     if(kind==='score')return {title:'Opportunity Score',sub:'Welche Faktoren die aktuelle Bewertung tragen',sections:[section('Entscheidungsreife',pick(s,['ENTSCHEIDUNGSREIFE'])),section('Vertrauenscheck',pick(s,['VERTRAUENSCHECK']).slice(0,5)),section('Offene Punkte',pick(s,['WAS DER VERTRIEB NOCH KLÄREN MUSS']).slice(0,4))]};
     if(kind==='forecast')return {title:'Executive Forecast',sub:'Was den Forecast nach oben oder unten verändert',sections:[section('Aktuell',pick(s,['EXECUTIVE FORECAST']).filter(x=>/^AKTUELL:/i.test(x))),section('Steigt, wenn',pick(s,['EXECUTIVE FORECAST']).filter(x=>/AUFSTUFUNG/i.test(x)).map(x=>x.replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,''))),section('Fällt, wenn',pick(s,['EXECUTIVE FORECAST']).filter(x=>/ABSTUFUNG/i.test(x)).map(x=>x.replace(/^.*ABSTUFUNG,\s*WENN:\s*/i,''))),section('Momentum',pick(s,['DEAL MOMENTUM']).slice(0,4))]};
     return {title:'Business Case',sub:'Wirtschaftliche Basis, Nutzen und noch fehlende Evidenz',sections:[section('Wirtschaftlicher Ausgangspunkt',pick(s,['BUSINESS CASE UND KUNDENNUTZEN','BUSINESS CASE UND NUTZEN']).slice(0,4)),section('Noch zu validieren',pick(s,['EVIDENZBASIS']).filter(x=>/validieren|noch|offen/i.test(x)).slice(0,3)),section('Darauf achten',pick(s,['DARAUF ACHTEN']).slice(0,4))]}
@@ -20801,7 +19993,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.6.5 SETTINGS START FIX';
+  const VERSION='Pilot Core 1.6.6 COCKPIT REASONING FIX';
 
   function allStorageKeys(){
     const keys=[];
@@ -21014,7 +20206,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.6.5 SETTINGS START FIX';
+  const VERSION='Pilot Core 1.6.6 COCKPIT REASONING FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21182,6 +20374,36 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   setTimeout(refreshVisible,500);
 })();
 
+</script>
+
+<!-- Pilot Core 1.6.6: Cockpit reasoning, source-first header and business-case cleanup -->
+<script>
+(function(){
+  function currentName(){
+    try{
+      const id=(window.state&&state.activeId)||LS.get('ki21_aid',null);
+      const acc=(window.state&&state.accounts||[]).find(a=>a&&a.id===id);
+      if(acc&&acc.cust&&String(acc.cust.firma||'').trim())return String(acc.cust.firma).trim();
+      let raw='';
+      if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'');
+      if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'');
+      const m=raw.match(/(?:^|\n)\s*(?:Kunde|Unternehmen|Firma|Customer)\s*:\s*([^\n]+)/i);
+      return m?m[1].replace(/^#+\s*/,'').trim():'';
+    }catch(e){return ''}
+  }
+  function syncHeader(){
+    const name=currentName();if(!name)return false;
+    document.querySelectorAll('.cockpit-opp-link,.cockpit-opp-name,.cockpit-opp-placeholder').forEach(node=>{
+      if(!node.closest('.cockpit-header'))return;
+      node.textContent=name;node.classList.remove('cockpit-opp-placeholder');node.classList.add('cockpit-opp-name');
+    });
+    return true;
+  }
+  const mo=new MutationObserver(()=>syncHeader());
+  mo.observe(document.documentElement,{subtree:true,childList:true});
+  window.addEventListener('load',()=>setTimeout(syncHeader,180),{once:true});
+  setTimeout(syncHeader,500);
+})();
 </script>
 </body>
 </html>
