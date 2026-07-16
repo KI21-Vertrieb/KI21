@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.7.3-single-state-phase2-persistence-20260716 -->
+<!-- KI21_BUILD: pilot-core-1.7.4-clean-single-render-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.7.3 SINGLE STATE & PHASE 2 PERSISTENCE</title>
+<title>KI21 Pilot Core 1.7.4 CLEAN SINGLE RENDER</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -15020,7 +15020,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15880,7 +15880,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+const KI21_VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
 
 
 function runKi21VersionMigration(){
@@ -17876,7 +17876,7 @@ function strongest(a){var m={P001:'Welche konkrete Gegenleistung und welche verb
 function evidence(){var t='';try{var aid=window.state&&state.activeId;var f=getLatestAdditionFactsV6532(aid);t=String(f&&f.latestText||'');}catch(e){}var facts=(t.match(/bestätigt|vereinbart|verbindlich|schriftlich|freigegeben|zugesagt|festgelegt|terminiert|entschieden/gi)||[]).length;var open=(t.match(/unklar|offen|noch nicht|möchte|würde|könnte|befürchtet|signalisiert|grundsätzlich/gi)||[]).length;var contradiction=/(bestätigt|vereinbart).{0,120}(aber|jedoch|allerdings).{0,120}(offen|noch nicht|unklar)/i.test(t);return {facts:facts,open:open,contradiction:contradiction,level:facts>=3&&open<=1&&!contradiction?'hoch':facts>=1?'mittel':'niedrig'};}
 function render(){var app=document.getElementById('app'),aid=window.state&&state.activeId;if(!app||!aid||typeof window.analyzeDecisionV670!=='function')return false;if(app.querySelector('#ki21-visible-decision-core'))return true;var next=nextCard();if(!next||!next.parentNode)return false;var old=app.querySelector('.ki21-decision-card');if(old)old.remove();var a=window.analyzeDecisionV670(aid),p=evidence(),cls=p.level==='hoch'?'good':p.level==='mittel'?'warn':'risk';var card=document.createElement('section');card.className='ki21-decision-card';card.setAttribute('aria-label','KI21 Sales-Entscheidung');card.innerHTML='<div class="ki21-decision-head"><div><div class="ki21-decision-kicker">Heute wichtigste Sales-Entscheidung · '+esc(a.primary.id)+'</div><div class="ki21-decision-title">'+esc(a.primary.decision)+'</div></div><div class="ki21-decision-confidence">Confidence '+esc(a.confidence)+'</div></div><div class="ki21-decision-rec"><b>Empfehlung:</b> '+esc(a.primary.rec)+'</div><div class="ki21-qe-row"><div class="ki21-qe-label">Stärkste Klärungsfrage</div><div class="ki21-qe-question">'+esc(strongest(a))+'</div><div class="ki21-evidence-line"><span class="ki21-evidence-chip '+cls+'">Beleglage '+p.level+'</span><span class="ki21-evidence-chip">Fakten '+p.facts+'</span><span class="ki21-evidence-chip">Offene Signale '+p.open+'</span>'+(p.contradiction?'<span class="ki21-evidence-chip risk">Widerspruch prüfen</span>':'')+'</div></div><div class="ki21-decision-grid"><div class="ki21-decision-mini"><b>Zu klären</b><span>'+esc(a.primary.ask)+'</span></div><div class="ki21-decision-mini"><b>Hauptrisiko</b><span>'+esc(a.primary.risk)+'</span></div></div><button type="button" class="ki21-decision-more">Szenarien und Alternativen ansehen</button>';card.querySelector('button').onclick=function(){try{openDecisionDetails(a);}catch(e){alert(a.primary.decision+'\n\n'+a.primary.rec);}};next.parentNode.insertBefore(card,next);return true;}
 function schedule(){[0,80,220,600].forEach(function(ms){setTimeout(render,ms);});}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();window.addEventListener('pageshow',schedule);var mo=new MutationObserver(function(){var app=document.getElementById('app');if(app&&!app.querySelector('.ki21-decision-card')&&leaf('NÄCHSTE SCHRITTE'))setTimeout(render,30);});if(document.body)mo.observe(document.body,{childList:true,subtree:true});window.renderVisibleDecisionCoreV673=render;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();window.addEventListener('pageshow',schedule);var mo=new MutationObserver(function(){var app=document.getElementById('app');if(app&&!app.querySelector('.ki21-decision-card')&&leaf('NÄCHSTE SCHRITTE'))setTimeout(render,30);});/* 1.7.4: legacy visible-decision observer disabled. */ window.renderVisibleDecisionCoreV673=function(){return false;};
 })();
 </script>
 
@@ -18541,7 +18541,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     return true;
   }
   const observer=new MutationObserver(()=>{clearTimeout(window.__ki21_v114_t);window.__ki21_v114_t=setTimeout(()=>{try{renderV114();}catch(e){console.warn('Sales Execution Cockpit 1.0.14',e);}},40);});
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  /* 1.7.4: legacy decision observer disabled; fixed cockpit renderer is authoritative. */
   window.addEventListener('load',()=>setTimeout(()=>{try{renderV114();}catch(e){}},260));
   const oldCockpit=window.renderCockpitLite;
   if(typeof oldCockpit==='function')window.renderCockpitLite=function(){const out=oldCockpit.apply(this,arguments);setTimeout(()=>{try{renderV114();}catch(e){}},0);return out;};
@@ -19997,7 +19997,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
 
   function allStorageKeys(){
     const keys=[];
@@ -20210,7 +20210,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20425,7 +20425,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20628,7 +20628,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   window.KI21_VERSION=VERSION;
 
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20730,7 +20730,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.7.2 HEALTH & FORECAST SEPARATION';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20846,7 +20846,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.7.3 SINGLE STATE & PHASE 2 PERSISTENCE';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
   window.KI21_VERSION=VERSION;
   let syncing=false, scheduled=false;
 
@@ -21019,6 +21019,32 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   document.title='KI21 '+VERSION;
   try{document.documentElement.setAttribute('data-ki21-version','1.7.3');}catch(e){}
+})();
+</script>
+
+
+<!-- KI21 Pilot Core 1.7.4 — Clean Single Render -->
+<style id="ki21-v174-clean-render-style">
+.ki21-decision-card:not(.ki21-decision-card-fixed){display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+.cockpit-v54-lagebild{display:none!important;visibility:hidden!important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.7.4 CLEAN SINGLE RENDER';
+  window.KI21_VERSION=VERSION;
+  function apply(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-version','1.7.4');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+      document.querySelectorAll('.ki21-decision-card:not(.ki21-decision-card-fixed),.cockpit-v54-lagebild').forEach(function(el){el.style.display='none';el.setAttribute('aria-hidden','true');});
+      if(typeof window.ki21SyncV173==='function')window.ki21SyncV173();
+    }catch(e){console.warn('KI21 1.7.4 clean render',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+  window.addEventListener('pageshow',apply);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)apply();});
 })();
 </script>
 
