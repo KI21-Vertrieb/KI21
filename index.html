@@ -20907,9 +20907,284 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   try{document.documentElement.setAttribute('data-ki21-version','1.7.3');}catch(e){}
 })();
 </script>
-<!-- KI21 Pilot Core 1.8.2 — Cockpit Score & Render Clean -->
 
+<style id="ki21-v184-clean-style">
+/* Never expose legacy transient cards or source fragments during rendering. */
+.cockpit-v54-lagebild,
+.ki21-decision-card:not(.ki21-decision-card-fixed){
+  display:none!important;
+}
+body > script,
+body > style{
+  display:none!important;
+}
+</style>
 
+<script id="ki21-v184-clean-state-navigation">
+(function(){
+  'use strict';
 
+  const VERSION = 'Pilot Core 1.8.4 CLEAN STATE & NAVIGATION';
+  window.KI21_VERSION = VERSION;
 
-</txt.length;i++){></localstorage.length;i++){></localstorage.length;i++){></bytes.length;i+=chunk){>
+  let desiredView = 'home';
+  let desiredPhase = null;
+  let restoring = false;
+
+  function validActiveId(){
+    try{
+      const saved = LS.get('ki21_aid', null);
+      if(saved && window.state){
+        const accounts = Array.isArray(state.accounts) ? state.accounts : [];
+        if(!state.activeId || !accounts.some(a=>a && a.id===state.activeId)){
+          if(accounts.some(a=>a && a.id===saved)) state.activeId = saved;
+        }
+      }
+      return (window.state && state.activeId) || saved || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function detectView(){
+    if(document.querySelector('.phase-screen-title')){
+      const p = Number(window.state && state.currentSitId);
+      return {view:'phase', phase:Number.isInteger(p)?p:null};
+    }
+    if(document.querySelector('.cockpit-v5-summary') ||
+       document.querySelector('.ki21-clean-summary') ||
+       document.querySelector('[data-ki21-cockpit]')){
+      return {view:'home', phase:null};
+    }
+    return {view:desiredView, phase:desiredPhase};
+  }
+
+  function persistView(){
+    try{
+      const current = detectView();
+      desiredView = current.view;
+      desiredPhase = current.phase;
+      const id = validActiveId();
+      if(!id) return;
+      LS.set('ki21_view_v184_'+id, {
+        view: desiredView,
+        phase: desiredPhase,
+        scrollY: window.scrollY || 0,
+        ts: Date.now()
+      });
+      // Neutralize the legacy workspace snapshot that incorrectly reopened Phase 2.
+      LS.set('ki21_workspace_v170_'+id, {
+        view: desiredView,
+        currentSitId: desiredView==='phase' ? desiredPhase : null,
+        scrollY: window.scrollY || 0,
+        ts: Date.now()
+      });
+    }catch(e){}
+  }
+
+  function restoreActiveOpportunity(){
+    const id = validActiveId();
+    if(!id || !window.state) return id;
+    try{
+      if(!state.activeId) state.activeId = id;
+      LS.set('ki21_aid', id);
+    }catch(e){}
+    return id;
+  }
+
+  function restoreView(){
+    if(restoring) return;
+    restoring = true;
+    try{
+      const id = restoreActiveOpportunity();
+      if(!id) return;
+
+      const snap = LS.get('ki21_view_v184_'+id, null);
+      if(snap && snap.view){
+        desiredView = snap.view;
+        desiredPhase = Number.isInteger(snap.phase) ? snap.phase : null;
+      }
+
+      if(desiredView === 'phase' && Number.isInteger(desiredPhase)){
+        if(typeof window.renderStation === 'function'){
+          state.currentSitId = desiredPhase;
+          window.renderStation(desiredPhase);
+        }
+      }else{
+        state.currentSitId = null;
+        if(typeof window.renderHome === 'function') window.renderHome();
+      }
+
+      setTimeout(()=>{
+        try{
+          const y = snap && Number.isFinite(Number(snap.scrollY)) ? Number(snap.scrollY) : 0;
+          window.scrollTo(0,y);
+        }catch(e){}
+      }, 60);
+    }finally{
+      setTimeout(()=>{restoring=false;},120);
+    }
+  }
+
+  // Track explicit navigation only. App switching must never change the selected workspace.
+  document.addEventListener('click', function(ev){
+    const target = ev.target && ev.target.closest ? ev.target.closest('button,a') : null;
+    if(!target) return;
+    const label = String(target.textContent || '').trim().toLowerCase();
+
+    if(label === 'cockpit' || label.includes('zurück zum cockpit')){
+      desiredView = 'home';
+      desiredPhase = null;
+      if(window.state) state.currentSitId = null;
+      setTimeout(persistView,0);
+      return;
+    }
+
+    if(label === 'phasen'){
+      // Opening the phase overview is not the same as selecting Phase 2.
+      desiredView = 'home';
+      desiredPhase = null;
+      setTimeout(persistView,0);
+      return;
+    }
+
+    if(label.includes('qualifizierung')){
+      desiredView = 'phase'; desiredPhase = 0;
+      setTimeout(persistView,0);
+      return;
+    }
+    if(label.includes('bedarfsanalyse') || label.includes('demo')){
+      desiredView = 'phase'; desiredPhase = 1;
+      setTimeout(persistView,0);
+      return;
+    }
+    if(label.includes('termin nachbereiten')){
+      desiredView = 'phase'; desiredPhase = 2;
+      setTimeout(persistView,0);
+    }
+  }, true);
+
+  function updateVersion(){
+    try{
+      document.title = 'KI21 ' + VERSION;
+      document.documentElement.setAttribute('data-ki21-version','1.8.4');
+      document.querySelectorAll('.tagline').forEach(el=>el.textContent=VERSION);
+    }catch(e){}
+  }
+
+  function syncScoresAndBusinessCase(){
+    try{
+      if(typeof window.ki21ScoresV173 === 'function'){
+        const s = window.ki21ScoresV173() || {};
+        document.querySelectorAll('.score-pill-v667.health .score-value-v667')
+          .forEach(el=>el.textContent=(s.health ?? 0)+'/100');
+        document.querySelectorAll('.score-pill-v667.forecast .score-value-v667')
+          .forEach(el=>el.textContent=(s.forecast ?? 0)+'%');
+        const metrics=document.querySelectorAll('.ki21-clean-metric');
+        if(metrics[0]){
+          const v=metrics[0].querySelector('.ki21-clean-metric-value');
+          if(v)v.textContent=(s.health ?? 0)+' %';
+        }
+        if(metrics[1]){
+          const v=metrics[1].querySelector('.ki21-clean-metric-value');
+          if(v)v.textContent=(s.forecast ?? 0)+' %';
+        }
+      }
+
+      const model = typeof window.ki21OpportunityModelV170==='function'
+        ? window.ki21OpportunityModelV170() : null;
+      if(model && model.quantified){
+        document.querySelectorAll('.business-case-card, .cockpit-business-card, .ki21-business-card')
+          .forEach(card=>{
+            const walker=document.createTreeWalker(card,NodeFilter.SHOW_TEXT);
+            while(walker.nextNode()){
+              const n=walker.currentNode;
+              if(/Business Case noch nicht bestätigt/i.test(n.nodeValue||'')){
+                n.nodeValue='Business Case teilweise quantifiziert.';
+              }
+            }
+          });
+      }
+    }catch(e){}
+  }
+
+  function cleanVisibleSourceFragments(){
+    try{
+      const body = document.body;
+      if(!body) return;
+      Array.from(body.childNodes).forEach(node=>{
+        if(node.nodeType!==Node.TEXT_NODE) return;
+        const t=String(node.nodeValue||'').trim();
+        if(t.length>80 && /(function\s+|const\s+|let\s+|localStorage|exportHtmlAsPdf|renderBranchenwissen)/.test(t)){
+          node.remove();
+        }
+      });
+    }catch(e){}
+  }
+
+  function finalSync(){
+    restoreActiveOpportunity();
+    updateVersion();
+    syncScoresAndBusinessCase();
+    cleanVisibleSourceFragments();
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', finalSync, {once:true});
+  }else{
+    finalSync();
+  }
+
+  // On hide, persist the actual currently visible workspace.
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){
+      persistView();
+    }else{
+      // Run after legacy listeners and restore the user's actual last workspace.
+      setTimeout(restoreView, 420);
+      setTimeout(finalSync, 540);
+    }
+  }, true);
+
+  window.addEventListener('pagehide', persistView, true);
+  window.addEventListener('pageshow', function(){
+    setTimeout(restoreView, 420);
+    setTimeout(finalSync, 540);
+  }, true);
+  window.addEventListener('focus', function(){
+    setTimeout(restoreView, 420);
+    setTimeout(finalSync, 540);
+  }, true);
+
+  // Keep the current opportunity attached to phase screens.
+  const oldRenderStation = window.renderStation;
+  if(typeof oldRenderStation === 'function'){
+    window.renderStation = function(sitId){
+      restoreActiveOpportunity();
+      desiredView='phase';
+      desiredPhase=Number(sitId);
+      if(window.state) state.currentSitId=Number(sitId);
+      const result = oldRenderStation.apply(this, arguments);
+      setTimeout(()=>{persistView();finalSync();},0);
+      return result;
+    };
+  }
+
+  const oldRenderHome = window.renderHome;
+  if(typeof oldRenderHome === 'function'){
+    window.renderHome = function(){
+      restoreActiveOpportunity();
+      desiredView='home';
+      desiredPhase=null;
+      if(window.state) state.currentSitId=null;
+      const result = oldRenderHome.apply(this, arguments);
+      setTimeout(()=>{persistView();finalSync();},0);
+      return result;
+    };
+  }
+
+  // One final pass after all legacy boot handlers.
+  setTimeout(finalSync, 900);
+})();
+</script>
+
