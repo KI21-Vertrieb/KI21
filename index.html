@@ -20292,7 +20292,9 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     const name=currentName();if(!name)return false;
     document.querySelectorAll('.cockpit-opp-link,.cockpit-opp-name,.cockpit-opp-placeholder').forEach(node=>{
       if(!node.closest('.cockpit-header'))return;
-      node.textContent=name;node.classList.remove('cockpit-opp-placeholder');node.classList.add('cockpit-opp-name');
+      if(node.textContent!==name)node.textContent=name;
+      if(node.classList.contains('cockpit-opp-placeholder'))node.classList.remove('cockpit-opp-placeholder');
+      if(!node.classList.contains('cockpit-opp-name'))node.classList.add('cockpit-opp-name');
     });
     return true;
   }
@@ -20620,9 +20622,8 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   // Der alte 1.7.1-Synchronisierer darf Forecast nicht wieder auf Health setzen.
   window.ki21SyncScoresV171=function(){sync();};
 
-  let timer=0;
-  const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,25);});
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  // Stability recovery: no document-wide MutationObserver here.
+  // Initial sync, pageshow/visibility sync and the existing interval are sufficient.
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,40),{once:true});else setTimeout(sync,40);
   window.addEventListener('pageshow',()=>setTimeout(sync,60));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sync,60);});
@@ -21602,8 +21603,11 @@ function wrap(name){
 }
 function syncVersion(){
   try{
-    document.title='KI21 '+VERSION;
-    document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    var wantedTitle='KI21 '+VERSION;
+    if(document.title!==wantedTitle)document.title=wantedTitle;
+    document.querySelectorAll('.tagline').forEach(function(el){
+      if(el.textContent!==VERSION)el.textContent=VERSION;
+    });
   }catch(e){}
 }
 function install(){
@@ -21623,10 +21627,8 @@ window.addEventListener('unhandledrejection',function(ev){
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 window.addEventListener('pageshow',install,true);
-try{
-  var mo=new MutationObserver(function(){syncVersion();});
-  mo.observe(document.documentElement,{childList:true,subtree:true});
-}catch(e){}
+// Stability recovery: a document-wide observer caused a self-triggering mutation loop.
+// Version sync runs during install/pageshow instead.
 })();
 </script>
 
