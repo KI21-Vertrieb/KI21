@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.9.1 STABILITY RECOVERY</title>
+<title>KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2597,9 +2597,16 @@ html,body,#app{background:radial-gradient(circle at 50% -12%,rgba(255,122,26,.07
 </style>
 
 
-<style id="ki21-v191-first-paint">
-.cockpit-v54-lagebild {
-  display: none !important;
+<style id="ki21-v192-first-paint-stability">
+/* Obsolete intermediate cards must never flash before the final cockpit is ready. */
+.cockpit-v54-lagebild,
+.ki21-decision-card:not(.ki21-decision-card-fixed){
+  display:none!important;
+}
+
+/* Score pills are revealed only after the final score sync. */
+html.ki21-score-syncing .score-pair-v667{
+  visibility:hidden!important;
 }
 </style>
 </head>
@@ -13483,7 +13490,7 @@ function renderStation(sitId){
       });
       if(result){
         let finalResult=(sitId===1)
-          ?(isSalesDiscoveryUseCaseV4199(state.activeId)?cleanPhase2Output(buildStructuredPhase2OutputV4190(state.activeId)):cleanGenericPhase2OutputV4199(result,state.activeId))
+          ?cleanGenericPhase2OutputV4199(result,state.activeId)
           :((sitId===3)
             ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
             :((sitId===4)
@@ -14881,7 +14888,7 @@ function generateKundePDF(aid, cust){
     let result=data.result||'';
     if(result){
       if(i===0)result=buildStructuredPhase1DossierV4191(aid);
-      else if(i===1)result=cleanPhase2Output(buildStructuredPhase2OutputV4190(aid));
+      else if(i===1)result=cleanGenericPhase2OutputV4199(result,aid);
       else if(i===3)result=sanitizePhase4NoRoiMath(result,aid);
       else if(i===4)result=sanitizePhase5OfferOutput(result,aid);
       else result=sanitizeDossierEarlyPhaseV4190(sanitizeFinalOutputV4188(aid,result,'dossier'),aid);
@@ -14974,9 +14981,9 @@ function generateKundePDF(aid, cust){
 })();
 </script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.9.1 STABILITY RECOVERY -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY -->
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15001,7 +15008,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15022,7 +15029,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15185,9 +15192,7 @@ function generateKundePDF(aid, cust){
     }catch(e){console.warn('Source-first refresh skipped',e);}
   }
   window.ki21RefreshSourceFirstV160=refreshVisible;
-  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
-  setTimeout(refreshVisible,500);
+  /* v1.9.2: no automatic cockpit re-render on pageshow/visibility change. */
 })();
 
 </script>
@@ -15882,7 +15887,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+const KI21_VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
 
 
 function runKi21VersionMigration(){
@@ -19705,7 +19710,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19746,7 +19751,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19771,7 +19776,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19791,7 +19796,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.9.1 STABILITY RECOVERY — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -19999,7 +20004,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
 
   function allStorageKeys(){
     const keys=[];
@@ -20212,7 +20217,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20375,9 +20380,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }catch(e){console.warn('Source-first refresh skipped',e);}
   }
   window.ki21RefreshSourceFirstV160=refreshVisible;
-  window.addEventListener('pageshow',()=>setTimeout(refreshVisible,120));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshVisible,120);});
-  setTimeout(refreshVisible,500);
+  /* v1.9.2: no automatic cockpit re-render on pageshow/visibility change. */
 })();
 
 </script>
@@ -20427,7 +20430,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20630,7 +20633,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
   window.KI21_VERSION=VERSION;
 
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20735,7 +20738,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.9.1 STABILITY RECOVERY';
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20849,244 +20852,102 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<script id="ki21-v191-stability-recovery">
-(function () {
-  "use strict";
+<script id="ki21-v192-runtime-stability">
+(function(){
+  'use strict';
 
-  const VERSION = "Pilot Core 1.9.1 STABILITY RECOVERY";
-  const VIEW_PREFIX = "ki21_v191_view_";
-  const ACTIVE_KEY = "ki21_aid";
-  let restoring = false;
+  const VERSION='Pilot Core 1.9.2 PHASE 2 & RENDER STABILITY';
+  window.KI21_VERSION=VERSION;
 
-  window.KI21_VERSION = VERSION;
-
-  function activeOpportunityId() {
-    try {
-      const accounts = window.state && Array.isArray(state.accounts)
-        ? state.accounts
-        : [];
-
-      let id = window.state ? state.activeId : null;
-      const stored = window.LS && LS.get ? LS.get(ACTIVE_KEY, null) : null;
-
-      const exists = function (candidate) {
-        return !!candidate && accounts.some(function (a) {
-          return a && a.id === candidate;
-        });
-      };
-
-      if (!exists(id) && exists(stored)) {
-        state.activeId = stored;
-        id = stored;
-      }
-
-      if (exists(id) && window.LS && LS.set) {
-        LS.set(ACTIVE_KEY, id);
-        return id;
-      }
-
-      return null;
-    } catch (_) {
-      return null;
-    }
+  function syncVersion(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-version','1.9.2');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(e){}
   }
 
-  function detectView() {
-    const phaseScreen = document.querySelector(".phase-screen-title");
-    if (phaseScreen) {
-      const phase = Number(window.state && state.currentSitId);
-      return {
-        view: "phase",
-        phase: Number.isInteger(phase) ? phase : null,
-        scrollY: window.scrollY || 0
-      };
-    }
+  function syncScores(){
+    try{
+      if(typeof window.ki21ScoresV173!=='function')return;
+      const s=window.ki21ScoresV173()||{};
+      const h=Number(s.health), f=Number(s.forecast);
 
-    return {
-      view: "cockpit",
-      phase: null,
-      scrollY: window.scrollY || 0
-    };
-  }
-
-  function saveView() {
-    try {
-      const id = activeOpportunityId();
-      if (!id || !window.LS || !LS.set) return;
-
-      const snapshot = detectView();
-      snapshot.savedAt = Date.now();
-
-      LS.set(VIEW_PREFIX + id, snapshot);
-
-      // Prevent the older workspace restore from inventing Phase 2.
-      LS.set("ki21_workspace_v170_" + id, {
-        view: snapshot.view === "phase" ? "phase" : "home",
-        currentSitId: snapshot.view === "phase" ? snapshot.phase : null,
-        scrollY: snapshot.scrollY,
-        ts: snapshot.savedAt
-      });
-    } catch (_) {}
-  }
-
-  function restoreView() {
-    if (restoring) return;
-
-    try {
-      const id = activeOpportunityId();
-      if (!id || !window.LS || !LS.get) return;
-
-      const snapshot = LS.get(VIEW_PREFIX + id, null);
-      if (!snapshot || !snapshot.view) return;
-
-      restoring = true;
-
-      if (
-        snapshot.view === "phase" &&
-        Number.isInteger(Number(snapshot.phase)) &&
-        typeof window.renderStation === "function"
-      ) {
-        state.currentSitId = Number(snapshot.phase);
-        window.renderStation(Number(snapshot.phase));
-      } else if (typeof window.renderHome === "function") {
-        state.currentSitId = null;
-        window.renderHome();
-      }
-
-      setTimeout(function () {
-        try {
-          window.scrollTo(0, Number(snapshot.scrollY) || 0);
-        } catch (_) {}
-      }, 80);
-    } catch (_) {
-    } finally {
-      setTimeout(function () {
-        restoring = false;
-      }, 180);
-    }
-  }
-
-  function syncVersion() {
-    try {
-      document.title = "KI21 " + VERSION;
-      document.documentElement.setAttribute("data-ki21-version", "1.9.1");
-      document.querySelectorAll(".tagline").forEach(function (el) {
-        el.textContent = VERSION;
-      });
-    } catch (_) {}
-  }
-
-  function syncScores() {
-    try {
-      if (typeof window.ki21ScoresV173 !== "function") return;
-
-      const scores = window.ki21ScoresV173() || {};
-      const health = Number(scores.health);
-      const forecast = Number(scores.forecast);
-
-      if (Number.isFinite(health)) {
-        document
-          .querySelectorAll(".score-pill-v667.health .score-value-v667")
-          .forEach(function (el) {
-            el.textContent = health + "/100";
-          });
-      }
-
-      if (Number.isFinite(forecast)) {
-        document
-          .querySelectorAll(".score-pill-v667.forecast .score-value-v667")
-          .forEach(function (el) {
-            el.textContent = forecast + "%";
-          });
-      }
-
-      const cards = document.querySelectorAll(".ki21-clean-metric");
-      if (cards[0] && Number.isFinite(health)) {
-        const value = cards[0].querySelector(".ki21-clean-metric-value");
-        if (value) value.textContent = health + " %";
-      }
-
-      if (cards[1] && Number.isFinite(forecast)) {
-        const value = cards[1].querySelector(".ki21-clean-metric-value");
-        if (value) value.textContent = forecast + " %";
-      }
-    } catch (_) {}
-  }
-
-  function syncBusinessCase() {
-    try {
-      const model = typeof window.ki21OpportunityModelV170 === "function"
-        ? window.ki21OpportunityModelV170()
-        : null;
-
-      if (!model || !model.quantified) return;
-
-      document.querySelectorAll(
-        ".business-case-card, .cockpit-business-card, .ki21-business-card"
-      ).forEach(function (card) {
-        const walker = document.createTreeWalker(
-          card,
-          NodeFilter.SHOW_TEXT
-        );
-
-        while (walker.nextNode()) {
-          const node = walker.currentNode;
-          if (/Business Case noch nicht bestätigt/i.test(node.nodeValue || "")) {
-            node.nodeValue = "Business Case teilweise quantifiziert.";
-          }
+      if(Number.isFinite(h)){
+        document.querySelectorAll('.score-pill-v667.health .score-value-v667')
+          .forEach(function(el){el.textContent=h+'/100';});
+        const cards=document.querySelectorAll('.ki21-clean-metric');
+        if(cards[0]){
+          const value=cards[0].querySelector('.ki21-clean-metric-value');
+          if(value)value.textContent=h+' %';
         }
-      });
-    } catch (_) {}
+      }
+
+      if(Number.isFinite(f)){
+        document.querySelectorAll('.score-pill-v667.forecast .score-value-v667')
+          .forEach(function(el){el.textContent=f+'%';});
+        const cards=document.querySelectorAll('.ki21-clean-metric');
+        if(cards[1]){
+          const value=cards[1].querySelector('.ki21-clean-metric-value');
+          if(value)value.textContent=f+' %';
+        }
+      }
+    }catch(e){}
+    document.documentElement.classList.remove('ki21-score-syncing');
   }
 
-  function syncOnce() {
-    activeOpportunityId();
-    syncVersion();
-    syncScores();
-    syncBusinessCase();
+  function removeTransientCards(){
+    try{
+      document.querySelectorAll(
+        '.cockpit-v54-lagebild,.ki21-decision-card:not(.ki21-decision-card-fixed)'
+      ).forEach(function(node){node.remove();});
+    }catch(e){}
+  }
 
-    document.querySelectorAll(".cockpit-v54-lagebild").forEach(function (node) {
-      node.remove();
-    });
+  function finalSync(){
+    syncVersion();
+    removeTransientCards();
+    syncScores();
   }
 
   /*
-   * No MutationObserver and no polling loop:
-   * the previous white screen was caused by a self-triggering DOM sync loop.
+   * The existing code contains several legacy wrappers. We do not add another
+   * re-render. We only conceal unfinished score values and reveal the final
+   * synchronized values after the current render chain has completed.
    */
-  function boot() {
-    syncOnce();
-    setTimeout(syncOnce, 250);
-    setTimeout(syncOnce, 900);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
-
-  document.addEventListener("visibilitychange", function () {
-    if (document.hidden) {
-      saveView();
-    } else {
-      setTimeout(restoreView, 350);
-      setTimeout(syncOnce, 520);
+  if(typeof window.renderCockpitSnapshotLiteV4215==='function'){
+    const original=window.renderCockpitSnapshotLiteV4215;
+    if(!original.__ki21v192){
+      const wrapped=function(){
+        document.documentElement.classList.add('ki21-score-syncing');
+        const result=original.apply(this,arguments);
+        setTimeout(finalSync,180);
+        setTimeout(finalSync,360);
+        return result;
+      };
+      wrapped.__ki21v192=true;
+      window.renderCockpitSnapshotLiteV4215=wrapped;
     }
-  }, true);
+  }
 
-  window.addEventListener("pagehide", saveView, true);
-  window.addEventListener("pageshow", function () {
-    setTimeout(restoreView, 350);
-    setTimeout(syncOnce, 520);
-  }, true);
+  /*
+   * Do not change the current workspace when the browser returns from another
+   * app. Only synchronize values in the already open screen.
+   */
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden)setTimeout(finalSync,220);
+  },true);
+  window.addEventListener('pageshow',function(){setTimeout(finalSync,220);},true);
 
-  window.KI21StabilityRecovery = {
-    saveView: saveView,
-    restoreView: restoreView,
-    sync: syncOnce,
-    version: VERSION
-  };
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      document.documentElement.classList.add('ki21-score-syncing');
+      setTimeout(finalSync,500);
+    },{once:true});
+  }else{
+    document.documentElement.classList.add('ki21-score-syncing');
+    setTimeout(finalSync,500);
+  }
 })();
 </script>
 </body>
