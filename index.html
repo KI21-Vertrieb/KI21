@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -14958,7 +14958,58 @@ function generateKundePDF(aid, cust){
     </div>`;
   }
 
-  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div></body></html>`;
+  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div>
+<!-- KI21 Pilot Core 2.6.1: autonomous Phase-1 regression guard -->
+<script id="ki21-v261-autonomous-regression-guard">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
+window.KI21_VERSION=VERSION;
+function activeSource(){
+  var id='';try{id=(window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){}
+  var a=[];try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  return a.join('\n');
+}
+function openPilot(){var t=activeSource();return /pilot[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i.test(t);}
+function isPhase1(text){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b/i.test(text)||/KI21 OPPORTUNITY-CHECK/i.test(text);}
+function clean(text){
+ var r=String(text||''); if(!r||!isPhase1(r))return r;
+ r=r.replace(/\n---\s*\n\s*###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n\*\*KONSISTENZPRÜFUNG[\s\S]*$/i,'')
+    .replace(/\nSTAKEHOLDER-LAGE[\s\S]*$/i,'')
+    .replace(/\nTIMELINE ZUR REALITÄTSPRÜFUNG[\s\S]*$/i,'');
+ r=r.replace(/\b(?:starker|aktiver|bestätigter)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bChampion\s+in\s+Vertriebsleitung\b/gi,'fachlicher Hauptkontakt in der Vertriebsleitung')
+    .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+    .replace(/\bKritiker\b/gi,'technischer Prüfer')
+    .replace(/\bBlocker\s+unwahrscheinlich\b/gi,'Prüfbedarf offen')
+    .replace(/(?:einen?\s+)?(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'einen gemeinsamen Discovery- und Entscheidungstermin')
+    .replace(/\b3\s*[–-]\s*4\s+(?:aktuelle\s+)?Opportunities\b/gi,'geeignete Pilot-Opportunities')
+    .replace(/\bCEO\/?CFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/\bCFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/Dynamics(?:\s*365)?[- ]Lesezugriff/gi,'technischen Prüfungsumfang')
+    .replace(/lesend(?:en)?\s+Zugriff\s+auf\s+Dynamics(?:\s*365)?/gi,'technischen Prüfungsumfang');
+ if(openPilot()){
+   r=r.replace(/^EMPFEHLUNG:\s*sofort\s*$/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten')
+      .replace(/^EMPFEHLUNG:\s*sofort\s*/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten\n')
+      .replace(/ohne\s+Dr\.\s+Vogt\s+kein\s+Deal/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen')
+      .replace(/ohne\s+ihre\s+Zustimmung\s+kein\s+Pilot\s+und\s+kein\s+Budget/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen');
+ }
+ var m=r.match(/([\s\S]*?5\.\s*NICE-TO-HAVE:[^\n]*(?:\n|$))/i); if(m)r=m[1];
+ return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+window.ki21Phase1AutonomousRegressionGuardV261=clean;
+function wrapAsync(name){try{var f=window[name];if(typeof f!=='function'||f.__v261)return;var w=async function(){var a=[].slice.call(arguments);if(name==='callClaude'&&typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(clean(x));};}var v=await f.apply(this,a);return typeof v==='string'?clean(v):v;};w.__v261=1;window[name]=w;}catch(e){}}
+function install(){wrapAsync('callClaude');try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(e){e.textContent=VERSION;});}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);
+})();
+</script>
+
+</body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
 }
@@ -15038,8 +15089,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY -->
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15063,7 +15114,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15084,7 +15135,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15292,7 +15343,58 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+<!-- KI21 Pilot Core 2.6.1: autonomous Phase-1 regression guard -->
+<script id="ki21-v261-autonomous-regression-guard">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
+window.KI21_VERSION=VERSION;
+function activeSource(){
+  var id='';try{id=(window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){}
+  var a=[];try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  return a.join('\n');
+}
+function openPilot(){var t=activeSource();return /pilot[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i.test(t);}
+function isPhase1(text){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b/i.test(text)||/KI21 OPPORTUNITY-CHECK/i.test(text);}
+function clean(text){
+ var r=String(text||''); if(!r||!isPhase1(r))return r;
+ r=r.replace(/\n---\s*\n\s*###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n\*\*KONSISTENZPRÜFUNG[\s\S]*$/i,'')
+    .replace(/\nSTAKEHOLDER-LAGE[\s\S]*$/i,'')
+    .replace(/\nTIMELINE ZUR REALITÄTSPRÜFUNG[\s\S]*$/i,'');
+ r=r.replace(/\b(?:starker|aktiver|bestätigter)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bChampion\s+in\s+Vertriebsleitung\b/gi,'fachlicher Hauptkontakt in der Vertriebsleitung')
+    .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+    .replace(/\bKritiker\b/gi,'technischer Prüfer')
+    .replace(/\bBlocker\s+unwahrscheinlich\b/gi,'Prüfbedarf offen')
+    .replace(/(?:einen?\s+)?(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'einen gemeinsamen Discovery- und Entscheidungstermin')
+    .replace(/\b3\s*[–-]\s*4\s+(?:aktuelle\s+)?Opportunities\b/gi,'geeignete Pilot-Opportunities')
+    .replace(/\bCEO\/?CFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/\bCFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/Dynamics(?:\s*365)?[- ]Lesezugriff/gi,'technischen Prüfungsumfang')
+    .replace(/lesend(?:en)?\s+Zugriff\s+auf\s+Dynamics(?:\s*365)?/gi,'technischen Prüfungsumfang');
+ if(openPilot()){
+   r=r.replace(/^EMPFEHLUNG:\s*sofort\s*$/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten')
+      .replace(/^EMPFEHLUNG:\s*sofort\s*/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten\n')
+      .replace(/ohne\s+Dr\.\s+Vogt\s+kein\s+Deal/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen')
+      .replace(/ohne\s+ihre\s+Zustimmung\s+kein\s+Pilot\s+und\s+kein\s+Budget/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen');
+ }
+ var m=r.match(/([\s\S]*?5\.\s*NICE-TO-HAVE:[^\n]*(?:\n|$))/i); if(m)r=m[1];
+ return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+window.ki21Phase1AutonomousRegressionGuardV261=clean;
+function wrapAsync(name){try{var f=window[name];if(typeof f!=='function'||f.__v261)return;var w=async function(){var a=[].slice.call(arguments);if(name==='callClaude'&&typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(clean(x));};}var v=await f.apply(this,a);return typeof v==='string'?clean(v):v;};w.__v261=1;window[name]=w;}catch(e){}}
+function install(){wrapAsync('callClaude');try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(e){e.textContent=VERSION;});}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -15941,7 +16043,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+const KI21_VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
 
 
 function runKi21VersionMigration(){
@@ -19647,7 +19749,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19687,7 +19789,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19711,7 +19813,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19729,7 +19831,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -19931,7 +20033,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
 
   function allStorageKeys(){
     const keys=[];
@@ -20142,7 +20244,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20353,7 +20455,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20555,7 +20657,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20671,7 +20773,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -20768,7 +20870,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -20852,7 +20954,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -20876,7 +20978,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -20967,7 +21069,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21157,7 +21259,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -21414,7 +21516,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+  const VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -21584,7 +21686,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY -->
+<!-- KI21 Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -21668,7 +21770,7 @@ window.addEventListener('pageshow',install,true);
 <script id="ki21-v250-opportunity-isolation-state-gate">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
 window.KI21_VERSION=VERSION;
 
 function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21798,7 +21900,7 @@ window.addEventListener('pageshow',function(){install();forceCockpit();},true);
 <script id="ki21-v251-deal-state-consistency-fix">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
 var FORECAST=30;
 window.KI21_VERSION=VERSION;
 function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21854,11 +21956,11 @@ window.addEventListener('pageshow',function(){install();setTimeout(syncUI,120);}
 
 
 
-<!-- KI21 Pilot Core 2.6.0: Executive Decision Quality -->
+<!-- KI21 Pilot Core 2.6.1: Autonomous Regression Fix -->
 <script id="ki21-v260-executive-decision-quality">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.0 EXECUTIVE DECISION QUALITY';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
 window.KI21_VERSION=VERSION;
 
 function activeSourceV260(){
@@ -21973,6 +22075,57 @@ function installV260(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installV260();},{once:true});else installV260();
 window.addEventListener('pageshow',installV260,true);
+})();
+</script>
+
+
+<!-- KI21 Pilot Core 2.6.1: autonomous Phase-1 regression guard -->
+<script id="ki21-v261-autonomous-regression-guard">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.6.1 AUTONOMOUS REGRESSION FIX';
+window.KI21_VERSION=VERSION;
+function activeSource(){
+  var id='';try{id=(window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){}
+  var a=[];try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  return a.join('\n');
+}
+function openPilot(){var t=activeSource();return /pilot[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i.test(t);}
+function isPhase1(text){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b/i.test(text)||/KI21 OPPORTUNITY-CHECK/i.test(text);}
+function clean(text){
+ var r=String(text||''); if(!r||!isPhase1(r))return r;
+ r=r.replace(/\n---\s*\n\s*###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n###?\s*DETAILS[\s\S]*$/i,'')
+    .replace(/\n\*\*KONSISTENZPRÜFUNG[\s\S]*$/i,'')
+    .replace(/\nSTAKEHOLDER-LAGE[\s\S]*$/i,'')
+    .replace(/\nTIMELINE ZUR REALITÄTSPRÜFUNG[\s\S]*$/i,'');
+ r=r.replace(/\b(?:starker|aktiver|bestätigter)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bChampion\s+in\s+Vertriebsleitung\b/gi,'fachlicher Hauptkontakt in der Vertriebsleitung')
+    .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+    .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+    .replace(/\bKritiker\b/gi,'technischer Prüfer')
+    .replace(/\bBlocker\s+unwahrscheinlich\b/gi,'Prüfbedarf offen')
+    .replace(/(?:einen?\s+)?(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'einen gemeinsamen Discovery- und Entscheidungstermin')
+    .replace(/\b3\s*[–-]\s*4\s+(?:aktuelle\s+)?Opportunities\b/gi,'geeignete Pilot-Opportunities')
+    .replace(/\bCEO\/?CFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/\bCFO\b/gi,'weitere interne Freigabeinstanz')
+    .replace(/Dynamics(?:\s*365)?[- ]Lesezugriff/gi,'technischen Prüfungsumfang')
+    .replace(/lesend(?:en)?\s+Zugriff\s+auf\s+Dynamics(?:\s*365)?/gi,'technischen Prüfungsumfang');
+ if(openPilot()){
+   r=r.replace(/^EMPFEHLUNG:\s*sofort\s*$/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten')
+      .replace(/^EMPFEHLUNG:\s*sofort\s*/gim,'EXECUTIVE PRIORITÄT: Wirtschaftliche Entscheidung vorbereiten\n')
+      .replace(/ohne\s+Dr\.\s+Vogt\s+kein\s+Deal/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen')
+      .replace(/ohne\s+ihre\s+Zustimmung\s+kein\s+Pilot\s+und\s+kein\s+Budget/gi,'ohne bestätigte Freigabekriterien bleibt die Pilotentscheidung offen');
+ }
+ var m=r.match(/([\s\S]*?5\.\s*NICE-TO-HAVE:[^\n]*(?:\n|$))/i); if(m)r=m[1];
+ return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+window.ki21Phase1AutonomousRegressionGuardV261=clean;
+function wrapAsync(name){try{var f=window[name];if(typeof f!=='function'||f.__v261)return;var w=async function(){var a=[].slice.call(arguments);if(name==='callClaude'&&typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(clean(x));};}var v=await f.apply(this,a);return typeof v==='string'?clean(v):v;};w.__v261=1;window[name]=w;}catch(e){}}
+function install(){wrapAsync('callClaude');try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(e){e.textContent=VERSION;});}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);
 })();
 </script>
 
