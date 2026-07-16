@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.8.0-state-engine-20260716 -->
+<!-- KI21_BUILD: pilot-core-1.8.2-cockpit-score-render-clean-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY</title>
+<title>KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2561,7 +2561,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Core Architecture Extension -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -14890,7 +14890,32 @@ function generateKundePDF(aid, cust){
     </div>`;
   }
 
-  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div></body></html>`;
+  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div>
+<!-- KI21 Pilot Core 1.8.2 — Cockpit Score & Render Clean -->
+<style id="ki21-v182-clean">
+/* Legacy cockpit content is hidden as soon as the synchronous clean renderer marks the wrapper active. */
+.ki21-clean-active > :not(.ki21-mode-tabs-wrap):not(.ki21-clean-root){display:none!important;}
+.cockpit-v54-lagebild{display:none!important;visibility:hidden!important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
+  window.KI21_VERSION=VERSION;
+  function applyVersion(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-version','1.8.2');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyVersion,{once:true});
+  else applyVersion();
+  window.addEventListener('pageshow',applyVersion);
+})();
+</script>
+
+</body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
 }
@@ -14972,9 +14997,9 @@ function generateKundePDF(aid, cust){
 })();
 </script>
 
-<!-- DESIGN_FREEZE: KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN -->
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Enhanced Mobile Readability -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -14999,7 +15024,7 @@ function generateKundePDF(aid, cust){
 }
 </style>
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15020,7 +15045,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15231,7 +15256,32 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+<!-- KI21 Pilot Core 1.8.2 — Cockpit Score & Render Clean -->
+<style id="ki21-v182-clean">
+/* Legacy cockpit content is hidden as soon as the synchronous clean renderer marks the wrapper active. */
+.ki21-clean-active > :not(.ki21-mode-tabs-wrap):not(.ki21-clean-root){display:none!important;}
+.cockpit-v54-lagebild{display:none!important;visibility:hidden!important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
+  window.KI21_VERSION=VERSION;
+  function applyVersion(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-version','1.8.2');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyVersion,{once:true});
+  else applyVersion();
+  window.addEventListener('pageshow',applyVersion);
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -15880,7 +15930,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+const KI21_VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
 
 
 function runKi21VersionMigration(){
@@ -19312,12 +19362,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      * This prevents empty section parsing from falling back to a neutral 50.
      */
     const rawReport=fullReport();
-    const explicitScoreMatch=rawReport.match(
-      /(?:ENTSCHEIDUNGSREIFE|EXECUTIVE FORECAST)[\s\S]{0,180}?(\d{1,3})\s*%/i
+    const explicitHealthMatch=rawReport.match(
+      /ENTSCHEIDUNGSREIFE[\s\S]{0,180}?(\d{1,3})\s*%/i
     );
-    const score=explicitScoreMatch
-      ? Number(explicitScoreMatch[1])
+    const explicitForecastMatch=rawReport.match(
+      /EXECUTIVE FORECAST[\s\S]{0,180}?(?:AKTUELL:\s*)?(\d{1,3})\s*%/i
+    );
+    const healthScore=explicitHealthMatch
+      ? Number(explicitHealthMatch[1])
       : scoreFromFacts([status,blocker,recommendation],readiness);
+    const forecastScore=explicitForecastMatch
+      ? Number(explicitForecastMatch[1])
+      : Math.max(5,Math.min(90,healthScore-20));
 
     let up=(forecast.find(x=>/AUFSTUFUNG/i.test(x))||'')
       .replace(/^.*AUFSTUFUNG,\s*WENN:\s*/i,'');
@@ -19369,8 +19425,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       status:status||'Sponsor bestätigt Handlungsbedarf. Pilotentscheidung noch offen.',
       blocker:blocker||'Wirtschaftliche Entscheiderin nicht eingebunden. Budget und Erfolgskriterien offen.',
       recommendation,
-      score,
-      state:state(score),
+      score:healthScore,
+      healthScore,
+      forecastScore,
+      state:state(healthScore),
+      healthState:state(healthScore),
+      forecastState:state(forecastScore),
       up:shorten(up,105),
       down:shorten(down,80),
       decision:shorten(expectedDecision||'Kunde bestätigt den Entscheidungsworkshop und dessen verbindliche Entscheidungsagenda.',150),
@@ -19427,15 +19487,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const score=el('div','ki21-clean-metric');
     score.append(
       el('div','ki21-clean-metric-label','Opportunity Score'),
-      el('div','ki21-clean-metric-value',m.score+' %'),
-      el('div','ki21-clean-metric-state',m.state),
+      el('div','ki21-clean-metric-value',m.healthScore+' %'),
+      el('div','ki21-clean-metric-state',m.healthState),
       el('div','ki21-clean-metric-sub','Offen · Buying Center · Business Case · Erfolgskriterien')
     );
     const forecast=el('div','ki21-clean-metric forecast');
     forecast.append(
       el('div','ki21-clean-metric-label','Executive Forecast'),
-      el('div','ki21-clean-metric-value',m.score+' %'),
-      el('div','ki21-clean-metric-state',m.state),
+      el('div','ki21-clean-metric-value',m.forecastScore+' %'),
+      el('div','ki21-clean-metric-state',m.forecastState),
       el('div','ki21-clean-forecast-line up','Steigt, wenn: '+m.up),
       el('div','ki21-clean-forecast-line down','Fällt, wenn: '+m.down)
     );
@@ -19482,7 +19542,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(typeof original==='function'){
     window.renderCockpitSnapshotLiteV4215=function(){
       const out=original.apply(this,arguments);
-      setTimeout(render,80);
+      render();
       return out;
     };
   }
@@ -19703,7 +19763,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19744,7 +19804,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19769,7 +19829,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19789,7 +19849,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 
-<!-- KI21 Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -19997,7 +20057,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
 
   function allStorageKeys(){
     const keys=[];
@@ -20210,7 +20270,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20425,7 +20485,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20628,7 +20688,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   window.KI21_VERSION=VERSION;
 
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20730,7 +20790,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20846,7 +20906,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   window.KI21_VERSION=VERSION;
   let syncing=false, scheduled=false;
 
@@ -21023,134 +21083,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<!-- KI21 Pilot Core 1.8.0 — State Engine -->
-<style id="ki21-v174-clean-render-style">
-.ki21-decision-card:not(.ki21-decision-card-fixed){display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+
+
+<!-- KI21 Pilot Core 1.8.2 — Cockpit Score & Render Clean -->
+<style id="ki21-v182-clean">
+/* Legacy cockpit content is hidden as soon as the synchronous clean renderer marks the wrapper active. */
+.ki21-clean-active > :not(.ki21-mode-tabs-wrap):not(.ki21-clean-root){display:none!important;}
 .cockpit-v54-lagebild{display:none!important;visibility:hidden!important;}
 </style>
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
+  const VERSION='Pilot Core 1.8.2 COCKPIT SCORE & RENDER CLEAN';
   window.KI21_VERSION=VERSION;
-  function apply(){
+  function applyVersion(){
     try{
       document.title='KI21 '+VERSION;
-      document.documentElement.setAttribute('data-ki21-version','1.8.1');
+      document.documentElement.setAttribute('data-ki21-version','1.8.2');
       document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
-      document.querySelectorAll('.ki21-decision-card:not(.ki21-decision-card-fixed),.cockpit-v54-lagebild').forEach(function(el){el.style.display='none';el.setAttribute('aria-hidden','true');});
-      if(typeof window.ki21SyncV173==='function')window.ki21SyncV173();
-    }catch(e){console.warn('KI21 1.8.0 state engine',e);}
+    }catch(e){}
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
-  window.addEventListener('pageshow',apply);
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)apply();});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyVersion,{once:true});
+  else applyVersion();
+  window.addEventListener('pageshow',applyVersion);
 })();
 </script>
 
-
-
-<!-- KI21 Pilot Core 1.8.1 — Cockpit Navigation & Stable Render -->
-<style id="ki21-v181-state-style">
-  /* Legacy-Zwischenkarten sind schon vor dem ersten sichtbaren Paint verborgen. */
-  .cockpit-v54-lagebild,
-  .ki21-decision-card:not(.ki21-decision-card-fixed){display:none!important;visibility:hidden!important}
-  /* Das Cockpit wird bei Aktualisierungen nicht mehr komplett unsichtbar geschaltet. */
-  #app{transition:none!important}
-</style>
-<script>
-(function(){
-  'use strict';
-  const VERSION='Pilot Core 1.8.1 COCKPIT NAVIGATION STABILITY';
-  const ROOT=document.documentElement;
-  let inRender=false;
-  let postTimer=0;
-  let observerTimer=0;
-
-  function normalizeVersion(){
-    ROOT.setAttribute('data-ki21-version','1.8.1');
-    window.KI21_VERSION=VERSION;
-    document.title='KI21 '+VERSION;
-    document.querySelectorAll('.tagline').forEach(el=>{el.textContent=VERSION;});
-    document.querySelectorAll('body *').forEach(el=>{
-      if(el.children.length===0){
-        const t=el.textContent||'';
-        if(/Pilot Core 1\.(8\.0|7\.[0-9]|6\.[0-9]+)[^\n]*/i.test(t)){
-          el.textContent=t.replace(/Pilot Core 1\.(8\.0|7\.[0-9]|6\.[0-9]+)[^\n]*/i,VERSION);
-        }
-      }
-    });
-  }
-
-  function removeLegacyIntermediateCards(){
-    document.querySelectorAll('.cockpit-v54-lagebild,.ki21-decision-card:not(.ki21-decision-card-fixed)').forEach(el=>{
-      el.style.setProperty('display','none','important');
-      el.style.setProperty('visibility','hidden','important');
-      el.setAttribute('aria-hidden','true');
-    });
-  }
-
-  function postRender(){
-    clearTimeout(postTimer);
-    postTimer=setTimeout(()=>{
-      removeLegacyIntermediateCards();
-      normalizeVersion();
-    },0);
-  }
-
-  /* Nur ein synchroner Reentrancy-Schutz. Kein asynchron gehaltener Lock mehr. */
-  const original=window.renderCockpitSnapshotLiteV4215;
-  if(typeof original==='function'&&!original.__ki21v181){
-    function stableCockpitRender(){
-      if(inRender) return;
-      inRender=true;
-      try{
-        return original.apply(this,arguments);
-      }finally{
-        inRender=false;
-        postRender();
-      }
-    }
-    stableCockpitRender.__ki21v181=true;
-    stableCockpitRender.__ki21Original=original;
-    window.renderCockpitSnapshotLiteV4215=stableCockpitRender;
-  }
-
-  /* Falls ein älterer Build den Button bereits mit einer alten Funktionsreferenz erzeugt hat,
-     fängt dieser delegierte Handler den Klick zuverlässig ab. */
-  document.addEventListener('click',function(e){
-    const btn=e.target&&e.target.closest?e.target.closest('button.ki21-mode-tab'):null;
-    if(!btn||!/Cockpit/i.test(btn.textContent||''))return;
-    e.preventDefault();
-    e.stopPropagation();
-    if(typeof window.renderCockpitSnapshotLiteV4215==='function'){
-      window.renderCockpitSnapshotLiteV4215();
-    }
-  },true);
-
-  const app=document.getElementById('app');
-  if(app){
-    const observer=new MutationObserver(()=>{
-      clearTimeout(observerTimer);
-      observerTimer=setTimeout(()=>{
-        removeLegacyIntermediateCards();
-        normalizeVersion();
-      },0);
-    });
-    observer.observe(app,{childList:true,subtree:true});
-  }
-
-  function restoreUi(){
-    ROOT.classList.remove('ki21-render-transaction');
-    removeLegacyIntermediateCards();
-    normalizeVersion();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreUi,{once:true});
-  else restoreUi();
-  window.addEventListener('pageshow',restoreUi);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)restoreUi();});
-  setTimeout(restoreUi,0);
-})();
-</script>
 </body>
 </html>
