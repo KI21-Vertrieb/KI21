@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.7.1-state-phase2-sync-fix-20260716 -->
+<!-- KI21_BUILD: pilot-core-1.7.2-health-forecast-stable-renderer-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.7.1 STATE & PHASE 2 SYNC FIX</title>
+<title>KI21 Pilot Core 1.7.2 HEALTH & FORECAST STABLE RENDERER</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -20720,5 +20720,127 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   try{document.documentElement.setAttribute('data-ki21-version','1.7.1');}catch(e){}
 })();
 </script>
+
+<!-- KI21 Pilot Core 1.7.2 — Stable Renderer & Independent Health/Forecast -->
+<style id="ki21-v172-stable-renderer">
+/* Der veraltete Zwischenrenderer darf vor dem finalen Cockpit nicht mehr kurz sichtbar werden. */
+.cockpit-v54-lagebild,.ki21-v170-learned{display:none!important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.7.2 HEALTH & FORECAST SEPARATION';
+  window.KI21_VERSION=VERSION;
+
+  function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function baseModel(){
+    try{return typeof window.ki21OpportunityModelV170==='function'?window.ki21OpportunityModelV170():null;}catch(e){return null;}
+  }
+  function scores(m){
+    m=m||{};
+    let health=20;
+    if(m.sponsor)health+=8;
+    if(m.executive)health+=10;
+    if(m.budget)health+=8;
+    if(m.workshop)health+=6;
+    if(m.itConditions)health+=6;
+    if(m.hours)health+=5;
+    if(m.damage)health+=5;
+    if(m.success)health+=6;
+    if(m.quantified)health+=4;
+    if(m.conflict)health-=2;
+    if(m.conflict)health=Math.min(health,72);
+    if(!m.success)health=Math.min(health,68);
+    health=Math.max(15,Math.min(92,Math.round(health)));
+
+    let forecast=15;
+    if(m.sponsor)forecast+=5;
+    if(m.executive)forecast+=8;
+    if(m.budget)forecast+=6;
+    if(m.workshop)forecast+=5;
+    if(m.itConditions)forecast+=5;
+    if(m.success)forecast+=4;
+    if(m.damage)forecast+=2;
+    if(m.quantified)forecast+=2;
+    if(m.conflict)forecast-=4;
+    // Harte Forecast-Gates: offener Stakeholder-Konflikt und fehlendes gemeinsames Pilotmodell.
+    if(m.conflict)forecast=Math.min(forecast,55);
+    if(!m.workshop)forecast=Math.min(forecast,50);
+    if(!m.success)forecast=Math.min(forecast,55);
+    forecast=Math.max(5,Math.min(90,Math.round(forecast)));
+    return {health,forecast};
+  }
+  window.ki21ScoresV172=function(){return scores(baseModel());};
+
+  function level(v){return v>=75?'GUT':v>=45?'MITTEL':'NIEDRIG';}
+  function sync(){
+    const m=baseModel();if(!m)return;
+    const s=scores(m);
+    document.querySelectorAll('.score-pill-v667.health .score-value-v667').forEach(el=>el.textContent=s.health+'/100');
+    document.querySelectorAll('.score-pill-v667.forecast .score-value-v667').forEach(el=>el.textContent=s.forecast+'%');
+    document.querySelectorAll('.cockpit-score-badge,.cockpit-score-click').forEach(el=>{if(!el.closest('.score-pill-v667'))el.textContent=s.health+'/100';});
+    const metrics=document.querySelectorAll('.ki21-clean-metric');
+    if(metrics[0]){
+      const v=metrics[0].querySelector('.ki21-clean-metric-value');if(v)v.textContent=s.health+' %';
+      const st=metrics[0].querySelector('.ki21-clean-metric-state');if(st)st.textContent=level(s.health);
+      const sub=metrics[0].querySelector('.ki21-clean-metric-sub');if(sub)sub.textContent='Dealqualität · Faktenbasis · Buying Center · Business Case';
+    }
+    if(metrics[1]){
+      const v=metrics[1].querySelector('.ki21-clean-metric-value');if(v)v.textContent=s.forecast+' %';
+      const st=metrics[1].querySelector('.ki21-clean-metric-state');if(st)st.textContent=level(s.forecast);
+    }
+    document.querySelectorAll('.tagline').forEach(el=>el.textContent=VERSION);
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(n=>{if(/Pilot Core 1\.7\.1/i.test(n.nodeValue||''))n.nodeValue=String(n.nodeValue).replace(/Pilot Core 1\.7\.1(?: STATE & PHASE 2 SYNC FIX)?/gi,VERSION);});
+    try{
+      const id=activeId();if(id){
+        LS.set('ki21_health_'+id,{...(LS.get('ki21_health_'+id,{})||{}),score:s.health,scoreSource:'health_v172',ts:Date.now()});
+        LS.set('ki21_forecast_'+id,{probability:s.forecast,scoreSource:'forecast_v172',ts:Date.now()});
+      }
+    }catch(e){}
+  }
+  window.ki21SyncScoresV172=sync;
+
+  // Forecast-Detailansicht verwendet dieselbe unabhängige Forecast-Logik.
+  const oldCalc=window.calculateForecastV667;
+  window.calculateForecastV667=function(accId,health){
+    let out={};try{out=typeof oldCalc==='function'?oldCalc(accId,health):{};}catch(e){}
+    const s=scores(baseModel());
+    return {...out,probability:s.forecast,confidence:s.forecast>=70?'hoch':s.forecast>=45?'mittel':'niedrig'};
+  };
+
+  // Report: Health und Forecast nicht länger mit demselben Prozentwert ausgeben.
+  const oldReport=window.ki21BuildOpportunityReportV170;
+  function patchedReport(){
+    const args=arguments;let r='';
+    try{r=typeof oldReport==='function'?oldReport.apply(this,args):'';}catch(e){r='';}
+    const s=scores(baseModel());
+    r=String(r||'')
+      .replace(/(ENTSCHEIDUNGSREIFE\n•\s*)\d{1,3}\s*%\s*·\s*(?:GUT|MITTEL|NIEDRIG)/i,'$1'+s.health+' % · '+level(s.health))
+      .replace(/(EXECUTIVE FORECAST\n•\s*AKTUELL:\s*)\d{1,3}\s*%\s*·\s*(?:GUT|MITTEL|NIEDRIG)/i,'$1'+s.forecast+' % · '+level(s.forecast));
+    return r;
+  }
+  if(typeof oldReport==='function'){
+    window.ki21BuildOpportunityReportV170=patchedReport;
+    window.buildOpportunityTestReportV723=patchedReport;
+    window.ki21BuildSourceFirstReportV160=patchedReport;
+  }
+
+  // Der alte 1.7.1-Synchronisierer darf Forecast nicht wieder auf Health setzen.
+  window.ki21SyncScoresV171=function(){sync();};
+
+  let timer=0;
+  const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,25);});
+  observer.observe(document.documentElement,{subtree:true,childList:true});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,40),{once:true});else setTimeout(sync,40);
+  window.addEventListener('pageshow',()=>setTimeout(sync,60));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sync,60);});
+  setInterval(sync,1200);
+  document.title='KI21 '+VERSION;
+  try{document.documentElement.setAttribute('data-ki21-version','1.7.2');}catch(e){}
+})();
+</script>
+
 </body>
 </html>
