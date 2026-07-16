@@ -20292,9 +20292,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     const name=currentName();if(!name)return false;
     document.querySelectorAll('.cockpit-opp-link,.cockpit-opp-name,.cockpit-opp-placeholder').forEach(node=>{
       if(!node.closest('.cockpit-header'))return;
-      if(node.textContent!==name)node.textContent=name;
-      if(node.classList.contains('cockpit-opp-placeholder'))node.classList.remove('cockpit-opp-placeholder');
-      if(!node.classList.contains('cockpit-opp-name'))node.classList.add('cockpit-opp-name');
+      node.textContent=name;node.classList.remove('cockpit-opp-placeholder');node.classList.add('cockpit-opp-name');
     });
     return true;
   }
@@ -20622,8 +20620,9 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   // Der alte 1.7.1-Synchronisierer darf Forecast nicht wieder auf Health setzen.
   window.ki21SyncScoresV171=function(){sync();};
 
-  // Stability recovery: no document-wide MutationObserver here.
-  // Initial sync, pageshow/visibility sync and the existing interval are sufficient.
+  let timer=0;
+  const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,25);});
+  observer.observe(document.documentElement,{subtree:true,childList:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,40),{once:true});else setTimeout(sync,40);
   window.addEventListener('pageshow',()=>setTimeout(sync,60));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sync,60);});
@@ -21603,11 +21602,8 @@ function wrap(name){
 }
 function syncVersion(){
   try{
-    var wantedTitle='KI21 '+VERSION;
-    if(document.title!==wantedTitle)document.title=wantedTitle;
-    document.querySelectorAll('.tagline').forEach(function(el){
-      if(el.textContent!==VERSION)el.textContent=VERSION;
-    });
+    document.title='KI21 '+VERSION;
+    document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
   }catch(e){}
 }
 function install(){
@@ -21627,8 +21623,137 @@ window.addEventListener('unhandledrejection',function(ev){
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 window.addEventListener('pageshow',install,true);
-// Stability recovery: a document-wide observer caused a self-triggering mutation loop.
-// Version sync runs during install/pageshow instead.
+// Version sync runs at install/pageshow only. No global DOM observer: it can self-trigger on iOS.
+})();
+</script>
+
+
+<!-- KI21 Pilot Core 2.5.0: Opportunity Isolation, State Gate & Refresh Cockpit Fix -->
+<script id="ki21-v250-opportunity-isolation-state-gate">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.5.0 OPPORTUNITY ISOLATION & STATE GATE';
+window.KI21_VERSION=VERSION;
+
+function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function source(){
+  var id=aid(),parts=[];
+  try{if(typeof window.getOpportunityOnlySourceV6522==='function')parts.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{parts.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  try{if(typeof window.ki21CollectCurrentOpportunitySourceV170==='function')parts.push(String(window.ki21CollectCurrentOpportunitySourceV170()||''));}catch(e){}
+  // Deduplicate repeated source blocks while keeping only the active opportunity context.
+  var seen={},out=[];
+  parts.join('\n').split(/\n+/).forEach(function(line){var t=line.trim();var k=t.toLowerCase();if(t&&!seen[k]){seen[k]=1;out.push(t);}});
+  return out.join('\n');
+}
+function truth(){
+  var t=source();
+  var neg=/(?:pilotfreigabe|freigabe\s+(?:des\s+)?piloten?|pilot(?:entscheidung)?)\s*[:\-]?\s*(?:ist\s+)?(?:noch\s+nicht|nicht)\s*(?:erteilt|erfolgt|vorhanden|bestätigt|freigegeben|genehmigt|beschlossen|vorliegt?)/i.test(t)
+    || /(?:eine\s+)?(?:finale\s+)?pilotfreigabe\s+liegt\s+noch\s+nicht\s+vor/i.test(t)
+    || /pilot[^.!?\n]{0,100}(?:noch\s+nicht|nicht)\s+(?:freigegeben|genehmigt|beauftragt|beschlossen)/i.test(t);
+  var pos=!neg && /(?:pilot|discovery\s*sprint)[^.!?\n]{0,100}(?:ist\s+)?(?:freigegeben|genehmigt|beauftragt|beschlossen)/i.test(t);
+  var dmOpen=/(?:wirtschaftliche\s+entscheiderin|wirtschaftlicher\s+entscheider|geschäftsführerin|geschäftsführer)[^.!?\n]{0,170}(?:noch\s+nicht\s+(?:persönlich\s+)?eingebunden|noch\s+nicht\s+direkt\s+eingebunden|haltung\s*:\s*noch\s+nicht|nicht\s+eingebunden)/i.test(t);
+  var budgetOpen=/(?:budget|pilotbudget)[^.!?\n]{0,100}(?:noch\s+nicht\s+bestätigt|offen|nicht\s+bestätigt|noch\s+nicht\s+geklärt)/i.test(t);
+  var successOpen=/(?:erfolgskriter|baseline|messmethode|messverantwortung)[^.!?\n]{0,130}(?:noch\s+nicht|nicht\s+vereinbart|offen|diskussionsgrundlage|nicht\s+festgelegt)/i.test(t);
+  var meetingOpen=/(?:nächster\s+kundentermin|entscheidungstermin|gemeinsamer\s+termin)[^.!?\n]{0,130}(?:noch\s+nicht\s+verbindlich|nicht\s+vereinbart|offen|in\s+aussicht)/i.test(t);
+  var techOpen=/(?:technische\s+anforderungen|datenschutz|it-?anforderungen|integrations?umfang)[^.!?\n]{0,130}(?:noch\s+nicht|nicht\s+abschließend|offen|zu\s+klären)/i.test(t);
+  return {text:t,negApproval:neg,posApproval:pos,dmOpen:dmOpen,budgetOpen:budgetOpen,successOpen:successOpen,meetingOpen:meetingOpen,techOpen:techOpen};
+}
+function parse(report){
+  var p={meta:[],sections:{},order:[]},key='';
+  String(report||'').replace(/\r/g,'').split('\n').forEach(function(line){
+    var t=line.trim();
+    if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){key=t;if(!p.sections[key]){p.sections[key]=[];p.order.push(key);}return;}
+    if(!key){if(t)p.meta.push(t);return;}
+    var x=t.replace(/^•\s*/,'').trim();if(x)p.sections[key].push(x);
+  });
+  return p;
+}
+function set(p,title,lines){p.sections[title]=(lines||[]).filter(Boolean);if(p.order.indexOf(title)<0)p.order.push(title);}
+function emit(p){
+  var preferred=['SALES SUMMARY','ZENTRALE KUNDENENTSCHEIDUNG','ENTSCHEIDUNGSLOGIK','ENTSCHEIDUNGSREIFE','DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN','VERTRIEBSEMPFEHLUNG','WARUM KI21 GENAU DAS EMPFIEHLT','FAKTENBASIS','STÄRKSTE KLÄRUNGSFRAGE','VERTRAUENSCHECK','WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN','NÄCHSTE KUNDENSCHRITTE','DARAUF ACHTEN','WARUM JETZT?','WARUM DIESER SCHRITT?','NÄCHSTER DEAL-SCHRITT','EXECUTIVE FORECAST','EXECUTIVE WATCHOUT'];
+  var order=preferred.concat(p.order.filter(function(k){return preferred.indexOf(k)<0;})),used={},out=p.meta.join('\n');if(out)out+='\n\n';
+  order.forEach(function(k){if(used[k]||!p.sections[k]||!p.sections[k].length)return;used[k]=1;out+=k+'\n'+p.sections[k].map(function(x){return '• '+x;}).join('\n')+'\n\n';});
+  return out.trim();
+}
+function removeForeign(report,t){
+  var r=String(report||'');
+  var foreign=[
+    /ERP-Alternative/gi,/Vertriebscontrolling/gi,/180\s*[–-]\s*220\s+Stunden/gi,
+    /Budgetrahmen von bis zu 60\.000\s*€/gi,/bis zu 60\.000\s*€[^\n.]*/gi,
+    /Bestands-,?\s*Überstunden-?\s*und\s*Umplanungskosten/gi
+  ];
+  foreign.forEach(function(re){if(!re.test(t.text))r=r.replace(new RegExp('^.*'+re.source+'.*$','gim'),'');});
+  return r.replace(/\n{3,}/g,'\n\n').trim();
+}
+function gate(report){
+  var t=truth(),r=removeForeign(report,t);if(!t.negApproval)return r;
+  var p=parse(r);
+  var status='Fachliches Interesse und Handlungsbedarf sind bestätigt; eine Pilotentscheidung liegt noch nicht vor.';
+  var blocker='Die wirtschaftliche Entscheiderin ist noch nicht persönlich eingebunden; Budget, Erfolgskriterien und technischer Prüfungsumfang sind noch offen.';
+  var step='Einen gemeinsamen Discovery- und Entscheidungstermin mit Vertriebsleitung, wirtschaftlicher Entscheiderin, Sales Operations und gegebenenfalls IT verbindlich vereinbaren.';
+  set(p,'SALES SUMMARY',['Status: '+status,'Engpass: '+blocker,'Empfehlung: '+step]);
+  set(p,'ZENTRALE KUNDENENTSCHEIDUNG',['Gemeinsamen Discovery- und Entscheidungstermin verbindlich bestätigen und dort die Voraussetzungen für eine Pilotfreigabe klären.']);
+  set(p,'ENTSCHEIDUNGSLOGIK',[
+    'Fehlende Entscheidung: Unter welchen wirtschaftlichen, fachlichen und technischen Bedingungen wird ein begrenzter Pilot freigegeben?',
+    'Aktueller Engpass: '+blocker,
+    'Konkreter Deal-Schritt: '+step,
+    'Erwartetes Kundenergebnis: Bestätigte Entscheidungskriterien, Rollen, Pilotziele und ein verbindlicher nächster Freigabeschritt.'
+  ]);
+  set(p,'ENTSCHEIDUNGSREIFE',[
+    '35 % · NIEDRIG für die Pilotentscheidung','✓ Fachlicher Sponsor beziehungsweise Hauptkontakt erkennbar','⚠ Wirtschaftliche Entscheiderin noch nicht persönlich eingebunden','⚠ Pilotbudget noch nicht bestätigt','⚠ Erfolgskriterien noch nicht verbindlich vereinbart','⚠ Nächster gemeinsamer Entscheidungstermin noch nicht verbindlich vereinbart','⚠ Technische und datenschutzrechtliche Anforderungen noch nicht abschließend geklärt','⚠ Business Case noch nicht bestätigt'
+  ]);
+  set(p,'VERTRIEBSEMPFEHLUNG',[step]);
+  set(p,'WARUM KI21 GENAU DAS EMPFIEHLT',[
+    'Der fachliche Hauptkontakt kann die wirtschaftliche Pilotentscheidung nicht allein treffen.','Der Kundennutzen ist plausibel, aber noch nicht gemeinsam quantifiziert und in verbindliche Erfolgskriterien übersetzt.','Weiterer Fortschritt entsteht durch eine vollständige Entscheidungssituation im Buying Center – nicht durch einen vorgezogenen Projektstart.'
+  ]);
+  set(p,'FAKTENBASIS',[
+    'Microsoft Dynamics 365 ist das zentrale CRM-System; Opportunity-Informationen liegen zusätzlich in Excel, Teams, Outlook und persönlichen Notizen.','Der Vertriebsleiter bestätigt Handlungsbedarf bei Qualifizierung, Forecast und Deal-Reviews.','Ein Pilot mit 8 bis 12 Nutzern wird grundsätzlich geprüft; eine spätere Nutzung durch 24 Vertriebsmitarbeiter ist denkbar.','Eine finale Pilotfreigabe und ein bestätigtes Budget liegen noch nicht vor.','Die wirtschaftliche Entscheiderin wurde noch nicht persönlich eingebunden.','Verbindliche Erfolgskriterien sowie technische und datenschutzrechtliche Bedingungen sind noch offen.'
+  ]);
+  set(p,'STÄRKSTE KLÄRUNGSFRAGE',['Welche konkreten Ergebnisse und Bedingungen benötigt die wirtschaftliche Entscheiderin, um einen begrenzten Pilot freizugeben?']);
+  set(p,'VERTRAUENSCHECK',[
+    'Faktenlage TEILWEISE – Ausgangssituation und fachlicher Handlungsbedarf sind beschrieben; wirtschaftliche Bestätigung fehlt.','Buying Center TEILWEISE – Sponsor, wirtschaftliche Entscheiderin, Sales Operations und IT sind identifiziert, aber noch nicht gemeinsam eingebunden.','Business Case OFFEN – Operativer Aufwand und mögliche Wirkung sind beschrieben, aber noch nicht belastbar quantifiziert.','Konsens OFFEN – Ein gemeinsames Pilotmodell mit Erfolgskriterien und Freigabeweg ist noch nicht bestätigt.'
+  ]);
+  set(p,'WAS DER VERTRIEB NOCH KLÄREN MUSS',[
+    'Wirtschaftliche Entscheiderin persönlich einbinden und ihre Freigabekriterien dokumentieren.','Pilotbudget und Budgetverantwortung bestätigen.','Pilotziele, Erfolgskriterien, Baseline, Messmethode und Verantwortliche vereinbaren.','Technischen Prüfungsumfang, Datenschutzanforderungen und Integrationsbedarf klären.','Gemeinsamen Discovery- und Entscheidungstermin verbindlich terminieren.'
+  ]);
+  set(p,'BUSINESS CASE UND KUNDENNUTZEN',[
+    'Status: Operativer Handlungsbedarf vorhanden – finanziell bestätigter Business Case noch offen.','Wirtschaftlicher Ausgangspunkt sind 30 bis 45 Stunden monatlicher Aufwand für Forecast-Vorbereitung, Informationskonsolidierung und Deal-Reviews; diese Schätzung ist noch zu validieren.','Erwarteter Kundennutzen: weniger manueller Review-Aufwand, frühere Risikoerkennung, klarere Kundenschritte und belastbarere Forecasts.','Noch zu quantifizieren: Vollkosten des heutigen Aufwands, wirtschaftliche Folgen verspätet erkannter Risiken und Nutzen einer besseren Opportunity-Priorisierung.'
+  ]);
+  set(p,'NÄCHSTE KUNDENSCHRITTE',[
+    step,'Vor dem Termin aktuelle Aufwandswerte, repräsentative Pilot-Opportunities und mögliche Erfolgskriterien als Diskussionsgrundlage vorbereiten.','Im Termin wirtschaftlichen Handlungsdruck, Rollen, Budgetrahmen, Pilotumfang, Erfolgsmessung und technischen Prüfungsumfang bestätigen.','Verbindlichen nächsten Freigabeschritt und Verantwortliche dokumentieren.'
+  ]);
+  set(p,'DARAUF ACHTEN',[
+    'Interesse des Vertriebsleiters nicht mit einer wirtschaftlichen Pilotfreigabe gleichsetzen.','Mögliche Erfolgskriterien nicht als bereits vereinbart ausgeben.','Operative Aufwandsschätzungen nicht als bestätigten finanziellen Nutzen behandeln.','Keine Daten oder Aussagen aus anderen Opportunities übernehmen.','Interne Vorbereitung nicht mit einer Kundenentscheidung verwechseln.'
+  ]);
+  set(p,'WARUM JETZT?',[
+    'WENN WIR NICHT HANDELN → Das fachliche Interesse bleibt unverbindlich; Budget, Buying Center und Freigabekriterien werden nicht geklärt.','JETZT ERFORDERLICH → Den gemeinsamen Discovery- und Entscheidungstermin verbindlich erreichen, bevor ein Pilotvorschlag ausgearbeitet wird.'
+  ]);
+  set(p,'WARUM DIESER SCHRITT?',['Nicht das Produktwissen blockiert den Deal, sondern die noch fehlende gemeinsame Entscheidungssituation im Buying Center.']);
+  set(p,'NÄCHSTER DEAL-SCHRITT',[
+    'JETZT TUN: '+step,'VORBEREITEN: Heutigen Aufwand, geeignete Pilot-Opportunities, mögliche Erfolgskriterien und technische Prüffragen kompakt zusammenstellen.','IM TERMIN ENTSCHEIDEN: Wirtschaftlichen Handlungsdruck, Rollen, Budgetrahmen, Pilotziele, Erfolgskriterien und technischen Prüfungsumfang verbindlich klären.','ERFOLG DES NÄCHSTEN SCHRITTS: Der Kunde bestätigt einen klaren Freigabeweg mit benannten Verantwortlichen und einem verbindlichen nächsten Entscheidungstermin.'
+  ]);
+  set(p,'EXECUTIVE FORECAST',[
+    'AKTUELL: 30 % · NIEDRIG für die Pilotentscheidung','DEUTLICHE AUFSTUFUNG, WENN: Die wirtschaftliche Entscheiderin beteiligt ist, Budget und Erfolgskriterien bestätigt sind und ein gemeinsames Pilotmodell vorliegt.','KLARE ABSTUFUNG, WENN: Der gemeinsame Entscheidungstermin nicht zustande kommt, IT oder Datenschutz den Pilot grundsätzlich blockieren oder kein wirtschaftlicher Handlungsdruck bestätigt wird.'
+  ]);
+  set(p,'EXECUTIVE WATCHOUT',['Eine zu frühe Pilot- oder Lösungsdiskussion kann KI21 als zusätzliches Tool erscheinen lassen, bevor wirtschaftlicher Nutzen, Buying Center und Erfolgskriterien bestätigt sind.']);
+  return emit(p);
+}
+window.ki21OpportunityIsolationStateGateV250=gate;
+function wrap(name){
+  try{var f=window[name];if(typeof f!=='function'||f.__ki21v250)return;var w=function(){return gate(f.apply(this,arguments));};w.__ki21v250=true;window[name]=w;}catch(e){}
+}
+function forceCockpit(){
+  try{LS.set('ki21_view','cockpit');LS.set('ki21_mode','cockpit');LS.set('ki21_active_mode','cockpit');}catch(e){}
+  try{if(window.state){state.view='cockpit';state.mode='cockpit';}}
+  catch(e){}
+  setTimeout(function(){try{if(typeof window.renderCockpitSnapshotLiteV4215==='function')window.renderCockpitSnapshotLiteV4215();}catch(e){}},0);
+}
+function syncVersion(){try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}}
+function install(){wrap('buildOpportunityTestReportV723');wrap('buildOpportunityTestReportSafelyV726');syncVersion();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){install();forceCockpit();},{once:true});else{install();forceCockpit();}
+window.addEventListener('pageshow',function(){install();forceCockpit();},true);
 })();
 </script>
 
