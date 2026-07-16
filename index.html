@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- KI21_BUILD: pilot-core-1.6.6-cockpit-reasoning-fix-20260716 -->
+<!-- KI21_BUILD: pilot-core-1.7.0-opportunity-intelligence-update-20260716 -->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>KI21 Pilot Core 1.6.6 COCKPIT REASONING FIX</title>
+<title>KI21 Pilot Core 1.7.0 OPPORTUNITY INTELLIGENCE UPDATE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -20403,6 +20403,219 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   mo.observe(document.documentElement,{subtree:true,childList:true});
   window.addEventListener('load',()=>setTimeout(syncHeader,180),{once:true});
   setTimeout(syncHeader,500);
+})();
+</script>
+
+<!-- KI21 Pilot Core 1.7.0 — Opportunity Intelligence Update -->
+<style id="ki21-v170-style">
+.ki21-v170-learned{margin:0 0 12px;padding:12px 13px;border:1px solid rgba(255,122,26,.28);border-radius:16px;background:linear-gradient(145deg,rgba(31,25,24,.94),rgba(14,19,27,.92));box-shadow:0 12px 30px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.035)}
+.ki21-v170-learned-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ki21-v170-learned-title{font-size:9.5px;font-weight:950;letter-spacing:1.2px;text-transform:uppercase;color:#ff9a45}
+.ki21-v170-learned-state{font-size:8.5px;font-weight:850;color:#8fd9ad}
+.ki21-v170-learned-row{position:relative;padding:5px 0 5px 16px;font-size:11.3px;line-height:1.35;color:#e8eef6}
+.ki21-v170-learned-row::before{content:'✓';position:absolute;left:0;color:#56d390;font-weight:950}
+.ki21-v170-learned-row.open::before{content:'→';color:#ff9a45}
+.ki21-v170-note-help{font-size:10.5px;line-height:1.4;color:#9da7b3;margin:-5px 0 10px}
+@media(max-width:390px){.ki21-v170-learned{padding:11px 12px;border-radius:14px}.ki21-v170-learned-row{font-size:10.8px}}
+</style>
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 1.7.0 OPPORTUNITY INTELLIGENCE UPDATE';
+  window.KI21_VERSION=VERSION;
+
+  function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function clean(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
+  function activeAccount(){
+    try{const id=activeId();return ((window.state&&state.accounts)||LS.get('ki21_acc',[])||[]).find(a=>a&&String(a.id)===String(id))||null;}catch(e){return null;}
+  }
+  function collectCurrentOpportunitySource(){
+    const id=activeId(); if(!id)return '';
+    const parts=[];
+    try{const t=typeof getOpportunityOnlySourceV6522==='function'?getOpportunityOnlySourceV6522(id):'';if(clean(t))parts.push('CRM / Opportunity\n'+clean(t));}catch(e){}
+    try{const t=LS.get('ki21_import_raw_'+id,'');if(clean(t)&&!parts.join('\n').includes(clean(t)))parts.push('CRM-Import\n'+clean(t));}catch(e){}
+    const acc=activeAccount();
+    if(acc){
+      try{if(clean(acc.rawImport||acc.importText))parts.push('Aktive Opportunity\n'+clean(acc.rawImport||acc.importText));}catch(e){}
+      try{if(acc.cust)parts.push('Kundenstammdaten\n'+JSON.stringify(acc.cust));}catch(e){}
+    }
+    try{const g=LS.get('ki21_kk_'+id,'');if(clean(g))parts.push('Gesprächserkenntnisse\n'+clean(g));}catch(e){}
+    for(let i=0;i<5;i++){
+      try{
+        const d=LS.get('ki21_st_'+id+'_'+i,null);
+        if(d&&d.fv&&Object.keys(d.fv).length)parts.push('Phase '+(i+1)+' Antworten\n'+JSON.stringify(d.fv));
+        const p=LS.get('ki21_stk_'+id+'_'+i,'');if(clean(p))parts.push('Phase '+(i+1)+' Gesprächserkenntnisse\n'+clean(p));
+        if(typeof getAdditionEntriesV623==='function'){
+          const entries=getAdditionEntriesV623(id,i)||[];
+          entries.forEach(x=>{if(x&&clean(x.text))parts.push('Phase '+(i+1)+' Gesprächserkenntnis\n'+clean(x.text));});
+        }
+      }catch(e){}
+    }
+    return parts.join('\n\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  window.ki21CollectCurrentOpportunitySourceV170=collectCurrentOpportunitySource;
+
+  function contains(t,re){return re.test(t);}
+  function sourceModel(){
+    const text=collectCurrentOpportunitySource(); const low=text.toLowerCase();
+    const m={text,low};
+    m.hasCompany=!!text;
+    m.sponsor=contains(text,/fachlicher sponsor|projektinitiator|unterstützt die lösung|befürwortet die lösung|vertriebscontrolling.*(?:positiv|stark|unterstützt)|controlling.*(?:positiv|stark|unterstützt)/i);
+    m.executive=contains(text,/geschäftsführer|geschäftsführung|wirtschaftlicher entscheider|ceo|cfo/i);
+    m.it=contains(text,/it-leiter|\bit\b|architektur|integration|berechtigung|erp/i);
+    m.conflict=contains(text,/erp-integrierte alternative|erp-nahe alternative|bevorzugt.*erp|keine zusätzliche plattform|gemeinsame empfehlung|zielkonflikt|fachbereich und it/i);
+    m.budget=contains(text,/60\.?000\s*€|budget[^.!?\n]{0,80}(vorhanden|darstellbar|bewilligt|freigabe)/i);
+    m.deadline=contains(text,/6\s*wochen|sechs\s*wochen|entscheidung[^.!?\n]{0,60}(6|sechs)\s*wochen/i);
+    m.workshop=contains(text,/gemeinsamer workshop|workshop[^.!?\n]{0,80}(geplant|termin|agenda)|entscheidungsworkshop/i);
+    m.itConditions=contains(text,/erp.*(?:führend|quelle)|keine\s+rückschreib|zentrale\s+berechtig|kein\s+dauerbetrieb|ausstiegsszenario|pilotumfang/i);
+    m.hours=contains(text,/180\s*(?:bis|–|-)\s*220\s*(?:arbeits)?stunden|1[,.]2\s*(?:bis|–|-)\s*1[,.]5\s*vollzeit/i);
+    m.damage=contains(text,/mehrere\s+hunderttausend\s*€|bestandsbindung|überstunden|umplanung/i);
+    m.reportingDelay=contains(text,/zwei\s+wochen\s+nach\s+monatsende|2\s+wochen\s+nach\s+monatsende/i);
+    m.success=contains(text,/erster\s+arbeitstag|forecast-genauigkeit|einheitlicher forecast|erfolgskriterien/i);
+    m.erpWeakness=contains(text,/pipeline|forecast-histor|vertriebsaktivität|neue reports.*wochen|flexible analysen/i);
+    m.quantified=m.hours||m.damage;
+    m.euroConfirmed=contains(text,/\b\d{2,3}(?:\.\d{3})+\s*€\s*(?:pro|\/|jährlich|monatlich|einmalig)/i);
+    let score=25;
+    if(m.sponsor)score+=8;if(m.executive)score+=8;if(m.budget)score+=8;if(m.workshop)score+=7;if(m.success)score+=6;if(m.itConditions)score+=8;if(m.quantified)score+=8;if(m.erpWeakness)score+=5;
+    if(m.conflict)score-=5;
+    m.score=Math.max(20,Math.min(78,score));
+    m.level=m.score<45?'NIEDRIG':m.score<68?'MITTEL':'GUT';
+    return m;
+  }
+  window.ki21OpportunityModelV170=sourceModel;
+
+  function buildReport(){
+    const m=sourceModel(); if(!m.text)return '';
+    const status=(m.itConditions&&m.budget&&m.quantified)
+      ?'Fachbereich und Geschäftsführung unterstützen den Pilot. Budget, wirtschaftlicher Handlungsdruck und technische Pilotbedingungen sind weitgehend geklärt.'
+      :(m.conflict?'Fachbereich und Controlling unterstützen die Lösung; die IT bevorzugt eine ERP-nahe Alternative. Die Geschäftsführung erwartet eine gemeinsame Empfehlung.':'Die Opportunity ist qualifiziert; die gemeinsame Pilotentscheidung wird vorbereitet.');
+    const blocker=m.itConditions
+      ?'Die bekannten IT-Bedingungen sind noch nicht in ein gemeinsam bestätigtes Pilotmodell mit verbindlichen Erfolgskriterien übersetzt.'
+      :(m.conflict?'Fachbereich und IT haben noch kein gemeinsames Entscheidungsbild zu Fachnutzen, Integration und Betrieb.':'Pilotumfang, Erfolgskriterien und Entscheidungsweg sind noch nicht verbindlich bestätigt.');
+    const recommendation=m.workshop
+      ?'Den geplanten Workshop als Entscheidungsworkshop vorbereiten und Pilotumfang, Architekturleitplanken, Betriebsmodell, Erfolgskriterien und Entscheidungsweg verbindlich abstimmen.'
+      :'Einen gemeinsamen Entscheidungsworkshop mit Geschäftsführung, Fachbereich und IT verbindlich vereinbaren.';
+    const rationale=m.itConditions
+      ?'Nicht der fachliche Nutzen blockiert den Deal, sondern die noch fehlende gemeinsame Bestätigung des Pilotmodells.'
+      :'Der Engpass liegt im Entscheidungsprozess – nicht im Produkt.';
+    const bcStatus=m.euroConfirmed?'Business Case belastbar quantifiziert':m.quantified?'Business Case teilweise quantifiziert':'Wirtschaftliche Grundlage vorhanden – Quantifizierung offen';
+    const lines=[];
+    lines.push('SALES SUMMARY','• Status: '+status,'• Engpass: '+blocker,'• Empfehlung: '+recommendation,'');
+    lines.push('WARUM DIESER SCHRITT?','• '+rationale,'');
+    lines.push('ENTSCHEIDUNGSREIFE','• '+m.score+' % · '+m.level+' für die Pilotentscheidung',
+      '• '+(m.sponsor?'✓':'⚠')+' Fachlicher Sponsor bestätigt',
+      '• '+(m.executive?'✓':'⚠')+' Wirtschaftlicher Entscheider identifiziert und eingebunden',
+      '• '+(m.budget?'✓':'⚠')+' Budget grundsätzlich vorhanden',
+      '• '+(m.success?'✓':'⚠')+' Erfolgskriterien beschrieben',
+      '• '+(m.workshop?'✓':'⚠')+' Gemeinsamer Workshop geplant',
+      '• '+(m.itConditions?'✓ IT-Bedingungen konkretisiert':'⚠ Technische und organisatorische Pilotbedingungen noch nicht bestätigt'),
+      '• ⚠ Gemeinsames Pilotmodell noch nicht verbindlich bestätigt','');
+    lines.push('DEAL-HYPOTHESE','• AKTUELLE DEAL-HYPOTHESE: Der zentrale Kaufblocker ist nicht fehlender fachlicher Nutzen, sondern die Übersetzung der bekannten fachlichen und technischen Anforderungen in eine gemeinsam tragfähige Pilotentscheidung.','• BESTÄTIGT, WENN: Fachbereich und IT weiterhin unterschiedliche Lösungsbilder vertreten und die Geschäftsführung ohne gemeinsame Empfehlung keine Freigabe erteilt.','• WIDERLEGT, WENN: Fachbereich, IT und Geschäftsführung ein gemeinsames Pilotmodell mit Leitplanken, Erfolgskriterien und Go-/No-Go-Logik bestätigen.','');
+    lines.push('EXECUTIVE DECISION CHAIN','• GESCHÄFTSZIEL → Einheitliche Vertriebskennzahlen, schnelleres Reporting, belastbarere Forecasts und weniger manuelle Aufbereitung.','• GRÖSSTER ENGPASS → '+blocker,'• DEAL-LOGIK → Eine weitere Produktdemo erhöht den fachlichen Nutzen nicht entscheidend. Fortschritt entsteht, wenn Fachbereich, IT und Geschäftsführung eine gemeinsam tragfähige Pilotentscheidung formulieren.','• HÖCHSTER HEBEL → Den geplanten Workshop von einem Abstimmungstermin zu einem verbindlichen Entscheidungsworkshop machen.','• VERKAUFSAKTION → Fachlichen Nutzen, ERP-Alternative, IT-Leitplanken, Pilotumfang, Erfolgsmessung und Entscheidungsweg in einer gemeinsamen Entscheidungsvorlage zusammenführen.','• ERWARTETE KUNDENENTSCHEIDUNG → Der Kunde entscheidet, ob ein begrenzter Pilot unter gemeinsam vereinbarten Architektur-, Integrations- und Betriebsleitplanken durchgeführt wird.','• NÄCHSTER MEILENSTEIN → Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.','');
+    lines.push('NÄCHSTER DEAL-SCHRITT','• JETZT TUN: Den geplanten Workshop als verbindlichen Entscheidungsworkshop mit Geschäftsführung, Vertriebscontrolling, Controlling und IT bestätigen.','• VORBEREITEN: Fachlichen Nutzen, ERP-Alternative, Integrationsanforderungen, Betriebsmodell, Pilotumfang und wirtschaftliche Ausgangswerte in einer gemeinsamen Entscheidungsvorlage gegenüberstellen.','• IM TERMIN ENTSCHEIDEN: Muss-Kriterien, Architekturleitplanken, Verantwortlichkeiten, Pilotziele und den Entscheidungsweg nach dem Pilot verbindlich festlegen.','• ERFOLG DES NÄCHSTEN SCHRITTS: Geschäftsführung, Fachbereich und IT bestätigen gemeinsam Pilotumfang, Leitplanken, Erfolgskriterien und den Entscheidungsweg nach dem Pilot.','');
+    lines.push('EXECUTIVE FORECAST','• AKTUELL: '+m.score+' % · '+m.level+' für die Pilotentscheidung','• DEUTLICHE AUFSTUFUNG, WENN: Fachbereich und IT bestätigen ein gemeinsames Pilotmodell. Die Geschäftsführung bestätigt den Freigabeweg. Pilotziele und Erfolgskriterien werden verbindlich vereinbart.','• KLARE ABSTUFUNG, WENN: Die IT die ERP-Alternative verbindlich empfiehlt oder die Geschäftsführung den Zielkonflikt vertagt.','');
+    lines.push('EXECUTIVE WATCHOUT','• Eine weitere funktionsorientierte Demo kann den Fachbereich stärker überzeugen, gleichzeitig aber den Widerstand der IT gegen eine zusätzliche Plattform erhöhen.','');
+    lines.push('FAKTENBASIS');
+    if(m.sponsor)lines.push('• Fachbereich beziehungsweise Controlling unterstützen die Lösung fachlich.');
+    if(m.it)lines.push('• Die IT erkennt den Nutzen und formuliert Anforderungen an Architektur, Integration und Betrieb.');
+    if(m.executive)lines.push('• Die Geschäftsführung ist als wirtschaftlicher Entscheider eingebunden.');
+    if(m.budget)lines.push('• Für den Pilot ist ein Budgetrahmen von bis zu 60.000 € grundsätzlich darstellbar.');
+    if(m.hours)lines.push('• Für Aufbereitung, Abstimmung und Korrekturen entstehen rund 180–220 Arbeitsstunden pro Monat.');
+    if(m.damage)lines.push('• Forecast-Fehler führten bereits zu zusätzlicher Bestandsbindung, Umplanungen und Überstunden; die Belastung wird auf mehrere hunderttausend Euro geschätzt.');
+    lines.push('');
+    lines.push('STÄRKSTE KLÄRUNGSFRAGE','• Unter welchen fachlichen, technischen und wirtschaftlichen Bedingungen unterstützen Fachbereich, IT und Geschäftsführung gemeinsam einen begrenzten Pilot?','');
+    lines.push('VERTRAUENSCHECK','• Faktenlage GUT – Ausgangssituation, Stakeholder, Alternative, Budgetlogik und geplantes Vorgehen sind beschrieben.','• Buying Center GUT – Fachlicher Sponsor, Controlling, IT und wirtschaftlicher Entscheider sind identifiziert.','• Business Case '+(m.quantified?'TEILWEISE – Operativer Aufwand und wirtschaftliche Folgen sind konkretisiert; belastbare Euro-Werte mit eindeutiger Periode fehlen noch.':'OFFEN – Nutzen ist beschrieben; Aufwand und wirtschaftliche Folgen sind noch zu quantifizieren.'),'• Konsens TEILWEISE – Die relevanten Rollen sind eingebunden, tragen aber noch kein gemeinsames Pilotmodell.','');
+    lines.push('WAS DER VERTRIEB NOCH KLÄREN MUSS','• Fachliche, technische und wirtschaftliche Muss-Kriterien gemeinsam priorisieren.','• Integrations-, Betriebs- und Datenverantwortung für den Pilot festlegen.','• Arbeitsaufwand und Forecast-Folgen in belastbare Euro-Werte mit klarer Periode übersetzen.','• Entscheidung nach dem Pilot bei Erreichen der Erfolgskriterien verbindlich definieren.','');
+    lines.push('BUSINESS CASE UND KUNDENNUTZEN','• Status: '+bcStatus+'.','• Wirtschaftlicher Ausgangspunkt sind verspätetes Reporting, hoher manueller Aufwand, widersprüchliche Kennzahlen und unzuverlässige Forecasts.','• Erwarteter Kundennutzen: schnellere Managemententscheidungen, weniger Excel-Aufwand, einheitliche Kennzahlen und höhere Forecast-Qualität.','• Noch zu quantifizieren: interne Vollkosten der 180–220 Stunden pro Monat sowie die tatsächlich verursachten Bestands-, Überstunden- und Umplanungskosten.','');
+    lines.push('WARUM JETZT?','• WENN WIR NICHT HANDELN → Der interne Zielkonflikt bleibt ungelöst und die Entscheidung wird eher vertagt oder zugunsten der ERP-Alternative getroffen.','• JETZT ERFORDERLICH → Den bereits geplanten Workshop mit einer verbindlichen Entscheidungsagenda und klaren Ergebnissen vorbereiten.');
+    return lines.join('\n');
+  }
+  window.ki21BuildOpportunityReportV170=buildReport;
+  window.buildOpportunityTestReportV723=buildReport;
+  window.ki21BuildSourceFirstReportV160=buildReport;
+
+  function migrateOldOutputs(){
+    const id=activeId();if(!id)return;
+    const marker='ki21_v170_migrated_'+id;if(LS.get(marker,false))return;
+    const contamination=/Discovery-Qualität|HubSpot|verlorene Opportunities|späte Disqualifikation|Presales|Deal Reviews/i;
+    for(let i=0;i<5;i++){
+      try{
+        const key='ki21_st_'+id+'_'+i;const d=LS.get(key,null);if(!d)continue;
+        const generated=clean(d.result)+'\n'+clean(d.result2)+'\n'+clean(d.summary)+'\n'+clean(d.detail);
+        if(contamination.test(generated)){d.result='';d.result2='';d.summary='';d.detail='';LS.set(key,d);}
+      }catch(e){}
+    }
+    ['ki21_deal_memory_','ki21_intel_','ki21_opportunity_intelligence_','ki21_health_','ki21_score_','ki21_phase_snap_'].forEach(prefix=>{try{localStorage.removeItem(prefix+id);}catch(e){}});
+    LS.set(marker,true);
+  }
+
+  function replaceVisibleLanguage(root){
+    const scope=root||document;
+    const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(n=>{
+      let t=n.nodeValue;if(!t)return;
+      t=t.replace(/KONKRETER VERKAUFSAUFTRAG/g,'NÄCHSTER DEAL-SCHRITT')
+         .replace(/Konkreter Verkaufsauftrag/g,'Nächster Deal-Schritt')
+         .replace(/\+\s*Ergänzung/g,'＋ Gesprächserkenntnis')
+         .replace(/Notizen/g,'Gesprächserkenntnisse')
+         .replace(/Gesprächsnotiz/g,'Gesprächserkenntnis');
+      if(t!==n.nodeValue)n.nodeValue=t;
+    });
+    scope.querySelectorAll&&scope.querySelectorAll('textarea[placeholder],input[placeholder]').forEach(el=>{
+      el.placeholder=String(el.placeholder||'').replace(/Notizen/gi,'Gesprächserkenntnisse').replace(/Ergänzung/gi,'Gesprächserkenntnis');
+    });
+  }
+
+  function learnedItems(m){
+    const rows=[];
+    if(m.budget)rows.push('Budgetrahmen für den Pilot ist grundsätzlich bestätigt.');
+    if(m.itConditions)rows.push('Die IT lehnt den Pilot nicht grundsätzlich ab, sondern nennt konkrete Bedingungen.');
+    if(m.damage)rows.push('Wirtschaftliche Folgen von Forecast-Fehlern sind erstmals konkret beschrieben.');
+    if(m.hours)rows.push('Reporting- und Abstimmungsaufwand ist mit 180–220 Stunden pro Monat teilweise quantifiziert.');
+    rows.push(m.quantified?'Business Case gewinnt an Qualität; belastbare Euro-Werte fehlen noch.':'Business Case muss als Nächstes quantifiziert werden.');
+    rows.push('Nächster Deal-Schritt bleibt der gemeinsame Entscheidungsworkshop.');
+    return rows.slice(0,5);
+  }
+  function injectLearnedCard(){
+    if(document.querySelector('.ki21-v170-learned'))return;
+    const summary=document.querySelector('.cockpit-v5-summary');if(!summary)return;
+    const m=sourceModel();if(!m.text)return;
+    const card=document.createElement('div');card.className='ki21-v170-learned';
+    card.innerHTML='<div class="ki21-v170-learned-head"><div class="ki21-v170-learned-title">Neu erkannt</div><div class="ki21-v170-learned-state">Opportunity entwickelt sich weiter</div></div>'+
+      learnedItems(m).map((x,i)=>'<div class="ki21-v170-learned-row '+(i===learnedItems(m).length-1?'open':'')+'">'+String(x).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>').join('');
+    summary.insertAdjacentElement('afterend',card);
+  }
+
+  function preserveWorkspace(){
+    try{
+      const id=activeId();if(!id)return;
+      const snap={view:state&&state.view,currentSitId:state&&state.currentSitId,scrollY:window.scrollY||0,ts:Date.now()};
+      LS.set('ki21_workspace_v170_'+id,snap);
+    }catch(e){}
+  }
+  function restoreWorkspace(){
+    try{
+      const id=activeId();if(!id)return;
+      const snap=LS.get('ki21_workspace_v170_'+id,null);if(!snap||Date.now()-(snap.ts||0)>86400000)return;
+      if(Number.isInteger(snap.currentSitId)&&snap.currentSitId>=0&&snap.currentSitId<5){
+        if(!document.querySelector('.phase-screen-title')||state.currentSitId!==snap.currentSitId){state.currentSitId=snap.currentSitId;renderStation(snap.currentSitId);}
+      }
+      setTimeout(()=>window.scrollTo(0,Number(snap.scrollY)||0),80);
+    }catch(e){}
+  }
+
+  migrateOldOutputs();
+  const observer=new MutationObserver(()=>{replaceVisibleLanguage(document);injectLearnedCard();});
+  observer.observe(document.documentElement,{subtree:true,childList:true});
+  replaceVisibleLanguage(document);
+  setTimeout(injectLearnedCard,500);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)preserveWorkspace();else setTimeout(restoreWorkspace,260);},true);
+  window.addEventListener('pagehide',preserveWorkspace,true);
+  window.addEventListener('pageshow',()=>setTimeout(restoreWorkspace,260),true);
+
+  document.title='KI21 '+VERSION;
+  try{document.documentElement.setAttribute('data-ki21-version','1.7.0');}catch(e){}
 })();
 </script>
 </body>
