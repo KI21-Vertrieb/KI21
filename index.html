@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -14958,7 +14958,158 @@ function generateKundePDF(aid, cust){
     </div>`;
   }
 
-  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div></body></html>`;
+  html+=`<div class="footer">Vertriebsdokumentation · ${new Date().toLocaleDateString('de-DE')}</div>
+<!-- KI21 Pilot Core 2.7.0: General Intelligence Engine -->
+<script id="ki21-v270-general-intelligence-engine">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
+window.KI21_VERSION=VERSION;
+
+function norm(v){return String(v||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+function source(){
+  var id=activeId(), a=[];
+  try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  try{if(typeof window.ki21CollectCurrentOpportunitySourceV170==='function')a.push(String(window.ki21CollectCurrentOpportunitySourceV170()||''));}catch(e){}
+  return norm(a.join('\n'));
+}
+function has(t,re){return re.test(t);}
+function firstMatch(t,res){for(var i=0;i<res.length;i++){var m=t.match(res[i]);if(m&&m[1])return norm(m[1]);}return '';}
+function moneyHours(t){var m=t.match(/(\d{1,3})\s*(?:bis|–|-)\s*(\d{1,3})\s+Stunden[^.!?\n]{0,100}(?:Monat|monatlich)/i);return m?m[1]+'–'+m[2]+' Stunden monatlicher Aufwand':'';}
+
+function buildState(){
+  var t=source(), l=t.toLowerCase();
+  var s={raw:t, phase:'Qualifizierung', pilot:'offen', budget:'offen', success:'offen', technical:'offen', businessCase:'offen', sponsor:'offen', economicDecisionMaker:'offen', nextMeeting:'offen', company:'', contact:'', decisionMaker:'', facts:[], open:[]};
+  s.company=firstMatch(t,[/Firmenname\s*:?\s*([^\n]+)/i,/Unternehmen\s*:?\s*([^\n]+)/i]);
+  s.contact=firstMatch(t,[/(?:fachlicher Hauptkontakt|Hauptkontakt)[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}(?:fachlicher Hauptkontakt|möglicher Sponsor)/i]);
+  s.decisionMaker=firstMatch(t,[/wirtschaftliche(?:r|\s+)?Entscheider(?:in)?[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}wirtschaftliche(?:r|\s+)?Entscheider(?:in)?/i]);
+  if(has(t,/(pilot|sprint)[^.!?\n]{0,120}(freigegeben|genehmigt|beauftragt|beschlossen)/i) && !has(t,/(pilot|sprint)[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(freigegeben|genehmigt|beauftragt|beschlossen|erteilt)/i)) s.pilot='bestätigt';
+  if(has(t,/(pilotfreigabe|pilotentscheidung|pilot)[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i)) s.pilot='offen';
+  if(has(t,/budget[^.!?\n]{0,100}(bestätigt|freigegeben|vorhanden|darstellbar)/i) && !has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='bestätigt';
+  if(has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='offen';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(vereinbart|bestätigt|verbindlich)/i) && !has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='bestätigt';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='offen';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(abschließend geklärt|freigegeben|bestätigt)/i)) s.technical='bestätigt';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(noch\s+nicht|nicht|offen|zu klären|prüfen)/i)) s.technical='offen';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(bestätigt|quantifiziert|belastbar)/i) && !has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen)/i)) s.businessCase='bestätigt';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|nicht belastbar)/i)) s.businessCase='offen';
+  if(has(t,/(möglicher sponsor|sponsorpotenzial|fachlicher hauptkontakt)/i)) s.sponsor='möglich';
+  if(has(t,/sponsor[^.!?\n]{0,80}(bestätigt|aktiv|committed)/i)) s.sponsor='bestätigt';
+  if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(persönlich\s+)?(eingebunden|beteiligt|geklärt)/i)) s.economicDecisionMaker='identifiziert, nicht eingebunden';
+  else if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?/i)) s.economicDecisionMaker='identifiziert';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(verbindlich vereinbart|bestätigt|terminiert|steht fest)/i)) s.nextMeeting='bestätigt';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|in aussicht)/i)) s.nextMeeting='offen';
+  var h=moneyHours(t); if(h)s.facts.push(h);
+  if(has(t,/Microsoft Dynamics 365/i))s.facts.push('Microsoft Dynamics 365 ist als zentrales CRM genannt.');
+  if(has(t,/(uneinheitlich|unzuverlässig|zu positiv)[^.!?\n]{0,100}(qualifizierung|forecast|opportunit)/i))s.facts.push('Qualifizierung und Forecast werden als uneinheitlich beziehungsweise unzuverlässig beschrieben.');
+  if(s.economicDecisionMaker!=='identifiziert')s.open.push('Wirtschaftlichen Entscheider bestätigen.');
+  else if(/nicht eingebunden/.test(s.economicDecisionMaker))s.open.push('Wirtschaftlichen Entscheider persönlich einbinden und Freigabekriterien klären.');
+  if(s.budget==='offen')s.open.push('Budget und Freigabeprozess bestätigen.');
+  if(s.success==='offen')s.open.push('Erfolgskriterien und Messlogik verbindlich vereinbaren.');
+  if(s.technical==='offen')s.open.push('Technischen und datenschutzrechtlichen Prüfungsumfang klären.');
+  if(s.nextMeeting==='offen')s.open.push('Nächsten gemeinsamen Entscheidungstermin verbindlich vereinbaren.');
+  return s;
+}
+
+function priority(st){
+  if(st.pilot==='bestätigt' && (st.success==='offen'||st.technical==='offen')) return 'Pilotstart und Erfolgsmessung absichern';
+  if(/nicht eingebunden/.test(st.economicDecisionMaker)) return 'Jetzt wirtschaftliche Pilotentscheidung vorbereiten';
+  if(st.businessCase==='offen' && st.budget!=='offen') return 'Jetzt Business Case quantifizieren';
+  if(st.technical==='offen' && st.success==='bestätigt') return 'Jetzt technische Freigabe absichern';
+  return 'Jetzt nächste Kundenentscheidung vorbereiten';
+}
+function bottleneck(st){
+  if(/nicht eingebunden/.test(st.economicDecisionMaker))return 'Der wirtschaftliche Entscheider ist identifiziert, aber noch nicht persönlich in die Entscheidung eingebunden.';
+  if(st.budget==='offen')return 'Budget und Freigabeprozess sind noch nicht bestätigt.';
+  if(st.success==='offen')return 'Erfolgskriterien und Messlogik sind noch nicht verbindlich vereinbart.';
+  if(st.technical==='offen')return 'Technischer und datenschutzrechtlicher Prüfungsumfang sind noch offen.';
+  if(st.nextMeeting==='offen')return 'Der nächste gemeinsame Kundentermin ist noch nicht verbindlich vereinbart.';
+  return 'Die nächste Kundenentscheidung ist noch nicht verbindlich dokumentiert.';
+}
+function nextDecision(st){
+  if(st.pilot==='bestätigt')return 'Start, Verantwortlichkeiten und Erfolgsmessung verbindlich bestätigen.';
+  return 'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren und dort Freigabekriterien, Rollen, Budget, Pilotziele und Prüfungsumfang klären.';
+}
+function confidence(st){
+  var n=20;
+  if(st.sponsor==='bestätigt')n+=20; else if(st.sponsor==='möglich')n+=10;
+  if(st.economicDecisionMaker==='identifiziert')n+=15; else if(/nicht eingebunden/.test(st.economicDecisionMaker))n+=8;
+  if(st.budget==='bestätigt')n+=15;
+  if(st.success==='bestätigt')n+=12;
+  if(st.technical==='bestätigt')n+=8;
+  if(st.businessCase==='bestätigt')n+=10;
+  if(st.nextMeeting==='bestätigt')n+=10;
+  return Math.max(10,Math.min(95,n));
+}
+function unique(a){var o=[],s={};a.forEach(function(x){x=norm(x);var k=x.toLowerCase();if(x&&!s[k]){s[k]=1;o.push(x);}});return o;}
+function phase1Output(st){
+  var facts=unique(st.facts).slice(0,3);
+  while(facts.length<3){
+    if(facts.length===0)facts.push('Der fachliche Handlungsbedarf ist beschrieben.');
+    else if(facts.length===1)facts.push(st.sponsor==='bestätigt'?'Ein bestätigter Sponsor ist dokumentiert.':'Ein fachlicher Hauptkontakt mit Sponsorpotenzial ist erkennbar.');
+    else facts.push('Eine Pilotentscheidung liegt noch nicht verbindlich vor.');
+  }
+  var opens=unique(st.open).slice(0,4);
+  var c=confidence(st);
+  return [
+    'EXECUTIVE PRIORITÄT',priority(st),
+    '', 'WARUM?', 'Fachlicher Handlungsbedarf ist erkennbar. '+bottleneck(st),
+    '', 'BESTÄTIGT',facts.map(function(x){return '• '+x;}).join('\n'),
+    '', 'ZU VALIDIEREN',opens.map(function(x,i){return '• '+(i===0?'🔴':i<3?'🟡':'⚪')+' '+x;}).join('\n'),
+    '', 'HAUPTENGPASS',bottleneck(st),
+    '', 'NÄCHSTE KUNDENENTSCHEIDUNG',nextDecision(st),
+    '', 'DER SCHRITT IST ERFOLGREICH, WENN','• Entscheidungskriterien, Rollen, Verantwortliche und der nächste verbindliche Kundenschritt bestätigt sind.',
+    '', 'DECISION CONFIDENCE',c+' %',
+    '• Sponsor: '+(st.sponsor==='bestätigt'?'bestätigt':st.sponsor==='möglich'?'möglich, noch nicht bestätigt':'offen'),
+    '• Wirtschaftlicher Entscheider: '+st.economicDecisionMaker,
+    '• Budget: '+st.budget,
+    '• Business Case: '+st.businessCase,
+    '• Technik/Datenschutz: '+st.technical
+  ].join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function phase1Prompt(p){return /QUALIFIZIERUNG|OPPORTUNITY-CHECK|DIE EINE SACHE DIE FEHLT|EMPFEHLUNG:\s*sofort/i.test(String(p||''));}
+function phase1Result(t){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b|EMPFEHLUNG:\s*sofort|EXECUTIVE PRIORITÄT|DIE EINE SACHE DIE FEHLT/i.test(String(t||''));}
+function finalConsistency(text){
+  var r=String(text||'');
+  r=r.replace(/\b(?:starker|aktiver|bestätigter|operativer)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+     .replace(/\bKritiker\b/gi,'technischer Prüfer')
+     .replace(/(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'gemeinsamen Discovery- und Entscheidungstermin')
+     .replace(/\bCEO\/?CFO\b|\bCFO\b/gi,'weitere interne Freigabeinstanz');
+  return r.trim();
+}
+window.ki21BuildOpportunityStateV270=buildState;
+window.ki21GeneralIntelligenceOutputV270=function(){return phase1Output(buildState());};
+window.ki21FinalConsistencyV270=finalConsistency;
+
+function install(){
+  try{
+    var f=window.callClaude;
+    if(typeof f==='function'&&!f.__ki21v270){
+      var w=async function(){
+        var a=[].slice.call(arguments), isP=phase1Prompt(a[0]);
+        if(isP){
+          var out=phase1Output(buildState());
+          if(typeof a[1]==='function')a[1](out);
+          return out;
+        }
+        if(typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(finalConsistency(x));};}
+        var v=await f.apply(this,a);return typeof v==='string'?finalConsistency(v):v;
+      };
+      w.__ki21v270=1;window.callClaude=w;
+    }
+  }catch(e){}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);setTimeout(install,1600);
+})();
+</script>
+
+</body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
 }
@@ -15038,8 +15189,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD -->
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15063,7 +15214,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15084,7 +15235,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15292,7 +15443,158 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+<!-- KI21 Pilot Core 2.7.0: General Intelligence Engine -->
+<script id="ki21-v270-general-intelligence-engine">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
+window.KI21_VERSION=VERSION;
+
+function norm(v){return String(v||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+function source(){
+  var id=activeId(), a=[];
+  try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  try{if(typeof window.ki21CollectCurrentOpportunitySourceV170==='function')a.push(String(window.ki21CollectCurrentOpportunitySourceV170()||''));}catch(e){}
+  return norm(a.join('\n'));
+}
+function has(t,re){return re.test(t);}
+function firstMatch(t,res){for(var i=0;i<res.length;i++){var m=t.match(res[i]);if(m&&m[1])return norm(m[1]);}return '';}
+function moneyHours(t){var m=t.match(/(\d{1,3})\s*(?:bis|–|-)\s*(\d{1,3})\s+Stunden[^.!?\n]{0,100}(?:Monat|monatlich)/i);return m?m[1]+'–'+m[2]+' Stunden monatlicher Aufwand':'';}
+
+function buildState(){
+  var t=source(), l=t.toLowerCase();
+  var s={raw:t, phase:'Qualifizierung', pilot:'offen', budget:'offen', success:'offen', technical:'offen', businessCase:'offen', sponsor:'offen', economicDecisionMaker:'offen', nextMeeting:'offen', company:'', contact:'', decisionMaker:'', facts:[], open:[]};
+  s.company=firstMatch(t,[/Firmenname\s*:?\s*([^\n]+)/i,/Unternehmen\s*:?\s*([^\n]+)/i]);
+  s.contact=firstMatch(t,[/(?:fachlicher Hauptkontakt|Hauptkontakt)[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}(?:fachlicher Hauptkontakt|möglicher Sponsor)/i]);
+  s.decisionMaker=firstMatch(t,[/wirtschaftliche(?:r|\s+)?Entscheider(?:in)?[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}wirtschaftliche(?:r|\s+)?Entscheider(?:in)?/i]);
+  if(has(t,/(pilot|sprint)[^.!?\n]{0,120}(freigegeben|genehmigt|beauftragt|beschlossen)/i) && !has(t,/(pilot|sprint)[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(freigegeben|genehmigt|beauftragt|beschlossen|erteilt)/i)) s.pilot='bestätigt';
+  if(has(t,/(pilotfreigabe|pilotentscheidung|pilot)[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i)) s.pilot='offen';
+  if(has(t,/budget[^.!?\n]{0,100}(bestätigt|freigegeben|vorhanden|darstellbar)/i) && !has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='bestätigt';
+  if(has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='offen';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(vereinbart|bestätigt|verbindlich)/i) && !has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='bestätigt';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='offen';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(abschließend geklärt|freigegeben|bestätigt)/i)) s.technical='bestätigt';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(noch\s+nicht|nicht|offen|zu klären|prüfen)/i)) s.technical='offen';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(bestätigt|quantifiziert|belastbar)/i) && !has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen)/i)) s.businessCase='bestätigt';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|nicht belastbar)/i)) s.businessCase='offen';
+  if(has(t,/(möglicher sponsor|sponsorpotenzial|fachlicher hauptkontakt)/i)) s.sponsor='möglich';
+  if(has(t,/sponsor[^.!?\n]{0,80}(bestätigt|aktiv|committed)/i)) s.sponsor='bestätigt';
+  if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(persönlich\s+)?(eingebunden|beteiligt|geklärt)/i)) s.economicDecisionMaker='identifiziert, nicht eingebunden';
+  else if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?/i)) s.economicDecisionMaker='identifiziert';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(verbindlich vereinbart|bestätigt|terminiert|steht fest)/i)) s.nextMeeting='bestätigt';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|in aussicht)/i)) s.nextMeeting='offen';
+  var h=moneyHours(t); if(h)s.facts.push(h);
+  if(has(t,/Microsoft Dynamics 365/i))s.facts.push('Microsoft Dynamics 365 ist als zentrales CRM genannt.');
+  if(has(t,/(uneinheitlich|unzuverlässig|zu positiv)[^.!?\n]{0,100}(qualifizierung|forecast|opportunit)/i))s.facts.push('Qualifizierung und Forecast werden als uneinheitlich beziehungsweise unzuverlässig beschrieben.');
+  if(s.economicDecisionMaker!=='identifiziert')s.open.push('Wirtschaftlichen Entscheider bestätigen.');
+  else if(/nicht eingebunden/.test(s.economicDecisionMaker))s.open.push('Wirtschaftlichen Entscheider persönlich einbinden und Freigabekriterien klären.');
+  if(s.budget==='offen')s.open.push('Budget und Freigabeprozess bestätigen.');
+  if(s.success==='offen')s.open.push('Erfolgskriterien und Messlogik verbindlich vereinbaren.');
+  if(s.technical==='offen')s.open.push('Technischen und datenschutzrechtlichen Prüfungsumfang klären.');
+  if(s.nextMeeting==='offen')s.open.push('Nächsten gemeinsamen Entscheidungstermin verbindlich vereinbaren.');
+  return s;
+}
+
+function priority(st){
+  if(st.pilot==='bestätigt' && (st.success==='offen'||st.technical==='offen')) return 'Pilotstart und Erfolgsmessung absichern';
+  if(/nicht eingebunden/.test(st.economicDecisionMaker)) return 'Jetzt wirtschaftliche Pilotentscheidung vorbereiten';
+  if(st.businessCase==='offen' && st.budget!=='offen') return 'Jetzt Business Case quantifizieren';
+  if(st.technical==='offen' && st.success==='bestätigt') return 'Jetzt technische Freigabe absichern';
+  return 'Jetzt nächste Kundenentscheidung vorbereiten';
+}
+function bottleneck(st){
+  if(/nicht eingebunden/.test(st.economicDecisionMaker))return 'Der wirtschaftliche Entscheider ist identifiziert, aber noch nicht persönlich in die Entscheidung eingebunden.';
+  if(st.budget==='offen')return 'Budget und Freigabeprozess sind noch nicht bestätigt.';
+  if(st.success==='offen')return 'Erfolgskriterien und Messlogik sind noch nicht verbindlich vereinbart.';
+  if(st.technical==='offen')return 'Technischer und datenschutzrechtlicher Prüfungsumfang sind noch offen.';
+  if(st.nextMeeting==='offen')return 'Der nächste gemeinsame Kundentermin ist noch nicht verbindlich vereinbart.';
+  return 'Die nächste Kundenentscheidung ist noch nicht verbindlich dokumentiert.';
+}
+function nextDecision(st){
+  if(st.pilot==='bestätigt')return 'Start, Verantwortlichkeiten und Erfolgsmessung verbindlich bestätigen.';
+  return 'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren und dort Freigabekriterien, Rollen, Budget, Pilotziele und Prüfungsumfang klären.';
+}
+function confidence(st){
+  var n=20;
+  if(st.sponsor==='bestätigt')n+=20; else if(st.sponsor==='möglich')n+=10;
+  if(st.economicDecisionMaker==='identifiziert')n+=15; else if(/nicht eingebunden/.test(st.economicDecisionMaker))n+=8;
+  if(st.budget==='bestätigt')n+=15;
+  if(st.success==='bestätigt')n+=12;
+  if(st.technical==='bestätigt')n+=8;
+  if(st.businessCase==='bestätigt')n+=10;
+  if(st.nextMeeting==='bestätigt')n+=10;
+  return Math.max(10,Math.min(95,n));
+}
+function unique(a){var o=[],s={};a.forEach(function(x){x=norm(x);var k=x.toLowerCase();if(x&&!s[k]){s[k]=1;o.push(x);}});return o;}
+function phase1Output(st){
+  var facts=unique(st.facts).slice(0,3);
+  while(facts.length<3){
+    if(facts.length===0)facts.push('Der fachliche Handlungsbedarf ist beschrieben.');
+    else if(facts.length===1)facts.push(st.sponsor==='bestätigt'?'Ein bestätigter Sponsor ist dokumentiert.':'Ein fachlicher Hauptkontakt mit Sponsorpotenzial ist erkennbar.');
+    else facts.push('Eine Pilotentscheidung liegt noch nicht verbindlich vor.');
+  }
+  var opens=unique(st.open).slice(0,4);
+  var c=confidence(st);
+  return [
+    'EXECUTIVE PRIORITÄT',priority(st),
+    '', 'WARUM?', 'Fachlicher Handlungsbedarf ist erkennbar. '+bottleneck(st),
+    '', 'BESTÄTIGT',facts.map(function(x){return '• '+x;}).join('\n'),
+    '', 'ZU VALIDIEREN',opens.map(function(x,i){return '• '+(i===0?'🔴':i<3?'🟡':'⚪')+' '+x;}).join('\n'),
+    '', 'HAUPTENGPASS',bottleneck(st),
+    '', 'NÄCHSTE KUNDENENTSCHEIDUNG',nextDecision(st),
+    '', 'DER SCHRITT IST ERFOLGREICH, WENN','• Entscheidungskriterien, Rollen, Verantwortliche und der nächste verbindliche Kundenschritt bestätigt sind.',
+    '', 'DECISION CONFIDENCE',c+' %',
+    '• Sponsor: '+(st.sponsor==='bestätigt'?'bestätigt':st.sponsor==='möglich'?'möglich, noch nicht bestätigt':'offen'),
+    '• Wirtschaftlicher Entscheider: '+st.economicDecisionMaker,
+    '• Budget: '+st.budget,
+    '• Business Case: '+st.businessCase,
+    '• Technik/Datenschutz: '+st.technical
+  ].join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function phase1Prompt(p){return /QUALIFIZIERUNG|OPPORTUNITY-CHECK|DIE EINE SACHE DIE FEHLT|EMPFEHLUNG:\s*sofort/i.test(String(p||''));}
+function phase1Result(t){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b|EMPFEHLUNG:\s*sofort|EXECUTIVE PRIORITÄT|DIE EINE SACHE DIE FEHLT/i.test(String(t||''));}
+function finalConsistency(text){
+  var r=String(text||'');
+  r=r.replace(/\b(?:starker|aktiver|bestätigter|operativer)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+     .replace(/\bKritiker\b/gi,'technischer Prüfer')
+     .replace(/(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'gemeinsamen Discovery- und Entscheidungstermin')
+     .replace(/\bCEO\/?CFO\b|\bCFO\b/gi,'weitere interne Freigabeinstanz');
+  return r.trim();
+}
+window.ki21BuildOpportunityStateV270=buildState;
+window.ki21GeneralIntelligenceOutputV270=function(){return phase1Output(buildState());};
+window.ki21FinalConsistencyV270=finalConsistency;
+
+function install(){
+  try{
+    var f=window.callClaude;
+    if(typeof f==='function'&&!f.__ki21v270){
+      var w=async function(){
+        var a=[].slice.call(arguments), isP=phase1Prompt(a[0]);
+        if(isP){
+          var out=phase1Output(buildState());
+          if(typeof a[1]==='function')a[1](out);
+          return out;
+        }
+        if(typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(finalConsistency(x));};}
+        var v=await f.apply(this,a);return typeof v==='string'?finalConsistency(v):v;
+      };
+      w.__ki21v270=1;window.callClaude=w;
+    }
+  }catch(e){}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);setTimeout(install,1600);
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -15941,7 +16243,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+const KI21_VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 
 
 function runKi21VersionMigration(){
@@ -19647,7 +19949,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19687,7 +19989,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19711,7 +20013,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19729,7 +20031,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -19931,7 +20233,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 
   function allStorageKeys(){
     const keys=[];
@@ -20142,7 +20444,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20353,7 +20655,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20555,7 +20857,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20671,7 +20973,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -20768,7 +21070,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -20852,7 +21154,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -20876,7 +21178,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -20967,7 +21269,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21157,7 +21459,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -21414,7 +21716,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+  const VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -21584,7 +21886,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD -->
+<!-- KI21 Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -21668,7 +21970,7 @@ window.addEventListener('pageshow',install,true);
 <script id="ki21-v250-opportunity-isolation-state-gate">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 window.KI21_VERSION=VERSION;
 
 function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21798,7 +22100,7 @@ window.addEventListener('pageshow',function(){install();forceCockpit();},true);
 <script id="ki21-v251-deal-state-consistency-fix">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 var FORECAST=30;
 window.KI21_VERSION=VERSION;
 function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21858,7 +22160,7 @@ window.addEventListener('pageshow',function(){install();setTimeout(syncUI,120);}
 <script id="ki21-v260-executive-decision-quality">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 window.KI21_VERSION=VERSION;
 
 function activeSourceV260(){
@@ -21981,7 +22283,7 @@ window.addEventListener('pageshow',installV260,true);
 <script id="ki21-v262-start-safe-regression-guard">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 window.KI21_VERSION=VERSION;
 function activeSource(){
   var id='';
@@ -22058,11 +22360,11 @@ setTimeout(install,1200);
 </script>
 
 
-<!-- KI21 Pilot Core 2.6.3: Evidence & Role Final Guard -->
+<!-- KI21 Pilot Core 2.7.0: Evidence & Role Final Guard -->
 <script id="ki21-v263-evidence-role-final-guard">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.3 EVIDENCE ROLE FINAL GUARD';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
 window.KI21_VERSION=VERSION;
 function srcText(){
   var id='';try{id=(window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){}
@@ -22115,6 +22417,157 @@ function wrap(name){
 function install(){wrap('callClaude');try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(e){e.textContent=VERSION;});}catch(e){}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 window.addEventListener('pageshow',install,true);setTimeout(install,1400);
+})();
+</script>
+
+
+<!-- KI21 Pilot Core 2.7.0: General Intelligence Engine -->
+<script id="ki21-v270-general-intelligence-engine">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.7.0 GENERAL INTELLIGENCE ENGINE';
+window.KI21_VERSION=VERSION;
+
+function norm(v){return String(v||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+function source(){
+  var id=activeId(), a=[];
+  try{if(typeof window.getOpportunityOnlySourceV6522==='function')a.push(String(window.getOpportunityOnlySourceV6522(id)||''));}catch(e){}
+  try{a.push(String(LS.get('ki21_import_raw_'+id,'')||''));}catch(e){}
+  try{if(typeof window.ki21CollectCurrentOpportunitySourceV170==='function')a.push(String(window.ki21CollectCurrentOpportunitySourceV170()||''));}catch(e){}
+  return norm(a.join('\n'));
+}
+function has(t,re){return re.test(t);}
+function firstMatch(t,res){for(var i=0;i<res.length;i++){var m=t.match(res[i]);if(m&&m[1])return norm(m[1]);}return '';}
+function moneyHours(t){var m=t.match(/(\d{1,3})\s*(?:bis|–|-)\s*(\d{1,3})\s+Stunden[^.!?\n]{0,100}(?:Monat|monatlich)/i);return m?m[1]+'–'+m[2]+' Stunden monatlicher Aufwand':'';}
+
+function buildState(){
+  var t=source(), l=t.toLowerCase();
+  var s={raw:t, phase:'Qualifizierung', pilot:'offen', budget:'offen', success:'offen', technical:'offen', businessCase:'offen', sponsor:'offen', economicDecisionMaker:'offen', nextMeeting:'offen', company:'', contact:'', decisionMaker:'', facts:[], open:[]};
+  s.company=firstMatch(t,[/Firmenname\s*:?\s*([^\n]+)/i,/Unternehmen\s*:?\s*([^\n]+)/i]);
+  s.contact=firstMatch(t,[/(?:fachlicher Hauptkontakt|Hauptkontakt)[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}(?:fachlicher Hauptkontakt|möglicher Sponsor)/i]);
+  s.decisionMaker=firstMatch(t,[/wirtschaftliche(?:r|\s+)?Entscheider(?:in)?[^\n:]*:?\s*([^\n]+)/i,/([A-ZÄÖÜ][\wÄÖÜäöüß.-]+\s+[A-ZÄÖÜ][\wÄÖÜäöüß.-]+)[^.!?\n]{0,100}wirtschaftliche(?:r|\s+)?Entscheider(?:in)?/i]);
+  if(has(t,/(pilot|sprint)[^.!?\n]{0,120}(freigegeben|genehmigt|beauftragt|beschlossen)/i) && !has(t,/(pilot|sprint)[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(freigegeben|genehmigt|beauftragt|beschlossen|erteilt)/i)) s.pilot='bestätigt';
+  if(has(t,/(pilotfreigabe|pilotentscheidung|pilot)[^.!?\n]{0,140}(noch\s+nicht|nicht)\s*(erteilt|freigegeben|bestätigt|genehmigt|beschlossen|vorhanden|vorliegt?)/i)) s.pilot='offen';
+  if(has(t,/budget[^.!?\n]{0,100}(bestätigt|freigegeben|vorhanden|darstellbar)/i) && !has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='bestätigt';
+  if(has(t,/budget[^.!?\n]{0,100}(noch\s+nicht|nicht|offen|ungeklärt)/i)) s.budget='offen';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(vereinbart|bestätigt|verbindlich)/i) && !has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='bestätigt';
+  if(has(t,/erfolgskriterien?[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|diskussionsgrundlage)/i)) s.success='offen';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(abschließend geklärt|freigegeben|bestätigt)/i)) s.technical='bestätigt';
+  if(has(t,/(technik|technisch|datenschutz|integration)[^.!?\n]{0,140}(noch\s+nicht|nicht|offen|zu klären|prüfen)/i)) s.technical='offen';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(bestätigt|quantifiziert|belastbar)/i) && !has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen)/i)) s.businessCase='bestätigt';
+  if(has(t,/(business case|wirtschaftliche[rn]? nutzen)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|nicht belastbar)/i)) s.businessCase='offen';
+  if(has(t,/(möglicher sponsor|sponsorpotenzial|fachlicher hauptkontakt)/i)) s.sponsor='möglich';
+  if(has(t,/sponsor[^.!?\n]{0,80}(bestätigt|aktiv|committed)/i)) s.sponsor='bestätigt';
+  if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?[^.!?\n]{0,120}(noch\s+nicht|nicht)\s+(persönlich\s+)?(eingebunden|beteiligt|geklärt)/i)) s.economicDecisionMaker='identifiziert, nicht eingebunden';
+  else if(has(t,/wirtschaftliche(?:r|\s+)?entscheider(?:in)?/i)) s.economicDecisionMaker='identifiziert';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(verbindlich vereinbart|bestätigt|terminiert|steht fest)/i)) s.nextMeeting='bestätigt';
+  if(has(t,/(folgetermin|entscheidungstermin|kundentermin|workshop)[^.!?\n]{0,120}(noch\s+nicht|nicht|offen|in aussicht)/i)) s.nextMeeting='offen';
+  var h=moneyHours(t); if(h)s.facts.push(h);
+  if(has(t,/Microsoft Dynamics 365/i))s.facts.push('Microsoft Dynamics 365 ist als zentrales CRM genannt.');
+  if(has(t,/(uneinheitlich|unzuverlässig|zu positiv)[^.!?\n]{0,100}(qualifizierung|forecast|opportunit)/i))s.facts.push('Qualifizierung und Forecast werden als uneinheitlich beziehungsweise unzuverlässig beschrieben.');
+  if(s.economicDecisionMaker!=='identifiziert')s.open.push('Wirtschaftlichen Entscheider bestätigen.');
+  else if(/nicht eingebunden/.test(s.economicDecisionMaker))s.open.push('Wirtschaftlichen Entscheider persönlich einbinden und Freigabekriterien klären.');
+  if(s.budget==='offen')s.open.push('Budget und Freigabeprozess bestätigen.');
+  if(s.success==='offen')s.open.push('Erfolgskriterien und Messlogik verbindlich vereinbaren.');
+  if(s.technical==='offen')s.open.push('Technischen und datenschutzrechtlichen Prüfungsumfang klären.');
+  if(s.nextMeeting==='offen')s.open.push('Nächsten gemeinsamen Entscheidungstermin verbindlich vereinbaren.');
+  return s;
+}
+
+function priority(st){
+  if(st.pilot==='bestätigt' && (st.success==='offen'||st.technical==='offen')) return 'Pilotstart und Erfolgsmessung absichern';
+  if(/nicht eingebunden/.test(st.economicDecisionMaker)) return 'Jetzt wirtschaftliche Pilotentscheidung vorbereiten';
+  if(st.businessCase==='offen' && st.budget!=='offen') return 'Jetzt Business Case quantifizieren';
+  if(st.technical==='offen' && st.success==='bestätigt') return 'Jetzt technische Freigabe absichern';
+  return 'Jetzt nächste Kundenentscheidung vorbereiten';
+}
+function bottleneck(st){
+  if(/nicht eingebunden/.test(st.economicDecisionMaker))return 'Der wirtschaftliche Entscheider ist identifiziert, aber noch nicht persönlich in die Entscheidung eingebunden.';
+  if(st.budget==='offen')return 'Budget und Freigabeprozess sind noch nicht bestätigt.';
+  if(st.success==='offen')return 'Erfolgskriterien und Messlogik sind noch nicht verbindlich vereinbart.';
+  if(st.technical==='offen')return 'Technischer und datenschutzrechtlicher Prüfungsumfang sind noch offen.';
+  if(st.nextMeeting==='offen')return 'Der nächste gemeinsame Kundentermin ist noch nicht verbindlich vereinbart.';
+  return 'Die nächste Kundenentscheidung ist noch nicht verbindlich dokumentiert.';
+}
+function nextDecision(st){
+  if(st.pilot==='bestätigt')return 'Start, Verantwortlichkeiten und Erfolgsmessung verbindlich bestätigen.';
+  return 'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren und dort Freigabekriterien, Rollen, Budget, Pilotziele und Prüfungsumfang klären.';
+}
+function confidence(st){
+  var n=20;
+  if(st.sponsor==='bestätigt')n+=20; else if(st.sponsor==='möglich')n+=10;
+  if(st.economicDecisionMaker==='identifiziert')n+=15; else if(/nicht eingebunden/.test(st.economicDecisionMaker))n+=8;
+  if(st.budget==='bestätigt')n+=15;
+  if(st.success==='bestätigt')n+=12;
+  if(st.technical==='bestätigt')n+=8;
+  if(st.businessCase==='bestätigt')n+=10;
+  if(st.nextMeeting==='bestätigt')n+=10;
+  return Math.max(10,Math.min(95,n));
+}
+function unique(a){var o=[],s={};a.forEach(function(x){x=norm(x);var k=x.toLowerCase();if(x&&!s[k]){s[k]=1;o.push(x);}});return o;}
+function phase1Output(st){
+  var facts=unique(st.facts).slice(0,3);
+  while(facts.length<3){
+    if(facts.length===0)facts.push('Der fachliche Handlungsbedarf ist beschrieben.');
+    else if(facts.length===1)facts.push(st.sponsor==='bestätigt'?'Ein bestätigter Sponsor ist dokumentiert.':'Ein fachlicher Hauptkontakt mit Sponsorpotenzial ist erkennbar.');
+    else facts.push('Eine Pilotentscheidung liegt noch nicht verbindlich vor.');
+  }
+  var opens=unique(st.open).slice(0,4);
+  var c=confidence(st);
+  return [
+    'EXECUTIVE PRIORITÄT',priority(st),
+    '', 'WARUM?', 'Fachlicher Handlungsbedarf ist erkennbar. '+bottleneck(st),
+    '', 'BESTÄTIGT',facts.map(function(x){return '• '+x;}).join('\n'),
+    '', 'ZU VALIDIEREN',opens.map(function(x,i){return '• '+(i===0?'🔴':i<3?'🟡':'⚪')+' '+x;}).join('\n'),
+    '', 'HAUPTENGPASS',bottleneck(st),
+    '', 'NÄCHSTE KUNDENENTSCHEIDUNG',nextDecision(st),
+    '', 'DER SCHRITT IST ERFOLGREICH, WENN','• Entscheidungskriterien, Rollen, Verantwortliche und der nächste verbindliche Kundenschritt bestätigt sind.',
+    '', 'DECISION CONFIDENCE',c+' %',
+    '• Sponsor: '+(st.sponsor==='bestätigt'?'bestätigt':st.sponsor==='möglich'?'möglich, noch nicht bestätigt':'offen'),
+    '• Wirtschaftlicher Entscheider: '+st.economicDecisionMaker,
+    '• Budget: '+st.budget,
+    '• Business Case: '+st.businessCase,
+    '• Technik/Datenschutz: '+st.technical
+  ].join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function phase1Prompt(p){return /QUALIFIZIERUNG|OPPORTUNITY-CHECK|DIE EINE SACHE DIE FEHLT|EMPFEHLUNG:\s*sofort/i.test(String(p||''));}
+function phase1Result(t){return /(?:^|\n)#?\s*QUALIFIZIERUNG\b|EMPFEHLUNG:\s*sofort|EXECUTIVE PRIORITÄT|DIE EINE SACHE DIE FEHLT/i.test(String(t||''));}
+function finalConsistency(text){
+  var r=String(text||'');
+  r=r.replace(/\b(?:starker|aktiver|bestätigter|operativer)\s+Champion\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\boperativer\s+Sponsor(?:\s+bestätigt)?\b/gi,'fachlicher Hauptkontakt mit Sponsorpotenzial')
+     .replace(/\bFinanzentscheiderin\b/gi,'wirtschaftliche Entscheiderin')
+     .replace(/\bKritiker\b/gi,'technischer Prüfer')
+     .replace(/(?:20|30)[- ]Minuten[- ](?:Termin|Gespräch)/gi,'gemeinsamen Discovery- und Entscheidungstermin')
+     .replace(/\bCEO\/?CFO\b|\bCFO\b/gi,'weitere interne Freigabeinstanz');
+  return r.trim();
+}
+window.ki21BuildOpportunityStateV270=buildState;
+window.ki21GeneralIntelligenceOutputV270=function(){return phase1Output(buildState());};
+window.ki21FinalConsistencyV270=finalConsistency;
+
+function install(){
+  try{
+    var f=window.callClaude;
+    if(typeof f==='function'&&!f.__ki21v270){
+      var w=async function(){
+        var a=[].slice.call(arguments), isP=phase1Prompt(a[0]);
+        if(isP){
+          var out=phase1Output(buildState());
+          if(typeof a[1]==='function')a[1](out);
+          return out;
+        }
+        if(typeof a[1]==='function'){var cb=a[1];a[1]=function(x){cb(finalConsistency(x));};}
+        var v=await f.apply(this,a);return typeof v==='string'?finalConsistency(v):v;
+      };
+      w.__ki21v270=1;window.callClaude=w;
+    }
+  }catch(e){}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.addEventListener('pageshow',install,true);setTimeout(install,1600);
 })();
 </script>
 
