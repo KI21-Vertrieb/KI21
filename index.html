@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<!-- KI21_BUILD: pilot-core-1.7.2-health-forecast-stable-renderer-20260716 -->
+<!-- KI21_BUILD: pilot-core-2.4.0-decision-quality-consistency-20260716 -->
 <html lang="de">
 <head>
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.3.2 ECONOMIC ARGUMENTATION REFINEMENT</title>
+<title>KI21 Pilot Core 2.4.0 DECISION QUALITY & CONSISTENCY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -21422,5 +21422,131 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   }
 })();
 </script>
+
+<!-- KI21 Pilot Core 2.4.0: Decision Quality & Consistency — no new feature surface. -->
+<script id="ki21-v240-decision-quality-gate">
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 2.4.0 DECISION QUALITY & CONSISTENCY';
+  window.KI21_VERSION=VERSION;
+
+  function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
+  function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/\s+/g,' ').trim();}
+  function source(){
+    try{if(typeof window.ki21CollectCurrentOpportunitySourceV170==='function')return String(window.ki21CollectCurrentOpportunitySourceV170()||'');}catch(e){}
+    try{if(typeof collectCurrentOpportunityInputsV620==='function')return String(collectCurrentOpportunityInputsV620(activeId())||'');}catch(e){}
+    return '';
+  }
+  function parse(report){
+    const out={meta:[],sections:{},order:[]};let key='';
+    String(report||'').replace(/\r/g,'').split('\n').forEach(function(line){
+      const t=line.trim();
+      if(/^[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\-–]+$/.test(t)){
+        key=t;if(!out.sections[key]){out.sections[key]=[];out.order.push(key);}return;
+      }
+      if(!key){if(t)out.meta.push(t);return;}
+      const x=t.replace(/^•\s*/,'').trim();if(x)out.sections[key].push(x);
+    });
+    return out;
+  }
+  function first(sec,names){
+    for(let i=0;i<names.length;i++){const a=sec[names[i]]||[];if(a.length)return clean(a[0]);}
+    return '';
+  }
+  function truth(){
+    const text=source(), low=text.toLowerCase();
+    const negApproval=/(pilot|discovery\s*sprint)[^.!?\n]{0,140}(?:noch\s+nicht|nicht)\s+(?:intern\s+)?(?:freigegeben|genehmigt|beauftragt|beschlossen)/i.test(text);
+    const posApproval=!negApproval&&/(pilot|discovery\s*sprint)[^.!?\n]{0,140}(?:freigegeben|genehmigt|beauftragt|beschlossen)/i.test(text);
+    const startOpen=/(starttermin|kickoff|projektstart)[^.!?\n]{0,120}(?:offen|noch\s+nicht|nicht\s+vereinbart|nicht\s+festgelegt)/i.test(text);
+    const decisionMakerOpen=/(wirtschaftlich(?:e|er)\s+entscheider|geschäftsführ|cfo|ceo)[^.!?\n]{0,160}(?:noch\s+nicht|nicht\s+eingebunden|nicht\s+gesprochen|offen)/i.test(text);
+    const decisionMakerConfirmed=/(wirtschaftlich(?:e|er)\s+entscheider|geschäftsführ|cfo|ceo)[^.!?\n]{0,160}(?:eingebunden|bestätigt|entscheidet|freigibt|freigegeben)/i.test(text)&&!decisionMakerOpen;
+    const successOpen=/(erfolgskriter|messkriter|baseline)[^.!?\n]{0,140}(?:offen|noch\s+nicht|nicht\s+vereinbart|diskussionsgrundlage)/i.test(text);
+    const successConfirmed=/(erfolgskriter|messkriter|baseline)[^.!?\n]{0,160}(?:bestätigt|vereinbart|festgelegt|gilt)/i.test(text)&&!successOpen;
+    const budgetConfirmed=/(budget|investition)[^.!?\n]{0,120}(?:darstellbar|vorhanden|bestätigt|bewilligt|freigegeben)|(?:bis\s+zu\s+)?\d[\d.]*\s*€[^.!?\n]{0,80}(?:budget|darstellbar)/i.test(text);
+    const meetingConfirmed=/(termin|workshop|meeting)[^.!?\n]{0,120}(?:verbindlich|bestätigt|vereinbart|terminiert|geplant)/i.test(text);
+    const technicalOpen=/(it|integration|architektur|berechtigung|erp|datenschutz)[^.!?\n]{0,150}(?:offen|noch\s+nicht|nicht\s+geklärt|bedingung|leitplanke)/i.test(text);
+    const technicalConfirmed=/(it|integration|architektur|berechtigung|erp|datenschutz)[^.!?\n]{0,150}(?:bestätigt|vereinbart|festgelegt|führend|keine\s+rückschreibung)/i.test(text);
+    const quantified=/\b\d[\d.]*\s*€\s*(?:\/|pro|monat|jährlich|einmalig)|\b\d{2,4}\s*(?:arbeits)?stunden\b|mehrere\s+hunderttausend\s*€/i.test(text);
+    return {text,low,negApproval,posApproval,startOpen,decisionMakerOpen,decisionMakerConfirmed,successOpen,successConfirmed,budgetConfirmed,meetingConfirmed,technicalOpen,technicalConfirmed,quantified};
+  }
+  function centralDecision(t,sec){
+    if(t.posApproval&&t.startOpen)return {decision:'Projektstart verbindlich freigeben und terminieren',blocker:'Starttermin, Verantwortlichkeiten oder Kickoff sind noch nicht verbindlich festgelegt.',step:'Mit den verantwortlichen Kundenseiten Starttermin, Kickoff, Rollen und Messung verbindlich festlegen.',result:'Bestätigter Starttermin mit benannten Verantwortlichen und dokumentierter Erfolgsmessung.'};
+    if(t.posApproval&&t.successOpen)return {decision:'Erfolgsmessung für den freigegebenen Pilot verbindlich bestätigen',blocker:'Die Freigabe ist erfolgt, aber Baseline, Messmethode oder Verantwortlichkeit sind noch offen.',step:'Baseline, Messkriterien, Datenquelle, Verantwortliche und Auswertungstermin schriftlich bestätigen lassen.',result:'Vom Kunden bestätigtes Messmodell als Grundlage für Start und spätere Bewertung.'};
+    if(t.negApproval||t.decisionMakerOpen)return {decision:'Pilotentscheidung im vollständigen Buying Center erreichen',blocker:'Die wirtschaftliche Freigabe ist noch offen oder der wirtschaftliche Entscheider nicht aktiv eingebunden.',step:'Einen gemeinsamen Entscheidungs­termin mit Sponsor, wirtschaftlichem Entscheider und relevanten Einflussnehmern verbindlich vereinbaren.',result:'Bestätigte Entscheidungskriterien und ein klarer nächster Freigabeschritt des Kunden.'};
+    if(t.technicalOpen&&!t.technicalConfirmed)return {decision:'Technische und organisatorische Pilotbedingungen gemeinsam bestätigen',blocker:'Fachlicher Nutzen und technische Umsetzbarkeit sind noch nicht in ein gemeinsames Pilotmodell übersetzt.',step:'Pilotumfang, Datenquellen, Integration, Berechtigungen, Betrieb und Ausstiegskriterien gemeinsam festlegen.',result:'Gemeinsam bestätigtes Pilotmodell ohne offenen technischen Kaufblocker.'};
+    if(!t.successConfirmed)return {decision:'Erfolgskriterien und wirtschaftliche Wirkung bestätigen',blocker:'Der erwartete Nutzen ist noch nicht in belastbare, vom Kunden akzeptierte Messgrößen übersetzt.',step:'Mit dem Kunden Ausgangswert, Zielwert, Messperiode, Datenquelle und Verantwortliche vereinbaren.',result:'Bestätigte Erfolgskriterien, die eine spätere Investitionsentscheidung tragen.'};
+    if(!t.meetingConfirmed)return {decision:'Nächsten entscheidungsrelevanten Kundentermin verbindlich vereinbaren',blocker:'Es fehlt ein terminierter Kundenschritt, der die Opportunity zu einer Entscheidung führt.',step:'Termin mit klarer Agenda, Teilnehmern, benötigten Vorarbeiten und erwarteter Kundenentscheidung festlegen.',result:'Verbindlicher Kundentermin mit eindeutigem Entscheidungsziel.'};
+    const rec=first(sec,['VERTRIEBSEMPFEHLUNG','DEAL-ENTSCHEIDUNG','NÄCHSTER DEAL-SCHRITT','KONKRETER VERKAUFSAUFTRAG','NÄCHSTE KUNDENSCHRITTE']);
+    return {decision:rec||'Nächste Kundenentscheidung verbindlich erreichen',blocker:first(sec,['SALES SUMMARY','AKTUELLES LAGEBILD','VERKAUFSRISIKO'])||'Der entscheidungsrelevante Engpass muss mit dem Kunden geklärt werden.',step:rec||'Den nächsten Kundenschritt auf eine konkrete Entscheidung ausrichten.',result:'Eine explizite Kundenzusage, die den Deal nachweisbar voranbringt.'};
+  }
+  function unique(arr){const seen={};return (arr||[]).map(clean).filter(function(x){const k=x.toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ');if(!x||seen[k])return false;seen[k]=1;return true;});}
+  function set(sec,title,lines){sec[title]=unique(lines).filter(Boolean);}
+  function factLines(t,sec){
+    const candidates=[];
+    ['FAKTENBASIS','FAKTEN, DIE DAFÜR SPRECHEN','EVIDENZBASIS'].forEach(function(k){(sec[k]||[]).forEach(function(x){if(!/vermut|wahrscheinlich|plausibel|könnte|dürfte|annahme/i.test(x))candidates.push(x);});});
+    if(t.posApproval)candidates.unshift('Die Pilot- beziehungsweise Sprintfreigabe ist in den Originalinformationen bestätigt.');
+    if(t.negApproval)candidates.unshift('Die Pilotfreigabe ist in den Originalinformationen ausdrücklich noch offen.');
+    if(t.budgetConfirmed)candidates.push('Ein Budgetrahmen ist grundsätzlich bestätigt.');
+    if(t.quantified)candidates.push('Mindestens ein wirtschaftlicher oder operativer Ausgangswert ist beziffert.');
+    return unique(candidates).slice(0,5);
+  }
+  function qualityGate(report){
+    const p=parse(report), sec=p.sections, t=truth(), d=centralDecision(t,sec);
+    const facts=factLines(t,sec);
+    const summary=sec['SALES SUMMARY']||[];
+    const status=summary.find(x=>/^status\s*:/i.test(x))||first(sec,['AKTUELLES LAGEBILD','HEALTH & FORECAST'])||'Die Opportunity wird auf die nächste verbindliche Kundenentscheidung ausgerichtet.';
+    set(sec,'SALES SUMMARY',[status.replace(/^status\s*:\s*/i,'Status: '),'Engpass: '+d.blocker,'Empfehlung: '+d.step]);
+    set(sec,'ZENTRALE KUNDENENTSCHEIDUNG',[d.decision]);
+    set(sec,'ENTSCHEIDUNGSLOGIK',['Fehlende Entscheidung: '+d.decision,'Aktueller Engpass: '+d.blocker,'Konkreter Deal-Schritt: '+d.step,'Erwartetes Kundenergebnis: '+d.result]);
+    set(sec,'VERTRIEBSEMPFEHLUNG',[d.step]);
+    set(sec,'WARUM KI21 GENAU DAS EMPFIEHLT',[
+      'Dieser Schritt adressiert den aktuell größten entscheidungsrelevanten Engpass.',
+      facts.length?'Die Empfehlung stützt sich auf bestätigte Originalinformationen der aktiven Opportunity.':'Die Faktenbasis ist noch begrenzt; deshalb priorisiert KI21 zunächst die fehlende Kundenbestätigung.',
+      'Der Schritt ist erst erfolgreich, wenn das erwartete Kundenergebnis ausdrücklich erreicht wurde.'
+    ]);
+    if(facts.length)set(sec,'FAKTENBASIS',facts);
+    const open=[];
+    if(t.negApproval)open.push('Pilotfreigabe durch den wirtschaftlich zuständigen Entscheider bestätigen.');
+    if(t.decisionMakerOpen)open.push('Wirtschaftlichen Entscheider aktiv einbinden und seine Kriterien dokumentieren.');
+    if(t.successOpen||!t.successConfirmed)open.push('Erfolgskriterien, Baseline, Messmethode und Verantwortliche bestätigen.');
+    if(t.startOpen)open.push('Starttermin und Kickoff-Verantwortliche verbindlich festlegen.');
+    if(t.technicalOpen&&!t.technicalConfirmed)open.push('Technische und organisatorische Leitplanken gemeinsam bestätigen.');
+    if(open.length)set(sec,'WAS DER VERTRIEB NOCH KLÄREN MUSS',open);
+    set(sec,'NÄCHSTE KUNDENSCHRITTE',[d.step,'Benötigte Fakten und Unterlagen für diesen Schritt vorbereiten.','Die Kundenentscheidung und das konkrete Ergebnis unmittelbar dokumentieren.']);
+    set(sec,'DARAUF ACHTEN',[
+      'Sponsor und wirtschaftlichen Entscheider nicht gleichsetzen.',
+      'Plausible Annahmen nicht als bestätigte Fakten oder Kundennutzen ausgeben.',
+      'Health Score und Forecast nur durch neue bestätigte Evidenz verbessern.',
+      'Interne Aktivität nicht mit einer Kundenentscheidung verwechseln.'
+    ]);
+    const preferred=['SALES SUMMARY','ZENTRALE KUNDENENTSCHEIDUNG','ENTSCHEIDUNGSLOGIK','HEALTH & FORECAST','ENTSCHEIDUNGSREIFE','DEAL-HYPOTHESE','EXECUTIVE DECISION CHAIN','VERTRIEBSEMPFEHLUNG','WARUM KI21 GENAU DAS EMPFIEHLT','EMPFOHLENE VERKAUFSSTRATEGIE','FAKTENBASIS','EVIDENZBASIS','VERKAUFSRISIKO','STÄRKSTE KLÄRUNGSFRAGE','WAS SPRICHT DAGEGEN?','KI21 WÜRDE ANDERS EMPFEHLEN, WENN','VERTRAUENSCHECK','WAS DER VERTRIEB NOCH KLÄREN MUSS','BUSINESS CASE UND KUNDENNUTZEN','BUSINESS CASE UND NUTZEN','VERKAUFSHEBEL – PRIORISIERT','NÄCHSTE KUNDENSCHRITTE','DARAUF ACHTEN','VERTRIEBLICHE INTERPRETATION','WARUM JETZT?'];
+    const order=preferred.concat(p.order.filter(k=>!preferred.includes(k)));
+    let out=p.meta.join('\n');if(out)out+='\n\n';
+    const used={};order.forEach(function(k){if(used[k]||!sec[k]||!sec[k].length)return;used[k]=1;out+=k+'\n'+sec[k].map(x=>'• '+x).join('\n')+'\n\n';});
+    return out.trim();
+  }
+  window.ki21DecisionQualityGateV240=qualityGate;
+
+  function install(){
+    try{
+      const original=window.buildOpportunityTestReportV723;
+      if(typeof original==='function'&&!original.__ki21v240){
+        const wrapped=function(){return qualityGate(original.apply(this,arguments));};
+        wrapped.__ki21v240=true;window.buildOpportunityTestReportV723=wrapped;
+      }
+      const safe=window.buildOpportunityTestReportSafelyV726;
+      if(typeof safe==='function'&&!safe.__ki21v240){
+        const wrappedSafe=function(){return qualityGate(safe.apply(this,arguments));};
+        wrappedSafe.__ki21v240=true;window.buildOpportunityTestReportSafelyV726=wrappedSafe;
+      }
+      document.title='KI21 '+VERSION;
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(e){console.warn('KI21 2.4 Quality Gate',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+  window.addEventListener('pageshow',install,true);
+})();
+</script>
+
 </body>
 </html>
