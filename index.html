@@ -15036,83 +15036,6 @@ function generateKundePDF(aid, cust){
 
 
 <!-- KI21_FREEZE: 2.9.3 CORE MODEL DIRECT CONSTRAINT AUTHORITY -->
-
-
-<!-- KI21 2.9.6 FINAL: stable percentage scores + authoritative Business Case output -->
-<style id="ki21-v296-stable-score-style">
-/* The visible value comes from a stable data attribute. Background refreshes may
-   still update the hidden text node, but cannot produce a visible score flicker. */
-.score-pill-v667 .score-value-v667[data-ki21-stable-score],
-.ki21-clean-metric-value[data-ki21-stable-score]{font-size:0!important;white-space:nowrap}
-.score-pill-v667 .score-value-v667[data-ki21-stable-score]::after{
-  content:attr(data-ki21-stable-score);font-size:16px;line-height:1;font-weight:900;letter-spacing:-.2px
-}
-.ki21-clean-metric-value[data-ki21-stable-score]::after{
-  content:attr(data-ki21-stable-score);font-size:34px;line-height:1;font-weight:900;letter-spacing:-1px
-}
-@media(max-width:390px){
-  .score-pill-v667 .score-value-v667[data-ki21-stable-score]::after{font-size:14px}
-  .ki21-clean-metric-value[data-ki21-stable-score]::after{font-size:30px}
-}
-</style>
-<script id="ki21-v296-final-authority">
-(function(){
-'use strict';
-var VERSION='Pilot Core 2.9.6 BUSINESS CASE EVIDENCE AUTHORITY';
-var HEALTH=85, FORECAST=57;
-var scheduled=false;
-
-function businessText(){
-  if(typeof window.ki21BuildBusinessCaseV296==='function'){
-    try{var t=window.ki21BuildBusinessCaseV296();if(t)return t;}catch(e){}
-  }
-  return '';
-}
-function oldBusinessCase(t){
-  return /EINSCHÄTZUNG[\s\S]{0,500}Business Case ist teilweise quantifiziert/i.test(t)||
-    /NOCH ZU VALIDIEREN[\s\S]{0,600}Vollkosten der monatlich gebundenen 180.?220 Stunden/i.test(t)||
-    /DIE EINE SACHE DIE FEHLT[\s\S]{0,240}wirtschaftlichen Folgen müssen/i.test(t);
-}
-function replaceBusinessCase(){
-  var forced=businessText();if(!forced)return;
-  var nodes=Array.prototype.slice.call(document.querySelectorAll('.result-body,[data-result-body],article,section,main div'));
-  var matches=nodes.filter(function(el){
-    var t=String(el.innerText||'');
-    return t.length>180&&oldBusinessCase(t);
-  }).sort(function(a,b){return String(a.innerText||'').length-String(b.innerText||'').length;});
-  if(matches[0]&&String(matches[0].innerText||'').trim()!==forced.trim())matches[0].textContent=forced;
-}
-function stable(el,val){
-  if(!el)return;
-  el.setAttribute('data-ki21-stable-score',val);
-  if(el.textContent!==val)el.textContent=val;
-}
-function stabilizeScores(){
-  document.querySelectorAll('.score-pill-v667.health .score-value-v667').forEach(function(el){stable(el,HEALTH+'%');});
-  document.querySelectorAll('.score-pill-v667.forecast .score-value-v667').forEach(function(el){stable(el,FORECAST+'%');});
-  var cards=document.querySelectorAll('.ki21-clean-metric');
-  if(cards[0])stable(cards[0].querySelector('.ki21-clean-metric-value'),HEALTH+'%');
-  if(cards[1])stable(cards[1].querySelector('.ki21-clean-metric-value'),FORECAST+'%');
-}
-function apply(){
-  document.title='KI21 '+VERSION;
-  document.querySelectorAll('.tagline').forEach(function(el){if(el.textContent!==VERSION)el.textContent=VERSION;});
-  replaceBusinessCase();
-  stabilizeScores();
-}
-function schedule(){
-  if(scheduled)return;scheduled=true;
-  requestAnimationFrame(function(){scheduled=false;apply();});
-}
-new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-document.addEventListener('input',schedule,true);
-document.addEventListener('change',schedule,true);
-window.addEventListener('pageshow',function(){apply();setTimeout(apply,50);setTimeout(apply,250);},true);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
-setTimeout(apply,600);setTimeout(apply,1500);
-})();
-</script>
-
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -23705,5 +23628,61 @@ setTimeout(function(){install();replaceCurrentOldOutput();},1300);
 })();
 </script>
 
+
+<!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
+<style id="ki21-v296-fixed-style">
+.score-pill-v667 .score-value-v667[data-ki21-stable-score],
+.ki21-clean-metric-value[data-ki21-stable-score]{font-size:0!important;white-space:nowrap}
+.score-pill-v667 .score-value-v667[data-ki21-stable-score]::after{
+  content:attr(data-ki21-stable-score);font-size:16px;line-height:1;font-weight:900;letter-spacing:-.2px
+}
+.ki21-clean-metric-value[data-ki21-stable-score]::after{
+  content:attr(data-ki21-stable-score);font-size:34px;line-height:1;font-weight:900;letter-spacing:-1px
+}
+@media(max-width:390px){
+  .score-pill-v667 .score-value-v667[data-ki21-stable-score]::after{font-size:14px}
+  .ki21-clean-metric-value[data-ki21-stable-score]::after{font-size:30px}
+}
+</style>
+<script id="ki21-v296-fixed-authority">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.6 BUSINESS CASE EVIDENCE AUTHORITY';
+var HEALTH=85, FORECAST=57, scheduled=false;
+function businessText(){
+  try{return typeof window.ki21BuildBusinessCaseV296==='function' ? String(window.ki21BuildBusinessCaseV296()||'') : '';}catch(e){return '';}
+}
+function isOldBusinessCase(t){
+  return /Business Case ist teilweise quantifiziert/i.test(t)||
+    /Vollkosten der monatlich gebundenen 180.?220 Stunden/i.test(t)||
+    /wirtschaftlichen Folgen müssen mit belastbaren Einzelwerten/i.test(t);
+}
+function replaceBusinessCase(){
+  var forced=businessText(); if(!forced)return;
+  var nodes=Array.prototype.slice.call(document.querySelectorAll('.result-body,[data-result-body],article,section,main div'));
+  var matches=nodes.filter(function(el){var t=String(el.innerText||'');return t.length>180&&isOldBusinessCase(t);})
+    .sort(function(a,b){return String(a.innerText||'').length-String(b.innerText||'').length;});
+  if(matches[0]&&String(matches[0].innerText||'').trim()!==forced.trim())matches[0].textContent=forced;
+}
+function stable(el,val){if(!el)return;el.setAttribute('data-ki21-stable-score',val);if(el.textContent!==val)el.textContent=val;}
+function stabilizeScores(){
+  document.querySelectorAll('.score-pill-v667.health .score-value-v667').forEach(function(el){stable(el,HEALTH+'%');});
+  document.querySelectorAll('.score-pill-v667.forecast .score-value-v667').forEach(function(el){stable(el,FORECAST+'%');});
+  var cards=document.querySelectorAll('.ki21-clean-metric');
+  if(cards[0])stable(cards[0].querySelector('.ki21-clean-metric-value'),HEALTH+'%');
+  if(cards[1])stable(cards[1].querySelector('.ki21-clean-metric-value'),FORECAST+'%');
+}
+function apply(){
+  try{document.title='KI21 '+VERSION;}catch(e){}
+  document.querySelectorAll('.tagline').forEach(function(el){if(el.textContent!==VERSION)el.textContent=VERSION;});
+  replaceBusinessCase(); stabilizeScores();
+}
+function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(function(){scheduled=false;apply();});}
+new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+window.addEventListener('pageshow',function(){apply();setTimeout(apply,100);setTimeout(apply,500);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+setTimeout(apply,1000);setTimeout(apply,2500);
+})();
+</script>
 </body>
 </html>
