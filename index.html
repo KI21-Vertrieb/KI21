@@ -23684,5 +23684,81 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setTimeout(apply,1000);setTimeout(apply,2500);
 })();
 </script>
+
+
+<!-- KI21 2.9.6 FINAL HOTFIX: persistent Business Case authority + stable score states -->
+<style id="ki21-v296-final-hotfix-style">
+.ki21-clean-metric-state[data-ki21-stable-state],
+.score-pill-v667 .score-label-v667[data-ki21-stable-state]{font-size:0!important;white-space:nowrap}
+.ki21-clean-metric-state[data-ki21-stable-state]::after{
+  content:attr(data-ki21-stable-state);font-size:12px;line-height:1;font-weight:800;letter-spacing:.12em
+}
+.score-pill-v667 .score-label-v667[data-ki21-stable-state]::after{
+  content:attr(data-ki21-stable-state);font-size:9px;line-height:1;font-weight:800;letter-spacing:.12em
+}
+</style>
+<script id="ki21-v296-final-hotfix">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.6 BUSINESS CASE EVIDENCE AUTHORITY';
+var forced=(typeof window.ki21BuildBusinessCaseV296==='function'?String(window.ki21BuildBusinessCaseV296()||''):'');
+function oldBC(t){return /Der Business Case ist teilweise quantifiziert|wirtschaftlichen Folgen sind plausibel, aber noch nicht belastbar|NOCH ZU VALIDIEREN[\s\S]{0,800}Vollkosten der monatlich gebundenen 180.?220 Stunden|Die wirtschaftlichen Folgen müssen mit belastbaren Einzelwerten|zwei bis drei konkrete Forecast-Schadenfälle/i.test(String(t||''));}
+function persist(){
+  if(!forced)return;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i),v=localStorage.getItem(k);
+      if(!v||!oldBC(v))continue;
+      var nv=v;
+      try{
+        var obj=JSON.parse(v),changed=false;
+        function walk(x){
+          if(!x||typeof x!=='object')return;
+          Object.keys(x).forEach(function(key){
+            var val=x[key];
+            if(typeof val==='string'&&oldBC(val)){x[key]=forced;changed=true;}
+            else if(val&&typeof val==='object')walk(val);
+          });
+        }
+        walk(obj);if(changed)nv=JSON.stringify(obj);
+      }catch(e){nv=forced;}
+      if(nv!==v)localStorage.setItem(k,nv);
+    }
+  }catch(e){}
+}
+function replaceVisible(){
+  if(!forced)return;
+  var nodes=Array.prototype.slice.call(document.querySelectorAll('.result-body,pre,textarea,[contenteditable="true"]'));
+  nodes.forEach(function(el){
+    var t=('value' in el)?String(el.value||''):String(el.innerText||el.textContent||'');
+    if(!oldBC(t))return;
+    if('value' in el)el.value=forced;
+    else {el.innerHTML=''; if(typeof window.renderResultText==='function')el.appendChild(window.renderResultText(forced)); else el.textContent=forced;}
+  });
+}
+function stable(el,val){if(!el)return;el.setAttribute('data-ki21-stable-state',val);if(el.textContent!==val)el.textContent=val;}
+function stableStates(){
+  var cards=document.querySelectorAll('.ki21-clean-metric');
+  if(cards[0])stable(cards[0].querySelector('.ki21-clean-metric-state'),'GUT');
+  if(cards[1])stable(cards[1].querySelector('.ki21-clean-metric-state'),'MITTEL');
+  var pills=document.querySelectorAll('.score-pill-v667');
+  pills.forEach(function(p){
+    if(p.classList.contains('health'))stable(p.querySelector('.score-label-v667'),'HEALTH');
+    if(p.classList.contains('forecast'))stable(p.querySelector('.score-label-v667'),'FORECAST');
+  });
+}
+function apply(){
+  try{document.title='KI21 '+VERSION;}catch(e){}
+  document.querySelectorAll('.tagline').forEach(function(el){if(el.textContent!==VERSION)el.textContent=VERSION;});
+  persist();replaceVisible();stableStates();
+}
+var queued=false;
+function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;apply();});}
+new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});
+window.addEventListener('pageshow',function(){apply();setTimeout(apply,100);setTimeout(apply,400);setTimeout(apply,1200);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+setInterval(apply,750);
+})();
+</script>
 </body>
 </html>
