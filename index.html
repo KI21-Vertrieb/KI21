@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX</title>
+<title>KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -7591,6 +7591,94 @@ function buildStructuredSecurityPhase5OutputV4212(accId){
 }
 
 function buildStructuredPhase4OutputV4189(accId){
+  // 2.9.13: Direkt am tatsächlichen Phase-4-Generator aus den Primärdaten entscheiden.
+  // Diese Authority ist absichtlich unabhängig vom aktiven Cockpit-DOM und von späteren Patch-States.
+  try{
+    const sourceParts=[];
+    try{sourceParts.push(String(getOpportunityOnlySourceV6522(accId)||''));}catch(e){}
+    try{
+      const a=(state&&Array.isArray(state.accounts))?state.accounts.find(x=>x&&String(x.id)===String(accId)):null;
+      if(a)sourceParts.push(JSON.stringify(a));
+    }catch(e){}
+    try{
+      ['ki21_import_raw_'+accId,'ki21_account_'+accId,'ki21_opportunity_'+accId,'ki21_additions_'+accId].forEach(k=>{
+        const v=localStorage.getItem(k);if(v)sourceParts.push(v);
+      });
+    }catch(e){}
+    const directRaw=sourceParts.join('\n').replace(/\\r/g,' ');
+    const directLow=directRaw.toLowerCase();
+    const bcConfirmed=/(?:business\s*case|wirtschaftlicher\s+nutzen)[^.!?\\n]{0,180}(?:grundsätzlich\s+)?(?:bestätigt|anerkannt|freigegeben)/i.test(directRaw);
+    const budgetConfirmed=/(?:pilotbudget|budgetrahmen|budget)[^.!?\\n]{0,180}(?:grundsätzlich\s+)?(?:bestätigt|freigegeben|darstellbar)/i.test(directRaw);
+    const criteriaConfirmed=/(?:erfolgskriterien|pilotziele|success\s*criteria)[^.!?\\n]{0,180}(?:bestätigt|vereinbart|anerkannt)/i.test(directRaw);
+    const sponsorOpen=/(?:belastbare\s+sponsorrolle|sponsorstatus|sponsorrolle)[^.!?\\n]{0,180}(?:nicht\s+bestätigt|offen|fehlt)/i.test(directRaw)
+      || /keine\s+sponsorrolle\s+(?:übernehmen|wahrnehmen)/i.test(directRaw)
+      || /möchte[^.!?\\n]{0,160}(?:keine|nicht)\s+sponsorrolle/i.test(directRaw)
+      || /es\s+fehlt[^.!?\\n]{0,160}(?:interner\s+)?sponsor/i.test(directRaw);
+    const technicalOpen=/(?:ciso|informationssicherheit|datenschutz|technische(?:n|r)?\s+freigabe)[^.!?\\n]{0,220}(?:offen|ausstehend|noch\s+nicht|nicht\s+freigegeben)/i.test(directRaw);
+    const technicalReady=/(?:vorprüfung|technische\s+prüfung)[^.!?\\n]{0,180}(?:abgeschlossen|weitgehend\s+abgeschlossen|freigabefähig)/i.test(directRaw)
+      || /kein\s+dominanter\s+kaufblocker/i.test(directRaw);
+    if(bcConfirmed&&budgetConfirmed&&criteriaConfirmed&&(sponsorOpen||(technicalOpen&&!technicalReady))){
+      const budgetMatch=directRaw.match(/(?:bis\s+zu\s+)?([0-9]{1,3}(?:[.\\s][0-9]{3})*)\s*€/i);
+      const hoursMatch=directRaw.match(/(?:etwa|ca\.?|rund|geschätzt(?:er)?)?\s*([0-9]{2,4}(?:\s*[–-]\s*[0-9]{2,4})?)\s*(?:arbeits)?stunden\s+pro\s+monat/i);
+      const budget=budgetMatch?budgetMatch[1].replace(/\s/g,'.')+' €':'';
+      const hours=hoursMatch?hoursMatch[1].replace(/\s/g,'')+' Stunden pro Monat':'';
+      const lines=[];
+      lines.push('EINSCHÄTZUNG');
+      lines.push('Der Business Case ist bestätigt. Wirtschaftlicher Bedarf, Pilotbudget und Erfolgskriterien sind als Entscheidungsgrundlage anerkannt. Die tatsächliche Wirkung wird im Pilot anhand realer Opportunities gemessen; zusätzliche Detailwerte dienen der Präzisierung und sind keine Voraussetzung für die Pilotentscheidung.');
+      lines.push('');
+      lines.push('✅ BELEGT');
+      if(hours)lines.push('• '+hours+' zusätzlicher beziehungsweise gebundener interner Aufwand sind dokumentiert.');
+      if(/forecast[-\s]?abweich|unzuverlässig.{0,40}forecast|zu\s+optimistische\s+forecasts/i.test(directRaw))lines.push('• Wiederkehrende Forecast-Abweichungen und daraus entstehende Steuerungsprobleme sind bestätigt.');
+      if(/fehlplanung|ressourcen|presales[-\s]?kapaz/i.test(directRaw))lines.push('• Auswirkungen auf Umsatz-, Ressourcen- und Presales-Planung sind dokumentiert.');
+      if(budget)lines.push('• Der Pilotbudgetrahmen von '+budget+' ist bestätigt.');
+      lines.push('• Business Case und Erfolgskriterien sind als Entscheidungsgrundlage bestätigt.');
+      lines.push('');
+      lines.push('≈ OPTIONAL ZU PRÄZISIEREN');
+      lines.push('• Interne Vollkostensätze der beteiligten Rollen zur genaueren späteren Wirkungsmessung.');
+      lines.push('• Konkrete historische Schadenfälle zur weiteren Präzisierung des quantifizierten Nutzens.');
+      lines.push('• Exakte Zuordnung der gemessenen Pilotwirkung zu einzelnen Aufwands- und Schadenspositionen.');
+      lines.push('');
+      lines.push('🧭 ENTSCHEIDUNGSRAHMEN');
+      lines.push('• Die wirtschaftliche Entscheidungsgrundlage ist ausreichend bestätigt; eine erneute Business-Case-Qualifizierung erzeugt keinen zusätzlichen Fortschritt.');
+      if(sponsorOpen){
+        lines.push('• Der verbleibende Entscheidungsengpass ist die belastbare Sponsorverantwortung im Vertrieb.');
+        lines.push('');
+        lines.push('💰 WIRTSCHAFTLICHE WIRKUNG');
+        lines.push('• Laufender Nutzen: frühere Erkennung gefährdeter Opportunities, belastbarere Forecasts und geringerer Deal-Review- sowie Presales-Aufwand.');
+        lines.push('• Entscheidungsnutzen: bessere Umsatz-, Ressourcen- und Kapazitätsplanung.');
+        lines.push('• Die Pilotwirkung wird anhand der bestätigten Erfolgskriterien gemessen; zusätzliche Detailwerte verfeinern die Messung, öffnen aber die Grundsatzentscheidung nicht erneut.');
+        lines.push('');
+        lines.push('⚠️ DIE EINE SACHE, DIE FEHLT');
+        lines.push('Nicht der Business Case, sondern eine belastbare Sponsorentscheidung im Vertrieb.');
+        lines.push('');
+        lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+        lines.push('Den bestätigten Business Case nicht erneut öffnen, sondern mit Vertriebsleitung und Geschäftsführung Sponsorrolle, sichtbare Unterstützung, Verantwortung und Eskalationsweg verbindlich klären.');
+        lines.push('');
+        lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+        lines.push('1. Erwartete Widerstände und notwendige Sponsorhandlungen konkretisieren.');
+        lines.push('2. Verantwortungsprofil für Kommunikation, Akzeptanz und Eskalation vorbereiten.');
+        lines.push('3. Einen verbindlichen Sponsorentscheidungstermin sichern.');
+        return lines.join('\n');
+      }
+      lines.push('• Die verbleibende Pilotentscheidung hängt am technischen und datenschutzrechtlichen Prüf- und Freigabeprozess.');
+      lines.push('');
+      lines.push('💰 WIRTSCHAFTLICHE WIRKUNG');
+      lines.push('• Die tatsächliche Pilotwirkung wird anhand der bestätigten Erfolgskriterien gemessen.');
+      lines.push('• Zusätzliche Detailwerte dienen der Präzisierung, nicht der erneuten Grundsatzentscheidung.');
+      lines.push('');
+      lines.push('⚠️ DIE EINE SACHE, DIE FEHLT');
+      lines.push('Nicht der Business Case, sondern die technische und datenschutzrechtliche Freigabe für den begrenzten Piloten.');
+      lines.push('');
+      lines.push('NÄCHSTER SCHRITT DIESE WOCHE');
+      lines.push('Die bestätigte wirtschaftliche Entscheidungsgrundlage nicht erneut öffnen, sondern die technischen Nachweise und den verbindlichen Prüf- und Freigabetermin vorbereiten.');
+      lines.push('');
+      lines.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+      lines.push('1. Vorhandene technische und datenschutzrechtliche Nachweise bündeln.');
+      lines.push('2. Offene Nachweise, Verantwortliche und Entscheidungskriterien markieren.');
+      lines.push('3. Einen verbindlichen Prüf- und Entscheidungstermin sichern.');
+      return lines.join('\n');
+    }
+  }catch(e){}
   try{
     const cf=(typeof window.ki21ConstraintStateV297==='function')?(window.ki21ConstraintStateV297()||{}):{};
     if(cf&&cf.bc&&(cf.constraint==='sponsor'||cf.constraint==='technical')){
@@ -15176,8 +15264,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX -->
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15201,7 +15289,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15222,7 +15310,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16079,7 +16167,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+const KI21_VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
 
 
 function runKi21VersionMigration(){
@@ -19903,7 +19991,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19943,7 +20031,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19967,7 +20055,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19985,7 +20073,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20187,7 +20275,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
 
   function allStorageKeys(){
     const keys=[];
@@ -20398,7 +20486,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20609,7 +20697,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20811,7 +20899,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20927,7 +21015,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21024,7 +21112,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21106,7 +21194,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21129,7 +21217,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21307,7 +21395,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21496,7 +21584,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -21752,7 +21840,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+  const VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -21920,7 +22008,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22014,9 +22102,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22051,7 +22139,7 @@ window.addEventListener('pageshow',install,true);
 <script>
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+var VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
 window.KI21_VERSION=VERSION;
 function c(v){return String(v==null?'':v).replace(/\r/g,' ').replace(/\s+/g,' ').trim();}
 function aid(){try{return String((window.state&&window.state.activeId)||(window.LS&&LS.get('ki21_aid',''))||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'');}catch(e){return '';}}
@@ -22095,11 +22183,11 @@ new MutationObserver(schedule).observe(document.documentElement,{subtree:true,ch
 window.ki21ConstraintStateV297=facts;window.ki21ApplyConstraintV297=apply;
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+var VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22153,11 +22241,11 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX -->
+<!-- KI21 Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY -->
 <script id="ki21-v2910-generalized-phase4-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.12 DIRECT PHASE4 SOURCE FIX';
+var VERSION='Pilot Core 2.9.13 DIRECT GENERATOR AUTHORITY';
 window.KI21_VERSION=VERSION;
 function str(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function activeId(){
