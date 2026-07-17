@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<!-- KI21_BUILD: pilot-core-2.9.2-constraint-priority-fix-20260717 -->
+<!-- KI21_BUILD: pilot-core-2.9.3-constraint-engine-refactor-20260717 -->
 <html lang="de">
 <head>
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.9.2 CONSTRAINT PRIORITY FIX</title>
+<title>KI21 Pilot Core 2.9.3 CONSTRAINT ENGINE REFACTOR</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.9.2 CONSTRAINT PRIORITY FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.9.3 CONSTRAINT ENGINE REFACTOR — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -15035,6 +15035,7 @@ function generateKundePDF(aid, cust){
 
 
 
+<!-- KI21_FREEZE: 2.9.3 CORE MODEL DIRECT CONSTRAINT AUTHORITY -->
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -19301,6 +19302,60 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     return Math.max(10,Math.min(90,score));
   }
   function state(score){return score<40?'Niedrig':score<70?'Mittel':'Gut';}
+  function constraintFactsV293(){
+    let parts=[];
+    const aid=(function(){
+      try{return String((window.state&&window.state.activeId)||'');}catch(e){return '';}
+    })();
+    try{
+      if(aid&&typeof getOpportunityOnlySourceV6522==='function')parts.push(String(getOpportunityOnlySourceV6522(aid)||''));
+    }catch(e){}
+    try{
+      if(window.state&&Array.isArray(window.state.accounts)){
+        const a=window.state.accounts.find(x=>x&&String(x.id)===String(aid));
+        if(a)parts.push(JSON.stringify(a));
+      }
+    }catch(e){}
+    try{
+      if(aid){
+        ['ki21_import_raw_'+aid,'ki21_opportunity_source_'+aid,'ki21_crm_import_'+aid].forEach(k=>{
+          const v=localStorage.getItem(k);if(v)parts.push(v);
+        });
+      }
+    }catch(e){}
+    const raw=parts.join('\n').replace(/\\u00a0/g,' ').replace(/\s+/g,' ').trim();
+    const low=raw.toLowerCase();
+    const explicit=(labels,positive,negative)=>{
+      for(const label of labels){
+        const esc=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        const re=new RegExp('(?:^|[;,.\\n]|\\b)'+esc+'\\s*[:=\\-]\\s*([^;,.\\n]{0,180})','ig');
+        let m;
+        while((m=re.exec(raw))){
+          const v=String(m[1]||'').toLowerCase();
+          if(negative.test(v))continue;
+          if(positive.test(v))return true;
+        }
+      }
+      return false;
+    };
+    const pos=/(?:bestätigt|freigegeben|genehmigt|vereinbart|ja|vorhanden|persönlich eingebunden|aktiv eingebunden|grundsätzlich darstellbar|quantifiziert|klar positiv)/i;
+    const neg=/(?:noch nicht|nicht bestätigt|nicht freigegeben|offen|fehlt|ausstehend|unbekannt)/i;
+    const dm=explicit(['economic buyer','wirtschaftliche entscheiderin','wirtschaftlicher entscheider','economic buyer status'],pos,neg)
+      || /(?:economic buyer|wirtschaftliche entscheiderin|wirtschaftlicher entscheider)[^.!?]{0,120}(?:ist |wurde )?(?:bestätigt|persönlich eingebunden|aktiv eingebunden)/i.test(raw);
+    const budget=explicit(['budget','pilotbudget','budgetstatus'],pos,neg)
+      || /(?:pilotbudget|budget)[^.!?]{0,100}(?:ist |wurde )?(?:bestätigt|freigegeben|genehmigt|grundsätzlich darstellbar)/i.test(raw);
+    const bc=explicit(['business case','business-case','roi','wirtschaftlicher nutzen'],pos,neg)
+      || /business\s*case[^.!?]{0,120}(?:ist |wurde )?(?:bestätigt|quantifiziert|grundsätzlich bestätigt)/i.test(raw);
+    const criteria=explicit(['erfolgskriterien','success criteria','pilotziele'],pos,neg)
+      || /(?:erfolgskriterien|success criteria|pilotziele)[^.!?]{0,120}(?:sind |wurden )?(?:bestätigt|vereinbart)/i.test(raw);
+    const technical=/(?:technische|security|informationssicherheits|datenschutzrechtliche)\s*(?:prüfung|freigabe)[^.!?]{0,180}(?:noch nicht|offen|ausstehend|nicht erteilt|nicht freigegeben)/i.test(raw)
+      || /(?:ciso|datenschutz|informationssicherheit)[^.!?]{0,220}(?:freigabe|prüfung)[^.!?]{0,100}(?:offen|ausstehend|noch nicht|nicht erteilt)/i.test(raw)
+      || /noch keine (?:technische |datenschutzrechtliche )?freigabe/i.test(raw);
+    const workshop=/(?:prüf-?\s*und\s+entscheidungsworkshop|security workshop|technischer workshop)[^.!?]{0,160}(?:vereinbart|terminiert|bestätigt|in zwei wochen)/i.test(raw);
+    const scope=/(?:eu-speicherort|speicherort innerhalb der eu|löschkonzept|löschfristen|rollen.{0,20}berechtigungen|mandantentrennung|protokollierung|auftragsverarbeitungsvereinbarung|\bavv\b)/i.test(raw);
+    return {raw,dm,budget,bc,criteria,technical,workshop,scope,active:!!(raw&&dm&&budget&&bc&&criteria&&technical)};
+  }
+
   function model(){
     const s=parse(fullReport());
     const summary=(s['SALES SUMMARY']||[]).map(clean);
@@ -19391,15 +19446,29 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     if(/presales/.test(businessText))benefits.push('Weniger Presales');
     if(!benefits.length)benefits.push('Nutzen quantifizieren','Business Case bestätigen','Entscheidung absichern');
 
+    const constraint=constraintFactsV293();
+    if(constraint.active){
+      status='Wirtschaftlicher Bedarf, Sponsorin, Budget, Business Case und Erfolgskriterien sind bestätigt. Die Pilotentscheidung ist technisch noch offen.';
+      blocker='Die technische und datenschutzrechtliche Freigabe ist noch ausstehend. Sie ist der dominierende Kaufblocker.';
+      recommendation='Mit CISO, Informationssicherheit und Datenschutz die Freigabebedingungen verbindlich bestätigen und im Prüfworkshop eine Entscheidung erreichen.';
+      tasks[0]='Mit CISO, Informationssicherheit und Datenschutz die noch offenen Freigabebedingungen verbindlich klären.';
+      tasks[1]='EU-Speicherort, Datenarten, Löschkonzept, Rollen und Berechtigungen, Mandantentrennung, Protokollierung und AVV-Nachweis kompakt vorbereiten.';
+      tasks[2]='Im Prüfworkshop Pilotfreigabe, verbindliche Auflagen oder eine abschließende Nachweisliste mit Verantwortlichen und Termin entscheiden.';
+      businessStatus='Der wirtschaftliche Business Case ist grundsätzlich bestätigt. Offen ist ausschließlich die technische und datenschutzrechtliche Pilotfreigabe.';
+      benefits.splice(0,benefits.length,'Business Case bestätigt','Budget bestätigt','Technische Freigabe offen');
+    }
+
     return {
+      constraintTechnical:constraint.active,
+      constraintFacts:constraint,
       status:status||'Sponsor bestätigt Handlungsbedarf. Pilotentscheidung noch offen.',
       blocker:blocker||'Wirtschaftliche Entscheiderin nicht eingebunden. Budget und Erfolgskriterien offen.',
       recommendation,
-      score,
-      state:state(score),
-      up:shorten(up,105),
-      down:shorten(down,80),
-      decision:(function(v){
+      score:constraint.active?(68+(constraint.workshop?4:0)+(constraint.scope?3:0)):score,
+      state:state(constraint.active?(68+(constraint.workshop?4:0)+(constraint.scope?3:0)):score),
+      up:constraint.active?'CISO und Datenschutz erteilen die Pilotfreigabe':shorten(up,105),
+      down:constraint.active?'zusätzliche Sicherheitsnachweise oder Architekturänderungen werden erforderlich':shorten(down,80),
+      decision:constraint.active?'Der Kunde bestätigt die technische und datenschutzrechtliche Freigabe des begrenzten Piloten.':(function(v){
         var s=clean(v||'');
         if(/begrenzter Pilot/i.test(s)&&/Bedingungen/i.test(s)){
           return 'Der Kunde bestätigt die Bedingungen und den Freigabeweg für einen begrenzten Piloten.';
@@ -19409,8 +19478,8 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
         }
         return shorten(s||'Der Kunde bestätigt die Bedingungen und den Freigabeweg für einen begrenzten Piloten.',118);
       })(expectedDecision),
-      success:shorten(success,150),
-      rationale,
+      success:constraint.active?'Pilotfreigabe erteilt oder abschließende Liste fehlender Nachweise mit Verantwortlichen und Entscheidungstermin bestätigt.':shorten(success,150),
+      rationale:constraint.active?'Die wirtschaftlichen Kaufbedingungen sind erfüllt. Fortschritt entsteht jetzt nur durch die technische und datenschutzrechtliche Freigabe.':rationale,
       fullLogic:fullLogic||rationale,
       tasks,
       businessStatus,
@@ -19419,6 +19488,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   }
 
   function confidenceGuardV270(m){
+    if(m&&m.constraintTechnical)return m;
     const report=fullReport();
     const low=String(report||'').toLowerCase();
 
@@ -19490,9 +19560,11 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     summary.appendChild(rec);
     root.appendChild(summary);
 
-    const centralScores=(typeof window.ki21ScoresV173==='function')
-      ?(window.ki21ScoresV173()||{})
-      :{health:m.score,forecast:Math.max(20,Math.min(60,m.score-24))};
+    const centralScores=m.constraintTechnical
+      ?{health:m.score,forecast:48+(m.constraintFacts&&m.constraintFacts.workshop?5:0)+(m.constraintFacts&&m.constraintFacts.scope?4:0)}
+      :((typeof window.ki21ScoresV173==='function')
+        ?(window.ki21ScoresV173()||{})
+        :{health:m.score,forecast:Math.max(20,Math.min(60,m.score-24))});
     const healthScore=Number.isFinite(Number(centralScores.health))?Number(centralScores.health):m.score;
     const forecastScore=Number.isFinite(Number(centralScores.forecast))?Number(centralScores.forecast):Math.max(20,Math.min(60,m.score-24));
     const healthState=healthScore<45?'NIEDRIG':healthScore<68?'MITTEL':'GUT';
@@ -21884,7 +21956,7 @@ window.addEventListener('pageshow',install,true);
 <script id="ki21-v250-opportunity-isolation-state-gate">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.2 CONSTRAINT PRIORITY FIX';
+var VERSION='Pilot Core 2.9.3 CONSTRAINT ENGINE REFACTOR';
 window.KI21_VERSION=VERSION;
 
 function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
