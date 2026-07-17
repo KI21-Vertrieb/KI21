@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<!-- KI21_BUILD: pilot-core-2.6.7-mobile-readability-fix-20260716 -->
+<!-- KI21_BUILD: pilot-core-2.7.0-decision-intelligence-refinement-20260717 -->
 <html lang="de">
 <head>
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX</title>
+<title>KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2652,6 +2652,20 @@ html.ki21-score-syncing .score-pair-v667{
   .ki21-clean-action-text{font-size:12.4px!important;line-height:1.40!important;}
   .ki21-clean-success{font-size:10.7px!important;}
   .ki21-clean-root{padding-bottom:max(160px,calc(120px + env(safe-area-inset-bottom)))!important;}
+}
+</style>
+
+
+<style id="ki21-v270-decision-intelligence-refinement">
+.ki21-clean-card.business .ki21-clean-business-status{
+  font-size:13px!important;
+  line-height:1.42!important;
+  white-space:normal!important;
+  overflow:visible!important;
+}
+.ki21-clean-action-text{
+  white-space:normal!important;
+  overflow:visible!important;
 }
 </style>
 
@@ -15099,8 +15113,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX -->
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15124,7 +15138,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15145,7 +15159,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16002,7 +16016,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+const KI21_VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 
 
 function runKi21VersionMigration(){
@@ -19301,8 +19315,11 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     let blocker=label(summary,'Engpass')
       .replace(/Die wirtschaftliche Entscheiderin ist noch nicht eingebunden;\s*/i,'Wirtschaftliche Entscheiderin nicht eingebunden. ')
       .replace(/Budget, Erfolgskriterien und gemeinsamer Entscheidungstermin sind offen\.?/i,'Budget und Erfolgskriterien offen.');
-    const recommendation=label(summary,'Empfehlung')||
-      'Gemeinsamen Discovery- und Entscheidungstermin verbindlich vereinbaren.';
+    let recommendation=label(summary,'Empfehlung')||
+      'Mit der wirtschaftlichen Entscheiderin die Bedingungen für einen begrenzten Piloten verbindlich klären.';
+    if(/Discovery- und Entscheidungstermin/i.test(recommendation)){
+      recommendation='Mit der wirtschaftlichen Entscheiderin die Bedingungen für einen begrenzten Piloten verbindlich klären.';
+    }
 
     /*
      * Score source order:
@@ -19332,17 +19349,24 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     )||'Die Entscheiderin beauftragt einen konkreten Pilotvorschlag.';
 
     const tasks=[
-      strip(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN')||
-        'Discovery-Termin mit Sponsor, Entscheiderin und Presales vereinbaren.',
+      (function(v){
+        var s=clean(v||'');
+        if(!s || /Discovery- und Entscheidungstermin/i.test(s)){
+          return 'Mit der wirtschaftlichen Entscheiderin die Bedingungen und den Freigabeweg für einen begrenzten Piloten verbindlich klären.';
+        }
+        return s;
+      })(strip(command.find(x=>/^JETZT TUN:/i.test(x))||'','JETZT TUN')),
       strip(command.find(x=>/^VORBEREITEN:/i.test(x))||'','VORBEREITEN')||
-        'Drei reale Opportunities mit Forecast und Presales-Aufwand vorbereiten.',
+        'Dokumentierten Aufwand, geeignete Pilot-Opportunities, mögliche Erfolgskriterien und technische Prüffragen vorbereiten.',
       strip(command.find(x=>/^IM TERMIN ENTSCHEIDEN:/i.test(x))||'','IM TERMIN ENTSCHEIDEN')||
-        'Business Case, Budgetweg und Pilotziele bestätigen.'
-    ].map(x=>shorten(x,155));
+        'Wirtschaftlichen Handlungsdruck, Rollen, Budgetrahmen, Pilotziele, Erfolgskriterien und Prüfungsumfang verbindlich klären.'
+    ].map(x=>shorten(x,170));
 
-    let businessStatus='Business Case noch nicht bestätigt.';
+    let businessStatus='Business Case noch nicht bestätigt. Derzeit liegt nur ein dokumentierter operativer Aufwand vor.';
     const open=business.find(x=>/noch nicht bestätigt|noch nicht quantifiziert|offen/i.test(x));
-    if(open)businessStatus=shorten(open,120);
+    if(open && /operativer aufwand|30\s*(?:bis|–|-)\s*45|manuell/i.test(business.join(' '))){
+      businessStatus='Business Case noch nicht bestätigt. Derzeit liegt nur ein dokumentierter operativer Aufwand vor.';
+    }
 
     const fullLogic=strip(chain.find(x=>/^DEAL-LOGIK/i.test(x))||'','DEAL-LOGIK')
       ||strip(hypothesis.find(x=>/^AKTUELLE DEAL-HYPOTHESE/i.test(x))||'','AKTUELLE DEAL-HYPOTHESE');
@@ -19391,6 +19415,21 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
       benefits:[...new Set(benefits)].slice(0,3)
     };
   }
+
+  function confidenceGuardV270(m){
+    const moveToOpen=[];
+    if(/Sponsor bestätigt/i.test(m.status||'') && /Sponsorrolle.*nicht/i.test(fullReport())){
+      m.status=(m.status||'').replace(/Sponsor bestätigt Handlungsbedarf\.?\s*/i,'Fachlicher Handlungsbedarf ist bestätigt. ');
+    }
+    if(/Einspar|erspar|ROI|wirtschaftliche Wirkung bestätigt/i.test(m.businessStatus||'')){
+      m.businessStatus='Business Case noch nicht bestätigt. Derzeit liegt nur ein dokumentierter operativer Aufwand vor.';
+    }
+    if(/Pilotstart|Projektstart/i.test(m.recommendation||'') && /Pilotentscheidung noch offen|Pilotfreigabe.*noch nicht/i.test(fullReport())){
+      m.recommendation='Mit der wirtschaftlichen Entscheiderin die Bedingungen für einen begrenzten Piloten verbindlich klären.';
+    }
+    return m;
+  }
+
   function el(tag,cls,text){
     const e=document.createElement(tag);
     if(cls)e.className=cls;
@@ -19403,7 +19442,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
     const tabs=wrap&&wrap.querySelector('.ki21-mode-tabs');
     if(!wrap||!tabs)return false;
 
-    const m=model();
+    const m=confidenceGuardV270(model());
     wrap.querySelectorAll('.ki21-clean-root').forEach(x=>x.remove());
 
     const nav=tabs.parentElement;
@@ -19717,7 +19756,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -19757,7 +19796,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -19781,7 +19820,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -19799,7 +19838,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20001,7 +20040,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 
   function allStorageKeys(){
     const keys=[];
@@ -20212,7 +20251,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20423,7 +20462,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20625,7 +20664,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -20741,7 +20780,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -20838,7 +20877,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -20922,7 +20961,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -20946,7 +20985,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -20956,16 +20995,37 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
         :{score:50,conflict:false,itConditions:false,budget:false,workshop:false,success:false,euroConfirmed:false};
 
       const health=Math.max(20,Math.min(85,Number(m.score)||50));
-      let forecast=24;
-      if(m.executive)forecast+=8;
-      if(m.budget)forecast+=6;
-      if(m.workshop)forecast+=6;
-      if(m.itConditions)forecast+=7;
+      let raw='';
+      try{
+        const id=(window.state&&window.state.activeId)||'';
+        if(id&&typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'');
+      }catch(_){}
+      const low=raw.toLowerCase();
+
+      const decisionMakerMissing=/wirtschaftliche\s+entscheiderin[^.!?]{0,160}(noch\s+nicht\s+persönlich|nicht\s+eingebunden|noch\s+nicht\s+eingebunden)|noch\s+nicht\s+direkt\s+eingebunden/i.test(low);
+      const budgetOpen=/budget[^.!?]{0,100}(noch\s+nicht\s+bestätigt|offen|nicht\s+bestätigt)|pilotbudget[^.!?]{0,100}(offen|nicht\s+bestätigt)/i.test(low);
+      const businessOpen=/business\s*case[^.!?]{0,120}(noch\s+nicht\s+bestätigt|liegt\s+noch\s+nicht\s+vor|offen)|finanziell\s+bestätigter\s+business\s*case\s+liegt\s+nicht\s+vor/i.test(low);
+      const criteriaOpen=/erfolgskriterien[^.!?]{0,120}(noch\s+nicht\s+vereinbart|offen|nicht\s+bestätigt)/i.test(low);
+      const meetingOpen=/(nächster\s+kundentermin|entscheidungstermin|gemeinsamer\s+termin)[^.!?]{0,120}(noch\s+nicht\s+verbindlich|nicht\s+vereinbart|offen)/i.test(low);
+      const sponsorOnly=/fachlicher\s+hauptkontakt|möglicher\s+sponsor|sponsorrolle[^.!?]{0,80}(noch\s+nicht|unklar)/i.test(low);
+
+      let forecast=38;
+      if(m.executive)forecast+=7;
+      if(m.budget)forecast+=7;
+      if(m.workshop)forecast+=5;
+      if(m.itConditions)forecast+=4;
       if(m.success)forecast+=5;
       if(m.conflict)forecast-=5;
-      if(!m.euroConfirmed)forecast-=2;
-      forecast=Math.max(20,Math.min(m.conflict?55:72,forecast));
+      if(!m.euroConfirmed)forecast-=4;
 
+      if(decisionMakerMissing)forecast-=12;
+      if(budgetOpen)forecast-=8;
+      if(businessOpen)forecast-=7;
+      if(criteriaOpen)forecast-=5;
+      if(meetingOpen)forecast-=4;
+      if(sponsorOnly)forecast-=3;
+
+      forecast=Math.max(15,Math.min(m.conflict?50:68,forecast));
       return {health:health,forecast:forecast};
     }catch(e){
       return {health:50,forecast:35};
@@ -21037,7 +21097,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21227,7 +21287,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -21484,7 +21544,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+  const VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -21654,7 +21714,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.6.7 MOBILE READABILITY FIX -->
+<!-- KI21 Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -21738,7 +21798,7 @@ window.addEventListener('pageshow',install,true);
 <script id="ki21-v250-opportunity-isolation-state-gate">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 window.KI21_VERSION=VERSION;
 
 function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21868,7 +21928,7 @@ window.addEventListener('pageshow',function(){install();forceCockpit();},true);
 <script id="ki21-v251-deal-state-consistency-fix">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 var FORECAST=30;
 window.KI21_VERSION=VERSION;
 function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21928,7 +21988,7 @@ window.addEventListener('pageshow',function(){install();setTimeout(syncUI,120);}
 <script id="ki21-v260-executive-decision-quality">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 window.KI21_VERSION=VERSION;
 
 function activeSourceV260(){
@@ -22051,7 +22111,7 @@ window.addEventListener('pageshow',installV260,true);
 <script id="ki21-v262-start-safe-regression-guard">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 window.KI21_VERSION=VERSION;
 function activeSource(){
   var id='';
@@ -22132,7 +22192,7 @@ setTimeout(install,1200);
 <script id="ki21-v263-evidence-role-final-guard">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 window.KI21_VERSION=VERSION;
 function srcText(){
   var id='';try{id=(window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){}
@@ -22194,7 +22254,7 @@ window.addEventListener('pageshow',install,true);setTimeout(install,1400);
 <script id="ki21-v264-deterministic-qualification-engine">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.6.7 MOBILE READABILITY FIX';
+var VERSION='Pilot Core 2.7.0 DECISION INTELLIGENCE REFINEMENT';
 window.KI21_VERSION=VERSION;
 
 function activeIdV264(){
