@@ -23760,5 +23760,61 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setInterval(apply,750);
 })();
 </script>
+
+<!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
+<script id="ki21-v296-fixed3-phase4-authority">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.6 BUSINESS CASE EVIDENCE AUTHORITY';
+function forced(){try{return typeof window.ki21BuildBusinessCaseV296==='function'?String(window.ki21BuildBusinessCaseV296()||''):'';}catch(e){return '';}}
+function activeId(){try{return (window.state&&window.state.activeId)||(window.LS&&LS.get('ki21_aid',''))||localStorage.getItem('ki21_aid')||'';}catch(e){return '';}}
+function oldBC(t){return /Der Business Case ist teilweise quantifiziert|wirtschaftlichen Folgen sind plausibel, aber noch nicht belastbar|NOCH ZU VALIDIEREN[\s\S]{0,900}Vollkosten der monatlich gebundenen 180.?220 Stunden|Die wirtschaftlichen Folgen müssen mit belastbaren Einzelwerten|zwei bis drei konkrete Forecast-Schadenfälle/i.test(String(t||''));}
+function writePhase4(){
+  var text=forced(),id=activeId(); if(!text||!id)return;
+  var key='ki21_st_'+id+'_3';
+  try{
+    var data;
+    if(window.LS&&typeof LS.get==='function')data=LS.get(key,{fv:{},result:''});
+    else {try{data=JSON.parse(localStorage.getItem(key)||'{}');}catch(e){data={};}}
+    data=data&&typeof data==='object'?data:{};
+    if(String(data.result||'')!==text){data.result=text;if(window.LS&&typeof LS.set==='function')LS.set(key,data);else localStorage.setItem(key,JSON.stringify(data));}
+  }catch(e){}
+}
+function replaceVisible(){
+  var text=forced(); if(!text)return;
+  document.querySelectorAll('.result-body,[data-result-body],pre,textarea,[contenteditable="true"]').forEach(function(el){
+    var t=('value' in el)?String(el.value||''):String(el.innerText||el.textContent||'');
+    if(!oldBC(t))return;
+    if('value' in el)el.value=text; else el.textContent=text;
+  });
+}
+function wrapPipeline(){
+  try{
+    var q=window.qualityCleanupV4216;
+    if(typeof q==='function'&&!q.__ki21v296fixed3){
+      var w=function(accId,text,sitId){if(Number(sitId)===3){var f=forced();if(f)return f;}return q.apply(this,arguments);};
+      w.__ki21v296fixed3=true;window.qualityCleanupV4216=w;
+    }
+  }catch(e){}
+  try{
+    var san=window.ki21SanitizePhase4V220;
+    if(typeof san==='function'&&!san.__ki21v296fixed3){
+      var sw=function(output,accId){var f=forced();return f||san.apply(this,arguments);};
+      sw.__ki21v296fixed3=true;window.ki21SanitizePhase4V220=sw;
+    }
+  }catch(e){}
+}
+function apply(){
+  try{document.title='KI21 '+VERSION;}catch(e){}
+  document.querySelectorAll('.tagline').forEach(function(el){if(el.textContent!==VERSION)el.textContent=VERSION;});
+  wrapPipeline();writePhase4();replaceVisible();
+}
+var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;apply();});}
+new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+window.addEventListener('pageshow',function(){apply();setTimeout(apply,100);setTimeout(apply,500);setTimeout(apply,1500);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+setInterval(apply,600);
+})();
+</script>
 </body>
 </html>
