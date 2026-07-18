@@ -16096,7 +16096,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21061,7 +21061,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
 
   function allStorageKeys(){
     const keys=[];
@@ -21272,7 +21272,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21483,7 +21483,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21685,7 +21685,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21801,7 +21801,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21898,7 +21898,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21980,7 +21980,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -22003,7 +22003,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22181,7 +22181,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22439,7 +22439,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22695,7 +22695,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -23099,9 +23099,10 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 <script id="ki21-430-state-translation-phase-dna">
 (function(){
 'use strict';
-const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
-const BUILD='KI21-503-SMR-20260718';
+const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
+const BUILD='KI21-504-FSP-20260718';
 window.KI21_VERSION=VERSION;
+const __ki21StateCache=new Map();
 
 function norm(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 function activeId(){try{return String((window.state&&state.activeId)||LS.get('ki21_aid','')||'');}catch(e){return '';}}
@@ -23123,7 +23124,10 @@ function sourceText(id){
 function explicit(text,re){return re.test(String(text||''));}
 function sentenceQuotes(src){return String(src||'').split(/(?<=[.!?])\s+|\n+/).map(norm).filter(x=>x.length>8);}
 function canonical(id){
-  const src=sourceText(id), low=src.toLowerCase(), sentences=sentenceQuotes(src);
+  const src=sourceText(id), sourceHash=(typeof simpleHash==='function'?simpleHash(src):String(src.length)+':'+src.slice(0,80));
+  const cached=__ki21StateCache.get(String(id));
+  if(cached&&cached.sourceHash===sourceHash)return cached.value;
+  const low=src.toLowerCase(), sentences=sentenceQuotes(src);
   const quantities=[];
   const qr=/(\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?)\s*(stunden|tage|arbeitstage|wochen|monate|nutzer|mitarbeiter|deals|opportunities)\s*(?:pro|je|\/)?\s*(monat|quartal|jahr|woche)?/gi;
   let m;while((m=qr.exec(src)))quantities.push({type:'METRIC',value:norm(m[1]),unit:m[2].toLowerCase(),period:(m[3]||'').toLowerCase(),quote:norm(m[0]),purpose:'OBSERVED'});
@@ -23166,7 +23170,9 @@ function canonical(id){
     if(/offen|unklar|noch nicht|nicht bestätigt/i.test(q))type='STATE';
     evidence.push({type,quote:q});
   });
-  return {build:BUILD,id,sourceHash:(typeof simpleHash==='function'?simpleHash(src):String(src.length)),source:src,quantities,euro,evidence,budget:{approved:budgetApproved,authority:budgetAuthority,ceiling:budgetCeiling},sponsor:{confirmed:sponsorConfirmed,open:sponsorOpen},businessCase:{confirmed:bcConfirmed,open:bcOpen},pilot:{approved:pilotApproved},technical:{open:technicalOpen},maturity,translations,blocker,decision};
+  const value={build:BUILD,id,sourceHash,source:src,quantities,euro,evidence,budget:{approved:budgetApproved,authority:budgetAuthority,ceiling:budgetCeiling},sponsor:{confirmed:sponsorConfirmed,open:sponsorOpen},businessCase:{confirmed:bcConfirmed,open:bcOpen},pilot:{approved:pilotApproved},technical:{open:technicalOpen},maturity,translations,blocker,decision};
+  __ki21StateCache.set(String(id),{sourceHash,value});
+  return value;
 }
 window.ki21CanonicalDecisionStateV410=canonical;
 
@@ -23228,31 +23234,32 @@ function audit(text,t,phaseIndex){
  return {hard:[...new Set(hard)],soft:[...new Set(soft)]};
 }
 const base=window.callKI21Phase;
-if(typeof base==='function'&&!base.__ki21v430){
+if(typeof base==='function'&&!base.__ki21v504){
  const wrapped=async function(opportunityId,phaseIndex,phasePrompt,onStream){
-   const t=canonical(String(opportunityId||''));
-   const enriched=String(phasePrompt||'')+truthBlock(t,Number(phaseIndex));
+   const id=String(opportunityId||''), phase=Number(phaseIndex);
+   const t=canonical(id);
+   const enriched=String(phasePrompt||'')+truthBlock(t,phase);
+   // 5.0.4: genau ein Hauptlauf. Weiche Hinweise werden lokal protokolliert,
+   // aber lösen keinen teuren zweiten KI-Aufruf mehr aus.
    let result=await base(opportunityId,phaseIndex,enriched,onStream);
-   let check=audit(result,t,Number(phaseIndex));
-   if(check.soft.length||check.hard.length){
-     const repair=enriched+`\n\nKORREKTURLAUF: Der vorherige Entwurf verletzte folgende Architekturregeln: ${check.soft.concat(check.hard).join('; ')}. Erzeuge den vollständigen Bericht neu. Nutze die State-Übersetzungen korrekt, wahre die Phase DNA, markiere Hypothesen und Empfehlungen, und erfinde keine Zahlen oder Details. Keine Erklärung, nur den vollständigen Bericht.`;
-     result=await base(opportunityId,phaseIndex,repair,onStream);
-     check=audit(result,t,Number(phaseIndex));
-   }
-   if(check.hard.length){
-     // 5.0.3: Ein letzter deterministischer Reparaturlauf mit den exakt erlaubten Metriken.
+   let check=audit(result,t,phase);
+   const critical=[...check.hard];
+   if(!t.budget.approved&&/(pilotbudget|budget|investition)[^.!?\n]{0,55}(bestätigt|freigegeben|genehmigt)|(?:bestätigt|freigegeben|genehmigt)[^.!?\n]{0,55}(pilotbudget|budget|investition)/i.test(String(result||'')))critical.push('Budgetstatus hochgestuft');
+   if(!t.businessCase.confirmed&&/(business case|roi)[^.!?\n]{0,65}(bestätigt|bewiesen|belastbar)|(?:bestätigt|bewiesen)[^.!?\n]{0,65}(business case|roi)/i.test(String(result||'')))critical.push('Business-Case-Status hochgestuft');
+   if(!t.pilot.approved&&/(pilot|projekt)[^.!?\n]{0,55}(freigegeben|genehmigt|beauftragt)/i.test(String(result||'')))critical.push('Pilotstatus hochgestuft');
+   // Nur bei echten State-/Metrikverletzungen maximal EIN gezielter Reparaturlauf.
+   if(critical.length){
      const allowed=t.quantities.map(q=>q.quote).join(' | ')||'keine expliziten Mengenangaben';
-     const forbidden=check.hard.join('; ');
-     const finalRepair=enriched+`\n\nVERBINDLICHE METRIK-KORREKTUR: Folgende Veränderung ist verboten: ${forbidden}. Erlaubt sind ausschließlich diese ausdrücklich belegten Mengen-/Einheiten-Kombinationen: ${allowed}. Verwende keine andere Zahl mit einer dieser Einheiten. Erzeuge den vollständigen Bericht neu, ohne Kommentar.`;
-     result=await base(opportunityId,phaseIndex,finalRepair,onStream);
-     check=audit(result,t,Number(phaseIndex));
+     const repair=enriched+`\n\nEINMALIGER KORREKTURLAUF: Der Entwurf verletzt verbindliche Zustände: ${[...new Set(critical)].join('; ')}. Verwende exakt diese Zustände: ${t.translations.budget} ${t.translations.businessCase} ${t.translations.pilot} ${t.translations.sponsor} Erlaubte Mengen-/Einheiten-Kombinationen: ${allowed}. Erzeuge den vollständigen Bericht neu, ohne Erklärung.`;
+     result=await base(opportunityId,phaseIndex,repair,onStream);
+     check=audit(result,t,phase);
    }
    if(check.hard.length)throw new Error('Single-Source-Prüfung nicht bestanden: '+check.hard.join('; ')+'. Ergebnis wurde nicht gespeichert.');
-   try{localStorage.setItem('ki21_last_state_translation_warnings',JSON.stringify({id:opportunityId,phase:phaseIndex,warnings:check.soft,ts:Date.now()}));}catch(e){}
+   try{localStorage.setItem('ki21_last_state_translation_warnings',JSON.stringify({id:opportunityId,phase:phaseIndex,warnings:check.soft,fastPipeline:true,aiCalls:critical.length?2:1,ts:Date.now()}));}catch(e){}
    try{localStorage.setItem('ki21_truth_'+opportunityId,JSON.stringify(t));}catch(e){}
    return result;
  };
- wrapped.__ki21v430=true;window.callKI21Phase=wrapped;
+ wrapped.__ki21v504=true;window.callKI21Phase=wrapped;
 }
 function setLeafByLabel(label,value){
  const all=[...document.querySelectorAll('*')];
@@ -23570,10 +23577,10 @@ Architecture Foundation
 -->
 
 
-<!-- KI21 Pilot Core 5.0.3 SEMANTIC METRIC REPAIR -->
+<!-- KI21 Pilot Core 5.0.4 FAST STATE PIPELINE -->
 <script>
 (function(){
-  const VERSION='Pilot Core 5.0.3 SEMANTIC METRIC REPAIR';
+  const VERSION='Pilot Core 5.0.4 FAST STATE PIPELINE';
   window.KI21_VERSION=VERSION;
   try{
     document.documentElement.setAttribute('data-ki21-build','5.0.2');
@@ -23588,5 +23595,8 @@ Architecture Foundation
   }catch(e){}
 })();
 </script>
+
+<!-- KI21 Pilot Core 5.0.4 FAST STATE PIPELINE
+     One primary generation; local soft validation; maximum one repair call for critical state/metric conflicts. -->
 </body>
 </html>
