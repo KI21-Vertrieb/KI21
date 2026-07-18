@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE</title>
+<title>KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4597,7 +4597,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.1.8',name:'EVIDENCE LINE GATE',buildId:'KI21-318-ELG-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.2.0',name:'STRUCTURED FACT COMPOSER',buildId:'KI21-320-SFC-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4945,6 +4945,96 @@ function ki21EvidenceLineGateV318(text,evidenceBasis,phaseIndex){
   return result;
 }
 
+function ki21NormEvidenceV320(v){
+  return String(v==null?'':v).toLowerCase().replace(/[„“”]/g,'"').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
+}
+function ki21ExtractJsonV320(raw){
+  const text=String(raw||'');
+  const a=text.indexOf('{'), b=text.lastIndexOf('}');
+  if(a<0||b<=a)throw new Error('Strukturierte P4/P5-Antwort fehlt. Bitte erneut generieren.');
+  try{return JSON.parse(text.slice(a,b+1));}catch(e){throw new Error('Strukturierte P4/P5-Antwort war ungültig. Bitte erneut generieren.');}
+}
+function ki21EvidenceSupportedV320(item,context){
+  if(!item||typeof item.text!=='string'||!item.text.trim())return false;
+  const evidence=Array.isArray(item.evidence)?item.evidence:[];
+  if(!evidence.length)return false;
+  const ctx=ki21NormEvidenceV320(context);
+  const evText=evidence.map(x=>String(x||'').trim()).filter(Boolean);
+  if(!evText.length||!evText.every(q=>ctx.includes(ki21NormEvidenceV320(q))))return false;
+  const combined=ki21NormEvidenceV320(evText.join(' '));
+  const text=String(item.text||'');
+  const nums=[...text.matchAll(/\b\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?\b/g)].map(m=>ki21NormEvidenceV320(m[0]));
+  if(nums.some(n=>!combined.includes(n)))return false;
+  const names=[...text.matchAll(/\b([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g)].map(m=>ki21NormEvidenceV320(m[1]));
+  if(names.some(n=>!combined.includes(n)))return false;
+  const forbidden=/\b(?:avv|berechtigungskonzept|rollen-?\/berechtigung|go-?live|kick-?off|schriftlich|nächste woche|innerhalb weniger wochen|stundensatz|overhead|lizenzkosten|angebotsbaustein|kostenstruktur)\b/i;
+  if(forbidden.test(text) && !forbidden.test(evText.join(' ')))return false;
+  return true;
+}
+function ki21CleanStructuredItemV320(item,context){
+  return ki21EvidenceSupportedV320(item,context)?String(item.text).trim():'';
+}
+function ki21CleanStructuredListV320(list,context,max){
+  return (Array.isArray(list)?list:[]).map(x=>ki21CleanStructuredItemV320(x,context)).filter(Boolean).slice(0,max||99);
+}
+function ki21ComposeP4V320(data,context){
+  const assessment=ki21CleanStructuredItemV320(data.assessment,context);
+  const points=ki21CleanStructuredListV320(data.key_points,context,5);
+  const roi=ki21CleanStructuredListV320(data.roi_positions,context,4);
+  const benefit=ki21CleanStructuredListV320(data.economic_benefit,context,3);
+  const missing=ki21CleanStructuredItemV320(data.missing_one,context);
+  const next=ki21CleanStructuredItemV320(data.next_step,context);
+  const actions=ki21CleanStructuredListV320(data.actions,context,3);
+  if(!assessment||points.length<3||!missing||!next||actions.length<2)throw new Error('P4 enthielt zu wenig belegte Aussagen. Bitte erneut generieren.');
+  const out=[];
+  out.push('EINSCHÄTZUNG\n'+assessment);
+  out.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN\n'+points.map(x=>'• '+x).join('\n'));
+  if(roi.length)out.push('🎯 ROI-WIRKSAME POSITIONEN\n'+roi.map(x=>'• '+x).join('\n'));
+  if(benefit.length)out.push('💰 WIRTSCHAFTLICHER NUTZEN\n'+benefit.map(x=>'• '+x).join('\n'));
+  out.push('⚠️ DIE EINE SACHE DIE FEHLT\n'+missing);
+  out.push('NÄCHSTER SCHRITT DIESE WOCHE\n'+next);
+  out.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST\n'+actions.map((x,i)=>(i+1)+'. '+x).join('\n'));
+  return out.join('\n\n');
+}
+function ki21ComposeP5V320(data,context){
+  const prep=ki21CleanStructuredItemV320(data.prep_status,context);
+  const assessment=ki21CleanStructuredItemV320(data.assessment,context);
+  const args=ki21CleanStructuredListV320(data.buy_arguments,context,3);
+  const objections=(Array.isArray(data.objections)?data.objections:[]).map(o=>{
+    if(!o||!o.objection||!o.response)return '';
+    const merged={text:'„'+String(o.objection.text||'').trim()+'“ → '+String(o.response.text||'').trim(),evidence:[...(o.objection.evidence||[]),...(o.response.evidence||[])]};
+    return ki21CleanStructuredItemV320(merged,context);
+  }).filter(Boolean).slice(0,3);
+  const open=(Array.isArray(data.open_points)?data.open_points:[]).map(o=>{
+    const txt=ki21CleanStructuredItemV320(o,context); if(!txt)return '';
+    const pr=String(o.priority||'').toUpperCase(); const icon=pr==='RED'?'🔴':pr==='YELLOW'?'🟡':'⚪';
+    return icon+' '+txt;
+  }).filter(Boolean).slice(0,3);
+  const missing=ki21CleanStructuredItemV320(data.missing_one,context);
+  const next=ki21CleanStructuredItemV320(data.next_step,context);
+  const actions=ki21CleanStructuredListV320(data.actions,context,3);
+  const opening=ki21CleanStructuredItemV320(data.opening_sentence,context);
+  const closing=ki21CleanStructuredItemV320(data.closing_sentence,context);
+  if(!assessment||args.length<2||!missing||!next||actions.length<2||!opening||!closing)throw new Error('P5 enthielt zu wenig belegte Aussagen. Bitte erneut generieren.');
+  const out=[];
+  if(prep)out.push('⚠️ VORBEREITUNGSSTAND: '+prep);
+  out.push('EINSCHÄTZUNG\n'+assessment);
+  out.push('KAUFARGUMENTE\n'+args.map(x=>'• '+x).join('\n'));
+  if(objections.length)out.push('EINWÄNDE\n'+objections.map(x=>'• '+x).join('\n'));
+  if(open.length)out.push('OFFENE PUNKTE\n'+open.map(x=>'• '+x).join('\n'));
+  out.push('🔴 DIE EINE SACHE DIE FEHLT\n'+missing);
+  out.push('NÄCHSTER SCHRITT DIESE WOCHE\n'+next);
+  out.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST\n'+actions.map((x,i)=>(i+1)+'. '+x).join('\n'));
+  out.push('ERÖFFNUNGSSATZ\n'+opening);
+  out.push('DER EINE ABSCHLUSSSATZ\n'+closing);
+  return out.join('\n\n');
+}
+function ki21StructuredSchemaPromptV320(phaseIndex){
+  if(Number(phaseIndex)===3)return `\nP4 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte nach dem Vertragstoken ausschließlich mit gültigem JSON. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss wortwörtlich im Kontext vorkommen. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"assessment":OBJ,"key_points":[OBJ,OBJ,OBJ,OBJ,OBJ],"roi_positions":[OBJ,OBJ,OBJ,OBJ],"economic_benefit":[OBJ,OBJ,OBJ],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ]}\nNur belegte Aussagen. Keine neuen Zahlen, Rollen, Fristen, Kostenarten, Formalitäten oder fehlenden Datenkategorien. ROI nur als nicht belastbar berechenbar, wenn genau diese Unsicherheit im Kontext belegt ist.`;
+  if(Number(phaseIndex)===4)return `\nP5 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte nach dem Vertragstoken ausschließlich mit gültigem JSON. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss wortwörtlich im Kontext vorkommen. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"prep_status":OBJ,"assessment":OBJ,"buy_arguments":[OBJ,OBJ,OBJ],"objections":[{"objection":OBJ,"response":OBJ}],"open_points":[{"priority":"RED|YELLOW|WHITE","text":"...","evidence":["..."]}],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ],"opening_sentence":OBJ,"closing_sentence":OBJ}\nNur belegte Abschlussfakten und belegte offene Entscheidungen. Keine AVV-, Datenschutz-, Berechtigungs-, Integrations-, Vertrags-, Kickoff-, Go-live-, Frist- oder Schriftformbehauptung ohne wörtliche Evidence.`;
+  return '';
+}
+
 async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const oid=String(opportunityId||'').trim();
   const p=KI21_PHASE_META[Number(phaseIndex)];
@@ -4958,62 +5048,34 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const closedBookContext=ki21ClosedBookContextV307(authoritative.context,primaryEvidence);
   const sanitizedPhasePrompt=ki21SanitizePhasePromptV303(phasePrompt,primaryEvidence);
   const contractToken=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
-  const phase4Rules=Number(phaseIndex)===3?`
-PHASE-4 – GESCHLOSSENER FAKTENMODUS:
-- Erstelle die Nutzen- und Wirtschaftlichkeitsanalyse ausschließlich aus Sätzen, Zahlen und Beziehungen, die im autoritativen Kontext ausdrücklich enthalten sind.
-- Du darfst bestätigte Werte zusammenfassen, aber keine zusätzliche Kostenbasis, keinen Stundensatz, keine Jahreshochrechnung, keine Einsparquote, keine Amortisationsdauer und kein ROI-Szenario ergänzen.
-- Ein Budgetrahmen ist nicht automatisch Angebotspreis, Investition oder bereits ausgegebener Betrag.
-- Erfinde keine Angebotsbausteine und behaupte nicht, dass konkrete Angebotskosten fehlen, sofern genau dies nicht ausdrücklich dokumentiert ist.
-- Ergänze keine Pilotfallzahl, keine Auswahlmenge und keine Messperiode, sofern diese nicht ausdrücklich im Kontext stehen.
-- Auch in Validierungsfragen und in „WENN DU MORGEN NUR 30 MINUTEN HAST“ darfst du keine neuen Zahlen, Fristen, Nutzerzahlen, Opportunity-Mengen oder Deadlines konstruieren. Formuliere dort ohne Zahlen, sofern der Kontext sie nicht ausdrücklich vorgibt.
-- Aktionspunkte dürfen nur eine bereits dokumentierte offene Entscheidung, eine benannte Person/Rolle und eine belegte Zielrichtung verbinden. Keine neue operative Ausgestaltung ergänzen.
-- Erfinde auch keine neue Kategorie fehlender Daten. Nenne Stundensätze, Salary/Overhead, Kosten pro Forecast-Fehler, Umsatzschaden, Investitionsstruktur, Angebotsbausteine oder Kostenfolgen nur dann als offen, wenn genau diese offene Information im Kontext ausdrücklich dokumentiert ist.
-- Verwende keine Platzhalter-Metriken wie „wie viel %“, keine neuen Berechnungslogiken und keine Aufforderung, zusätzliche wirtschaftliche Zielgrößen zu erheben, sofern diese nicht als offene Validierungsfrage dokumentiert sind.
-- Behaupte keine historischen Fälle wie „mehrere Deals im letzten Jahr“, sofern Zeitraum und Fälle nicht ausdrücklich belegt sind.
-- Fehlt eine monetäre Wirkungsbasis, schreibe ausschließlich: „ROI noch nicht belastbar berechenbar.“ Danach benenne nur die im Kontext ausdrücklich dokumentierte offene Validierungsannahme.
-- Jede Zahl und jede als fehlend bezeichnete Information im Output muss wortgleich oder eindeutig gleichbedeutend im autoritativen Kontext vorkommen. Andernfalls lasse sie vollständig weg.
-`:'';
-
-  const phase5Rules=Number(phaseIndex)===4?`
-PHASE-5 – GESCHLOSSENER FAKTENMODUS:
-- Verwende ausschließlich ausdrücklich dokumentierte Abschlussfakten. Plausible Vertriebs-, Projekt- oder IT-Schritte sind keine Fakten und dürfen nicht ergänzt werden.
-- Erfinde keine Starttermine, Kalenderwochen, Fristen, Quartale, Go-live-Dauern, Rolloutgrößen, Pilotfallzahlen oder zeitliche Zusagen.
-- Erfinde keine Aussage zu Integration, Parallelbetrieb, Administrationsaufwand oder technischer Startfähigkeit, sofern sie nicht ausdrücklich im Kontext steht.
-- Erfinde keine offenen oder erledigten Dokumente und keine AVV-, Datenschutz-, Rollen-, Berechtigungs-, Beschaffungs- oder Freigabeformalitäten.
-- Verlange kein schriftliches Sponsor-Bekenntnis, keine bestimmte Meetingform und keinen konkreten Prozessschritt, sofern dies nicht ausdrücklich dokumentiert ist.
-- Behaupte nicht „formales Go“, „reine Dokumentation“, „IT ist raus“, „sofort startklar“ oder Vergleichbares, wenn diese Aussage nicht wörtlich durch den Kontext gedeckt ist.
-- Eröffnungs- und Abschlusssatz dürfen nur bestätigte Fakten wiedergeben. Bei fehlendem Termin formuliere neutral: „Nach Klärung des offenen Kaufblockers kann die nächste verbindliche Entscheidung vorbereitet werden.“
-- Auch in Einwänden, offenen Punkten und „WENN DU MORGEN NUR 30 MINUTEN HAST“ keine neuen Fristen, Dokumente, Nutzerzahlen, Deal-Mengen, Meetingformen oder Rolloutschritte konstruieren.
-- Aktionspunkte dürfen nur bereits dokumentierte Personen/Rollen an bereits dokumentierte offene Entscheidungen koppeln. Keine neue Durchführungsvorgabe wie „schriftlich“, „bis nächste Woche“, „in sechs Wochen“, „erste X Deals“ oder „formales Go“ ergänzen.
-- Erfinde auch keine neue Kategorie offener Abschlussarbeit. Nenne Preisgestaltung, Angebotskonfiguration, Vertragsunterlagen, Beschaffung, Integration, Datenschutz, Rollen/Berechtigungen oder interne Formalitäten nur dann, wenn sie im Kontext ausdrücklich als offen dokumentiert sind.
-- Jede konkrete Zahl, Frist, Rolle, Formalität, Prozessbehauptung und jede als fehlend bezeichnete Information muss im autoritativen Kontext ausdrücklich belegt sein. Andernfalls vollständig weglassen.
-`:'';
-
-  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n8. Wenn phasenspezifische Eingaben fehlen, liefere eine konkrete Vorbereitung; verweigere die Analyse nicht und stelle keine Rückfrage.\n9. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im Opportunity-Kontext stehen.\n10. Erfinde keine Preise, Budgets, Mengen, Rollen, Termine, Quoten oder Zeiträume.\n11. Formuliere Unsicherheit qualitativ statt mit erfundenen Zahlen.\n12. Liefere eine klare, verkäuferisch nutzbare Antwort ohne Meta-Kommentar zur Datenlage.\n13. Führe vor Ausgabe einen stillen Evidence-Check durch: Jede konkrete Zahl, Frist, Person, Rolle, Dokumentation und Prozessbehauptung muss im autoritativen Kontext belegt sein. Ist sie nicht belegt, streiche sie vollständig statt sie plausibel zu ergänzen.\n${phase4Rules}${phase5Rules}\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE:\n${sanitizedPhasePrompt}`;
+  const structured=ki21StructuredSchemaPromptV320(phaseIndex);
+  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n4. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n5. Bestätigte CRM-Fakten dürfen nicht als offen dargestellt werden.\n6. Erfinde keine Preise, Budgets, Mengen, Rollen, Termine, Quoten, Formalitäten oder Zeiträume.\n7. Keine allgemeinen KI21-Produktpreise oder Angebotsdaten.\n8. Jede konkrete Aussage muss durch ein wörtliches Evidence-Zitat aus dem Kontext belegt werden.\n${structured}\n\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE:\n${sanitizedPhasePrompt}`;
 
   const started=performance.now();
   const rawResult=await callClaude(envelope,onStream||null);
   const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
 
-  const contracted=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
-  const commercialClean=ki21RemoveKnownGenericCommercialLinesV311(contracted,phaseIndex);
-  const result=ki21EvidenceLineGateV318(commercialClean,closedBookContext,phaseIndex);
+  let result;
+  if(Number(phaseIndex)===3||Number(phaseIndex)===4){
+    const token=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
+    if(!String(rawResult||'').includes(token))throw new Error('Phasenvertrag nicht erfüllt: '+token+' fehlt.');
+    const data=ki21ExtractJsonV320(rawResult);
+    result=Number(phaseIndex)===3?ki21ComposeP4V320(data,closedBookContext):ki21ComposeP5V320(data,closedBookContext);
+  }else{
+    const contracted=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
+    result=ki21RemoveKnownGenericCommercialLinesV311(contracted,phaseIndex);
+  }
   if(result.trim().length<120)throw new Error('Die erzeugte Analyse war unvollständig. Bitte erneut generieren.');
 
-  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken,removedGenericCommercialLines:(window.__ki21QualityResetMeta||{}).removedGenericCommercialLines||0,removedUnsupportedEvidenceLines:(window.__ki21EvidenceLineGateV318||{}).removedCount||0};
+  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken,structuredFactComposer:(Number(phaseIndex)===3||Number(phaseIndex)===4)};
   return result;
 }
-window.ki21EvidenceLineGateV318=ki21EvidenceLineGateV318;
+window.ki21ExtractJsonV320=ki21ExtractJsonV320;
+window.ki21ComposeP4V320=ki21ComposeP4V320;
+window.ki21ComposeP5V320=ki21ComposeP5V320;
+window.ki21StructuredSchemaPromptV320=ki21StructuredSchemaPromptV320;
 window.ki21RemoveKnownGenericCommercialLinesV311=ki21RemoveKnownGenericCommercialLinesV311;
-window.ki21SanitizePhasePromptV303=ki21SanitizePhasePromptV303;
-window.ki21ValidateEvidenceAmountsV303=ki21ValidateEvidenceAmountsV303;
-window.ki21ValidateStrictNumericEvidenceV315=ki21ValidateStrictNumericEvidenceV315;
-window.ki21CanonicalPrimaryEvidenceV304=ki21CanonicalPrimaryEvidenceV304;
-window.ki21ClosedBookContextV307=ki21ClosedBookContextV307;
-window.ki21RepairUnsupportedEvidenceV315=ki21RepairUnsupportedEvidenceV315;
-window.ki21NumericWhitelistV317=ki21NumericWhitelistV317;
-window.ki21NumericWhitelistPromptV317=ki21NumericWhitelistPromptV317;
 window.callKI21Phase=callKI21Phase;
 window.KI21_PHASE_META=KI21_PHASE_META;
 
@@ -16085,8 +16147,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -16110,7 +16172,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -16131,7 +16193,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16988,7 +17050,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+const KI21_VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
 
 
 function runKi21VersionMigration(){
@@ -20812,7 +20874,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20852,7 +20914,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20876,7 +20938,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20894,7 +20956,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -21096,7 +21158,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
 
   function allStorageKeys(){
     const keys=[];
@@ -21307,7 +21369,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21518,7 +21580,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21720,7 +21782,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21836,7 +21898,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21933,7 +21995,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -22015,7 +22077,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -22038,7 +22100,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22216,7 +22278,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22474,7 +22536,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22730,7 +22792,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+  const VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22898,7 +22960,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22992,9 +23054,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -23027,11 +23089,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+var VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -23085,28 +23147,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 
 
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 
 
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
+var VERSION='Pilot Core 3.2.0 STRUCTURED FACT COMPOSER';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -23128,7 +23190,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.2.0 STRUCTURED FACT COMPOSER -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
