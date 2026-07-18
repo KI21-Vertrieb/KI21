@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT</title>
+<title>KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4597,7 +4597,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.2.1',name:'STRUCTURED JSON CONTRACT',buildId:'KI21-321-SJC-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.2.2',name:'EVIDENCE MATCH RESILIENCE',buildId:'KI21-322-EMR-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4959,16 +4959,33 @@ function ki21EvidenceSupportedV320(item,context){
   const evidence=Array.isArray(item.evidence)?item.evidence:[];
   if(!evidence.length)return false;
   const ctx=ki21NormEvidenceV320(context);
-  const evText=evidence.map(x=>String(x||'').trim()).filter(Boolean);
-  if(!evText.length||!evText.every(q=>ctx.includes(ki21NormEvidenceV320(q))))return false;
-  const combined=ki21NormEvidenceV320(evText.join(' '));
+  const stop=new Set(['und','oder','der','die','das','den','dem','des','ein','eine','einer','einem','einen','ist','sind','war','waren','mit','für','von','im','in','auf','zu','als','aber','noch','nicht','durch','bei','aus']);
+  const tokens=v=>ki21NormEvidenceV320(v).split(/[^a-z0-9äöüß€%]+/).filter(t=>t.length>2&&!stop.has(t));
+  const matchedEvidence=[];
+  for(const raw of evidence){
+    const q=String(raw||'').trim();
+    if(!q)continue;
+    const nq=ki21NormEvidenceV320(q);
+    let ok=ctx.includes(nq);
+    if(!ok){
+      const qt=tokens(q), unique=[...new Set(qt)];
+      const hits=unique.filter(t=>ctx.includes(t)).length;
+      ok=unique.length>=4 && hits>=Math.min(unique.length,Math.max(4,Math.ceil(unique.length*0.72)));
+    }
+    if(ok)matchedEvidence.push(q);
+  }
+  if(!matchedEvidence.length)return false;
+  const combined=ki21NormEvidenceV320(matchedEvidence.join(' '));
   const text=String(item.text||'');
   const nums=[...text.matchAll(/\b\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?\b/g)].map(m=>ki21NormEvidenceV320(m[0]));
-  if(nums.some(n=>!combined.includes(n)))return false;
+  if(nums.some(n=>!ctx.includes(n)||!combined.includes(n)))return false;
   const names=[...text.matchAll(/\b([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g)].map(m=>ki21NormEvidenceV320(m[1]));
-  if(names.some(n=>!combined.includes(n)))return false;
+  if(names.some(n=>!ctx.includes(n)||!combined.includes(n)))return false;
   const forbidden=/\b(?:avv|berechtigungskonzept|rollen-?\/berechtigung|go-?live|kick-?off|schriftlich|nächste woche|innerhalb weniger wochen|stundensatz|overhead|lizenzkosten|angebotsbaustein|kostenstruktur)\b/i;
-  if(forbidden.test(text) && !forbidden.test(evText.join(' ')))return false;
+  if(forbidden.test(text) && !forbidden.test(matchedEvidence.join(' ')))return false;
+  const tt=[...new Set(tokens(text))], et=new Set(tokens(matchedEvidence.join(' ')));
+  const overlap=tt.length?tt.filter(t=>et.has(t)||ctx.includes(t)).length/tt.length:1;
+  if(tt.length>=6 && overlap<0.55)return false;
   return true;
 }
 function ki21CleanStructuredItemV320(item,context){
@@ -4985,7 +5002,7 @@ function ki21ComposeP4V320(data,context){
   const missing=ki21CleanStructuredItemV320(data.missing_one,context);
   const next=ki21CleanStructuredItemV320(data.next_step,context);
   const actions=ki21CleanStructuredListV320(data.actions,context,3);
-  if(!assessment||points.length<3||!missing||!next||actions.length<2)throw new Error('P4 enthielt zu wenig belegte Aussagen. Bitte erneut generieren.');
+  if(!assessment||points.length<2||!missing||!next||actions.length<1)throw new Error('P4 enthielt zu wenig belegte Kernaussagen. Bitte erneut generieren.');
   const out=[];
   out.push('EINSCHÄTZUNG\n'+assessment);
   out.push('⚡ DIE 5 PUNKTE DIE ZÄHLEN\n'+points.map(x=>'• '+x).join('\n'));
@@ -5015,7 +5032,7 @@ function ki21ComposeP5V320(data,context){
   const actions=ki21CleanStructuredListV320(data.actions,context,3);
   const opening=ki21CleanStructuredItemV320(data.opening_sentence,context);
   const closing=ki21CleanStructuredItemV320(data.closing_sentence,context);
-  if(!assessment||args.length<2||!missing||!next||actions.length<2||!opening||!closing)throw new Error('P5 enthielt zu wenig belegte Aussagen. Bitte erneut generieren.');
+  if(!assessment||args.length<2||!missing||!next||actions.length<1||!opening||!closing)throw new Error('P5 enthielt zu wenig belegte Kernaussagen. Bitte erneut generieren.');
   const out=[];
   if(prep)out.push('⚠️ VORBEREITUNGSSTAND: '+prep);
   out.push('EINSCHÄTZUNG\n'+assessment);
@@ -5030,8 +5047,8 @@ function ki21ComposeP5V320(data,context){
   return out.join('\n\n');
 }
 function ki21StructuredSchemaPromptV320(phaseIndex){
-  if(Number(phaseIndex)===3)return `\nP4 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte ausschließlich mit gültigem JSON. Gib keinen Vertragstoken und keinen Text außerhalb des JSON aus. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss wortwörtlich im Kontext vorkommen. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"assessment":OBJ,"key_points":[OBJ,OBJ,OBJ,OBJ,OBJ],"roi_positions":[OBJ,OBJ,OBJ,OBJ],"economic_benefit":[OBJ,OBJ,OBJ],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ]}\nNur belegte Aussagen. Keine neuen Zahlen, Rollen, Fristen, Kostenarten, Formalitäten oder fehlenden Datenkategorien. ROI nur als nicht belastbar berechenbar, wenn genau diese Unsicherheit im Kontext belegt ist.`;
-  if(Number(phaseIndex)===4)return `\nP5 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte ausschließlich mit gültigem JSON. Gib keinen Vertragstoken und keinen Text außerhalb des JSON aus. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss wortwörtlich im Kontext vorkommen. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"prep_status":OBJ,"assessment":OBJ,"buy_arguments":[OBJ,OBJ,OBJ],"objections":[{"objection":OBJ,"response":OBJ}],"open_points":[{"priority":"RED|YELLOW|WHITE","text":"...","evidence":["..."]}],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ],"opening_sentence":OBJ,"closing_sentence":OBJ}\nNur belegte Abschlussfakten und belegte offene Entscheidungen. Keine AVV-, Datenschutz-, Berechtigungs-, Integrations-, Vertrags-, Kickoff-, Go-live-, Frist- oder Schriftformbehauptung ohne wörtliche Evidence.`;
+  if(Number(phaseIndex)===3)return `\nP4 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte ausschließlich mit gültigem JSON. Gib keinen Vertragstoken und keinen Text außerhalb des JSON aus. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss eng am Wortlaut des Kontextes bleiben; kurze grammatische Anpassungen sind erlaubt, aber keine neuen Fakten. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"assessment":OBJ,"key_points":[OBJ,OBJ,OBJ,OBJ,OBJ],"roi_positions":[OBJ,OBJ,OBJ,OBJ],"economic_benefit":[OBJ,OBJ,OBJ],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ]}\nNur belegte Aussagen. Keine neuen Zahlen, Rollen, Fristen, Kostenarten, Formalitäten oder fehlenden Datenkategorien. ROI nur als nicht belastbar berechenbar, wenn genau diese Unsicherheit im Kontext belegt ist.`;
+  if(Number(phaseIndex)===4)return `\nP5 – STRUKTURIERTE AUSGABE, KEIN FREITEXT AUSSERHALB JSON:\nAntworte ausschließlich mit gültigem JSON. Gib keinen Vertragstoken und keinen Text außerhalb des JSON aus. Jedes Textobjekt hat exakt {"text":"...","evidence":["wörtliches Zitat aus dem autoritativen Kontext"]}. Jede Evidence muss eng am Wortlaut des Kontextes bleiben; kurze grammatische Anpassungen sind erlaubt, aber keine neuen Fakten. Keine Evidence aus früheren KI-Ausgaben. Schema:\n{"prep_status":OBJ,"assessment":OBJ,"buy_arguments":[OBJ,OBJ,OBJ],"objections":[{"objection":OBJ,"response":OBJ}],"open_points":[{"priority":"RED|YELLOW|WHITE","text":"...","evidence":["..."]}],"missing_one":OBJ,"next_step":OBJ,"actions":[OBJ,OBJ,OBJ],"opening_sentence":OBJ,"closing_sentence":OBJ}\nNur belegte Abschlussfakten und belegte offene Entscheidungen. Keine AVV-, Datenschutz-, Berechtigungs-, Integrations-, Vertrags-, Kickoff-, Go-live-, Frist- oder Schriftformbehauptung ohne wörtliche Evidence.`;
   return '';
 }
 
@@ -16149,8 +16166,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -16174,7 +16191,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -16195,7 +16212,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -17052,7 +17069,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+const KI21_VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
 
 
 function runKi21VersionMigration(){
@@ -20876,7 +20893,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20916,7 +20933,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20940,7 +20957,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20958,7 +20975,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -21160,7 +21177,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
 
   function allStorageKeys(){
     const keys=[];
@@ -21371,7 +21388,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21582,7 +21599,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21784,7 +21801,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21900,7 +21917,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21997,7 +22014,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -22079,7 +22096,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -22102,7 +22119,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22280,7 +22297,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22538,7 +22555,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22794,7 +22811,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+  const VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22962,7 +22979,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -23056,9 +23073,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -23091,11 +23108,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+var VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -23149,28 +23166,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 
 
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 
 
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.2.1 STRUCTURED JSON CONTRACT';
+var VERSION='Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -23192,7 +23209,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.2.1 STRUCTURED JSON CONTRACT -->
+<!-- KI21 Pilot Core 3.2.2 EVIDENCE MATCH RESILIENCE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
