@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT</title>
+<title>KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4597,7 +4597,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.1.7',name:'STRUCTURED EVIDENCE OUTPUT',buildId:'KI21-317-SEO-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.1.8',name:'EVIDENCE LINE GATE',buildId:'KI21-318-ELG-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4867,6 +4867,84 @@ function ki21RemoveKnownGenericCommercialLinesV311(text, phaseIndex){
   return result;
 }
 
+
+function ki21EvidenceLineGateV318(text,evidenceBasis,phaseIndex){
+  const phase=Number(phaseIndex);
+  if(phase!==3 && phase!==4)return String(text||'');
+  const source=String(evidenceBasis||'');
+  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const ev=norm(source);
+  const evCompact=ev.replace(/[.\s]/g,'');
+  const lines=String(text||'').split(/\r?\n/);
+  const removed=[];
+
+  const structuralLine=line=>{
+    const t=line.trim();
+    return !t || /^[-–—]{3,}$/.test(t) || /^(⚠️|🎯|⚡|💰|EINSCHÄTZUNG|KAUFARGUMENTE|EINWÄNDE|OFFENE PUNKTE|NÄCHSTER SCHRITT|ERÖFFNUNGSSATZ|DER EINE ABSCHLUSSSATZ|DIE EINE SACHE|ROI-WIRKSAME POSITIONEN)/i.test(t);
+  };
+
+  const conceptGroups=[
+    ['avv'],['datenschutz'],['berechtigungskonzept','berechtigung'],['rollenkonzept'],['rollen- und berechtigung'],
+    ['integration'],['parallelbetrieb'],['administrationsaufwand'],['beschaffung'],['vertragsunterlagen'],['einkauf'],
+    ['schriftlich','e-mail-bestatigung','email-bestatigung'],['formales go','formal nicht starten','reine dokumentation'],
+    ['kickoff','kick-off'],['go-live','golive'],['rollout'],['account manager'],['startklar'],['verbindlich starten'],
+    ['lieferfahigkeitsproblem','lieferfahigkeit'],['arbeitstage'],['stundensatz'],['overhead'],['salary'],['kostenrolle'],['kostenstruktur'],['angebotsbaustein']
+  ];
+
+  const unsupportedConcept=line=>{
+    const n=norm(line);
+    for(const group of conceptGroups){
+      if(group.some(x=>n.includes(norm(x))) && !group.some(x=>ev.includes(norm(x))))return group[0];
+    }
+    if(/\b(nachste|nächste) woche\b|\bspatestens\b|\binnerhalb von\b/i.test(line) && !ev.includes(norm(line.match(/(nächste|nachste) woche|spätestens|innerhalb von/i)?.[0]||'')))return 'unbelegte Frist';
+    return '';
+  };
+
+  const evidenceNumbers=new Set();
+  const numRe=/\b\d{1,3}(?:[.\s]\d{3})*(?:[,.]\d+)?\b/g;
+  for(const m of source.matchAll(numRe))evidenceNumbers.add(m[0].replace(/[.\s]/g,'').replace(',','.'));
+  const unsupportedNumber=line=>{
+    let body=line.replace(/^\s*(?:[•\-*]|\d+[.)])\s*/, '');
+    if(/WENN DU MORGEN NUR 30 MINUTEN HAST/i.test(body))return '';
+    const found=[...body.matchAll(numRe)].map(m=>m[0]);
+    for(const raw of found){
+      const key=raw.replace(/[.\s]/g,'').replace(',','.');
+      if(!evidenceNumbers.has(key))return raw;
+    }
+    return '';
+  };
+
+  const roleConflict=line=>{
+    const n=norm(line);
+    if(!/(sponsor|economic buyer|wirtschaftliche entscheider|fachlicher sponsor|hauptkontakt|koordiniert|koordinator)/.test(n))return '';
+    const names=[...line.matchAll(/\b([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g)].map(m=>m[1]);
+    for(const name of names){
+      const nn=norm(name);
+      const idx=ev.indexOf(nn);
+      if(idx<0)continue;
+      const windows=[];
+      let pos=idx;
+      while(pos>=0){windows.push(ev.slice(Math.max(0,pos-180),Math.min(ev.length,pos+220)));pos=ev.indexOf(nn,pos+1);}
+      if(n.includes('sponsor') && !windows.some(w=>w.includes('sponsor')))return name+' / Sponsor';
+      if(n.includes('economic buyer') && !windows.some(w=>w.includes('economic buyer')||w.includes('wirtschaftliche entscheider')))return name+' / Economic Buyer';
+    }
+    return '';
+  };
+
+  const kept=[];
+  for(const line of lines){
+    if(structuralLine(line)){kept.push(line);continue;}
+    const c=unsupportedConcept(line), num=unsupportedNumber(line), role=roleConflict(line);
+    if(c||num||role){removed.push({line,reason:c||('unbelegte Zahl '+num)||role});continue;}
+    kept.push(line);
+  }
+  let result=kept.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  // Remove headings left without content.
+  result=result.replace(/^(?:KAUFARGUMENTE|EINWÄNDE|OFFENE PUNKTE|ROI-WIRKSAME POSITIONEN|💰 WIRTSCHAFTLICHER NUTZEN):?\s*\n(?=\s*(?:⚠️|🎯|NÄCHSTER|ERÖFFNUNG|DER EINE|$))/gmi,'');
+  window.__ki21EvidenceLineGateV318={removedCount:removed.length,removed};
+  return result;
+}
+
 async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const oid=String(opportunityId||'').trim();
   const p=KI21_PHASE_META[Number(phaseIndex)];
@@ -4919,12 +4997,14 @@ PHASE-5 – GESCHLOSSENER FAKTENMODUS:
   if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
 
   const contracted=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
-  const result=ki21RemoveKnownGenericCommercialLinesV311(contracted,phaseIndex);
+  const commercialClean=ki21RemoveKnownGenericCommercialLinesV311(contracted,phaseIndex);
+  const result=ki21EvidenceLineGateV318(commercialClean,closedBookContext,phaseIndex);
   if(result.trim().length<120)throw new Error('Die erzeugte Analyse war unvollständig. Bitte erneut generieren.');
 
-  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken,removedGenericCommercialLines:(window.__ki21QualityResetMeta||{}).removedGenericCommercialLines||0};
+  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken,removedGenericCommercialLines:(window.__ki21QualityResetMeta||{}).removedGenericCommercialLines||0,removedUnsupportedEvidenceLines:(window.__ki21EvidenceLineGateV318||{}).removedCount||0};
   return result;
 }
+window.ki21EvidenceLineGateV318=ki21EvidenceLineGateV318;
 window.ki21RemoveKnownGenericCommercialLinesV311=ki21RemoveKnownGenericCommercialLinesV311;
 window.ki21SanitizePhasePromptV303=ki21SanitizePhasePromptV303;
 window.ki21ValidateEvidenceAmountsV303=ki21ValidateEvidenceAmountsV303;
@@ -16005,8 +16085,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -16030,7 +16110,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -16051,7 +16131,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16908,7 +16988,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+const KI21_VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
 
 
 function runKi21VersionMigration(){
@@ -20732,7 +20812,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20772,7 +20852,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20796,7 +20876,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20814,7 +20894,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -21016,7 +21096,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
 
   function allStorageKeys(){
     const keys=[];
@@ -21227,7 +21307,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21438,7 +21518,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21640,7 +21720,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21756,7 +21836,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21853,7 +21933,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21935,7 +22015,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21958,7 +22038,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22136,7 +22216,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22394,7 +22474,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22650,7 +22730,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+  const VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22818,7 +22898,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22912,9 +22992,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22947,11 +23027,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+var VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -23005,28 +23085,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 
 
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 
 
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
+var VERSION='Pilot Core 3.1.8 EVIDENCE LINE GATE';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -23048,7 +23128,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.8 EVIDENCE LINE GATE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
