@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER</title>
+<title>KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2670,7 +2670,7 @@ html.ki21-score-syncing .score-pair-v667{
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ki21-build" content="3.0.8-20260718-0815">
+<meta name="ki21-build" content="3.0.9-20260718-0815">
 <script>
 (function(){
   try {
@@ -4499,7 +4499,7 @@ async function callClaude(prompt, onStream){
 }
 
 
-// ── KI21 3.0.8 DEPLOYMENT CACHE BREAKER ───────────────────
+// ── KI21 3.0.9 EVIDENCE REPAIR COMMIT ───────────────────
 // Exactly one route: explicit opportunity + explicit phase + one native API call.
 // No phase guessing, no local replacement output, no callClaude wrapper chain.
 const KI21_PHASE_META = Object.freeze({
@@ -4691,6 +4691,49 @@ function ki21ValidateStrictNumericEvidenceV304(text,primaryEvidence,phaseIndex){
   }
 }
 
+
+function ki21RepairUnsupportedEvidenceV309(text,primaryEvidence,phaseIndex){
+  let raw=String(text||'');
+  const evidence=String(primaryEvidence||'');
+  const allowedEuro=new Set(ki21EuroAmountsV302(evidence));
+  const allowedClaims=new Set(ki21NumericClaimsV304(evidence).map(ki21NormalizeClaimV304));
+  const lines=raw.split('\n');
+  const repaired=[];
+  for(let line of lines){
+    const original=line;
+    // Remove generic KI21 catalogue/product pricing completely; it is not opportunity evidence.
+    if(/Discovery\s*Sprint|KI21\s*Compact|49\s*€|9\.?900\s*€|Startkosten|Lizenzpreis|Lizenzkosten|Subscription/i.test(line)){
+      if(/Investition|Preis|Kosten/i.test(line)){
+        const allowedAmounts=ki21EuroAmountsV302(line).filter(x=>allowedEuro.has(x));
+        line=allowedAmounts.length
+          ? '• Investition: Im CRM bestätigter Budgetrahmen vorhanden; konkrete Preisaufteilung und Finanzierungsquelle sind noch verbindlich zu klären.'
+          : '• Investition: Konkreter Angebotspreis und Preisaufteilung sind im Opportunity-Kontext nicht belastbar belegt und bleiben offen.';
+      }else{
+        continue;
+      }
+    }
+    // Replace unsupported numeric claims with evidence-safe qualitative wording instead of rejecting the whole answer.
+    const claims=ki21NumericClaimsV304(line);
+    let unsupported=false;
+    for(const c of claims){
+      const n=ki21NormalizeClaimV304(c);
+      if(!allowedClaims.has(n))unsupported=true;
+    }
+    if(unsupported){
+      if(/ROI|Payback|Amortisation|amortisieren/i.test(line)){
+        line='• ROI/Amortisation: Noch nicht belastbar berechenbar; dafür müssen die tatsächlich vermeidbaren Aufwände im Pilot gemessen und dem konkreten Angebotspreis gegenübergestellt werden.';
+      }else if(/NÄCHSTER SCHRITT|WENN DU MORGEN|Termin|Freitag|Montag|Quartal/i.test(line)){
+        line=line.replace(/\b(?:bis\s+)?(?:Freitag|Montag|Dienstag|Mittwoch|Donnerstag|nächste Woche|diese Woche|im laufenden Quartal)\b/gi,'zeitnah');
+        line=line.replace(/\b\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*(?:Minuten?|Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|%|Nutzer|Opportunit(?:y|ies|äten))\b/gi,'konkret zu vereinbaren');
+      }else{
+        line=line.replace(/\b(?:ca\.\s*|rund\s*|etwa\s*)?\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*(?:Minuten?|Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|%|Nutzer|Opportunit(?:y|ies|äten))\b/gi,'noch zu validierender Größenordnung');
+      }
+    }
+    repaired.push(line);
+  }
+  return repaired.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
 async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const oid=String(opportunityId||'').trim();
   const p=KI21_PHASE_META[Number(phaseIndex)];
@@ -4716,6 +4759,7 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
 KORREKTURLAUF ${attempt} NACH EVIDENCE-FIREWALL:
 Der vorherige Entwurf wurde wegen unbelegter Angebots-, Preis-, Mengen-, ROI- oder Payback-Angaben verworfen. Erzeuge die Antwort vollständig neu. Verwende ausschließlich Zahlen und Fakten aus dem autoritativen Opportunity-Kontext. Verboten sind insbesondere: Discovery Sprint, KI21 Compact, 9.900 €, 49 €, Lizenzpreis, Startkosten, pauschale Einsparquoten und unbelegte Amortisationszeiten. Nenne stattdessen ausschließlich das im CRM belegte Pilotbudget oder markiere den konkreten Angebotspreis als offen. In Phase 4 sind Rechenableitungen nur mit sichtbarem Label BERECHNUNG oder RECHENWEG und ausschließlich aus belegten Ausgangswerten zulässig.`;
     rawResult=await callClaude(envelope+correction,null);
+    rawResult=ki21RepairUnsupportedEvidenceV309(rawResult,primaryEvidence,phaseIndex);
     const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
     if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
     try{
@@ -4742,6 +4786,7 @@ window.ki21ValidateEvidenceAmountsV303=ki21ValidateEvidenceAmountsV303;
 window.ki21ValidateStrictNumericEvidenceV304=ki21ValidateStrictNumericEvidenceV304;
 window.ki21CanonicalPrimaryEvidenceV304=ki21CanonicalPrimaryEvidenceV304;
 window.ki21ClosedBookContextV307=ki21ClosedBookContextV307;
+window.ki21RepairUnsupportedEvidenceV309=ki21RepairUnsupportedEvidenceV309;
 window.callKI21Phase=callKI21Phase;
 window.KI21_PHASE_META=KI21_PHASE_META;
 
@@ -15811,8 +15856,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15836,7 +15881,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15857,7 +15902,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16714,7 +16759,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+const KI21_VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
 
 
 function runKi21VersionMigration(){
@@ -20538,7 +20583,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20578,7 +20623,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20602,7 +20647,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20620,7 +20665,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20822,7 +20867,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
 
   function allStorageKeys(){
     const keys=[];
@@ -21033,7 +21078,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21244,7 +21289,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21446,7 +21491,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21562,7 +21607,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21659,7 +21704,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21741,7 +21786,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21764,7 +21809,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21942,7 +21987,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22200,7 +22245,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22456,7 +22501,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22624,7 +22669,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22718,9 +22763,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22753,11 +22798,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+var VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22811,28 +22856,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 
 
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 
 
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER';
+var VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22854,7 +22899,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.8 DEPLOYMENT CACHE BREAKER -->
+<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
