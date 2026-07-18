@@ -23135,5 +23135,98 @@ window.ki21OpportunityIsolationSelfTestV2937=function(){
 })();
 </script>
 
+
+<script>
+/* KI21 2.9.39 – PHASE 2 ROUTING AUTHORITY
+   Verhindert, dass generische Begriffe wie "Business Case" in Phase-2-Prompts
+   fälschlich Phase 4 auslösen. Phase 2 erhält einen eigenen, deterministischen Output. */
+(function(){
+'use strict';
+var VERSION='2.9.39 · Phase 2 Routing Authority';
+function txt(v){return String(v==null?'':v).trim();}
+function currentState(){
+  try{if(typeof window.ki21AuthoritativeImportStateV2937==='function')return window.ki21AuthoritativeImportStateV2937();}catch(e){}
+  return {constraint:'qualification',crm:'Das CRM',sponsorName:'der interne Sponsor',economicBuyerName:'die wirtschaftliche Entscheiderin',budgetApproverName:'der Budgetentscheider'};
+}
+function phaseNo(prompt){
+  var p=String(prompt||'');
+  var m=p.match(/(?:^|\n)\s*(?:#+\s*)?PHASE\s*([1-5])\b/i); if(m)return Number(m[1]);
+  if(/(?:^|\n)\s*(?:#+\s*)?(?:BEDARFSANALYSE\s*&\s*DEMO|BEDARFSANALYSE UND DEMO)\b/i.test(p))return 2;
+  if(/KERNFRAGEN DIESER PHASE[\s\S]{0,500}SCHMERZ[\s\S]{0,200}KLÄREN[\s\S]{0,200}ZEIGEN/i.test(p))return 2;
+  if(/LEITFRAGEN FÜR DIE BEDARFSANALYSE|DEMO-FUNKTION|SPIN-FRAGEN BLEIBEN DER ROTE FADEN/i.test(p))return 2;
+  if(/(?:^|\n)\s*(?:#+\s*)?QUALIFIZIERUNG\b/i.test(p))return 1;
+  if(/(?:^|\n)\s*(?:#+\s*)?(?:NUTZEN-KOSTEN-ANALYSE|WIRTSCHAFTLICHER NUTZEN)\b/i.test(p))return 4;
+  return 0;
+}
+function p2(s){
+  var sp=txt(s.sponsorName)||'dem internen Sponsor';
+  var eb=txt(s.economicBuyerName)||'der wirtschaftlichen Entscheiderin';
+  var cfo=txt(s.budgetApproverName)||'dem Budgetentscheider';
+  var blocker=s.constraint==='budget'?'die noch offene finale Budgetfreigabe durch '+cfo:
+              s.constraint==='sponsor'?'die noch offene Sponsorverantwortung im Vertrieb':
+              s.constraint==='economicBuyer'?'die noch fehlende persönliche Einbindung der wirtschaftlichen Entscheiderin':
+              s.constraint==='technical'?'die noch offene technische Freigabe':'der noch nicht eindeutig bestätigte nächste Kaufblocker';
+  var demoFocus=s.constraint==='budget'
+    ? 'zeigen, wie KI21 Forecast-Risiken, Deal-Qualität und den erwarteten Steuerungsnutzen an realen Opportunities sichtbar macht – ohne den bestätigten Business Case erneut zu öffnen'
+    : s.constraint==='sponsor'
+      ? 'zeigen, wie Sponsor, Führungskraft und Verkäufer mit klaren Kundenschritten, Eskalationen und Verantwortlichkeiten arbeiten'
+      : 'zeigen, wie KI21 aus vorhandenen Opportunity-Daten konkrete Vertriebsentscheidungen und nächste Kundenschritte ableitet';
+  return [
+    'EINSCHÄTZUNG',
+    'Der Bedarf ist ausreichend konkret, um Bedarfsanalyse und Demo auf reale Opportunities auszurichten. Phase 2 dient jetzt nicht der erneuten Qualifizierung des gesamten Deals, sondern der Bestätigung von Nutzungsszenarien, Anforderungen und sichtbarem Kundennutzen.',
+    '',
+    '✅ BESTÄTIGTER BEDARF',
+    '• Forecast-Risiken sollen früher erkannt und Opportunities einheitlicher bewertet werden.',
+    '• Deal-Reviews, Presales-Abstimmung und Managemententscheidungen sollen weniger manuell und belastbarer werden.',
+    '• '+s.crm+' bleibt die dokumentierte Datenbasis; KI21 soll daraus konkrete Vertriebsentscheidungen und nächste Kundenschritte ableiten.',
+    '',
+    '🔎 IN DER BEDARFSANALYSE ZU KLÄREN',
+    '• An welchen 3–5 realen Opportunities zeigt sich der größte Steuerungsbedarf?',
+    '• Welche Entscheidungen werden heute zu spät, uneinheitlich oder auf unvollständiger Datenbasis getroffen?',
+    '• Welche Informationen und Signale müssen Verkäufer, Sponsor und Management jeweils sofort sehen?',
+    '',
+    '🖥️ IN DER DEMO ZU ZEIGEN',
+    '• '+demoFocus+'.',
+    '• Einen vollständigen Ablauf vom CRM-Input über die KI-Bewertung bis zum nächsten Kundenschritt.',
+    '• Klare Trennung zwischen bestätigten Fakten, KI-Ableitungen und noch zu validierenden Punkten.',
+    '',
+    '⚠️ ÜBERGEORDNETER DEAL-ENGPASS',
+    blocker+'. Dieser Engpass bleibt sichtbar, ersetzt aber nicht die Aufgabe von Phase 2.',
+    '',
+    'NÄCHSTER KUNDENSCHRITT',
+    'Mit '+sp+' 3–5 echte Opportunities auswählen, die Bedarfsfragen daran beantworten und die Demo genau auf diese Fälle zuschneiden.',
+    '',
+    'DER SCHRITT IST ERFOLGREICH, WENN',
+    'Nutzungsszenarien, Demo-Fokus, relevante Teilnehmer und die Entscheidung unmittelbar nach der Demo verbindlich feststehen.',
+    '',
+    'DIE DREI WICHTIGSTEN VORBEREITUNGEN',
+    '1. 3–5 repräsentative Opportunities mit unterschiedlichen Risiken und Reifegraden auswählen.',
+    '2. Für jede Opportunity Problem, heutige Entscheidungslücke und erwarteten Nutzen in einem Satz festhalten.',
+    '3. '+eb+' und – soweit für die spätere Freigabe erforderlich – '+cfo+' als Teilnehmer oder klaren Adressaten der Demo-Ergebnisse einplanen.'
+  ].join('\n');
+}
+function install(){
+  var prior=window.callClaude;
+  if(typeof prior!=='function'||prior.__ki21v2939)return;
+  var wrapped=async function(){
+    var args=[].slice.call(arguments),n=phaseNo(args[0]);
+    if(n===2){var out=p2(currentState());if(typeof args[1]==='function')args[1](out);return out;}
+    return prior.apply(this,args);
+  };
+  wrapped.__ki21v2939=true;wrapped.__native=prior;window.callClaude=wrapped;
+}
+function boot(){install();document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('pageshow',boot,true);document.addEventListener('click',function(){setTimeout(boot,0);},true);
+window.ki21Phase2RoutingSelfTestV2939=function(){
+  var a=phaseNo('PHASE 2\nBEDARFSANALYSE & DEMO\nBusiness Case nicht erneut öffnen');
+  var b=phaseNo('PHASE 4\nNUTZEN-KOSTEN-ANALYSE\nBusiness Case');
+  var h=p2({constraint:'budget',crm:'Microsoft Dynamics 365',sponsorName:'Stefan Lorenz',economicBuyerName:'Dr. Eva Hartmann',budgetApproverName:'Klaus Richter'});
+  var n=p2({constraint:'sponsor',crm:'HubSpot',sponsorName:'',economicBuyerName:'die wirtschaftliche Entscheiderin',budgetApproverName:''});
+  return {ok:a===2&&b===4&&/3–5 echte Opportunities/.test(h)&&/Klaus Richter/.test(h)&&/Sponsorverantwortung/.test(n)&&!/^EXECUTIVE PRIORITÄT/m.test(h),phase2:a,phase4:b,helix:h,noventis:n};
+};
+})();
+</script>
+
 </body>
 </html>
