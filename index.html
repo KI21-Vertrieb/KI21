@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION</title>
+<title>KI21 Pilot Core 3.1.0 STABLE GENERATION RESET</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2689,6 +2689,24 @@ html.ki21-score-syncing .score-pair-v667{
 </script>
 </head>
 <body>
+<script>
+(function(){
+  try{
+    const marker='ki21_migration_310_done';
+    if(localStorage.getItem(marker)==='1')return;
+    const bad=/noch zu validierende Größenordnung|Entwurf durch Evidence-Firewall verworfen|Keine ungeprüfte Analyse gespeichert/i;
+    for(let i=localStorage.length-1;i>=0;i--){
+      const k=localStorage.key(i); if(!k)continue;
+      if(/^ki21_st_/.test(k)||/^ki21_phase_output_/.test(k)){
+        const v=localStorage.getItem(k)||'';
+        if(bad.test(v))localStorage.removeItem(k);
+      }
+    }
+    localStorage.setItem(marker,'1');
+  }catch(e){console.warn('KI21 migration 3.1.0 skipped',e);}
+})();
+</script>
+
 <script id="ki21-3016-boot-restore-fix">
 (function(){
   'use strict';
@@ -4525,7 +4543,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.0.17',name:'NUMERIC WHITELIST GENERATION',buildId:'KI21-3017-NWG-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.1.0',name:'STABLE GENERATION RESET',buildId:'KI21-310-SGR-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4588,7 +4606,7 @@ function ki21NormalizeEuroV302(v){
   return String(v||'').replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
 }
 function ki21EuroAmountsV302(text){
-  const out=[]; const re=/(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)\s*(?:€|EUR)\b/gi;
+  const out=[]; const re=/(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)\s*(?:€|EUR)(?!\w)/gi;
   let m; while((m=re.exec(String(text||''))))out.push(ki21NormalizeEuroV302(m[1]));
   return [...new Set(out)];
 }
@@ -4750,6 +4768,35 @@ function ki21RepairUnsupportedEvidenceV315(text,evidenceBasis,phaseIndex){
   return String(text||'').split('\n').filter(line=>!forbidden.test(line)).join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
+function ki21StableEvidenceFilterV310(text,evidenceBasis,phaseIndex){
+  const evidence=String(evidenceBasis||'');
+  const allowedEuro=new Set(ki21EuroAmountsV302(evidence));
+  const allowedClaims=new Set(ki21NumericClaimsV312(evidence).map(ki21NormalizeClaimV312));
+  const protectedLine=/^\s*(?:🎯\s*)?WENN DU MORGEN NUR 30 MINUTEN HAST\s*:??\s*$/i;
+  const genericCommercial=/Discovery\s*Sprint|KI21\s*Compact|Lizenz(?:preis|kosten|modell)?|Startkosten|Subscription|9\.?900\s*€|49\s*€/i;
+  const lines=String(text||'').split('\n');
+  const kept=[];
+  let removed=0;
+  for(const line of lines){
+    if(protectedLine.test(line)){kept.push(line);continue;}
+    const euro=ki21EuroAmountsV302(line);
+    const unsupportedEuro=euro.some(v=>!allowedEuro.has(v));
+    const claims=ki21NumericClaimsV312(line).map(ki21NormalizeClaimV312);
+    const unsupportedClaim=claims.some(c=>!ki21ClaimAllowedV312(c,allowedClaims));
+    const isContentLine=/^\s*(?:[•\-]|\d+[.)]|\*|Investition:|ROI:|Laufender Nutzen:|Bekannte Größenordnung:|Unsichere Annahme:|Validierungsfrage:)/i.test(line);
+    if(genericCommercial.test(line) || unsupportedEuro || (isContentLine && unsupportedClaim)){
+      removed++; continue;
+    }
+    kept.push(line);
+  }
+  let result=kept.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  if(Number(phaseIndex)===3 && !/ROI\s*:/i.test(result)){
+    result += '\n\n• ROI: noch nicht belastbar berechenbar; monetärer Nutzen und konkreter Angebotspreis müssen dafür vollständig belegt sein.';
+  }
+  window.__ki21EvidenceFilterV310={removed,phaseIndex:Number(phaseIndex)};
+  return result;
+}
+
 async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const oid=String(opportunityId||'').trim();
   const p=KI21_PHASE_META[Number(phaseIndex)];
@@ -4757,27 +4804,26 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   if(!p)throw new Error('Ungültige Phase: '+phaseIndex);
   const currentId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(currentId!==oid)throw new Error('Opportunity-Kontext hat sich vor der Generierung geändert.');
+
   const authoritative=ki21CollectAuthoritativeContextV302(oid,phaseIndex);
   const primaryEvidence=ki21PrimaryEvidenceV303(oid);
   const closedBookContext=ki21ClosedBookContextV307(authoritative.context,primaryEvidence);
   const sanitizedPhasePrompt=ki21SanitizePhasePromptV303(phasePrompt,primaryEvidence);
-  const numericWhitelist=ki21NumericWhitelistPromptV317(closedBookContext,phaseIndex);
   const contractToken=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
-  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Keine lokal vorgefertigte Standardantwort; erzeuge eine neue, fallbezogene Antwort.\n8. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n9. Wenn phasenspezifische Eingaben fehlen, liefere trotzdem eine konkrete Gesprächsvorbereitung und die wichtigsten Fragen; verweigere die Analyse nicht und stelle keine Rückfrage an den Nutzer.\n10. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im autoritativen Opportunity-Kontext stehen.\n11. Erfinde keine Preise, Budgets, Mengen, Rollen oder Termine. Ein Betrag darf nur genannt werden, wenn er im autoritativen Kontext steht; reine Rechenableitungen sind ausschließlich in Phase 4 zulässig und müssen als Berechnung gekennzeichnet werden.\n12. Halte dich strikt an die nachfolgende NUMERISCHE WHITELIST. Zahlen außerhalb dieser Liste dürfen nicht erscheinen.\n\n${numericWhitelist}\n\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE, KEINE HÖHERE FAKTENAUTORITÄT:\n${sanitizedPhasePrompt}`;
+  const phase4Rules=Number(phaseIndex)===3?`\nPHASE-4-SONDERREGELN:\n- Nutze nur ausdrücklich dokumentierte Zahlen aus dem Opportunity-Kontext.\n- Erfinde keine Beispielpreise, Stundensätze, Einsparquoten, Prozentwerte, Payback-Zeiten oder Szenarien.\n- Ein vorhandener Budgetrahmen ist nicht automatisch der konkrete Angebotspreis.\n- Wenn monetärer Nutzen oder konkreter Angebotspreis fehlen, schreibe ausdrücklich: ROI noch nicht belastbar berechenbar.\n- Keine hypothetischen Rechnungen und keine Beispielwerte.\n`:'';
+
+  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n8. Wenn phasenspezifische Eingaben fehlen, liefere eine konkrete Vorbereitung; verweigere die Analyse nicht und stelle keine Rückfrage.\n9. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im Opportunity-Kontext stehen.\n10. Erfinde keine Preise, Budgets, Mengen, Rollen, Termine, Quoten oder Zeiträume.\n11. Formuliere Unsicherheit qualitativ statt mit erfundenen Zahlen.\n12. Liefere eine klare, verkäuferisch nutzbare Antwort ohne Meta-Kommentar zur Datenlage.\n${phase4Rules}\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE:\n${sanitizedPhasePrompt}`;
+
   const started=performance.now();
-  // 3.0.7: Ungeprüfte Stream-Fragmente werden niemals in die sichtbare oder persistente UI geschrieben.
-  // Der Output wird atomar erst nach Opportunity-, Phasen- und Evidence-Validierung freigegeben.
-  // 3.0.16: exactly one semantic API generation. No automatic second/third model call.
-  // Post-processing is non-destructive: only complete lines with forbidden catalogue prices are removed.
-  // No numeric phrase or sentence fragment is rewritten.
-  let rawResult=await callClaude(envelope,null);
+  const rawResult=await callClaude(envelope,null);
   const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
-  rawResult=ki21RepairUnsupportedEvidenceV315(rawResult,closedBookContext,phaseIndex);
-  ki21ValidateEvidenceAmountsV303(rawResult,closedBookContext,phaseIndex);
-  ki21ValidateStrictNumericEvidenceV315(rawResult,closedBookContext,phaseIndex);
-  const result=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
-  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken};
+
+  const contracted=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
+  const result=ki21StableEvidenceFilterV310(contracted,closedBookContext,phaseIndex);
+  if(result.trim().length<120)throw new Error('Die erzeugte Analyse war nach der Evidenzprüfung zu kurz. Bitte erneut generieren.');
+
+  window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken,filteredLines:(window.__ki21EvidenceFilterV310||{}).removed||0};
   return result;
 }
 window.ki21SanitizePhasePromptV303=ki21SanitizePhasePromptV303;
@@ -14412,7 +14458,7 @@ function renderStation(sitId){
         }
 
         // For Nutzen-Kosten-Analyse (sitId===3): nur noch Case-Annahmen für Phase 5 extrahieren (Kurzfassung-Box entfernt, Review Juni 2026)
-        if(sitId===3 && isSalesDiscoveryUseCaseV4199(phaseAccId)){
+        if(false && sitId===3 && isSalesDiscoveryUseCaseV4199(phaseAccId)){
           // v4.213: Keine zusätzliche Case-Extraction bei Security/IT; sie blockiert Mobile nach der Generierung.
           try{
             const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
@@ -14458,19 +14504,19 @@ Analyse:
       data.generationMeta=previousMeta;
       resultBody.innerHTML='';
       if(previousValidResult && storedResultPassesCurrentFirewallV306(previousValidResult)){
-        resultLabel.textContent='Vorheriges geprüftes Ergebnis · neuer Entwurf verworfen';
+        resultLabel.textContent='Vorheriges Ergebnis · neue Generierung fehlgeschlagen';
         resultBody.appendChild(renderResultText(previousValidResult));
         fullBtn.onclick=()=>showFullscreen(sit.title,previousValidResult);
       }else{
-        resultLabel.textContent='Entwurf durch Evidence-Firewall verworfen';
+        resultLabel.textContent='Generierung nicht abgeschlossen';
         const safe=h('div',{style:{padding:'14px 2px',lineHeight:'1.55'}},
-          h('div',{style:{fontWeight:'800',color:'#ff7a1a',marginBottom:'8px'}},'Keine ungeprüfte Analyse gespeichert.'),
-          h('div',{},String(e&&e.message||'Die Evidenzprüfung ist fehlgeschlagen.'))
+          h('div',{style:{fontWeight:'800',color:'#ff7a1a',marginBottom:'8px'}},'Keine fehlerhafte Analyse gespeichert.'),
+          h('div',{},String(e&&e.message||'Die Generierung konnte nicht abgeschlossen werden.'))
         );
         resultBody.appendChild(safe);
       }
       resultBox.style.display='block';
-      console.warn('KI21 generation rejected:',e);
+      console.warn('KI21 generation failed:',e);
     }finally{
       loading=false;
       genBtn.disabled=false;
@@ -15859,8 +15905,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15884,7 +15930,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15905,7 +15951,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16762,7 +16808,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+const KI21_VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
 
 
 function runKi21VersionMigration(){
@@ -20586,7 +20632,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20626,7 +20672,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20650,7 +20696,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20668,7 +20714,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20870,7 +20916,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
 
   function allStorageKeys(){
     const keys=[];
@@ -21081,7 +21127,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21292,7 +21338,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21494,7 +21540,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21610,7 +21656,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21707,7 +21753,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21789,7 +21835,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21812,7 +21858,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21990,7 +22036,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22248,7 +22294,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22504,7 +22550,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+  const VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22672,7 +22718,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22766,9 +22812,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22801,11 +22847,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+var VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22859,28 +22905,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 
 
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 
 
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION';
+var VERSION='Pilot Core 3.1.0 STABLE GENERATION RESET';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22902,7 +22948,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.17 NUMERIC WHITELIST GENERATION -->
+<!-- KI21 Pilot Core 3.1.0 STABLE GENERATION RESET -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
