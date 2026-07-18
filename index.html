@@ -15968,165 +15968,7 @@ local-output-generators=none
 
 
 
-<!-- KI21 5.0.1 Architecture Foundation
-     Central Evidence Store -> Opportunity State -> Decision Objects -> Consistency Guard
-     Primary evidence only; generated outputs never become facts. -->
-<script id="ki21-501-architecture-foundation">
-(function(){
-'use strict';
-const VERSION='5.0.1';
-const BUILD='pilot-core-5.0.1-architecture-foundation-20260718';
-const PREFIX='ki21_v501_';
-const now=()=>new Date().toISOString();
-const norm=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
-const low=v=>norm(v).toLowerCase();
-const read=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(_){return d;}};
-const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(_){return false;}};
-const activeId=()=>String((window.state&&window.state.activeId)||read('ki21_aid','')||'').trim();
-function safeString(v){
- if(v==null)return '';
- if(typeof v==='string')return v;
- try{return JSON.stringify(v);}catch(_){return String(v);}
-}
-function sourceList(id){
- const rows=[];
- const add=(type,key,value,priority,phase)=>{const text=safeString(value);if(norm(text))rows.push({type,key,text,priority,phase:phase??null});};
- add('opportunity','ki21_opportunity_'+id,read('ki21_opportunity_'+id,''),100);
- add('import','ki21_import_raw_'+id,read('ki21_import_raw_'+id,''),95);
- add('account','ki21_account_'+id,read('ki21_account_'+id,''),70);
- for(let p=0;p<5;p++){
-  const st=read('ki21_st_'+id+'_'+p,{})||{};
-  add('manual-fields','ki21_st_'+id+'_'+p,st.fv||{},90,p);
-  add('additions','ki21_additions_'+id+'_'+p,read('ki21_additions_'+id+'_'+p,[]),98,p);
-  add('legacy-additions','ki21_kk_'+id+'_'+p,read('ki21_kk_'+id+'_'+p,''),85,p);
- }
- return rows.sort((a,b)=>b.priority-a.priority);
-}
-const DEFINITIONS={
- pilotApproved:{label:'Pilotfreigabe',positive:[/pilot[^.!?\n]{0,80}(?:freigegeben|genehmigt|beauftragt|beschlossen)/i,/(?:freigabe|beauftragung)[^.!?\n]{0,50}pilot/i],negative:[/pilot[^.!?\n]{0,90}(?:noch nicht|nicht|keine)[^.!?\n]{0,35}(?:freigegeben|genehmigt|beauftragt|beschlossen)/i,/(?:pilotentscheidung|freigabe)[^.!?\n]{0,60}(?:offen|ausstehend|fehlt)/i]},
- budgetConfirmed:{label:'Budget',positive:[/budget(?:rahmen|topf)?[^.!?\n]{0,80}(?:bestätigt|freigegeben|genehmigt|verfügbar|darstellbar)/i,/(?:bis zu|budget)\s*\d[\d.\s]*\s*(?:€|eur)[^.!?\n]{0,50}(?:freigeben|verfügbar|darstellbar)/i],negative:[/budget[^.!?\n]{0,80}(?:offen|ungeklärt|nicht bestätigt|nicht freigegeben|fehlt)/i]},
- sponsorConfirmed:{label:'Sponsor',positive:[/sponsor[^.!?\n]{0,70}(?:bestätigt|bekannt|treibt|befürwortet|unterstützt)/i],negative:[/sponsor[^.!?\n]{0,70}(?:offen|fehlt|nicht bestätigt|nicht bekannt)/i]},
- decisionMakerConfirmed:{label:'Entscheider',positive:[/(?:wirtschaftliche[rn]?\s+)?entscheider(?:in)?[^.!?\n]{0,80}(?:bekannt|bestätigt|beteiligt|eingebunden|entscheidet|kann)/i,/(?:geschäftsführer(?:in)?|geschäftsleitung)[^.!?\n]{0,80}(?:entscheidet|freigeben|budgetverantwort)/i],negative:[/entscheider(?:in)?[^.!?\n]{0,80}(?:offen|fehlt|nicht eingebunden|nicht beteiligt|ungeklärt)/i]},
- businessCaseConfirmed:{label:'Business Case',positive:[/business\s*case[^.!?\n]{0,80}(?:bestätigt|belastbar|freigegeben|quantifiziert)/i,/(?:wirtschaftlicher|finanzieller)\s+nutzen[^.!?\n]{0,70}(?:bestätigt|quantifiziert|belastbar)/i],negative:[/business\s*case[^.!?\n]{0,80}(?:offen|fehlt|nicht belastbar|noch nicht|unvollständig)/i]},
- successCriteriaConfirmed:{label:'Erfolgskriterien',positive:[/erfolgskriterien?[^.!?\n]{0,80}(?:definiert|vereinbart|bestätigt|festgelegt)/i],negative:[/erfolgskriterien?[^.!?\n]{0,80}(?:offen|fehlen|nicht vereinbart|noch nicht)/i]},
- decisionDateConfirmed:{label:'Entscheidungstermin',positive:[/(?:entscheidungs|entscheidungstermin|entscheidungszeitraum)[^.!?\n]{0,90}(?:vereinbart|bestätigt|innerhalb|am|bis)/i],negative:[/(?:entscheidungs|entscheidungstermin|entscheidungszeitraum)[^.!?\n]{0,80}(?:offen|fehlt|ungeklärt|nicht vereinbart)/i]}
-};
-function snippets(text,rx){
- const clean=String(text||'').replace(/\r/g,'\n');
- const parts=clean.split(/(?<=[.!?])\s+|\n+/).map(norm).filter(Boolean);
- return parts.filter(x=>rx.test(x)).slice(0,5);
-}
-function classifyFact(id,key,def,sources){
- const hits=[];
- sources.forEach(src=>{
-  def.positive.forEach(rx=>snippets(src.text,rx).forEach(text=>hits.push({polarity:'positive',text,source:src.type,key:src.key,priority:src.priority,phase:src.phase})));
-  def.negative.forEach(rx=>snippets(src.text,rx).forEach(text=>hits.push({polarity:'negative',text,source:src.type,key:src.key,priority:src.priority,phase:src.phase})));
- });
- hits.sort((a,b)=>b.priority-a.priority || (a.polarity==='negative'?-1:1));
- const top=hits[0]||null;
- const pos=hits.some(h=>h.polarity==='positive');
- const neg=hits.some(h=>h.polarity==='negative');
- let status='OPEN';
- if(top)status=top.polarity==='negative'?'OPEN':'CONFIRMED';
- const conflict=pos&&neg;
- return {id:key,label:def.label,status,confidence:top?Math.min(0.99,0.55+top.priority/250):0.25,conflict,evidence:hits.slice(0,8),selectedEvidence:top};
-}
-function buildEvidenceStore(id){
- const sources=sourceList(id);
- const facts={};Object.keys(DEFINITIONS).forEach(k=>facts[k]=classifyFact(id,k,DEFINITIONS[k],sources));
- const store={schema:'ki21.evidence.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),sourceCount:sources.length,facts};
- write(PREFIX+'evidence_'+id,store);return store;
-}
-function buildOpportunityState(id,evidence){
- const f=evidence.facts;
- const confirmed=Object.values(f).filter(x=>x.status==='CONFIRMED').length;
- const conflicts=Object.values(f).filter(x=>x.conflict).map(x=>x.id);
- let stage='QUALIFICATION';
- if(f.pilotApproved.status==='CONFIRMED')stage='PILOT_APPROVED';
- else if(f.decisionMakerConfirmed.status==='CONFIRMED'&&f.budgetConfirmed.status==='CONFIRMED')stage='DECISION_PREPARATION';
- else if(f.sponsorConfirmed.status==='CONFIRMED')stage='DISCOVERY';
- const stateObj={schema:'ki21.opportunity-state.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),stage,confirmedFacts:confirmed,totalFacts:Object.keys(f).length,conflicts,facts:f};
- write(PREFIX+'state_'+id,stateObj);return stateObj;
-}
-function buildDecisionObjects(id,stateObj){
- const f=stateObj.facts;
- const weighted=[['budgetConfirmed',18],['sponsorConfirmed',14],['decisionMakerConfirmed',20],['businessCaseConfirmed',18],['successCriteriaConfirmed',12],['decisionDateConfirmed',10],['pilotApproved',8]];
- let readiness=0;weighted.forEach(([k,w])=>{if(f[k].status==='CONFIRMED')readiness+=w;});
- readiness=Math.max(0,readiness-stateObj.conflicts.length*5);
- const missing=weighted.filter(([k])=>f[k].status!=='CONFIRMED').map(([k])=>f[k].label);
- let next='Kundenentscheidung konkretisieren';
- if(f.decisionMakerConfirmed.status!=='CONFIRMED')next='Wirtschaftlichen Entscheider identifizieren und verbindlich einbinden';
- else if(f.businessCaseConfirmed.status!=='CONFIRMED')next='Wirtschaftlichen Nutzen mit dem Entscheider quantifizieren und bestätigen';
- else if(f.successCriteriaConfirmed.status!=='CONFIRMED')next='Messbare Erfolgskriterien für den Pilot vereinbaren';
- else if(f.decisionDateConfirmed.status!=='CONFIRMED')next='Verbindlichen Entscheidungstermin vereinbaren';
- else if(f.pilotApproved.status!=='CONFIRMED')next='Pilotfreigabe als klare Kundenentscheidung herbeiführen';
- else next='Pilotstart verbindlich terminieren und Umsetzung übergeben';
- const health=Math.max(5,Math.min(100,Math.round(readiness-(stateObj.conflicts.length*4))));
- const forecast=f.pilotApproved.status==='CONFIRMED'?'COMMIT':readiness>=70?'BEST_CASE':readiness>=45?'UPSIDE':'EARLY';
- const obj={schema:'ki21.decision-objects.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),opportunityHealth:health,decisionReadiness:readiness,forecast,nextCustomerDecision:next,missingEvidence:missing,conflicts:stateObj.conflicts,explainability:Object.values(f).map(x=>({fact:x.label,status:x.status,confidence:x.confidence,evidence:x.selectedEvidence?x.selectedEvidence.text:null}))};
- write(PREFIX+'decisions_'+id,obj);return obj;
-}
-function auditConsistency(id,stateObj,decisions){
- const issues=[];
- if(stateObj.facts.pilotApproved.status==='CONFIRMED'&&decisions.nextCustomerDecision.toLowerCase().includes('pilotfreigabe'))issues.push('NEXT_DECISION_CONTRADICTS_PILOT_APPROVAL');
- if(stateObj.facts.decisionMakerConfirmed.status!=='CONFIRMED'&&decisions.forecast==='COMMIT')issues.push('COMMIT_WITHOUT_DECISION_MAKER');
- stateObj.conflicts.forEach(x=>issues.push('CONFLICT:'+x));
- const audit={schema:'ki21.consistency-audit.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),ok:issues.length===0,issues};
- write(PREFIX+'audit_'+id,audit);return audit;
-}
-function refresh(id){
- id=String(id||activeId()).trim();if(!id)return null;
- const evidence=buildEvidenceStore(id);
- const opportunityState=buildOpportunityState(id,evidence);
- const decisions=buildDecisionObjects(id,opportunityState);
- const audit=auditConsistency(id,opportunityState,decisions);
- const snapshot={version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),evidence,opportunityState,decisions,audit};
- write(PREFIX+'snapshot_'+id,snapshot);
- window.__ki21V501Snapshot=snapshot;
- window.dispatchEvent(new CustomEvent('ki21:v501:refreshed',{detail:{opportunityId:id,snapshot}}));
- return snapshot;
-}
-function reportBlock(snapshot){
- if(!snapshot)return '';
- const d=snapshot.decisions,s=snapshot.opportunityState,a=snapshot.audit;
- const lines=['','ARCHITECTURE FOUNDATION 5.0.1','• Opportunity State: '+s.stage,'• Opportunity Health: '+d.opportunityHealth+' %','• Entscheidungsreife: '+d.decisionReadiness+' %','• Forecast: '+d.forecast,'• Nächste Kundenentscheidung: '+d.nextCustomerDecision,'• Konsistenzprüfung: '+(a.ok?'BESTANDEN':'WARNUNG – '+a.issues.join(', ')),'• Fehlende Evidenz: '+(d.missingEvidence.join(', ')||'keine')];
- return lines.join('\n');
-}
-// Integrate into the existing test report without changing its legacy content.
-try{
- const original=window.buildOpportunityTestReportSafelyV726;
- if(typeof original==='function'&&!original.__ki21v501){
-  const wrapped=function(){const base=original.apply(this,arguments);return String(base||'')+reportBlock(refresh(activeId()));};
-  wrapped.__ki21v501=true;window.buildOpportunityTestReportSafelyV726=wrapped;
- }
-}catch(_){ }
-// Refresh synchronously whenever the active opportunity changes.
-try{
- const originalActivate=window.ki21ActivateOpportunityV105;
- if(typeof originalActivate==='function'&&!originalActivate.__ki21v501){
-  const wrapped=function(id){const ok=originalActivate.apply(this,arguments);if(ok)refresh(id);return ok;};
-  wrapped.__ki21v501=true;window.ki21ActivateOpportunityV105=wrapped;
- }
-}catch(_){ }
-let timer=0;
-function schedule(){clearTimeout(timer);timer=setTimeout(()=>refresh(activeId()),80);}
-window.addEventListener('pageshow',schedule,true);
-window.addEventListener('storage',e=>{if(e&&e.key&&/^ki21_/.test(e.key)&&!e.key.startsWith(PREFIX))schedule();});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.KI21Architecture501={version:VERSION,build:BUILD,refresh,getSnapshot:id=>read(PREFIX+'snapshot_'+String(id||activeId()),null),getEvidence:id=>read(PREFIX+'evidence_'+String(id||activeId()),null),getState:id=>read(PREFIX+'state_'+String(id||activeId()),null),getDecisions:id=>read(PREFIX+'decisions_'+String(id||activeId()),null),getAudit:id=>read(PREFIX+'audit_'+String(id||activeId()),null)};
-})();
-</script>
 
-<!-- KI21 5.0.1 Release Notes
-Architecture Foundation
-- Central Evidence Store from primary opportunity inputs
-- Canonical Opportunity State
-- Deterministic Decision Objects
-- Explainability and conflict detection
-- Consistency audit
-- Test report integration
--->
 
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
@@ -16462,17 +16304,7 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
-<!-- KI21 5.0.0 Release Notes
-Deterministic Decision Engine
-- Evidence Layer
-- Decision Objects
-- Explainable Intelligence
-- Intelligence Engines 2.0
-- Opportunity Memory
-- Executive Cockpit 2.0
--->
-</body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
   win.document.close();
 }
 
@@ -23547,5 +23379,167 @@ Deterministic Decision Engine
 - Opportunity Memory
 - Executive Cockpit 2.0
 -->
+
+
+<!-- KI21 5.0.1 Architecture Foundation
+     Central Evidence Store -> Opportunity State -> Decision Objects -> Consistency Guard
+     Primary evidence only; generated outputs never become facts. -->
+<script id="ki21-501-architecture-foundation">
+(function(){
+'use strict';
+const VERSION='5.0.1';
+const BUILD='pilot-core-5.0.1-architecture-foundation-20260718';
+const PREFIX='ki21_v501_';
+const now=()=>new Date().toISOString();
+const norm=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
+const low=v=>norm(v).toLowerCase();
+const read=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(_){return d;}};
+const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(_){return false;}};
+const activeId=()=>String((window.state&&window.state.activeId)||read('ki21_aid','')||'').trim();
+function safeString(v){
+ if(v==null)return '';
+ if(typeof v==='string')return v;
+ try{return JSON.stringify(v);}catch(_){return String(v);}
+}
+function sourceList(id){
+ const rows=[];
+ const add=(type,key,value,priority,phase)=>{const text=safeString(value);if(norm(text))rows.push({type,key,text,priority,phase:phase??null});};
+ add('opportunity','ki21_opportunity_'+id,read('ki21_opportunity_'+id,''),100);
+ add('import','ki21_import_raw_'+id,read('ki21_import_raw_'+id,''),95);
+ add('account','ki21_account_'+id,read('ki21_account_'+id,''),70);
+ for(let p=0;p<5;p++){
+  const st=read('ki21_st_'+id+'_'+p,{})||{};
+  add('manual-fields','ki21_st_'+id+'_'+p,st.fv||{},90,p);
+  add('additions','ki21_additions_'+id+'_'+p,read('ki21_additions_'+id+'_'+p,[]),98,p);
+  add('legacy-additions','ki21_kk_'+id+'_'+p,read('ki21_kk_'+id+'_'+p,''),85,p);
+ }
+ return rows.sort((a,b)=>b.priority-a.priority);
+}
+const DEFINITIONS={
+ pilotApproved:{label:'Pilotfreigabe',positive:[/pilot[^.!?\n]{0,80}(?:freigegeben|genehmigt|beauftragt|beschlossen)/i,/(?:freigabe|beauftragung)[^.!?\n]{0,50}pilot/i],negative:[/pilot[^.!?\n]{0,90}(?:noch nicht|nicht|keine)[^.!?\n]{0,35}(?:freigegeben|genehmigt|beauftragt|beschlossen)/i,/(?:pilotentscheidung|freigabe)[^.!?\n]{0,60}(?:offen|ausstehend|fehlt)/i]},
+ budgetConfirmed:{label:'Budget',positive:[/budget(?:rahmen|topf)?[^.!?\n]{0,80}(?:bestätigt|freigegeben|genehmigt|verfügbar|darstellbar)/i,/(?:bis zu|budget)\s*\d[\d.\s]*\s*(?:€|eur)[^.!?\n]{0,50}(?:freigeben|verfügbar|darstellbar)/i],negative:[/budget[^.!?\n]{0,80}(?:offen|ungeklärt|nicht bestätigt|nicht freigegeben|fehlt)/i]},
+ sponsorConfirmed:{label:'Sponsor',positive:[/sponsor[^.!?\n]{0,70}(?:bestätigt|bekannt|treibt|befürwortet|unterstützt)/i],negative:[/sponsor[^.!?\n]{0,70}(?:offen|fehlt|nicht bestätigt|nicht bekannt)/i]},
+ decisionMakerConfirmed:{label:'Entscheider',positive:[/(?:wirtschaftliche[rn]?\s+)?entscheider(?:in)?[^.!?\n]{0,80}(?:bekannt|bestätigt|beteiligt|eingebunden|entscheidet|kann)/i,/(?:geschäftsführer(?:in)?|geschäftsleitung)[^.!?\n]{0,80}(?:entscheidet|freigeben|budgetverantwort)/i],negative:[/entscheider(?:in)?[^.!?\n]{0,80}(?:offen|fehlt|nicht eingebunden|nicht beteiligt|ungeklärt)/i]},
+ businessCaseConfirmed:{label:'Business Case',positive:[/business\s*case[^.!?\n]{0,80}(?:bestätigt|belastbar|freigegeben|quantifiziert)/i,/(?:wirtschaftlicher|finanzieller)\s+nutzen[^.!?\n]{0,70}(?:bestätigt|quantifiziert|belastbar)/i],negative:[/business\s*case[^.!?\n]{0,80}(?:offen|fehlt|nicht belastbar|noch nicht|unvollständig)/i]},
+ successCriteriaConfirmed:{label:'Erfolgskriterien',positive:[/erfolgskriterien?[^.!?\n]{0,80}(?:definiert|vereinbart|bestätigt|festgelegt)/i],negative:[/erfolgskriterien?[^.!?\n]{0,80}(?:offen|fehlen|nicht vereinbart|noch nicht)/i]},
+ decisionDateConfirmed:{label:'Entscheidungstermin',positive:[/(?:entscheidungs|entscheidungstermin|entscheidungszeitraum)[^.!?\n]{0,90}(?:vereinbart|bestätigt|innerhalb|am|bis)/i],negative:[/(?:entscheidungs|entscheidungstermin|entscheidungszeitraum)[^.!?\n]{0,80}(?:offen|fehlt|ungeklärt|nicht vereinbart)/i]}
+};
+function snippets(text,rx){
+ const clean=String(text||'').replace(/\r/g,'\n');
+ const parts=clean.split(/(?<=[.!?])\s+|\n+/).map(norm).filter(Boolean);
+ return parts.filter(x=>rx.test(x)).slice(0,5);
+}
+function classifyFact(id,key,def,sources){
+ const hits=[];
+ sources.forEach(src=>{
+  def.positive.forEach(rx=>snippets(src.text,rx).forEach(text=>hits.push({polarity:'positive',text,source:src.type,key:src.key,priority:src.priority,phase:src.phase})));
+  def.negative.forEach(rx=>snippets(src.text,rx).forEach(text=>hits.push({polarity:'negative',text,source:src.type,key:src.key,priority:src.priority,phase:src.phase})));
+ });
+ hits.sort((a,b)=>b.priority-a.priority || (a.polarity==='negative'?-1:1));
+ const top=hits[0]||null;
+ const pos=hits.some(h=>h.polarity==='positive');
+ const neg=hits.some(h=>h.polarity==='negative');
+ let status='OPEN';
+ if(top)status=top.polarity==='negative'?'OPEN':'CONFIRMED';
+ const conflict=pos&&neg;
+ return {id:key,label:def.label,status,confidence:top?Math.min(0.99,0.55+top.priority/250):0.25,conflict,evidence:hits.slice(0,8),selectedEvidence:top};
+}
+function buildEvidenceStore(id){
+ const sources=sourceList(id);
+ const facts={};Object.keys(DEFINITIONS).forEach(k=>facts[k]=classifyFact(id,k,DEFINITIONS[k],sources));
+ const store={schema:'ki21.evidence.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),sourceCount:sources.length,facts};
+ write(PREFIX+'evidence_'+id,store);return store;
+}
+function buildOpportunityState(id,evidence){
+ const f=evidence.facts;
+ const confirmed=Object.values(f).filter(x=>x.status==='CONFIRMED').length;
+ const conflicts=Object.values(f).filter(x=>x.conflict).map(x=>x.id);
+ let stage='QUALIFICATION';
+ if(f.pilotApproved.status==='CONFIRMED')stage='PILOT_APPROVED';
+ else if(f.decisionMakerConfirmed.status==='CONFIRMED'&&f.budgetConfirmed.status==='CONFIRMED')stage='DECISION_PREPARATION';
+ else if(f.sponsorConfirmed.status==='CONFIRMED')stage='DISCOVERY';
+ const stateObj={schema:'ki21.opportunity-state.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),stage,confirmedFacts:confirmed,totalFacts:Object.keys(f).length,conflicts,facts:f};
+ write(PREFIX+'state_'+id,stateObj);return stateObj;
+}
+function buildDecisionObjects(id,stateObj){
+ const f=stateObj.facts;
+ const weighted=[['budgetConfirmed',18],['sponsorConfirmed',14],['decisionMakerConfirmed',20],['businessCaseConfirmed',18],['successCriteriaConfirmed',12],['decisionDateConfirmed',10],['pilotApproved',8]];
+ let readiness=0;weighted.forEach(([k,w])=>{if(f[k].status==='CONFIRMED')readiness+=w;});
+ readiness=Math.max(0,readiness-stateObj.conflicts.length*5);
+ const missing=weighted.filter(([k])=>f[k].status!=='CONFIRMED').map(([k])=>f[k].label);
+ let next='Kundenentscheidung konkretisieren';
+ if(f.decisionMakerConfirmed.status!=='CONFIRMED')next='Wirtschaftlichen Entscheider identifizieren und verbindlich einbinden';
+ else if(f.businessCaseConfirmed.status!=='CONFIRMED')next='Wirtschaftlichen Nutzen mit dem Entscheider quantifizieren und bestätigen';
+ else if(f.successCriteriaConfirmed.status!=='CONFIRMED')next='Messbare Erfolgskriterien für den Pilot vereinbaren';
+ else if(f.decisionDateConfirmed.status!=='CONFIRMED')next='Verbindlichen Entscheidungstermin vereinbaren';
+ else if(f.pilotApproved.status!=='CONFIRMED')next='Pilotfreigabe als klare Kundenentscheidung herbeiführen';
+ else next='Pilotstart verbindlich terminieren und Umsetzung übergeben';
+ const health=Math.max(5,Math.min(100,Math.round(readiness-(stateObj.conflicts.length*4))));
+ const forecast=f.pilotApproved.status==='CONFIRMED'?'COMMIT':readiness>=70?'BEST_CASE':readiness>=45?'UPSIDE':'EARLY';
+ const obj={schema:'ki21.decision-objects.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),opportunityHealth:health,decisionReadiness:readiness,forecast,nextCustomerDecision:next,missingEvidence:missing,conflicts:stateObj.conflicts,explainability:Object.values(f).map(x=>({fact:x.label,status:x.status,confidence:x.confidence,evidence:x.selectedEvidence?x.selectedEvidence.text:null}))};
+ write(PREFIX+'decisions_'+id,obj);return obj;
+}
+function auditConsistency(id,stateObj,decisions){
+ const issues=[];
+ if(stateObj.facts.pilotApproved.status==='CONFIRMED'&&decisions.nextCustomerDecision.toLowerCase().includes('pilotfreigabe'))issues.push('NEXT_DECISION_CONTRADICTS_PILOT_APPROVAL');
+ if(stateObj.facts.decisionMakerConfirmed.status!=='CONFIRMED'&&decisions.forecast==='COMMIT')issues.push('COMMIT_WITHOUT_DECISION_MAKER');
+ stateObj.conflicts.forEach(x=>issues.push('CONFLICT:'+x));
+ const audit={schema:'ki21.consistency-audit.v1',version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),ok:issues.length===0,issues};
+ write(PREFIX+'audit_'+id,audit);return audit;
+}
+function refresh(id){
+ id=String(id||activeId()).trim();if(!id)return null;
+ const evidence=buildEvidenceStore(id);
+ const opportunityState=buildOpportunityState(id,evidence);
+ const decisions=buildDecisionObjects(id,opportunityState);
+ const audit=auditConsistency(id,opportunityState,decisions);
+ const snapshot={version:VERSION,build:BUILD,opportunityId:id,generatedAt:now(),evidence,opportunityState,decisions,audit};
+ write(PREFIX+'snapshot_'+id,snapshot);
+ window.__ki21V501Snapshot=snapshot;
+ window.dispatchEvent(new CustomEvent('ki21:v501:refreshed',{detail:{opportunityId:id,snapshot}}));
+ return snapshot;
+}
+function reportBlock(snapshot){
+ if(!snapshot)return '';
+ const d=snapshot.decisions,s=snapshot.opportunityState,a=snapshot.audit;
+ const lines=['','ARCHITECTURE FOUNDATION 5.0.1','• Opportunity State: '+s.stage,'• Opportunity Health: '+d.opportunityHealth+' %','• Entscheidungsreife: '+d.decisionReadiness+' %','• Forecast: '+d.forecast,'• Nächste Kundenentscheidung: '+d.nextCustomerDecision,'• Konsistenzprüfung: '+(a.ok?'BESTANDEN':'WARNUNG – '+a.issues.join(', ')),'• Fehlende Evidenz: '+(d.missingEvidence.join(', ')||'keine')];
+ return lines.join('\n');
+}
+// Integrate into the existing test report without changing its legacy content.
+try{
+ const original=window.buildOpportunityTestReportSafelyV726;
+ if(typeof original==='function'&&!original.__ki21v501){
+  const wrapped=function(){const base=original.apply(this,arguments);return String(base||'')+reportBlock(refresh(activeId()));};
+  wrapped.__ki21v501=true;window.buildOpportunityTestReportSafelyV726=wrapped;
+ }
+}catch(_){ }
+// Refresh synchronously whenever the active opportunity changes.
+try{
+ const originalActivate=window.ki21ActivateOpportunityV105;
+ if(typeof originalActivate==='function'&&!originalActivate.__ki21v501){
+  const wrapped=function(id){const ok=originalActivate.apply(this,arguments);if(ok)refresh(id);return ok;};
+  wrapped.__ki21v501=true;window.ki21ActivateOpportunityV105=wrapped;
+ }
+}catch(_){ }
+let timer=0;
+function schedule(){clearTimeout(timer);timer=setTimeout(()=>refresh(activeId()),80);}
+window.addEventListener('pageshow',schedule,true);
+window.addEventListener('storage',e=>{if(e&&e.key&&/^ki21_/.test(e.key)&&!e.key.startsWith(PREFIX))schedule();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+window.KI21Architecture501={version:VERSION,build:BUILD,refresh,getSnapshot:id=>read(PREFIX+'snapshot_'+String(id||activeId()),null),getEvidence:id=>read(PREFIX+'evidence_'+String(id||activeId()),null),getState:id=>read(PREFIX+'state_'+String(id||activeId()),null),getDecisions:id=>read(PREFIX+'decisions_'+String(id||activeId()),null),getAudit:id=>read(PREFIX+'audit_'+String(id||activeId()),null)};
+})();
+</script>
+
+<!-- KI21 5.0.1 Release Notes
+Architecture Foundation
+- Central Evidence Store from primary opportunity inputs
+- Canonical Opportunity State
+- Deterministic Decision Objects
+- Explainability and conflict detection
+- Consistency audit
+- Test report integration
+-->
+
 </body>
 </html>
