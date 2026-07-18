@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS</title>
+<title>KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -15404,6 +15404,98 @@ function generateKundePDF(aid, cust){
 
 <!-- KI21_FREEZE: 2.9.3 CORE MODEL DIRECT CONSTRAINT AUTHORITY -->
 <!-- KI21 2.9.26: case-specific sponsor names removed; sponsor/technical scores derived from active constraint facts -->
+
+
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
+<script id="ki21-v2942-ui-phase-context-authority">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
+window.KI21_VERSION=VERSION;
+
+function deepestNative(fn){
+  var cur=fn, seen=[];
+  while(cur && typeof cur==='function' && cur.__native && typeof cur.__native==='function' && seen.indexOf(cur)<0){
+    seen.push(cur); cur=cur.__native;
+  }
+  return cur;
+}
+
+function currentPhase(){
+  try{
+    if(window.state && Number.isInteger(Number(window.state.currentSitId))) return Number(window.state.currentSitId)+1;
+  }catch(e){}
+  try{
+    var v=Number(window.LS&&window.LS.get?window.LS.get('ki21_view',-1):-1);
+    if(v>=0&&v<=4) return v+1;
+  }catch(e){}
+  return 0;
+}
+
+function phase2Authority(prompt){
+  return [
+    'SYSTEMISCHE ROUTING-AUTORITÄT – PHASE 2:',
+    'Die Benutzeroberfläche befindet sich verbindlich in PHASE 2: BEDARFSANALYSE & DEMO.',
+    'Erzeuge ausschließlich eine Phase-2-Ausgabe über das Sprachmodell.',
+    'Ignoriere Überschriften wie EXECUTIVE PRIORITÄT, BUSINESS CASE oder NÄCHSTER KUNDENSCHRITT als Phasen-Routing-Signal.',
+    'Fokus: bestätigter Bedarf, offene Bedarfsfragen, Demo-Ziele, reale Beispiel-Opportunities, Teilnehmer, Erfolgskriterien und Entscheidung nach der Demo.',
+    'Der dominante Deal-Blocker darf als Kontext erscheinen, darf aber die Bedarfsanalyse und Demo nicht ersetzen.',
+    'Verwende ausschließlich Fakten der aktuell aktiven Opportunity.',
+    '',
+    String(prompt||'')
+  ].join('\n');
+}
+
+function install(){
+  var current=window.callClaude;
+  if(typeof current!=='function' || current.__ki21v2942) return;
+  var nativeCall=deepestNative(current);
+  var wrapped=async function(){
+    var args=[].slice.call(arguments);
+    var phase=currentPhase();
+    if(phase===2){
+      args[0]=phase2Authority(args[0]);
+      return nativeCall.apply(this,args);
+    }
+    return current.apply(this,args);
+  };
+  wrapped.__ki21v2942=true;
+  wrapped.__native=current;
+  wrapped.__phase2Native=nativeCall;
+  window.callClaude=wrapped;
+}
+
+function boot(){
+  install();
+  document.title='KI21 '+VERSION;
+  document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+  document.documentElement.setAttribute('data-ki21-version','2.9.42');
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
+window.addEventListener('pageshow',boot,true);
+document.addEventListener('click',function(){setTimeout(boot,0);},true);
+document.addEventListener('change',function(){setTimeout(boot,0);},true);
+
+window.ki21UiPhaseContextSelfTestV2942=function(){
+  var oldState=window.state, oldLS=window.LS;
+  try{
+    window.state=window.state||{};
+    window.state.currentSitId=1;
+    return {
+      ok:currentPhase()===2 && /PHASE 2/.test(phase2Authority('EXECUTIVE PRIORITÄT')),
+      phase:currentPhase(),
+      routingSource:'state.currentSitId',
+      bypassesPromptHeuristics:true
+    };
+  }finally{
+    if(oldState===undefined) delete window.state; else window.state=oldState;
+    if(oldLS===undefined) delete window.LS; else window.LS=oldLS;
+  }
+};
+})();
+</script>
+
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -15484,8 +15576,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15509,7 +15601,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15530,7 +15622,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15738,7 +15830,99 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
+<script id="ki21-v2942-ui-phase-context-authority">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
+window.KI21_VERSION=VERSION;
+
+function deepestNative(fn){
+  var cur=fn, seen=[];
+  while(cur && typeof cur==='function' && cur.__native && typeof cur.__native==='function' && seen.indexOf(cur)<0){
+    seen.push(cur); cur=cur.__native;
+  }
+  return cur;
+}
+
+function currentPhase(){
+  try{
+    if(window.state && Number.isInteger(Number(window.state.currentSitId))) return Number(window.state.currentSitId)+1;
+  }catch(e){}
+  try{
+    var v=Number(window.LS&&window.LS.get?window.LS.get('ki21_view',-1):-1);
+    if(v>=0&&v<=4) return v+1;
+  }catch(e){}
+  return 0;
+}
+
+function phase2Authority(prompt){
+  return [
+    'SYSTEMISCHE ROUTING-AUTORITÄT – PHASE 2:',
+    'Die Benutzeroberfläche befindet sich verbindlich in PHASE 2: BEDARFSANALYSE & DEMO.',
+    'Erzeuge ausschließlich eine Phase-2-Ausgabe über das Sprachmodell.',
+    'Ignoriere Überschriften wie EXECUTIVE PRIORITÄT, BUSINESS CASE oder NÄCHSTER KUNDENSCHRITT als Phasen-Routing-Signal.',
+    'Fokus: bestätigter Bedarf, offene Bedarfsfragen, Demo-Ziele, reale Beispiel-Opportunities, Teilnehmer, Erfolgskriterien und Entscheidung nach der Demo.',
+    'Der dominante Deal-Blocker darf als Kontext erscheinen, darf aber die Bedarfsanalyse und Demo nicht ersetzen.',
+    'Verwende ausschließlich Fakten der aktuell aktiven Opportunity.',
+    '',
+    String(prompt||'')
+  ].join('\n');
+}
+
+function install(){
+  var current=window.callClaude;
+  if(typeof current!=='function' || current.__ki21v2942) return;
+  var nativeCall=deepestNative(current);
+  var wrapped=async function(){
+    var args=[].slice.call(arguments);
+    var phase=currentPhase();
+    if(phase===2){
+      args[0]=phase2Authority(args[0]);
+      return nativeCall.apply(this,args);
+    }
+    return current.apply(this,args);
+  };
+  wrapped.__ki21v2942=true;
+  wrapped.__native=current;
+  wrapped.__phase2Native=nativeCall;
+  window.callClaude=wrapped;
+}
+
+function boot(){
+  install();
+  document.title='KI21 '+VERSION;
+  document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+  document.documentElement.setAttribute('data-ki21-version','2.9.42');
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
+window.addEventListener('pageshow',boot,true);
+document.addEventListener('click',function(){setTimeout(boot,0);},true);
+document.addEventListener('change',function(){setTimeout(boot,0);},true);
+
+window.ki21UiPhaseContextSelfTestV2942=function(){
+  var oldState=window.state, oldLS=window.LS;
+  try{
+    window.state=window.state||{};
+    window.state.currentSitId=1;
+    return {
+      ok:currentPhase()===2 && /PHASE 2/.test(phase2Authority('EXECUTIVE PRIORITÄT')),
+      phase:currentPhase(),
+      routingSource:'state.currentSitId',
+      bypassesPromptHeuristics:true
+    };
+  }finally{
+    if(oldState===undefined) delete window.state; else window.state=oldState;
+    if(oldLS===undefined) delete window.LS; else window.LS=oldLS;
+  }
+};
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -16387,7 +16571,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+const KI21_VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 
 
 function runKi21VersionMigration(){
@@ -20211,7 +20395,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20251,7 +20435,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20275,7 +20459,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20293,7 +20477,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20495,7 +20679,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 
   function allStorageKeys(){
     const keys=[];
@@ -20706,7 +20890,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20917,7 +21101,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21119,7 +21303,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21235,7 +21419,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21332,7 +21516,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21414,7 +21598,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21437,7 +21621,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21615,7 +21799,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21873,7 +22057,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22129,7 +22313,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+  const VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22297,7 +22481,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22391,9 +22575,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22428,7 +22612,7 @@ window.addEventListener('pageshow',install,true);
 <script>
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 function c(v){return String(v==null?'':v).replace(/\r/g,' ').replace(/\s+/g,' ').trim();}
 function aid(){try{return String((window.state&&window.state.activeId)||(window.LS&&LS.get('ki21_aid',''))||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'');}catch(e){return '';}}
@@ -22480,11 +22664,11 @@ new MutationObserver(schedule).observe(document.documentElement,{subtree:true,ch
 window.ki21ConstraintStateV297=facts;window.ki21ApplyConstraintV297=apply;
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22538,11 +22722,11 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2910-generalized-phase4-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 function str(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function activeId(){
@@ -22689,11 +22873,11 @@ window.ki21MigratePhase4V2910=migrate;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2914-phase-constraint-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 function state(){try{return typeof window.ki21ConstraintStateV297==='function'?(window.ki21ConstraintStateV297()||{}):{};}catch(e){return {};}}
@@ -22763,11 +22947,11 @@ window.ki21BuildTechnicalQualificationV2914=technicalPhase;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2918-opportunity-isolation-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
 function activeId(){
@@ -22961,19 +23145,19 @@ window.ki21StrictOpportunityStateV2918=strictState;window.ki21ApplyOpportunityIs
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22995,11 +23179,11 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2937-authoritative-import-context">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 
 function text(v){return String(v==null?'':v).replace(/\r/g,' ').replace(/\s+/g,' ').trim();}
@@ -23136,11 +23320,11 @@ window.ki21OpportunityIsolationSelfTestV2937=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2940-clean-api-phase-routing">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 
 function explicitPhase(prompt){
@@ -23184,7 +23368,7 @@ function boot(){
   install();
   document.title='KI21 '+VERSION;
   document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
-  document.documentElement.setAttribute('data-ki21-version','2.9.41');
+  document.documentElement.setAttribute('data-ki21-version','2.9.42');
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
@@ -23208,11 +23392,11 @@ window.ki21PhaseRoutingSelfTestV2940=function(){
 
 
 
-<!-- KI21 Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS -->
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
 <script id="ki21-v2941-phase2-native-api-bypass">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.41 PHASE2 NATIVE API BYPASS';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
 window.KI21_VERSION=VERSION;
 
 function explicitPhase(prompt){
@@ -23267,7 +23451,7 @@ function boot(){
   install();
   document.title='KI21 '+VERSION;
   document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
-  document.documentElement.setAttribute('data-ki21-version','2.9.41');
+  document.documentElement.setAttribute('data-ki21-version','2.9.42');
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
@@ -23284,5 +23468,97 @@ window.ki21Phase2NativeBypassSelfTestV2941=function(){
 };
 })();
 </script>
+
+
+<!-- KI21 Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY -->
+<script id="ki21-v2942-ui-phase-context-authority">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.42 UI PHASE CONTEXT AUTHORITY';
+window.KI21_VERSION=VERSION;
+
+function deepestNative(fn){
+  var cur=fn, seen=[];
+  while(cur && typeof cur==='function' && cur.__native && typeof cur.__native==='function' && seen.indexOf(cur)<0){
+    seen.push(cur); cur=cur.__native;
+  }
+  return cur;
+}
+
+function currentPhase(){
+  try{
+    if(window.state && Number.isInteger(Number(window.state.currentSitId))) return Number(window.state.currentSitId)+1;
+  }catch(e){}
+  try{
+    var v=Number(window.LS&&window.LS.get?window.LS.get('ki21_view',-1):-1);
+    if(v>=0&&v<=4) return v+1;
+  }catch(e){}
+  return 0;
+}
+
+function phase2Authority(prompt){
+  return [
+    'SYSTEMISCHE ROUTING-AUTORITÄT – PHASE 2:',
+    'Die Benutzeroberfläche befindet sich verbindlich in PHASE 2: BEDARFSANALYSE & DEMO.',
+    'Erzeuge ausschließlich eine Phase-2-Ausgabe über das Sprachmodell.',
+    'Ignoriere Überschriften wie EXECUTIVE PRIORITÄT, BUSINESS CASE oder NÄCHSTER KUNDENSCHRITT als Phasen-Routing-Signal.',
+    'Fokus: bestätigter Bedarf, offene Bedarfsfragen, Demo-Ziele, reale Beispiel-Opportunities, Teilnehmer, Erfolgskriterien und Entscheidung nach der Demo.',
+    'Der dominante Deal-Blocker darf als Kontext erscheinen, darf aber die Bedarfsanalyse und Demo nicht ersetzen.',
+    'Verwende ausschließlich Fakten der aktuell aktiven Opportunity.',
+    '',
+    String(prompt||'')
+  ].join('\n');
+}
+
+function install(){
+  var current=window.callClaude;
+  if(typeof current!=='function' || current.__ki21v2942) return;
+  var nativeCall=deepestNative(current);
+  var wrapped=async function(){
+    var args=[].slice.call(arguments);
+    var phase=currentPhase();
+    if(phase===2){
+      args[0]=phase2Authority(args[0]);
+      return nativeCall.apply(this,args);
+    }
+    return current.apply(this,args);
+  };
+  wrapped.__ki21v2942=true;
+  wrapped.__native=current;
+  wrapped.__phase2Native=nativeCall;
+  window.callClaude=wrapped;
+}
+
+function boot(){
+  install();
+  document.title='KI21 '+VERSION;
+  document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+  document.documentElement.setAttribute('data-ki21-version','2.9.42');
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
+window.addEventListener('pageshow',boot,true);
+document.addEventListener('click',function(){setTimeout(boot,0);},true);
+document.addEventListener('change',function(){setTimeout(boot,0);},true);
+
+window.ki21UiPhaseContextSelfTestV2942=function(){
+  var oldState=window.state, oldLS=window.LS;
+  try{
+    window.state=window.state||{};
+    window.state.currentSitId=1;
+    return {
+      ok:currentPhase()===2 && /PHASE 2/.test(phase2Authority('EXECUTIVE PRIORITÄT')),
+      phase:currentPhase(),
+      routingSource:'state.currentSitId',
+      bypassesPromptHeuristics:true
+    };
+  }finally{
+    if(oldState===undefined) delete window.state; else window.state=oldState;
+    if(oldLS===undefined) delete window.LS; else window.LS=oldLS;
+  }
+};
+})();
+</script>
+
 </body>
 </html>
