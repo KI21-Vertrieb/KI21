@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.1.1 QUALITY RESET</title>
+<title>KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4560,7 +4560,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.1.1',name:'QUALITY RESET',buildId:'KI21-311-QR-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.1.2',name:'EVIDENCE DISCIPLINE',buildId:'KI21-312-ED-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4843,9 +4843,12 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const closedBookContext=ki21ClosedBookContextV307(authoritative.context,primaryEvidence);
   const sanitizedPhasePrompt=ki21SanitizePhasePromptV303(phasePrompt,primaryEvidence);
   const contractToken=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
-  const phase4Rules=Number(phaseIndex)===3?`\nPHASE-4-SONDERREGELN:\n- Analysiere Nutzen und Wirtschaftlichkeit ausschließlich mit dokumentierten Opportunity-Fakten.\n- Nenne keine generischen KI21-Produktpreise, Lizenzpreise, Startkosten oder Beispielangebote.\n- Ein Budgetrahmen ist nicht automatisch der konkrete Angebotspreis.\n- Erfinde keine Einsparquote, keinen Stundensatz, keine Amortisationsdauer und kein ROI-Szenario.\n- Sind monetärer Nutzen oder konkreter Angebotspreis nicht vollständig belegt, schreibe klar: „ROI noch nicht belastbar berechenbar“.\n- Verwende bestätigte operative Größen wie Aufwand, Pilotdauer und Erfolgskriterien nur so, wie sie im Kontext stehen.\n`:'';
+  const phase4Rules=Number(phaseIndex)===3?`\nPHASE-4-SONDERREGELN:\n- Analysiere Nutzen und Wirtschaftlichkeit ausschließlich mit dokumentierten Opportunity-Fakten.\n- Nenne keine generischen KI21-Produktpreise, Lizenzpreise, Startkosten oder Beispielangebote.\n- Ein Budgetrahmen ist nicht automatisch der konkrete Angebotspreis.\n- Erfinde keine Einsparquote, keinen Stundensatz, keine Amortisationsdauer und kein ROI-Szenario.\n- Rechne operative Aufwände nicht in Euro oder Jahreswerte um, wenn Stundensatz oder Kostenbasis nicht ausdrücklich belegt sind.\n- Sind monetärer Nutzen oder konkreter Angebotspreis nicht vollständig belegt, schreibe klar: „ROI noch nicht belastbar berechenbar“.\n- Verwende bestätigte operative Größen wie Aufwand, Pilotdauer und Erfolgskriterien nur so, wie sie im Kontext stehen.\n`:'';
 
-  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n8. Wenn phasenspezifische Eingaben fehlen, liefere eine konkrete Vorbereitung; verweigere die Analyse nicht und stelle keine Rückfrage.\n9. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im Opportunity-Kontext stehen.\n10. Erfinde keine Preise, Budgets, Mengen, Rollen, Termine, Quoten oder Zeiträume.\n11. Formuliere Unsicherheit qualitativ statt mit erfundenen Zahlen.\n12. Liefere eine klare, verkäuferisch nutzbare Antwort ohne Meta-Kommentar zur Datenlage.\n${phase4Rules}\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE:\n${sanitizedPhasePrompt}`;
+
+  const phase5Rules=Number(phaseIndex)===4?`\nPHASE-5-SONDERREGELN:\n- Erfinde keine Starttermine, Kalenderwochen, Fristen, Quartale, Go-live-Dauern oder zeitliche Zusagen.\n- Erfinde keine offenen Dokumente, Datenschutzschritte, AVV-, Rollen- oder Berechtigungsthemen, sofern sie nicht ausdrücklich im Kontext genannt sind.\n- Formuliere Eröffnungs- und Abschlusssätze nur mit bestätigten Fakten; keine Zusage wie „in vier Wochen live“, wenn dieser Zeitraum nicht belegt ist.\n- Nutze qualitative Formulierungen wie „nach Sponsorentscheidung“, wenn kein konkreter Termin dokumentiert ist.\n`:'';
+
+  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${closedBookContext}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n8. Wenn phasenspezifische Eingaben fehlen, liefere eine konkrete Vorbereitung; verweigere die Analyse nicht und stelle keine Rückfrage.\n9. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im Opportunity-Kontext stehen.\n10. Erfinde keine Preise, Budgets, Mengen, Rollen, Termine, Quoten oder Zeiträume.\n11. Formuliere Unsicherheit qualitativ statt mit erfundenen Zahlen.\n12. Liefere eine klare, verkäuferisch nutzbare Antwort ohne Meta-Kommentar zur Datenlage.\n13. Führe vor Ausgabe einen stillen Evidence-Check durch: Jede konkrete Zahl, Frist, Person, Rolle, Dokumentation und Prozessbehauptung muss im autoritativen Kontext belegt sein. Ist sie nicht belegt, streiche sie vollständig statt sie plausibel zu ergänzen.\n${phase4Rules}${phase5Rules}\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE:\n${sanitizedPhasePrompt}`;
 
   const started=performance.now();
   const rawResult=await callClaude(envelope,onStream||null);
@@ -15939,8 +15942,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.1 QUALITY RESET -->
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15964,7 +15967,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15985,7 +15988,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16842,7 +16845,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.1.1 QUALITY RESET';
+const KI21_VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
 
 
 function runKi21VersionMigration(){
@@ -20666,7 +20669,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20706,7 +20709,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20730,7 +20733,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20748,7 +20751,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20950,7 +20953,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
 
   function allStorageKeys(){
     const keys=[];
@@ -21161,7 +21164,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21372,7 +21375,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21574,7 +21577,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21690,7 +21693,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21787,7 +21790,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21869,7 +21872,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21892,7 +21895,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22070,7 +22073,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22328,7 +22331,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22584,7 +22587,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.1 QUALITY RESET';
+  const VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22752,7 +22755,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22846,9 +22849,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22881,11 +22884,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.1 QUALITY RESET';
+var VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22939,28 +22942,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 
 
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 
 
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.1 QUALITY RESET';
+var VERSION='Pilot Core 3.1.2 EVIDENCE DISCIPLINE';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22982,7 +22985,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.1.1 QUALITY RESET -->
+<!-- KI21 Pilot Core 3.1.2 EVIDENCE DISCIPLINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
