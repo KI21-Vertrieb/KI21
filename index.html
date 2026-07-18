@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX</title>
+<title>KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2670,7 +2670,7 @@ html.ki21-score-syncing .score-pair-v667{
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ki21-build" content="3.0.11-20260718-0920">
+<meta name="ki21-build" content="3.0.12-20260718-0920">
 <script>
 (function(){
   try {
@@ -4486,7 +4486,7 @@ async function callClaude(prompt, onStream){
 }
 
 
-// ── KI21 3.0.11 EVIDENCE NORMALIZATION FIX ───────────────────
+// ── KI21 3.0.12 CONTEXT WIDE EVIDENCE REPAIR ───────────────────
 // Exactly one route: explicit opportunity + explicit phase + one native API call.
 // No phase guessing, no local replacement output, no callClaude wrapper chain.
 const KI21_PHASE_META = Object.freeze({
@@ -4496,7 +4496,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.0.11',name:'EVIDENCE NORMALIZATION FIX',buildId:'KI21-3011-ENF-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.0.12',name:'CONTEXT WIDE EVIDENCE REPAIR',buildId:'KI21-3012-ENF-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4638,7 +4638,7 @@ function ki21ValidateEvidenceAmountsV303(text,primaryEvidence,phaseIndex){
   throw new Error('Evidence-Firewall: nicht belegter Euro-Betrag ('+invented.join(', ')+'). Ergebnis wurde verworfen.');
 }
 
-function ki21NumericClaimsV311(text){
+function ki21NumericClaimsV312(text){
   const out=[];
   const re=/(?:ca\.\s*|rund\s*|etwa\s*)?(\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?)\s*(Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|Nutzer|Opportunit(?:y|ies|äten)|Minuten?|%)(?:\s*(?:\/|pro\s+|je\s+)?\s*(Monat|Woche|Jahr|Tag))?/gi;
   let m;
@@ -4665,9 +4665,9 @@ function ki21NumericClaimsV311(text){
   }
   return [...new Set(out)];
 }
-function ki21NormalizeClaimV311(v){return String(v||'').toLowerCase().replace(/,/g,'.').replace(/\s+/g,' ').trim();}
-function ki21ClaimAllowedV311(claim,allowed){
-  const c=ki21NormalizeClaimV311(claim);
+function ki21NormalizeClaimV312(v){return String(v||'').toLowerCase().replace(/,/g,'.').replace(/\s+/g,' ').trim();}
+function ki21ClaimAllowedV312(claim,allowed){
+  const c=ki21NormalizeClaimV312(claim);
   if(allowed.has(c))return true;
   // Allow equivalent cadence wording: 165 Stunden and 165 Stunden/Monat when the same value/unit is evidenced.
   const base=c.replace(/\/(monat|woche|jahr|tag)$/,'');
@@ -4676,15 +4676,15 @@ function ki21ClaimAllowedV311(claim,allowed){
   }
   return false;
 }
-function ki21ValidateStrictNumericEvidenceV311(text,primaryEvidence,phaseIndex){
+function ki21ValidateStrictNumericEvidenceV312(text,primaryEvidence,phaseIndex){
   const raw=String(text||'');
   const evidence=String(primaryEvidence||'');
   if(/Discovery\s*Sprint|KI21\s*Compact|49\s*€|9\.?900\s*€|Startkosten|Lizenzpreis|Lizenzkosten|Subscription/i.test(raw)){
     throw new Error('Evidence-Firewall: generische KI21-Angebots- oder Preisinformation im Opportunity-Output. Ergebnis wurde verworfen.');
   }
-  const allowed=new Set(ki21NumericClaimsV311(evidence).map(ki21NormalizeClaimV311));
-  const used=ki21NumericClaimsV311(raw).map(ki21NormalizeClaimV311);
-  const invented=used.filter(c=>!ki21ClaimAllowedV311(c,allowed));
+  const allowed=new Set(ki21NumericClaimsV312(evidence).map(ki21NormalizeClaimV312));
+  const used=ki21NumericClaimsV312(raw).map(ki21NormalizeClaimV312);
+  const invented=used.filter(c=>!ki21ClaimAllowedV312(c,allowed));
   if(invented.length)throw new Error('Evidence-Firewall: nicht belegte numerische Aussage ('+[...new Set(invented)].join(', ')+'). Ergebnis wurde verworfen.');
   const roiLines=raw.split('\n').filter(l=>/Amortisation|amortisieren|Payback|ROI/i.test(l));
   for(const line of roiLines){
@@ -4694,30 +4694,39 @@ function ki21ValidateStrictNumericEvidenceV311(text,primaryEvidence,phaseIndex){
   }
 }
 
-function ki21RepairUnsupportedEvidenceV311(text,primaryEvidence,phaseIndex){
-  const evidence=String(primaryEvidence||'');
-  const allowedEuro=new Set(ki21EuroAmountsV302(evidence));
-  const allowedClaims=new Set(ki21NumericClaimsV311(evidence).map(ki21NormalizeClaimV311));
+function ki21RepairUnsupportedEvidenceV312(text,evidenceBasis,phaseIndex){
+  const evidence=String(evidenceBasis||'');
+  const allowedClaims=new Set(ki21NumericClaimsV312(evidence).map(ki21NormalizeClaimV312));
   const repaired=[];
-  for(let line of String(text||'').split('\n')){
+  for(let originalLine of String(text||'').split('\n')){
+    let line=originalLine;
+    // Structural headings are presentation contracts, not opportunity claims.
+    if(/^\s*🎯?\s*WENN DU MORGEN NUR 30 MINUTEN HAST\s*:?\s*$/i.test(line)){
+      repaired.push('🎯 WENN DU MORGEN NUR 30 MINUTEN HAST');
+      continue;
+    }
     if(/Discovery\s*Sprint|KI21\s*Compact|49\s*€|9\.?900\s*€|Startkosten|Lizenzpreis|Lizenzkosten|Subscription/i.test(line)){
       if(/Investition|Preis|Kosten/i.test(line)){
         line='• Investition: Der bestätigte Budgetrahmen ist vorhanden; konkrete Preisaufteilung und Finanzierungsquelle bleiben verbindlich zu klären.';
-      }else continue;
+      }else{
+        continue;
+      }
     }
-    const claims=ki21NumericClaimsV311(line).map(ki21NormalizeClaimV311);
-    const unsupported=claims.filter(c=>!ki21ClaimAllowedV311(c,allowedClaims));
+    const claims=ki21NumericClaimsV312(line).map(ki21NormalizeClaimV312);
+    const unsupported=claims.filter(c=>!ki21ClaimAllowedV312(c,allowedClaims));
     if(unsupported.length){
       if(/ROI|Payback|Amortisation|amortisieren/i.test(line)){
         line='• ROI/Amortisation: Noch nicht belastbar berechenbar; die tatsächlich vermeidbaren Aufwände müssen im Pilot gemessen und dem konkreten Angebotspreis gegenübergestellt werden.';
-      }else if(/NÄCHSTER SCHRITT|WENN DU MORGEN|Termin|Freitag|Montag|Quartal/i.test(line)){
-        line=line.replace(/\b(?:bis\s+)?(?:Freitag|Montag|Dienstag|Mittwoch|Donnerstag|nächste Woche|diese Woche|im laufenden Quartal)\b/gi,'zeitnah');
-        line=line.replace(/(?:ca\.\s*|rund\s*|etwa\s*)?\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*(?:Minuten?|Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|%|Nutzer|Opportunit(?:y|ies|äten))(?:\s*(?:\/|pro\s+|je\s+)?\s*(?:Monat|Woche|Jahr|Tag))?/gi,'konkret zu vereinbaren');
+      }else if(/^\s*[•\-*]\s*/.test(line)){
+        // Never corrupt prose with placeholders. An unsupported factual bullet is omitted completely.
+        continue;
+      }else if(/^\s*\d+[\.)]\s*/.test(line)){
+        // Keep action intent, remove unsupported temporal/quantitative qualifier only.
+        line=line.replace(/(?:ca\.\s*|rund\s*|etwa\s*)?\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*(?:Minuten?|Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|%|Nutzer|Opportunit(?:y|ies|äten))(?:\s*(?:\/|pro\s+|je\s+)?\s*(?:Monat|Woche|Jahr|Tag))?/gi,'').replace(/\s{2,}/g,' ').trim();
+        if(!line)continue;
       }else{
-        line=line.replace(/(?:ca\.\s*|rund\s*|etwa\s*)?\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*(?:Minuten?|Stunden?|Std\.?|Tage?|Wochen?|Monate?|Jahre?|%|Nutzer|Opportunit(?:y|ies|äten))(?:\s*(?:\/|pro\s+|je\s+)?\s*(?:Monat|Woche|Jahr|Tag))?/gi,(m)=>{
-          const normalized=ki21NumericClaimsV311(m).map(ki21NormalizeClaimV311);
-          return normalized.length&&normalized.every(c=>ki21ClaimAllowedV311(c,allowedClaims))?m:'noch zu validierende Größenordnung';
-        });
+        // Unsupported narrative sentence is safer to omit than to mutate into broken German.
+        continue;
       }
     }
     repaired.push(line);
@@ -4741,25 +4750,25 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const started=performance.now();
   // 3.0.7: Ungeprüfte Stream-Fragmente werden niemals in die sichtbare oder persistente UI geschrieben.
   // Der Output wird atomar erst nach Opportunity-, Phasen- und Evidence-Validierung freigegeben.
-  // 3.0.11: exactly one semantic API generation. No automatic second/third model call.
+  // 3.0.12: exactly one semantic API generation. No automatic second/third model call.
   // Unsupported catalogue prices and speculative numerics are repaired locally,
   // then validated once before atomic commit.
   let rawResult=await callClaude(envelope,null);
   const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
-  rawResult=ki21RepairUnsupportedEvidenceV311(rawResult,primaryEvidence,phaseIndex);
-  ki21ValidateEvidenceAmountsV303(rawResult,primaryEvidence,phaseIndex);
-  ki21ValidateStrictNumericEvidenceV311(rawResult,primaryEvidence,phaseIndex);
+  rawResult=ki21RepairUnsupportedEvidenceV312(rawResult,closedBookContext,phaseIndex);
+  ki21ValidateEvidenceAmountsV303(rawResult,closedBookContext,phaseIndex);
+  ki21ValidateStrictNumericEvidenceV312(rawResult,closedBookContext,phaseIndex);
   const result=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
   window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken};
   return result;
 }
 window.ki21SanitizePhasePromptV303=ki21SanitizePhasePromptV303;
 window.ki21ValidateEvidenceAmountsV303=ki21ValidateEvidenceAmountsV303;
-window.ki21ValidateStrictNumericEvidenceV311=ki21ValidateStrictNumericEvidenceV311;
+window.ki21ValidateStrictNumericEvidenceV312=ki21ValidateStrictNumericEvidenceV312;
 window.ki21CanonicalPrimaryEvidenceV304=ki21CanonicalPrimaryEvidenceV304;
 window.ki21ClosedBookContextV307=ki21ClosedBookContextV307;
-window.ki21RepairUnsupportedEvidenceV311=ki21RepairUnsupportedEvidenceV311;
+window.ki21RepairUnsupportedEvidenceV312=ki21RepairUnsupportedEvidenceV312;
 window.callKI21Phase=callKI21Phase;
 window.KI21_PHASE_META=KI21_PHASE_META;
 
@@ -13557,7 +13566,7 @@ function renderStation(sitId){
     try{
       const primary=ki21PrimaryEvidenceV303(phaseAccId);
       ki21ValidateEvidenceAmountsV303(txt,primary,sitId);
-      ki21ValidateStrictNumericEvidenceV311(txt,primary,sitId);
+      ki21ValidateStrictNumericEvidenceV312(txt,primary,sitId);
       return true;
     }catch(err){
       console.warn('KI21 quarantined stale stored result:',err);
@@ -15829,8 +15838,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15854,7 +15863,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15875,7 +15884,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16732,7 +16741,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+const KI21_VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
 
 
 function runKi21VersionMigration(){
@@ -20556,7 +20565,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20596,7 +20605,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20620,7 +20629,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20638,7 +20647,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20840,7 +20849,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
 
   function allStorageKeys(){
     const keys=[];
@@ -21051,7 +21060,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21262,7 +21271,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21464,7 +21473,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21580,7 +21589,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21677,7 +21686,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21759,7 +21768,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21782,7 +21791,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21960,7 +21969,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22218,7 +22227,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22474,7 +22483,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+  const VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22642,7 +22651,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22736,9 +22745,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22771,11 +22780,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+var VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22829,28 +22838,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 
 
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 
 
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX';
+var VERSION='Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22872,7 +22881,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.11 EVIDENCE NORMALIZATION FIX -->
+<!-- KI21 Pilot Core 3.0.12 CONTEXT WIDE EVIDENCE REPAIR -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
