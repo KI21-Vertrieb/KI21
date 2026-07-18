@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS</title>
+<title>KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4437,7 +4437,6 @@ async function callClaude(prompt, onStream){
       model:'claude-haiku-4-5-20251001',
       max_tokens:20000,
       stream:true,
-      tools:[{type:'web_search_20250305',name:'web_search',max_uses:6}],
       messages:[{role:'user',content:prompt}]
     })
   });
@@ -4479,7 +4478,7 @@ async function callClaude(prompt, onStream){
 }
 
 
-// ── KI21 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS ───────────────────
+// ── KI21 3.0.2 PURE EVIDENCE PIPELINE ───────────────────
 // Exactly one route: explicit opportunity + explicit phase + one native API call.
 // No phase guessing, no local replacement output, no callClaude wrapper chain.
 const KI21_PHASE_META = Object.freeze({
@@ -4489,21 +4488,21 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.0.1',name:'AUTHORITATIVE CONTEXT & DIAGNOSTICS',buildId:'KI21-301-ACD-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.0.2',name:'PURE EVIDENCE PIPELINE',buildId:'KI21-302-PEP-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
-function ki21CleanTextV301(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
-function ki21AccountByIdV301(opportunityId){
+function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
+function ki21AccountByIdV302(opportunityId){
   const id=String(opportunityId||'');
   const accounts=((window.state&&state.accounts)||LS.get('ki21_acc',[])||[]);
   return accounts.find(a=>a&&String(a.id)===id)||null;
 }
-function ki21CollectAuthoritativeContextV301(opportunityId,phaseIndex){
+function ki21CollectAuthoritativeContextV302(opportunityId,phaseIndex){
   const id=String(opportunityId||'').trim();
-  const acc=ki21AccountByIdV301(id);
+  const acc=ki21AccountByIdV302(id);
   if(!acc)throw new Error('Aktive Opportunity nicht im Opportunity-Speicher gefunden.');
   const sections=[]; const seen=new Set();
   const add=(label,value,kind)=>{
-    const text=ki21CleanTextV301(typeof value==='string'?value:JSON.stringify(value,null,2));
+    const text=ki21CleanTextV302(typeof value==='string'?value:JSON.stringify(value,null,2));
     if(!text)return;
     const key=text.replace(/\s+/g,' ').slice(0,4000);
     if(seen.has(key))return;seen.add(key);sections.push({label,text,kind:kind||'evidence'});
@@ -4525,22 +4524,37 @@ function ki21CollectAuthoritativeContextV301(opportunityId,phaseIndex){
   const context=sections.map(x=>'### '+x.label+'\n'+x.text).join('\n\n');
   if(context.length<80)throw new Error('Opportunity-Kontext ist leer oder unvollständig. Generierung abgebrochen.');
   if(primaryChars<40)throw new Error('Kein belastbarer CRM-Import für diese Opportunity gefunden. Generierung abgebrochen.');
-  return {context,stats:{company:ki21CleanTextV301(acc.cust&&acc.cust.firma),sections:sections.length,primaryChars,totalChars:context.length,phaseInputs:sections.filter(x=>x.kind==='phase-input').length}};
+  return {context,stats:{company:ki21CleanTextV302(acc.cust&&acc.cust.firma),sections:sections.length,primaryChars,totalChars:context.length,phaseInputs:sections.filter(x=>x.kind==='phase-input').length}};
 }
-function ki21EscapeRegexV301(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
-function ki21StripContractV301(text,token){return String(text||'').replace(new RegExp('^\\s*'+ki21EscapeRegexV301(token)+'\\s*','i'),'').trim();}
-function ki21ValidatePhaseOutputV301(text,phaseIndex){
+function ki21EscapeRegexV302(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function ki21StripContractV302(text,token){return String(text||'').replace(new RegExp('^\\s*'+ki21EscapeRegexV302(token)+'\\s*','i'),'').trim();}
+function ki21ValidatePhaseOutputV302(text,phaseIndex){
   const token=KI21_OUTPUT_CONTRACT[Number(phaseIndex)],raw=String(text||'');
   if(!token||!raw.includes(token))throw new Error('Phasenvertrag nicht erfüllt: '+token+' fehlt. Ergebnis wurde nicht gespeichert.');
-  return ki21StripContractV301(raw,token);
+  return ki21StripContractV302(raw,token);
 }
-function ki21RunStaticRegressionV301(){
+function ki21RunStaticRegressionV302(){
   const ids=(((window.state&&state.accounts)||LS.get('ki21_acc',[])||[]).filter(Boolean).map(a=>String(a.id)));
   const report={build:KI21_BUILD.buildId,checks:[{name:'unique-phase-contracts',ok:new Set(Object.values(KI21_OUTPUT_CONTRACT)).size===5},{name:'active-opportunity',ok:!!String((window.state&&state.activeId)||LS.get('ki21_aid','')||'')},{name:'opportunity-count',ok:ids.length>0,value:ids.length}]};
-  report.ok=report.checks.every(x=>x.ok);window.__ki21RegressionV301=report;return report;
+  report.ok=report.checks.every(x=>x.ok);window.__ki21RegressionV302=report;return report;
 }
-window.ki21CollectAuthoritativeContextV301=ki21CollectAuthoritativeContextV301;
-window.ki21RunStaticRegressionV301=ki21RunStaticRegressionV301;
+window.ki21CollectAuthoritativeContextV302=ki21CollectAuthoritativeContextV302;
+window.ki21RunStaticRegressionV302=ki21RunStaticRegressionV302;
+function ki21NormalizeEuroV302(v){
+  return String(v||'').replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
+}
+function ki21EuroAmountsV302(text){
+  const out=[]; const re=/(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)\s*(?:€|EUR)\b/gi;
+  let m; while((m=re.exec(String(text||''))))out.push(ki21NormalizeEuroV302(m[1]));
+  return [...new Set(out)];
+}
+function ki21ValidateEvidenceAmountsV302(text,context,phaseIndex){
+  if(Number(phaseIndex)===3)return; // Phase 4 may contain explicit calculations.
+  const allowed=new Set(ki21EuroAmountsV302(context));
+  const used=ki21EuroAmountsV302(text);
+  const invented=used.filter(x=>!allowed.has(x));
+  if(invented.length)throw new Error('Evidence-Validierung: nicht belegter Euro-Betrag im Output ('+invented.join(', ')+'). Ergebnis wurde nicht gespeichert.');
+}
 async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const oid=String(opportunityId||'').trim();
   const p=KI21_PHASE_META[Number(phaseIndex)];
@@ -4548,15 +4562,16 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   if(!p)throw new Error('Ungültige Phase: '+phaseIndex);
   const currentId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(currentId!==oid)throw new Error('Opportunity-Kontext hat sich vor der Generierung geändert.');
-  const authoritative=ki21CollectAuthoritativeContextV301(oid,phaseIndex);
+  const authoritative=ki21CollectAuthoritativeContextV302(oid,phaseIndex);
   const contractToken=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
-  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${authoritative.context}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Keine lokal vorgefertigte Standardantwort; erzeuge eine neue, fallbezogene Antwort.\n8. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n9. Wenn phasenspezifische Eingaben fehlen, liefere trotzdem eine konkrete Gesprächsvorbereitung und die wichtigsten Fragen; verweigere die Analyse nicht und stelle keine Rückfrage an den Nutzer.\n\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE, KEINE HÖHERE FAKTENAUTORITÄT:\n${phasePrompt}`;
+  const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${authoritative.context}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Keine lokal vorgefertigte Standardantwort; erzeuge eine neue, fallbezogene Antwort.\n8. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n9. Wenn phasenspezifische Eingaben fehlen, liefere trotzdem eine konkrete Gesprächsvorbereitung und die wichtigsten Fragen; verweigere die Analyse nicht und stelle keine Rückfrage an den Nutzer.\n10. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im autoritativen Opportunity-Kontext stehen.\n11. Erfinde keine Preise, Budgets, Mengen, Rollen oder Termine. Ein Betrag darf nur genannt werden, wenn er im autoritativen Kontext steht; reine Rechenableitungen sind ausschließlich in Phase 4 zulässig und müssen als Berechnung gekennzeichnet werden.\n\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE, KEINE HÖHERE FAKTENAUTORITÄT:\n${phasePrompt}`;
   const started=performance.now();
-  const streamAdapter=typeof onStream==='function'?(partial)=>onStream(ki21StripContractV301(partial,contractToken)):null;
+  const streamAdapter=typeof onStream==='function'?(partial)=>onStream(ki21StripContractV302(partial,contractToken)):null;
   const rawResult=await callClaude(envelope,streamAdapter);
   const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
   if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
-  const result=ki21ValidatePhaseOutputV301(rawResult,phaseIndex);
+  ki21ValidateEvidenceAmountsV302(rawResult,authoritative.context,phaseIndex);
+  const result=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
   window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken};
   return result;
 }
@@ -14069,15 +14084,10 @@ function renderStation(sitId){
           loading=false;genBtn.disabled=false;genBtn.textContent=genLabels[sitId]||'⚡ KI21 generieren';
           return;
         }
-        let finalResult=(sitId===1)
-          ?cleanGenericPhase2OutputV4199(result,phaseAccId)
-          :((sitId===3)
-            ?(isSecurityItUseCaseV4199(phaseAccId)?buildStructuredSecurityPhase4OutputV4212(phaseAccId):(isSalesDiscoveryUseCaseV4199(phaseAccId)?sanitizePhase4NoRoiMath(result,phaseAccId):cleanGenericLatePhaseOutputV4199(result,phaseAccId)))
-            :((sitId===4)
-              ?(isSecurityItUseCaseV4199(phaseAccId)?buildStructuredSecurityPhase5OutputV4212(phaseAccId):(isSalesDiscoveryUseCaseV4199(phaseAccId)?sanitizePhase5OfferOutput(result,phaseAccId):cleanGenericLatePhaseOutputV4199(result,phaseAccId)))
-              :result));
-        finalResult=qualityCleanupV4216(phaseAccId,finalResult,sitId);
-        if(sitId===1&&typeof window.ki21SanitizePhase2V194==='function')finalResult=window.ki21SanitizePhase2V194(finalResult,phaseAccId);
+        // 3.0.2: Pure evidence pipeline. The native API result is the only phase output.
+        // Legacy phase cleaners/sanitizers are intentionally bypassed because they can
+        // inject generic product prices or content from older opportunity heuristics.
+        const finalResult=result;
         data.result=finalResult;
         data.prompt=prompt;
         data.generatedAt=Date.now();
@@ -14089,6 +14099,7 @@ function renderStation(sitId){
           resultLabel.title='Build '+m.buildId+' · '+m.sections+' Kontextblöcke · '+m.totalChars+' Zeichen · '+m.generatedAt;
         }
         resultBody.innerHTML='';resultBody.appendChild(renderResultText(finalResult));
+        genBtn.textContent='✓ Ergebnis erzeugt · Daten werden aktualisiert';
         // Phase 1: auto-fill fragen field
         if(sitId===0){
           const lines=result.split('\n');
@@ -14141,7 +14152,7 @@ function renderStation(sitId){
           // Isolierter Phasen-Snapshot mit sourcePhase-Tagging (async, Hintergrund)
           savePhaseSnapshot(phaseAccId,sitId);
         }
-        resultLabel.textContent=getResultLabel(sitId);
+        // Keep the visible API provenance label from generationMeta.
         // Phase 5: Auto-extract Besuchsbericht into CRM field
         if(sitId===4){
           const berichtMatch=result.match(/BESUCHSBERICHT[:\s]*\n([\s\S]+?)(?=FOLLOW-UP MAIL|→ TODO|$)/i);
@@ -15498,8 +15509,8 @@ function generateKundePDF(aid, cust){
 <!-- KI21 2.9.26: case-specific sponsor names removed; sponsor/technical scores derived from active constraint facts -->
 
 <!-- KI21_BUILD_INTEGRITY
-version=3.0.1
-build=KI21-301-ACD-20260718
+version=3.0.2
+build=KI21-302-PEP-20260718
 pipeline=explicit-opportunity-explicit-phase-single-api
 context=authoritative-crm-plus-phase-inputs
 local-output-generators=none
@@ -15584,8 +15595,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15609,7 +15620,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15630,7 +15641,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16487,7 +16498,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+const KI21_VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
 
 
 function runKi21VersionMigration(){
@@ -20311,7 +20322,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20351,7 +20362,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20375,7 +20386,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20393,7 +20404,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20595,7 +20606,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
 
   function allStorageKeys(){
     const keys=[];
@@ -20806,7 +20817,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21017,7 +21028,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21219,7 +21230,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21335,7 +21346,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21432,7 +21443,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21514,7 +21525,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21537,7 +21548,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21715,7 +21726,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21973,7 +21984,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22229,7 +22240,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+  const VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22397,7 +22408,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22491,9 +22502,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22525,12 +22536,12 @@ window.addEventListener('pageshow',install,true);
 
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
-<!-- KI21 3.0.1: obsolete callClaude wrapper removed -->
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
+<!-- KI21 3.0.2: obsolete callClaude wrapper removed -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+var VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22584,28 +22595,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-<!-- KI21 3.0.1: obsolete callClaude wrapper removed -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+<!-- KI21 3.0.2: obsolete callClaude wrapper removed -->
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-<!-- KI21 3.0.1: obsolete callClaude wrapper removed -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+<!-- KI21 3.0.2: obsolete callClaude wrapper removed -->
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-<!-- KI21 3.0.1: obsolete callClaude wrapper removed -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+<!-- KI21 3.0.2: obsolete callClaude wrapper removed -->
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-
-
-
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
 
 
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+
+
+
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS';
+var VERSION='Pilot Core 3.0.2 PURE EVIDENCE PIPELINE';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22627,8 +22638,8 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.1 AUTHORITATIVE CONTEXT & DIAGNOSTICS -->
-<!-- KI21 3.0.1: obsolete callClaude wrapper removed -->
+<!-- KI21 Pilot Core 3.0.2 PURE EVIDENCE PIPELINE -->
+<!-- KI21 3.0.2: obsolete callClaude wrapper removed -->
 
 </body>
 </html>
