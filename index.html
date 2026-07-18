@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT</title>
+<title>KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -2670,7 +2670,7 @@ html.ki21-score-syncing .score-pair-v667{
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ki21-build" content="3.0.9-20260718-0815">
+<meta name="ki21-build" content="3.0.10-20260718-0920">
 <script>
 (function(){
   try {
@@ -4446,60 +4446,47 @@ DIE 3 WICHTIGSTEN EINWÄNDE (ausführlich):
 async function callClaude(prompt, onStream){
   const apiKey=LS.get('ki21_apikey','');
   if(!apiKey){alert('Bitte API Key unter ⚙ hinterlegen.');return null;}
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key':apiKey,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:20000,
-      stream:true,
-      messages:[{role:'user',content:prompt}]
-    })
-  });
-  if(!resp.ok){const err=await resp.json();throw new Error(err.error?.message||'API Fehler '+resp.status);}
-  const reader=resp.body.getReader();
-  const decoder=new TextDecoder();
-  let fullText='';
-  let blockText='';
-  while(true){
-    const {done,value}=await reader.read();
-    if(done)break;
-    const chunk=decoder.decode(value,{stream:true});
-    const lines=chunk.split('\n');
-    for(const line of lines){
-      if(line.startsWith('data: ')){
-        const data=line.slice(6);
-        if(data==='[DONE]')continue;
-        try{
-          const parsed=JSON.parse(data);
-          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='tool_use'){
-            if(onStream)onStream(stripMd(fullText)+'\n🔍 Suche aktuelle Informationen...\n');
-          }
-          if(parsed.type==='content_block_start'&&parsed.content_block?.type==='text'){
-            blockText='';
-          }
-          if(parsed.type==='content_block_delta'&&parsed.delta?.text){
-            blockText+=parsed.delta.text;
-            if(onStream)onStream(stripMd(fullText+blockText));
-          }
-          if(parsed.type==='content_block_stop'){
-            if(blockText){fullText+=(fullText?'\n':'')+blockText;blockText='';}
-          }
-        }catch(e){}
+  let lastError=null;
+  for(let networkAttempt=0;networkAttempt<2;networkAttempt++){
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),90000);
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',signal:controller.signal,
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:12000,stream:true,messages:[{role:'user',content:prompt}]})
+      });
+      clearTimeout(timeout);
+      if(!resp.ok){let msg='API Fehler '+resp.status;try{const err=await resp.json();msg=err&&err.error&&err.error.message||msg;}catch(e){}throw new Error(msg);}
+      if(!resp.body)throw new Error('API-Antwort enthält keinen Datenstrom.');
+      const reader=resp.body.getReader(),decoder=new TextDecoder();
+      let fullText='',buffer='';
+      while(true){
+        const {done,value}=await reader.read(); if(done)break;
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n'); buffer=lines.pop()||'';
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          const data=line.slice(6); if(data==='[DONE]')continue;
+          try{const parsed=JSON.parse(data);if(parsed.type==='content_block_delta'&&parsed.delta&&parsed.delta.text){fullText+=parsed.delta.text;if(onStream)onStream(stripMd(fullText));}}catch(e){}
+        }
       }
+      if(!fullText.trim())throw new Error('Leere API-Antwort erhalten.');
+      return fullText;
+    }catch(err){
+      lastError=err;
+      const msg=String(err&&err.message||err||'');
+      const retryable=/Load failed|Failed to fetch|NetworkError|AbortError|network|Datenstrom|Leere API-Antwort/i.test(msg)||(err&&err.name==='AbortError');
+      if(!retryable||networkAttempt===1)break;
+      await new Promise(r=>setTimeout(r,1200));
     }
   }
-  if(blockText){fullText+=(fullText?'\n':'')+blockText;}
-  return fullText;
+  const msg=String(lastError&&lastError.message||lastError||'Netzwerkfehler');
+  throw new Error(/Load failed|Failed to fetch|NetworkError/i.test(msg)?'API-Verbindung fehlgeschlagen. Bitte erneut versuchen.':msg);
 }
 
 
-// ── KI21 3.0.9 EVIDENCE REPAIR COMMIT ───────────────────
+// ── KI21 3.0.10 SINGLE PASS RESILIENT PIPELINE ───────────────────
 // Exactly one route: explicit opportunity + explicit phase + one native API call.
 // No phase guessing, no local replacement output, no callClaude wrapper chain.
 const KI21_PHASE_META = Object.freeze({
@@ -4509,7 +4496,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.0.7',name:'CLOSED BOOK CONTEXT',buildId:'KI21-307-CBCR-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.0.10',name:'SINGLE PASS RESILIENT PIPELINE',buildId:'KI21-3010-SPRP-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4750,33 +4737,15 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const started=performance.now();
   // 3.0.7: Ungeprüfte Stream-Fragmente werden niemals in die sichtbare oder persistente UI geschrieben.
   // Der Output wird atomar erst nach Opportunity-, Phasen- und Evidence-Validierung freigegeben.
-  let rawResult='';
-  let validationError=null;
-  let attempt=0;
-  while(attempt<3){
-    const correction=attempt===0?'':`
-
-KORREKTURLAUF ${attempt} NACH EVIDENCE-FIREWALL:
-Der vorherige Entwurf wurde wegen unbelegter Angebots-, Preis-, Mengen-, ROI- oder Payback-Angaben verworfen. Erzeuge die Antwort vollständig neu. Verwende ausschließlich Zahlen und Fakten aus dem autoritativen Opportunity-Kontext. Verboten sind insbesondere: Discovery Sprint, KI21 Compact, 9.900 €, 49 €, Lizenzpreis, Startkosten, pauschale Einsparquoten und unbelegte Amortisationszeiten. Nenne stattdessen ausschließlich das im CRM belegte Pilotbudget oder markiere den konkreten Angebotspreis als offen. In Phase 4 sind Rechenableitungen nur mit sichtbarem Label BERECHNUNG oder RECHENWEG und ausschließlich aus belegten Ausgangswerten zulässig.`;
-    rawResult=await callClaude(envelope+correction,null);
-    rawResult=ki21RepairUnsupportedEvidenceV309(rawResult,primaryEvidence,phaseIndex);
-    const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
-    if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
-    try{
-      ki21ValidateEvidenceAmountsV303(rawResult,primaryEvidence,phaseIndex);
-      ki21ValidateStrictNumericEvidenceV304(rawResult,primaryEvidence,phaseIndex);
-      validationError=null;
-      break;
-    }catch(err){
-      validationError=err;
-      if(attempt<2 && /Evidence-Firewall|nicht beleg|ROI|Payback|Angebots|Preisinformation/i.test(String(err&&err.message||err))){
-        attempt++;
-        continue;
-      }
-      throw err;
-    }
-  }
-  if(validationError)throw validationError;
+  // 3.0.10: exactly one semantic API generation. No automatic second/third model call.
+  // Unsupported catalogue prices and speculative numerics are repaired locally,
+  // then validated once before atomic commit.
+  let rawResult=await callClaude(envelope,null);
+  const nowId=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'').trim();
+  if(nowId!==oid)throw new Error('Opportunity wurde während der Generierung gewechselt. Ergebnis verworfen.');
+  rawResult=ki21RepairUnsupportedEvidenceV309(rawResult,primaryEvidence,phaseIndex);
+  ki21ValidateEvidenceAmountsV303(rawResult,primaryEvidence,phaseIndex);
+  ki21ValidateStrictNumericEvidenceV304(rawResult,primaryEvidence,phaseIndex);
   const result=ki21ValidatePhaseOutputV302(rawResult,phaseIndex);
   window.__ki21LastGenerationMeta={...authoritative.stats,opportunityId:oid,phaseId:p.id,phaseName:p.name,durationMs:Math.round(performance.now()-started),source:'anthropic-api',generatedAt:new Date().toISOString(),buildId:KI21_BUILD.buildId,contract:contractToken};
   return result;
@@ -15856,8 +15825,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15881,7 +15850,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15902,7 +15871,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16759,7 +16728,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+const KI21_VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
 
 
 function runKi21VersionMigration(){
@@ -20583,7 +20552,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20623,7 +20592,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20647,7 +20616,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20665,7 +20634,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20867,7 +20836,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
 
   function allStorageKeys(){
     const keys=[];
@@ -21078,7 +21047,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21289,7 +21258,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21491,7 +21460,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21607,7 +21576,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21704,7 +21673,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21786,7 +21755,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21809,7 +21778,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21987,7 +21956,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22245,7 +22214,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22501,7 +22470,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+  const VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22669,7 +22638,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22763,9 +22732,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22798,11 +22767,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+var VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22856,28 +22825,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 
 
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 
 
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT';
+var VERSION='Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22899,7 +22868,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.9 EVIDENCE REPAIR COMMIT -->
+<!-- KI21 Pilot Core 3.0.10 SINGLE PASS RESILIENT PIPELINE -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
