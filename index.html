@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 4.3.0 STATE TRANSLATION & PHASE DNA</title>
+<title>KI21 Pilot Core 4.4.0 OPPORTUNITY STATE LOCK</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -4560,7 +4560,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'4.3.0',name:'STATE TRANSLATION & PHASE DNA',buildId:'KI21-430-STP-20260718'});
+const KI21_BUILD = Object.freeze({version:'4.4.0',name:'OPPORTUNITY STATE LOCK',buildId:'KI21-440-OSL-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -23253,5 +23253,117 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncCockpi
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncCockpit,{once:true});else syncCockpit();
 })();
 </script>
+<!-- KI21 Pilot Core 4.4.0 OPPORTUNITY STATE LOCK -->
+<script id="ki21-v440-opportunity-state-lock">
+(function(){
+'use strict';
+const VERSION='Pilot Core 4.4.0 OPPORTUNITY STATE LOCK';
+const BUILD='KI21-440-OSL-20260718';
+window.KI21_VERSION=VERSION;
+function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function aid(){try{return String((window.state&&state.activeId)||localStorage.getItem('ki21_aid')||'').trim();}catch(e){return '';}}
+function acc(id){try{const a=(window.state&&state.accounts)||JSON.parse(localStorage.getItem('ki21_acc')||'[]');return (a||[]).find(x=>x&&String(x.id)===String(id))||{};}catch(e){return {};}}
+function rawSource(id){
+ const a=acc(id); let parts=[];
+ try{parts.push(localStorage.getItem('ki21_import_raw_'+id)||a.rawImport||a.importText||'');}catch(e){}
+ try{parts.push(localStorage.getItem('ki21_import_structured_'+id)||'');}catch(e){}
+ try{parts.push(localStorage.getItem('ki21_account_'+id)||'');parts.push(localStorage.getItem('ki21_opportunity_'+id)||'');parts.push(localStorage.getItem('ki21_additions_'+id)||'');parts.push(localStorage.getItem('ki21_kk_'+id)||'');}catch(e){}
+ for(let i=0;i<5;i++){
+  try{const st=JSON.parse(localStorage.getItem('ki21_st_'+id+'_'+i)||'null');if(st&&st.fv)parts.push(JSON.stringify(st.fv));parts.push(localStorage.getItem('ki21_stk_'+id+'_'+i)||'');}catch(e){}
+ }
+ return clean(parts.filter(Boolean).join('\n'));
+}
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
+function explicit(re,s){return re.test(s);}
+function lockedState(id){
+ const source=rawSource(id), low=source.toLowerCase();
+ const budgetCeiling=(source.match(/(?:bis|max(?:imal)?|rahmen(?: von)?)\s*(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?)\s*(?:€|eur)/i)||[])[1]||'';
+ const budgetFinal=explicit(/(?:konkrete|finale|verbindliche)\s+(?:budget|investitions|pilot)?freigabe\s+(?:ist\s+)?(?:erteilt|bestätigt|erfolgt)|(?:budget|investition|pilot)\s+(?:ist\s+)?(?:final|verbindlich)\s+(?:freigegeben|genehmigt)/i,source) && !explicit(/(?:konkrete|finale|verbindliche)\s+(?:budget|investitions|pilot)?freigabe[^.!?\n]{0,60}(?:offen|ausstehend|nicht)/i,source);
+ const budgetAuthority=explicit(/(?:entscheidungs|budget|zeichnungs|freigabe)kompetenz|budgetbefugt|kann\s+(?:bis|maximal)[^.!?\n]{0,35}(?:€|eur)\s+(?:entscheiden|freigeben)/i,source);
+ const pilotApproved=explicit(/(?:pilot|projekt)\s+(?:ist\s+)?(?:verbindlich|final|formal)?\s*(?:beauftragt|freigegeben|genehmigt)|auftrag\s+(?:wurde\s+)?erteilt/i,source) && !explicit(/(?:pilot|projekt|investitionsentscheidung)[^.!?\n]{0,70}(?:offen|ausstehend|noch nicht|nicht freigegeben)/i,source);
+ const bcConfirmed=explicit(/business\s*case[^.!?\n]{0,50}(?:als\s+entscheidungsgrundlage\s+)?(?:bestätigt|freigegeben|belastbar)/i,source) && !explicit(/(?:roi|business\s*case|wirkung)[^.!?\n]{0,80}(?:offen|noch nicht|nicht belastbar|zu validieren)/i,source);
+ const sponsorConfirmed=explicit(/(?:bestätigter|benannter|verbindlicher)\s+sponsor|sponsor(?:rolle|verantwortung)?\s+(?:ist\s+)?(?:bestätigt|übernommen|benannt)/i,source) && !explicit(/sponsor[^.!?\n]{0,65}(?:offen|noch nicht|unklar|nicht bestätigt|lehnt)/i,source);
+ let status='Dealstatus: Pilotentscheidung vorbereiten';
+ if(pilotApproved)status='Dealstatus: Beauftragt · Projektstart vorbereiten';
+ else if(/angebot|verhandlung|abschluss/i.test(low))status='Dealstatus: Angebot & Pilotentscheidung vorbereiten';
+ else if(/bedarfsanalyse|discovery|demo/i.test(low))status='Dealstatus: Bedarfsanalyse · Pilotentscheidung vorbereiten';
+ const budgetText=budgetFinal?'Die konkrete Investitionsfreigabe ist bestätigt.':(budgetCeiling?`Ein Budgetrahmen bis ${budgetCeiling.replace(/\s/g,'')} € ist grundsätzlich darstellbar; die konkrete Investitionsfreigabe ist noch offen.`:(budgetAuthority?'Die Freigabebefugnis ist geklärt; Budgetrahmen und konkrete Investitionsfreigabe sind noch offen.':'Budgetrahmen und konkrete Investitionsfreigabe sind noch offen.'));
+ const bcText=bcConfirmed?'Der Business Case ist als Entscheidungsgrundlage bestätigt.':'Der wirtschaftliche Handlungsbedarf ist plausibel; Wirkung und ROI sind noch im Pilot zu validieren.';
+ return {id,source,sourceHash:hash(source),budgetCeiling,budgetFinal,budgetAuthority,pilotApproved,bcConfirmed,sponsorConfirmed,status,budgetText,bcText};
+}
+window.ki21OpportunityStateLockV440=lockedState;
+function migrate(){
+ try{
+  if(localStorage.getItem('ki21_migration_440_state_lock')==='1')return;
+  for(let i=localStorage.length-1;i>=0;i--){
+   const k=localStorage.key(i)||'';
+   if(/^ki21_phase_output_/.test(k)||/^ki21_phase_output_v/.test(k)||/^ki21_truth_/.test(k))localStorage.removeItem(k);
+   if(/^ki21_st_/.test(k)){
+    try{let o=JSON.parse(localStorage.getItem(k)||'null');if(o&&typeof o==='object'){['result','result2','summary','detail','prompt'].forEach(f=>{if(typeof o[f]==='string')o[f]='';});o.generatedAt=null;o.generationMeta=null;o.resultMeta=null;localStorage.setItem(k,JSON.stringify(o));}}catch(e){}
+   }
+  }
+  localStorage.setItem('ki21_migration_440_state_lock','1');
+ }catch(e){console.warn('KI21 4.4 migration',e);}
+}
+function strictBlock(t,phase){return `\n\n=== KI21 4.4 OPPORTUNITY STATE LOCK ===\nAktive Opportunity-ID: ${t.id}\nSource-Fingerprint: ${t.sourceHash}\nDealstatus: ${t.status}\nBudget: ${t.budgetText}\nBusiness Case: ${t.bcText}\nPilotfreigabe: ${t.pilotApproved?'verbindlich bestätigt':'offen'}\nSponsor: ${t.sponsorConfirmed?'bestätigt':'offen'}\nPHASE: P${Number(phase)+1}\nHARTREGELN:\n1. Verwende ausschließlich Informationen aus der aktiven Opportunity. Werte, Nutzerzahlen, Rollen oder Systeme anderer Opportunities sind verboten.\n2. Ein Budgetrahmen oder Freigabebefugnis ist keine Budgetfreigabe. Verwende exakt den Budgetstatus oben.\n3. Ein plausibler Business Case ist kein bestätigter Business Case. Verwende exakt den Business-Case-Status oben.\n4. Erfinde keine Prozentbandbreiten, Pilotfallzahlen, Nutzerzahlen, Zeiträume oder Teilnehmer. Zahlen dürfen nur unverändert aus der aktiven Quelle stammen oder als vollständig transparenter Rechenweg aus belegten Werten abgeleitet werden.\n5. Keine Platzhalter in eckigen Klammern. Keine Vermischung bestätigter Fakten, Hypothesen und Empfehlungen.\n6. P4 wird von Wirtschaftlichkeit, Wirkungsannahme und Messlogik geführt; Sponsorfragen sind dort nur nachrangiges Umsetzungsrisiko.\n=== ENDE OPPORTUNITY STATE LOCK ===\n`;}
+function sanitize(text,t){
+ let s=String(text||'');
+ if(!t.budgetFinal){
+  s=s.replace(/(?:Die\s+)?Geschäftsführerin\s+hat\s+(?:das\s+)?(?:Pilot)?budget(?:freigabe)?\s+bis\s+([\d.]+\s*€)\s+(?:für[^.!?\n]{0,40})?(?:bestätigt|freigegeben)/gi,`Die Geschäftsführerin besitzt Entscheidungskompetenz für einen Rahmen bis $1; die konkrete Investitionsentscheidung ist offen`);
+  s=s.replace(/(?:Pilot)?budget(?:rahmen)?\s+bis\s+([\d.]+\s*€)[^.!?\n]{0,35}(?:bestätigt|freigegeben|genehmigt)/gi,`Ein Budgetrahmen bis $1 ist grundsätzlich darstellbar; die konkrete Investitionsentscheidung ist offen`);
+ }
+ if(!t.bcConfirmed)s=s.replace(/Der Business Case ist als Entscheidungsgrundlage bestätigt\.?/gi,t.bcText);
+ const src=t.source.toLowerCase();
+ if(!/25\s*[–-]\s*40\s*%/.test(src))s=s.replace(/(?:ca\.?\s*)?25\s*[–-]\s*40\s*%/gi,'ein noch zu validierender Anteil');
+ if(!/8\s*[–-]\s*12\s+nutzer/.test(src))s=s.replace(/8\s*[–-]\s*12\s+Nutzer/gi,'den vorgesehenen Pilotnutzern');
+ s=s.replace(/\b(den|die|an)\s+drei(?:\s*[–-]\s*vier)?\s+(?:konkreten\s+)?(?:Pilot-)?Deals\b/gi,'$1 geeigneten Pilot-Deals');
+ return s;
+}
+const prev=window.callKI21Phase;
+if(typeof prev==='function'&&!prev.__ki21v440){
+ const w=async function(opportunityId,phaseIndex,phasePrompt,onStream){
+  const t=lockedState(String(opportunityId||''));
+  let out=await prev(opportunityId,phaseIndex,String(phasePrompt||'')+strictBlock(t,phaseIndex),onStream);
+  out=sanitize(out,t);
+  const low=out.toLowerCase();
+  const violations=[];
+  if(!t.budgetFinal&&/(budget|investition)[^.!?\n]{0,55}(bestätigt|freigegeben|genehmigt)/i.test(out))violations.push('Budgetstatus');
+  if(!t.bcConfirmed&&/business case[^.!?\n]{0,45}(bestätigt|freigegeben)/i.test(out))violations.push('Business-Case-Status');
+  if(/\[[^\]]+\]/.test(out))violations.push('Platzhalter');
+  if(violations.length){
+   out=await prev(opportunityId,phaseIndex,String(phasePrompt||'')+strictBlock(t,phaseIndex)+`\nKORREKTURLAUF: Verletzungen: ${violations.join(', ')}. Vollständigen Bericht neu erzeugen, keine Erklärung.`,onStream);
+   out=sanitize(out,t);
+  }
+  try{localStorage.setItem('ki21_truth_'+t.id,JSON.stringify(t));}catch(e){}
+  return out;
+ };
+ w.__ki21v440=true;window.callKI21Phase=w;
+}
+function leaf(el){return el&&el.children.length===0;}
+function applyUI(){
+ try{
+  const id=aid();if(!id)return;const t=lockedState(id);
+  document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(e=>{if(e.textContent!==VERSION)e.textContent=VERSION;});
+  document.querySelectorAll('#ki21-dealstatus,.cockpit-dealstatus,[data-ki21="dealstatus"]').forEach(e=>{if(clean(e.textContent)!==t.status)e.textContent=t.status;});
+  document.querySelectorAll('.ki21-clean-business-status').forEach(e=>{if(clean(e.textContent)!==t.bcText)e.textContent=t.bcText;});
+  document.querySelectorAll('*').forEach(e=>{
+   if(!leaf(e))return;const x=clean(e.textContent);
+   if(/Der Business Case ist als Entscheidungsgrundlage bestätigt/i.test(x)&&!t.bcConfirmed)e.textContent=t.bcText;
+   if(/Budget(?:rahmen|freigabe|status)?[^.!?]{0,80}(bestätigt|freigegeben)/i.test(x)&&!t.budgetFinal&&x.length<220)e.textContent=t.budgetText;
+  });
+  if(!t.bcConfirmed){document.querySelectorAll('.ki21-clean-card.business .ki21-clean-chip,.ki21-clean-card.business [class*="chip"]').forEach(e=>{let x=clean(e.textContent);if(x&&!/^Erwarteter Nutzen:/i.test(x))e.textContent='Erwarteter Nutzen: '+x;});}
+ }catch(e){console.warn('KI21 4.4 UI lock',e);}
+}
+migrate();
+let q=false;function schedule(){if(q)return;q=true;requestAnimationFrame(()=>{q=false;applyUI();});}
+new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+window.addEventListener('pageshow',schedule,true);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+setTimeout(schedule,150);setTimeout(schedule,700);
+window.__ki21Build440={version:VERSION,buildId:BUILD};
+})();
+</script>
+
+
 </body>
 </html>
