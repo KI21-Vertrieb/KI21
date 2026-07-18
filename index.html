@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL</title>
+<title>KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4478,7 +4478,7 @@ async function callClaude(prompt, onStream){
 }
 
 
-// ── KI21 3.0.5 EVIDENCE FIREWALL ───────────────────
+// ── KI21 3.0.6 EVIDENCE FIREWALL ───────────────────
 // Exactly one route: explicit opportunity + explicit phase + one native API call.
 // No phase guessing, no local replacement output, no callClaude wrapper chain.
 const KI21_PHASE_META = Object.freeze({
@@ -4488,7 +4488,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.0.5',name:'EVIDENCE FIREWALL',buildId:'KI21-303-EF-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.0.6',name:'EVIDENCE FIREWALL',buildId:'KI21-303-EF-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -4665,7 +4665,7 @@ async function callKI21Phase(opportunityId, phaseIndex, phasePrompt, onStream){
   const contractToken=KI21_OUTPUT_CONTRACT[Number(phaseIndex)];
   const envelope=`KI21 GENERATION CONTRACT\nBUILD_ID: ${KI21_BUILD.buildId}\nOPPORTUNITY_ID: ${oid}\nPHASE_ID: ${p.id}\nPHASE_NAME: ${p.name}\nPHASE_OBJECTIVE: ${p.objective}\nOUTPUT_CONTRACT: ${contractToken}\n\nEVIDENCE AUTHORITY – HÖCHSTE PRIORITÄT:\nDer folgende autoritative Opportunity-Kontext ist die alleinige Faktenquelle. Explizite CRM-Evidenz überschreibt generische Vertriebsheuristiken und ältere KI-Ergebnisse. Frühere KI-Ausgaben sind keine Faktenquelle.\n\n${authoritative.context}\n\nVERBINDLICHE REGELN:\n1. Bearbeite ausschließlich PHASE ${p.id}: ${p.name}.\n2. Beginne die Antwort exakt mit ${contractToken}.\n3. Der übergeordnete Deal-Engpass darf sichtbar bleiben, aber niemals die Aufgabe dieser Phase ersetzen.\n4. Verwende ausschließlich Informationen aus dem autoritativen Kontext dieser Opportunity.\n5. Keine Informationen, Namen, Beträge oder CRM-Systeme aus anderen Opportunities.\n6. Bestätigte CRM-Fakten dürfen nicht als offen oder unbekannt dargestellt werden.\n7. Keine lokal vorgefertigte Standardantwort; erzeuge eine neue, fallbezogene Antwort.\n8. Trenne bestätigte Fakten, KI-Ableitungen und offene Validierung klar.\n9. Wenn phasenspezifische Eingaben fehlen, liefere trotzdem eine konkrete Gesprächsvorbereitung und die wichtigsten Fragen; verweigere die Analyse nicht und stelle keine Rückfrage an den Nutzer.\n10. CLOSED BOOK: Nutze keinerlei Produktwissen, Standardpreise, Websitewissen oder allgemeine KI21-Angebotsdaten, sofern diese nicht ausdrücklich im autoritativen Opportunity-Kontext stehen.\n11. Erfinde keine Preise, Budgets, Mengen, Rollen oder Termine. Ein Betrag darf nur genannt werden, wenn er im autoritativen Kontext steht; reine Rechenableitungen sind ausschließlich in Phase 4 zulässig und müssen als Berechnung gekennzeichnet werden.\n\nORIGINALER PHASENPROMPT – NUR STRUKTUR UND PHASENAUFGABE, KEINE HÖHERE FAKTENAUTORITÄT:\n${sanitizedPhasePrompt}`;
   const started=performance.now();
-  // 3.0.5: Ungeprüfte Stream-Fragmente werden niemals in die sichtbare oder persistente UI geschrieben.
+  // 3.0.6: Ungeprüfte Stream-Fragmente werden niemals in die sichtbare oder persistente UI geschrieben.
   // Der Output wird atomar erst nach Opportunity-, Phasen- und Evidence-Validierung freigegeben.
   let rawResult='';
   let validationError=null;
@@ -13490,6 +13490,32 @@ function renderStation(sitId){
     }
   }
 
+  // 3.0.6: Stored outputs are untrusted until they pass the CURRENT evidence firewall.
+  // This prevents an older invalid result from being restored and mistaken for a valid rollback.
+  function storedResultPassesCurrentFirewallV306(candidate){
+    const txt=String(candidate||'').trim();
+    if(!txt)return false;
+    try{
+      const primary=ki21PrimaryEvidenceV303(phaseAccId);
+      ki21ValidateEvidenceAmountsV303(txt,primary,sitId);
+      ki21ValidateStrictNumericEvidenceV304(txt,primary,sitId);
+      return true;
+    }catch(err){
+      console.warn('KI21 quarantined stale stored result:',err);
+      return false;
+    }
+  }
+  if(data.result && !storedResultPassesCurrentFirewallV306(data.result)){
+    data.result='';
+    data.prompt='';
+    data.generatedAt=null;
+    data.generationMeta=null;
+    LS.set(KEY,data);
+    if(sitId===3||sitId===4){
+      LS.set('ki21_phase_output_v231_'+phaseAccId+'_'+sitId,'');
+    }
+  }
+
   let loading=false;
   // v4.213: Phase 4/5 dürfen beim reinen Öffnen nicht durch Health/Cockpit-
   // Aufbereitung blockieren. Schwere Berechnung erst beim bewussten Cockpit-Öffnen
@@ -14194,8 +14220,13 @@ function renderStation(sitId){
     genBtn.textContent='⏳ KI21 antwortet...';
     resultLabel.textContent='⏳ KI21 erzeugt und prüft Evidenz...';
     resultBox.style.display='block';
-    const previousValidResult=String(data.result||'');
-    const previousPrompt=data.prompt;
+    const previousValidResult=storedResultPassesCurrentFirewallV306(data.result)?String(data.result||''):'';
+    if(!previousValidResult && data.result){
+      data.result=''; data.prompt=''; data.generatedAt=null; data.generationMeta=null;
+      LS.set(KEY,data);
+      if(sitId===3||sitId===4)LS.set('ki21_phase_output_v231_'+phaseAccId+'_'+sitId,'');
+    }
+    const previousPrompt=previousValidResult?data.prompt:'';
     const previousGeneratedAt=data.generatedAt;
     const previousMeta=data.generationMeta;
     resultBody.textContent='Die Antwort wird erst nach vollständiger Opportunity-, Phasen- und Evidenzprüfung angezeigt.';
@@ -14210,7 +14241,7 @@ function renderStation(sitId){
           loading=false;genBtn.disabled=false;genBtn.textContent=genLabels[sitId]||'⚡ KI21 generieren';
           return;
         }
-        // 3.0.5: Evidence firewall pipeline. The native API result is the only phase output.
+        // 3.0.6: Evidence firewall pipeline. The native API result is the only phase output.
         // Legacy phase cleaners/sanitizers are intentionally bypassed because they can
         // inject generic product prices or content from older opportunity heuristics.
         const finalResult=result;
@@ -14333,14 +14364,14 @@ Analyse:
         }
       }
     }catch(e){
-      // 3.0.5 Atomic rollback: niemals ungeprüften Streamtext oder Teilresultate stehen lassen.
+      // 3.0.6 Atomic rollback: niemals ungeprüften Streamtext oder Teilresultate stehen lassen.
       data.result=previousValidResult;
       data.prompt=previousPrompt;
       data.generatedAt=previousGeneratedAt;
       data.generationMeta=previousMeta;
       resultBody.innerHTML='';
-      if(previousValidResult){
-        resultLabel.textContent='Vorheriges gültiges Ergebnis · neuer Entwurf verworfen';
+      if(previousValidResult && storedResultPassesCurrentFirewallV306(previousValidResult)){
+        resultLabel.textContent='Vorheriges geprüftes Ergebnis · neuer Entwurf verworfen';
         resultBody.appendChild(renderResultText(previousValidResult));
         fullBtn.onclick=()=>showFullscreen(sit.title,previousValidResult);
       }else{
@@ -15653,7 +15684,7 @@ function generateKundePDF(aid, cust){
 <!-- KI21 2.9.26: case-specific sponsor names removed; sponsor/technical scores derived from active constraint facts -->
 
 <!-- KI21_BUILD_INTEGRITY
-version=3.0.5
+version=3.0.6
 build=KI21-302-PEP-20260718
 pipeline=explicit-opportunity-explicit-phase-single-api
 context=authoritative-crm-plus-phase-inputs
@@ -15739,8 +15770,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15764,7 +15795,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15785,7 +15816,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16642,7 +16673,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+const KI21_VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
 
 
 function runKi21VersionMigration(){
@@ -20466,7 +20497,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20506,7 +20537,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20530,7 +20561,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20548,7 +20579,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20750,7 +20781,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
 
   function allStorageKeys(){
     const keys=[];
@@ -20961,7 +20992,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21172,7 +21203,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21374,7 +21405,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21490,7 +21521,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21587,7 +21618,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21669,7 +21700,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21692,7 +21723,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21870,7 +21901,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22128,7 +22159,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22384,7 +22415,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+  const VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22552,7 +22583,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22646,9 +22677,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22680,12 +22711,12 @@ window.addEventListener('pageshow',install,true);
 
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
-<!-- KI21 3.0.5: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
+<!-- KI21 3.0.6: obsolete callClaude wrapper remains removed -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+var VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22739,28 +22770,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-<!-- KI21 3.0.5: obsolete callClaude wrapper remains removed -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+<!-- KI21 3.0.6: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-<!-- KI21 3.0.5: obsolete callClaude wrapper remains removed -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+<!-- KI21 3.0.6: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-<!-- KI21 3.0.5: obsolete callClaude wrapper remains removed -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+<!-- KI21 3.0.6: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-
-
-
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
 
 
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+
+
+
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.0.5 EVIDENCE FIREWALL';
+var VERSION='Pilot Core 3.0.6 EVIDENCE FIREWALL';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -22782,8 +22813,8 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.0.5 EVIDENCE FIREWALL -->
-<!-- KI21 3.0.5: obsolete callClaude wrapper remains removed -->
+<!-- KI21 Pilot Core 3.0.6 EVIDENCE FIREWALL -->
+<!-- KI21 3.0.6: obsolete callClaude wrapper remains removed -->
 
 </body>
 </html>
