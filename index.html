@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX</title>
+<title>KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -3650,11 +3650,16 @@ function ki21SanitizeOpportunityStateV105(accId){
   });
 }
 function ki21ActivateOpportunityV105(accId){
-  const account=(state.accounts||[]).find(a=>a&&a.id===accId);
+  const id=String(accId||'');
+  const account=(state.accounts||[]).find(a=>a&&String(a.id)===id);
   if(!account)return false;
-  state.activeId=accId;
-  LS.set('ki21_aid',accId);
-  ki21SanitizeOpportunityStateV105(accId);
+  // Single routing authority: memory, persistence and render context are updated
+  // synchronously before any view can be rendered.
+  state.activeId=id;
+  LS.set('ki21_aid',id);
+  window.__ki21ActiveOpportunityId=id;
+  window.__ki21OpportunityEpoch=(window.__ki21OpportunityEpoch||0)+1;
+  ki21SanitizeOpportunityStateV105(id);
   return true;
 }
 
@@ -13236,13 +13241,20 @@ function goBackFromPhaseV4219(){
 function renderStation(sitId){
   state.currentSitId=sitId; // Für phasenbezogene Ergänzungen
   const sit=SITS[sitId];
-  const KEY='ki21_st_'+state.activeId+'_'+sitId;
+  const phaseAccId=String((window.__ki21ActiveOpportunityId||phaseAccId||LS.get('ki21_aid',''))||'');
+  const phaseEpoch=window.__ki21OpportunityEpoch||0;
+  if(!phaseAccId)return;
+  // Lock this screen and every generated result to the opportunity selected at
+  // render start. A later global state mutation may never redirect this phase.
+  state.activeId=phaseAccId;
+  LS.set('ki21_aid',phaseAccId);
+  const KEY='ki21_st_'+phaseAccId+'_'+sitId;
   let data=LS.get(KEY,{fv:{},result:''});
 
   // v2.3.1: Phase 4/5 use the same durable persistence principle as Phase 1/2.
   // A later empty render or stale local state must never erase the last valid output.
-  if((sitId===3||sitId===4)&&state.activeId){
-    const backupKey='ki21_phase_output_v231_'+state.activeId+'_'+sitId;
+  if((sitId===3||sitId===4)&&phaseAccId){
+    const backupKey='ki21_phase_output_v231_'+phaseAccId+'_'+sitId;
     const saved=String(LS.get(backupKey,'')||'').trim();
     const current=String(data.result||'').trim();
     if(saved.length>=120&&saved.length>current.length){
@@ -13267,8 +13279,8 @@ function renderStation(sitId){
     if(kind==='result'){
       fresh.summary='';
       fresh.detail='';
-      if((sitId===3||sitId===4)&&state.activeId){
-        LS.set('ki21_phase_output_v231_'+state.activeId+'_'+sitId,'');
+      if((sitId===3||sitId===4)&&phaseAccId){
+        LS.set('ki21_phase_output_v231_'+phaseAccId+'_'+sitId,'');
       }
     }
     // Wenn beide Ergebnisarten leer sind, alle KI-Ausgabe-Metadaten bereinigen, Eingaben aber behalten.
@@ -13278,13 +13290,13 @@ function renderStation(sitId){
     }
     LS.set(KEY,fresh);
     data=fresh;
-    if(state.activeId){
+    if(phaseAccId){
       // v4.193: Zu gelöschten Ergebnissen gehörende Cockpit-/Health-Signale ebenfalls entfernen,
       // damit alte Zahlen/Risiken nicht im Dashboard hängen bleiben.
-      LS.set('ki21_phase_snap_'+state.activeId+'_'+sitId,null);
-      LS.set('ki21_phase_pending_'+state.activeId+'_'+sitId,null);
-      LS.set('ki21_health_'+state.activeId,null);
-      LS.set('ki21_pending_'+state.activeId,true);
+      LS.set('ki21_phase_snap_'+phaseAccId+'_'+sitId,null);
+      LS.set('ki21_phase_pending_'+phaseAccId+'_'+sitId,null);
+      LS.set('ki21_health_'+phaseAccId,null);
+      LS.set('ki21_pending_'+phaseAccId,true);
     }
     renderStation(sitId);
   }
@@ -13293,12 +13305,13 @@ function renderStation(sitId){
   app.innerHTML='';
   LS.set('ki21_view',sitId);
 
-  const cust=getActiveCust();
+  const phaseAccount=(state.accounts||[]).find(a=>a&&String(a.id)===phaseAccId);
+  const cust=(phaseAccount&&phaseAccount.cust)||{};
   const mu=LS.get('ki21_mu',{});
-  const kk=LS.get('ki21_kk_'+state.activeId,'');
-  const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+  const kk=LS.get('ki21_kk_'+phaseAccId,'');
+  const stk=LS.get('ki21_stk_'+phaseAccId+'_'+sitId,'');
 
-  const health2=(state.activeId&&!latePhaseLightOpenV4213)?getOpportunityHealth(state.activeId):null;
+  const health2=(phaseAccId&&!latePhaseLightOpenV4213)?getOpportunityHealth(phaseAccId):null;
   const scoreColor2=health2?getHealthColor(health2.score):'var(--text3)';
 
   const nav=h('div',{className:'cockpit-header'},
@@ -13311,7 +13324,7 @@ function renderStation(sitId){
       h('div',{className:'phase-screen-title'},SITS[sitId].title)
     ),
     h('div',{className:'cockpit-header-right'},
-      health2?buildScorePairV667(state.activeId,health2,'phase-score-pair'):null,
+      health2?buildScorePairV667(phaseAccId,health2,'phase-score-pair'):null,
       h('button',{className:'btn',onclick:()=>{ if(typeof showSettings==='function') showSettings(); }},'⚙')
     )
   );
@@ -13319,7 +13332,7 @@ function renderStation(sitId){
   const infoRow=h('div',{style:{display:'none'}});
 
   const wrap=h('div',{className:'station-wrap'});
-  const cockpitFocus=latePhaseLightOpenV4213?null:getCockpitFocusForPhase(state.activeId,sitId);
+  const cockpitFocus=latePhaseLightOpenV4213?null:getCockpitFocusForPhase(phaseAccId,sitId);
   if(cockpitFocus)wrap.appendChild(buildCockpitFocusBanner(cockpitFocus));
 
   // ── Lead-qualifizieren Dashboard (Decision first, Evidence second) ──
@@ -13328,7 +13341,7 @@ function renderStation(sitId){
   // keine neuen Felder. Der bestehende Funktionsteil darunter (Felder/Generieren/Ergebnis)
   // bleibt unverändert erhalten.
   if(sitId===0){
-    const aid=state.activeId;
+    const aid=phaseAccId;
     const health=aid?getOpportunityHealth(aid):null;
 
     // 1) Opportunity Health Hero
@@ -13413,7 +13426,7 @@ function renderStation(sitId){
     return '';
   }
   if(sitId===1){
-    const aid=state.activeId;
+    const aid=phaseAccId;
     const health=aid?getOpportunityHealth(aid):null;
 
     // Health-Balken (kompakt, ohne Dashboard)
@@ -13534,7 +13547,7 @@ function renderStation(sitId){
   // "DIE WICHTIGSTEN ERKENNTNISSE" statt der allgemeinen Einschätzung, plus ersten Schritt aus
   // "NÄCHSTE SCHRITTE". Kein neuer Score, keine neue KI-Logik.
   if(sitId===2){
-    const aid=state.activeId;
+    const aid=phaseAccId;
     const health=aid?getOpportunityHealth(aid):null;
     wrap.appendChild(h('div',{style:{cursor:'pointer',marginBottom:'14px'},onclick:()=>{if(aid)showOpportunityHealthDetail(aid);}},
       buildHealthBar(health?health.score:null,{score:'station-health-score',fill:'station-health-fill'})));
@@ -13643,8 +13656,8 @@ function renderStation(sitId){
       LS.set(KEY,data);
     });
     if(!f.readonly){
-      inp.addEventListener('change',()=>scheduleOpportunityHealthRefreshV656(state.activeId,250));
-      inp.addEventListener('blur',()=>scheduleOpportunityHealthRefreshV656(state.activeId,350));
+      inp.addEventListener('change',()=>scheduleOpportunityHealthRefreshV656(phaseAccId,250));
+      inp.addEventListener('blur',()=>scheduleOpportunityHealthRefreshV656(phaseAccId,350));
     }
     if(f.t==='ta'){
       var taWrapRef=h('div',{style:{position:'relative',display:collapsed?'none':'block'}});
@@ -13702,7 +13715,7 @@ function renderStation(sitId){
   const resultHead=h('div',{className:'result-head'});
   const resultLabel=h('span',{className:'result-label'},getResultLabel(sitId));
   // Globaler Pending-Badge — zeigt wenn neue Erkenntnisse seit letztem Generate vorliegen
-  const isPending=state.activeId&&LS.get('ki21_pending_'+state.activeId,false);
+  const isPending=phaseAccId&&LS.get('ki21_pending_'+phaseAccId,false);
   if(isPending&&data.result){
     resultLabel.appendChild(h('span',{
       style:{marginLeft:'8px',fontSize:'9px',fontWeight:'700',color:'#ff6b00',
@@ -13798,8 +13811,8 @@ function renderStation(sitId){
       if(f.big)inp.style.minHeight='200px';
       inp.value=data.fv[f.id]||'';
       inp.addEventListener('input',e=>{data.fv[f.id]=e.target.value;LS.set(KEY,data);});
-      inp.addEventListener('change',()=>scheduleOpportunityHealthRefreshV656(state.activeId,250));
-      inp.addEventListener('blur',()=>scheduleOpportunityHealthRefreshV656(state.activeId,350));
+      inp.addEventListener('change',()=>scheduleOpportunityHealthRefreshV656(phaseAccId,250));
+      inp.addEventListener('blur',()=>scheduleOpportunityHealthRefreshV656(phaseAccId,350));
       const taWrap=h('div',{style:{position:'relative',display:collapsed?'none':'block'}});
       const fsBtn=h('button',{
         style:{position:'absolute',top:'6px',right:'6px',
@@ -13877,10 +13890,11 @@ function renderStation(sitId){
         if(!fv.antworten||!fv.antworten.trim()){
           alert('Bitte zuerst deine Antworten eintragen.');return;
         }
-        const cust=getActiveCust();
+        const phaseAccount=(state.accounts||[]).find(a=>a&&String(a.id)===phaseAccId);
+  const cust=(phaseAccount&&phaseAccount.cust)||{};
         const mu=LS.get('ki21_mu',{});
-        const kk=LS.get('ki21_kk_'+state.activeId,'');
-        const stk=LS.get('ki21_stk_'+state.activeId+'_'+sitId,'');
+        const kk=LS.get('ki21_kk_'+phaseAccId,'');
+        const stk=LS.get('ki21_stk_'+phaseAccId+'_'+sitId,'');
         const prompt2=sit.build2(fv,cust,mu,kk,stk);
         gen2Btn.disabled=true;
         gen2Btn.textContent='⏳ KI21 antwortet...';
@@ -13895,7 +13909,7 @@ function renderStation(sitId){
           const lines2=r2.split('\n');
           const spinIdx=lines2.findIndex(l=>l.toUpperCase().includes('SPIN'));
           if(spinIdx>=0){
-            const nextKEY2='ki21_st_'+state.activeId+'_1';
+            const nextKEY2='ki21_st_'+phaseAccId+'_1';
             const nextData2=LS.get(nextKEY2,{fv:{},result:''});
             const newSpin2=lines2.slice(spinIdx).join('\n').trim();
             ki21ClearAnswersOnNewSpin(nextData2,newSpin2);
@@ -13964,15 +13978,20 @@ function renderStation(sitId){
         fullBtn.onclick=()=>showFullscreen(sit.title,streamText);
       });
       if(result){
+        const currentId=String((window.__ki21ActiveOpportunityId||state.activeId||LS.get('ki21_aid',''))||'');
+        if(currentId!==phaseAccId || (window.__ki21OpportunityEpoch||0)!==phaseEpoch){
+          loading=false;genBtn.disabled=false;genBtn.textContent=genLabels[sitId]||'⚡ KI21 generieren';
+          return;
+        }
         let finalResult=(sitId===1)
-          ?cleanGenericPhase2OutputV4199(result,state.activeId)
+          ?cleanGenericPhase2OutputV4199(result,phaseAccId)
           :((sitId===3)
-            ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase4OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase4NoRoiMath(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
+            ?(isSecurityItUseCaseV4199(phaseAccId)?buildStructuredSecurityPhase4OutputV4212(phaseAccId):(isSalesDiscoveryUseCaseV4199(phaseAccId)?sanitizePhase4NoRoiMath(result,phaseAccId):cleanGenericLatePhaseOutputV4199(result,phaseAccId)))
             :((sitId===4)
-              ?(isSecurityItUseCaseV4199(state.activeId)?buildStructuredSecurityPhase5OutputV4212(state.activeId):(isSalesDiscoveryUseCaseV4199(state.activeId)?sanitizePhase5OfferOutput(result,state.activeId):cleanGenericLatePhaseOutputV4199(result,state.activeId)))
+              ?(isSecurityItUseCaseV4199(phaseAccId)?buildStructuredSecurityPhase5OutputV4212(phaseAccId):(isSalesDiscoveryUseCaseV4199(phaseAccId)?sanitizePhase5OfferOutput(result,phaseAccId):cleanGenericLatePhaseOutputV4199(result,phaseAccId)))
               :result));
-        finalResult=qualityCleanupV4216(state.activeId,finalResult,sitId);
-        if(sitId===1&&typeof window.ki21SanitizePhase2V194==='function')finalResult=window.ki21SanitizePhase2V194(finalResult,state.activeId);
+        finalResult=qualityCleanupV4216(phaseAccId,finalResult,sitId);
+        if(sitId===1&&typeof window.ki21SanitizePhase2V194==='function')finalResult=window.ki21SanitizePhase2V194(finalResult,phaseAccId);
         data.result=finalResult;
         data.prompt=prompt;
         data.generatedAt=Date.now();
@@ -13995,12 +14014,12 @@ function renderStation(sitId){
           }
         }
         LS.set(KEY,data);
-        if((sitId===3||sitId===4)&&state.activeId&&String(finalResult||'').trim().length>=120){
-          LS.set('ki21_phase_output_v231_'+state.activeId+'_'+sitId,finalResult);
+        if((sitId===3||sitId===4)&&phaseAccId&&String(finalResult||'').trim().length>=120){
+          LS.set('ki21_phase_output_v231_'+phaseAccId+'_'+sitId,finalResult);
         }
-        if(state.activeId){
-          await refreshOpportunityHealth(state.activeId);
-          const freshHealth=getOpportunityHealth(state.activeId);
+        if(phaseAccId){
+          await refreshOpportunityHealth(phaseAccId);
+          const freshHealth=getOpportunityHealth(phaseAccId);
           const scoreEl=document.getElementById('station-health-score');
           const fillEl=document.getElementById('station-health-fill');
           if(scoreEl&&freshHealth){
@@ -14015,7 +14034,7 @@ function renderStation(sitId){
           // Key: ki21_phase_snap_{accId}_{sitId} = {positive, warning, open, ts}
           // Wird beim nächsten Generieren dieser Phase überschrieben.
           if(freshHealth){
-            LS.set('ki21_phase_snap_'+state.activeId+'_'+sitId,{
+            LS.set('ki21_phase_snap_'+phaseAccId+'_'+sitId,{
               positive:freshHealth.positive||[],
               warning:freshHealth.warning||[],
               open:freshHealth.open||[],
@@ -14023,11 +14042,11 @@ function renderStation(sitId){
             });
           }
           // Phase-Pending-Flag löschen nach erfolgreicher Generierung
-          if(state.activeId){
-            LS.set('ki21_phase_pending_'+state.activeId+'_'+sitId,null);
+          if(phaseAccId){
+            LS.set('ki21_phase_pending_'+phaseAccId+'_'+sitId,null);
           }
           // Isolierter Phasen-Snapshot mit sourcePhase-Tagging (async, Hintergrund)
-          savePhaseSnapshot(state.activeId,sitId);
+          savePhaseSnapshot(phaseAccId,sitId);
         }
         resultLabel.textContent=getResultLabel(sitId);
         // Phase 5: Auto-extract Besuchsbericht into CRM field
@@ -14045,7 +14064,7 @@ function renderStation(sitId){
         }
 
         // For Nutzen-Kosten-Analyse (sitId===3): nur noch Case-Annahmen für Phase 5 extrahieren (Kurzfassung-Box entfernt, Review Juni 2026)
-        if(sitId===3 && isSalesDiscoveryUseCaseV4199(state.activeId)){
+        if(sitId===3 && isSalesDiscoveryUseCaseV4199(phaseAccId)){
           // v4.213: Keine zusätzliche Case-Extraction bei Security/IT; sie blockiert Mobile nach der Generierung.
           try{
             const caseExtractPrompt=`Extrahiere aus dieser Nutzen-Kosten-Analyse die zentralen Case-Annahmen als reines JSON-Objekt, ohne Markdown-Codeblock, ohne Erklärtext davor oder danach.
@@ -14061,7 +14080,7 @@ Analyse:
             if(caseJson){
               const cleaned=caseJson.replace(/```json|```/g,'').trim();
               const parsed=JSON.parse(cleaned);
-              LS.set('ki21_case_assumptions_'+state.activeId,parsed);
+              LS.set('ki21_case_assumptions_'+phaseAccId,parsed);
             }
           }catch(e){
             // Non-critical: case assumptions extraction failure shouldn't block the main result
@@ -15464,8 +15483,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15489,7 +15508,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15510,7 +15529,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16367,7 +16386,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+const KI21_VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 
 
 function runKi21VersionMigration(){
@@ -20191,7 +20210,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20231,7 +20250,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20255,7 +20274,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20273,7 +20292,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20475,7 +20494,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 
   function allStorageKeys(){
     const keys=[];
@@ -20686,7 +20705,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20897,7 +20916,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21099,7 +21118,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21215,7 +21234,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21312,7 +21331,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21394,7 +21413,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21417,7 +21436,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21595,7 +21614,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21853,7 +21872,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22109,7 +22128,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+  const VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22277,7 +22296,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22371,9 +22390,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22408,7 +22427,7 @@ window.addEventListener('pageshow',install,true);
 <script>
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
 function c(v){return String(v==null?'':v).replace(/\r/g,' ').replace(/\s+/g,' ').trim();}
 function aid(){try{return String((window.state&&window.state.activeId)||(window.LS&&LS.get('ki21_aid',''))||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'');}catch(e){return '';}}
@@ -22460,11 +22479,11 @@ new MutationObserver(schedule).observe(document.documentElement,{subtree:true,ch
 window.ki21ConstraintStateV297=facts;window.ki21ApplyConstraintV297=apply;
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22518,11 +22537,11 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
 <script id="ki21-v2910-generalized-phase4-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
 function str(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function activeId(){
@@ -22669,11 +22688,11 @@ window.ki21MigratePhase4V2910=migrate;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
 <script id="ki21-v2914-phase-constraint-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 function state(){try{return typeof window.ki21ConstraintStateV297==='function'?(window.ki21ConstraintStateV297()||{}):{};}catch(e){return {};}}
@@ -22743,11 +22762,11 @@ window.ki21BuildTechnicalQualificationV2914=technicalPhase;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
 <script id="ki21-v2918-opportunity-isolation-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
 function activeId(){
@@ -22941,162 +22960,37 @@ window.ki21StrictOpportunityStateV2918=strictState;window.ki21ApplyOpportunityIs
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
-<script id="ki21-v2932-opportunity-switch-sanitizer">
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
+
+
+
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
+
+
+
+<!-- KI21 Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK -->
+<script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
+var VERSION='Pilot Core 2.9.35 OPPORTUNITY CONTEXT LOCK';
 window.KI21_VERSION=VERSION;
-function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
-function accounts(){try{return (window.state&&Array.isArray(state.accounts)?state.accounts:[])||[];}catch(e){return [];}}
-function isKnownId(id){return !!accounts().find(function(a){return a&&String(a.id)===String(id);});}
-function authoritativeId(){
-  var sid='';try{sid=String((window.state&&state.activeId)||'');}catch(e){}
-  var pid='';try{pid=String(window.LS&&LS.get('ki21_aid','')||'');}catch(e){}
-  // During a user switch, state.activeId is changed first by the application's
-  // activation function. A valid in-memory selection therefore wins and is
-  // immediately persisted. This prevents an older persisted id from routing
-  // the new screen back to the previous opportunity.
-  var id=isKnownId(sid)?sid:(isKnownId(pid)?pid:(sid||pid));
-  if(id){try{if(window.state)state.activeId=id;}catch(e){}try{if(window.LS)LS.set('ki21_aid',id);}catch(e){}}
-  return id;
-}
-function raw(id){
-  var v='';try{v=String(window.LS&&LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
-  if(!clean(v)){try{if(typeof window.getOpportunityOnlySourceV6522==='function')v=String(window.getOpportunityOnlySourceV6522(id)||'');}catch(e){}}
-  return v;
-}
-function crmTokens(text){var a=[];[['HubSpot',/hubspot/i],['Microsoft Dynamics 365',/dynamics\s*365/i],['Salesforce',/salesforce/i],['SAP',/\bSAP\b/i]].forEach(function(x){if(x[1].test(text))a.push(x[0]);});return a;}
-function euroTokens(text){var m=String(text||'').match(/\b\d{1,3}(?:[. ]\d{3})*(?:,\d+)?\s*€/g)||[];return m.map(function(x){return x.replace(/\s+/g,'').toLowerCase();});}
-function headingNames(text){
-  var out=[];String(text||'').split(/\n/).forEach(function(line){var m=line.match(/^\s*(?:#{1,4}\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+){1,4})\s*[–—-]\s*/);if(m)out.push(clean(m[1]));});return out;
-}
-function targetConstraint(id){
-  try{if(typeof window.ki21StrictOpportunityStateV2918==='function'){var st=window.ki21StrictOpportunityStateV2918();if(st&&String(st.id)===String(id))return String(st.constraint||'');}}catch(e){}
-  var t=raw(id),l=t.toLowerCase();
-  if(/sponsor[^.!?\n]{0,140}(offen|nicht bestätigt|fehlt|noch nicht)/i.test(t))return 'sponsor';
-  if(/(finale\s+budgetfreigabe|budgetfreigabe[^.!?\n]{0,100}(offen|fehlt|nicht erteilt)|noch keine budgetfreigabe)/i.test(t))return 'budget';
-  return '';
-}
-function inconsistent(id,result){
-  var r=String(result||''), rr=raw(id);if(!clean(r)||!clean(rr))return false;
-  var targetCrm=crmTokens(rr), resultCrm=crmTokens(r);
-  if(resultCrm.some(function(c){return targetCrm.indexOf(c)<0;}))return true;
-  var targetEu=euroTokens(rr), resultEu=euroTokens(r);
-  if(resultEu.some(function(v){return targetEu.indexOf(v)<0&&accounts().some(function(a){return a&&String(a.id)!==String(id)&&euroTokens(raw(a.id)).indexOf(v)>=0;});}))return true;
-  var targetLow=rr.toLowerCase();
-  for(var i=0;i<accounts().length;i++){
-    var a=accounts()[i];if(!a||String(a.id)===String(id))continue;
-    var names=headingNames(raw(a.id));
-    for(var j=0;j<names.length;j++){var n=names[j];if(n.length>5&&r.indexOf(n)>=0&&targetLow.indexOf(n.toLowerCase())<0)return true;}
-  }
-  var c=targetConstraint(id), low=r.toLowerCase();
-  if(c==='budget'&&/(fehlende sponsorverantwortung|sponsorentscheidung|sponsorrolle[^.!?]{0,80}(offen|fehlt))/i.test(r))return true;
-  if(c==='sponsor'&&/(finale budgetfreigabe|budgetentscheidung durch|budgettopf.*finanziert)/i.test(r))return true;
-  return false;
-}
-function sanitizeOpportunity(id){
-  if(!id)return 0;var cleared=0;
-  for(var i=0;i<5;i++){
-    var key='ki21_st_'+id+'_'+i, d=null;try{d=window.LS&&LS.get(key,null);}catch(e){}
-    if(d&&inconsistent(id,d.result)){d.result='';try{LS.set(key,d);}catch(e){}cleared++;}
-    var bkey='ki21_phase_output_v231_'+id+'_'+i,b='';try{b=String(LS.get(bkey,'')||'');}catch(e){}
-    if(b&&inconsistent(id,b)){try{LS.set(bkey,'');}catch(e){}cleared++;}
-    try{var snap=LS.get('ki21_phase_snap_'+id+'_'+i,null);if(snap&&inconsistent(id,JSON.stringify(snap))){LS.set('ki21_phase_snap_'+id+'_'+i,null);cleared++;}}catch(e){}
-  }
-  return cleared;
-}
-var last='';
-function onSwitch(){
-  var id=authoritativeId();if(!id)return;
-  if(id!==last){last=id;sanitizeOpportunity(id);try{if(typeof window.ki21ApplyOpportunityIsolationV2918==='function')window.ki21ApplyOpportunityIsolationV2918();}catch(e){}}
-  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
-}
-// Wrap the real activation path. Sanitization happens before the newly selected
-// opportunity is rendered, so a previous phase result cannot remain visible.
-try{
-  var nativeActivate=window.ki21ActivateOpportunityV105;
-  if(typeof nativeActivate==='function'&&!nativeActivate.__ki21v2933){
-    var wrapped=function(id){var ok=nativeActivate.apply(this,arguments);authoritativeId();sanitizeOpportunity(String(id||''));last=String(id||'');return ok;};
-    wrapped.__ki21v2933=true;wrapped.__native=nativeActivate;window.ki21ActivateOpportunityV105=wrapped;
-  }
-}catch(e){}
-document.addEventListener('click',function(){setTimeout(onSwitch,0);},true);
-document.addEventListener('change',function(){setTimeout(onSwitch,0);},true);
-window.addEventListener('pageshow',function(){setTimeout(onSwitch,0);},true);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',onSwitch,{once:true});else onSwitch();
-setTimeout(onSwitch,250);setTimeout(onSwitch,900);
-window.ki21SanitizeOpportunityOnSwitchV2933=sanitizeOpportunity;
-window.ki21OpportunityResultInconsistentV2933=inconsistent;
-})();
-</script>
-
-
-<!-- KI21 Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX -->
-<script id="ki21-v2934-switch-cache-isolation">
-(function(){
-'use strict';
-var VERSION='Pilot Core 2.9.34 SWITCH CACHE ISOLATION FIX';
-window.KI21_VERSION=VERSION;
-function idNow(){
+function boot(){
   try{
-    var sid=String((window.state&&state.activeId)||'');
-    var pid=String((window.LS&&LS.get('ki21_aid',''))||'');
-    if(sid&&pid!==sid){try{LS.set('ki21_aid',sid);}catch(e){}}
-    return sid||pid;
-  }catch(e){return '';}
-}
-function clearPhaseCaches(id){
-  id=String(id||'');if(!id)return;
-  var exact=['ki21_health_'+id,'ki21_health_lastError_'+id,'ki21_pending_'+id,'ki21_constraint_'+id,'ki21_report_'+id];
-  var prefixes=['ki21_st_'+id+'_','ki21_phase_output_v231_'+id+'_','ki21_phase_snap_'+id+'_','ki21_phase_pending_'+id+'_'];
-  try{
-    exact.forEach(function(k){localStorage.removeItem(k);});
-    var keys=[];for(var i=0;i<localStorage.length;i++)keys.push(localStorage.key(i));
-    keys.forEach(function(k){if(k&&prefixes.some(function(p){return k.indexOf(p)===0;}))localStorage.removeItem(k);});
+    var id=String((window.state&&state.activeId)||(window.LS&&LS.get('ki21_aid',''))||'');
+    if(id){window.__ki21ActiveOpportunityId=id;state.activeId=id;LS.set('ki21_aid',id);}
+    document.title='KI21 '+VERSION;
+    document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
   }catch(e){}
 }
-function clearRenderedPhaseOutput(){
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('pageshow',boot,true);
+window.ki21OpportunityIsolationSelfTestV2935=function(){
   try{
-    document.querySelectorAll('[data-ki21-phase-output], .phase-output, .ai-output, .result-output, [id*="phaseOutput"], [id*="phase-output"]').forEach(function(el){
-      if(!el)return;
-      if('value' in el)el.value='';
-      if(!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))el.textContent='';
-      if(el.dataset)delete el.dataset.ki21OpportunityId;
-    });
-  }catch(e){}
-}
-function afterSwitch(id){
-  id=String(id||idNow());if(!id)return;
-  try{if(window.state)state.activeId=id;}catch(e){}
-  try{if(window.LS)LS.set('ki21_aid',id);}catch(e){}
-  clearPhaseCaches(id);
-  clearRenderedPhaseOutput();
-  try{if(typeof window.ki21ApplyOpportunityIsolationV2918==='function')window.ki21ApplyOpportunityIsolationV2918();}catch(e){}
-}
-try{
-  var nativeActivate=window.ki21ActivateOpportunityV105;
-  if(typeof nativeActivate==='function'&&!nativeActivate.__ki21v2934){
-    var wrapped=function(id){
-      var ok=nativeActivate.apply(this,arguments);
-      afterSwitch(id);
-      return ok;
-    };
-    wrapped.__ki21v2934=true;wrapped.__native=nativeActivate;
-    window.ki21ActivateOpportunityV105=wrapped;
-  }
-}catch(e){}
-// Also catch direct state changes that bypass the activation helper.
-var last='';
-function sync(){var id=idNow();if(id&&id!==last){last=id;afterSwitch(id);}}
-document.addEventListener('click',function(){setTimeout(sync,0);},true);
-document.addEventListener('change',function(){setTimeout(sync,0);},true);
-window.addEventListener('pageshow',function(){setTimeout(sync,0);},true);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
-setTimeout(sync,250);setTimeout(sync,900);
-window.ki21ClearPhaseCachesV2934=clearPhaseCaches;
+    var ids=(state.accounts||[]).map(function(a){return String(a&&a.id||'');}).filter(Boolean);
+    return {ok:ids.length===new Set(ids).size,active:String(state.activeId||''),persisted:String(LS.get('ki21_aid','')||''),ids:ids};
+  }catch(e){return {ok:false,error:String(e&&e.message||e)};}
+};
 })();
 </script>
-
 </body>
 </html>
