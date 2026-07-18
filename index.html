@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT</title>
+<title>KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Core Architecture Extension -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -4349,6 +4349,14 @@ EINSCHÄTZUNG (max. 2 kurze Sätze – wie stark der wirtschaftliche Case ist. B
 • [Bullet 5]
 
 
+KRITISCH – P4 STRUCTURED EVIDENCE OUTPUT (HÖCHSTE PRIORITÄT):
+- Erzeuge vor dem Schreiben intern eine EVIDENCE-MATRIX mit exakt vier Spalten: BEHAUPTUNG | QUELLE IM KONTEXT | STATUS | VERWENDEN JA/NEIN.
+- Nur Behauptungen mit einer konkreten Quelle im aktuellen Opportunity-Kontext und STATUS=BESTÄTIGT dürfen als Tatsache ausgegeben werden.
+- Ableitungen dürfen nur qualitativ sein und müssen ohne neue Zahl, Frist, Kostenart, Prozessstufe oder Formalität auskommen.
+- Offene Punkte dürfen ausschließlich bereits ausdrücklich dokumentierte offene Punkte wiedergeben. Keine neuen Kategorien ergänzen.
+- Für ROI gilt als feste Fallback-Zeile: „ROI: 🔴 noch nicht belastbar berechenbar.“ Diese Zeile darf nicht um erfundene fehlende Kostenarten erweitert werden.
+- In Aktionspunkten sind nur dokumentierte Personen und dokumentierte offene Entscheidungen zulässig. Keine Mengen, Fristen oder Durchführungsvorgaben ergänzen.
+
 KRITISCH – P4 FACT-BOUND OUTPUT (HÖCHSTE PRIORITÄT):
 - Baue vor dem Schreiben intern eine ALLOWED-FACTS-LISTE ausschließlich aus den ausdrücklich im aktuellen Opportunity-Kontext genannten Fakten.
 - Jede konkrete Zahl, Frist, Menge, Person, Rolle, historische Aussage, Kostenart, Dokumentation, Prozessstufe, Integrationsaussage und offene Kategorie muss wortsinngemäß aus dieser Liste ableitbar sein.
@@ -4457,6 +4465,16 @@ KRITISCH – PROZESS-/VERTRAGSFRAGEN NUR BEI ECHTEM ANHALTSPUNKT: Vertragsprozes
 KRITISCH – ROI-WIRKSAME POSITION IN PHASE 5: Argumentiere nicht mit einer scheinexakten ROI-Rechnung. Benenne die wichtigste ROI-wirksame Position, die bekannte Größenordnung und die unsichere Annahme. Typische Formulierung: "Die zentrale Frage ist nicht der exakte ROI vor Start, sondern welche Wirkungsannahme für vermeidbare Fehlqualifizierung realistisch ist." Forecast-Genauigkeit darfst du NUR als eigenen Nutzenhebel aufführen, wenn das eigene Angebot Forecast/Opportunity Health/Pipeline-/CRM-/Sales-Qualifizierung/Discovery/Vertriebssteuerung adressiert oder der Kunde explizit Forecast-Probleme nennt. Sonst keine KI21-Logik auf fremde Angebote übertragen.
 
 KRITISCH: Die Standardausgabe muss auf einem Smartphone OHNE SCROLLEN erfassbar sein – maximal 3 Bullets pro Block, jeder Bullet maximal 1 Satz. KEINE Fließtexte, KEINE Begründungsabsätze in der Standardausgabe.
+
+KRITISCH – P5 STRUCTURED EVIDENCE OUTPUT (HÖCHSTE PRIORITÄT):
+- Baue die Antwort ausschließlich aus einer internen Liste EXPLICIT_FACTS und EXPLICIT_OPEN_DECISIONS, die wörtlich oder eindeutig paraphrasierbar im aktuellen Opportunity-Kontext stehen.
+- Jede Zeile der Ausgabe muss intern genau einem Eintrag aus EXPLICIT_FACTS oder EXPLICIT_OPEN_DECISIONS zugeordnet werden können. Ohne Zuordnung: Zeile weglassen.
+- Verwende KEINE Standardannahmen für Abschlussphasen. Insbesondere keine AVV-, Datenschutz-, Rollen-/Berechtigungs-, Integrations-, Einkaufs-, Vertrags-, Schriftform-, Kickoff-, Go-live-, Rollout- oder Terminannahmen.
+- Keine Platzhalter wie „[konkreter Termin]“, keine Beispiele mit „z.B. nächste Woche“, keine erfundenen Mengen oder Dealzahlen.
+- OFFENE PUNKTE dürfen weniger als drei Bullets enthalten. Erfinde niemals einen gelben oder weißen Punkt, nur um das Format zu füllen.
+- NÄCHSTER SCHRITT und 30-MINUTEN-AKTIONEN dürfen nur die bestätigte offene Entscheidung und die dokumentierten Beteiligten verbinden. Keine zusätzliche Ausgestaltung.
+- ERÖFFNUNGS- und ABSCHLUSSSATZ dürfen nur bestätigte Fakten und den bestätigten dominanten Engpass verdichten. Keine neue Bedingung, Frist oder Startzusage.
+- Führe unmittelbar vor Ausgabe einen LINE-BY-LINE CLAIM CHECK durch. Jede nicht belegte Zeile wird vollständig gestrichen.
 
 KRITISCH – P5 FACT-BOUND OUTPUT (HÖCHSTE PRIORITÄT):
 - Verwende ausschließlich Aussagen, die explizit im aktuellen Opportunity-Kontext dokumentiert sind.
@@ -4579,7 +4597,7 @@ const KI21_PHASE_META = Object.freeze({
   3:{id:4,name:'Wirtschaftlicher Nutzen',objective:'Bestätigten Business Case, wirtschaftliche Wirkung, Annahmen und verbleibenden Entscheidungsengpass sauber trennen.'},
   4:{id:5,name:'Angebot & Abschluss',objective:'Angebots-, Entscheidungs- und Abschlusslogik mit klaren Bedingungen und nächstem Kundenschritt formulieren.'}
 });
-const KI21_BUILD = Object.freeze({version:'3.1.6',name:'P4 P5 FACT-BOUND OUTPUT',buildId:'KI21-316-P45FBO-20260718'});
+const KI21_BUILD = Object.freeze({version:'3.1.7',name:'STRUCTURED EVIDENCE OUTPUT',buildId:'KI21-317-SEO-20260718'});
 const KI21_OUTPUT_CONTRACT = Object.freeze({0:'[KI21-P1-QUALIFICATION]',1:'[KI21-P2-DISCOVERY-DEMO]',2:'[KI21-P3-FOLLOW-UP]',3:'[KI21-P4-BUSINESS-CASE]',4:'[KI21-P5-CLOSE]'});
 function ki21CleanTextV302(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function ki21AccountByIdV302(opportunityId){
@@ -15987,8 +16005,8 @@ local-output-generators=none
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -16012,7 +16030,7 @@ local-output-generators=none
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -16033,7 +16051,7 @@ local-output-generators=none
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -16890,7 +16908,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+const KI21_VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
 
 
 function runKi21VersionMigration(){
@@ -20714,7 +20732,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20754,7 +20772,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20778,7 +20796,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20796,7 +20814,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20998,7 +21016,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
 
   function allStorageKeys(){
     const keys=[];
@@ -21209,7 +21227,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -21420,7 +21438,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21622,7 +21640,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21738,7 +21756,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21835,7 +21853,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21917,7 +21935,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21940,7 +21958,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -22118,7 +22136,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -22376,7 +22394,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22632,7 +22650,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+  const VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22800,7 +22818,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22894,9 +22912,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22929,11 +22947,11 @@ window.addEventListener('pageshow',install,true);
 <!-- KI21 2.9.6 FIXED3: authoritative Phase-4 pipeline, dynamic evidence resolution -->
 
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+var VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22987,28 +23005,28 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 
 
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 
 
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <script id="ki21-v2935-context-lock-verifier">
 (function(){
 'use strict';
-var VERSION='Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT';
+var VERSION='Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT';
 window.KI21_VERSION=VERSION;
 function boot(){
   try{
@@ -23030,7 +23048,7 @@ window.ki21OpportunityIsolationSelfTestV2935=function(){
 </script>
 
 
-<!-- KI21 Pilot Core 3.1.6 P4 P5 FACT-BOUND OUTPUT -->
+<!-- KI21 Pilot Core 3.1.7 STRUCTURED EVIDENCE OUTPUT -->
 <!-- KI21 3.0.7: obsolete callClaude wrapper remains removed -->
 
 </body>
