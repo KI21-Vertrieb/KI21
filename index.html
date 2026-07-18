@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY</title>
+<title>KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2554,7 +2554,7 @@ body .cockpit-next-card{margin-bottom:16px !important;}
 <!-- Pilot Core 1.0.8: Buying Center Confidence – identifizierte, aber noch nicht eingebundene wirtschaftliche Entscheider und offene Rollen ergeben TEILWEISE statt GUT. -->
 <!-- Pilot Core 1.0.9: Pre-Pilot State Gate – bloße Pilot-Erwähnungen lösen keine laufende Pilotlogik aus; aktive Primärdaten steuern Bericht und Confidence. -->
 <!-- Pilot Core 1.0.18: Script Boundary Fix – eingebettetes Dossier-HTML beendet das Hauptskript nicht mehr vorzeitig. -->
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Core Architecture Extension -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Core Architecture Extension -->
 <style id="ki21-premium-final-v150">
 :root{
   --premium-bg:#080b11;--premium-surface:#111722;--premium-surface-2:#171e2a;
@@ -15384,6 +15384,97 @@ function generateKundePDF(aid, cust){
 
 <!-- KI21_FREEZE: 2.9.3 CORE MODEL DIRECT CONSTRAINT AUTHORITY -->
 <!-- KI21 2.9.26: case-specific sponsor names removed; sponsor/technical scores derived from active constraint facts -->
+
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
+<script id="ki21-v2932-opportunity-switch-sanitizer">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
+window.KI21_VERSION=VERSION;
+function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function accounts(){try{return (window.state&&Array.isArray(state.accounts)?state.accounts:[])||[];}catch(e){return [];}}
+function isKnownId(id){return !!accounts().find(function(a){return a&&String(a.id)===String(id);});}
+function authoritativeId(){
+  var sid='';try{sid=String((window.state&&state.activeId)||'');}catch(e){}
+  var pid='';try{pid=String(window.LS&&LS.get('ki21_aid','')||'');}catch(e){}
+  // During a user switch, state.activeId is changed first by the application's
+  // activation function. A valid in-memory selection therefore wins and is
+  // immediately persisted. This prevents an older persisted id from routing
+  // the new screen back to the previous opportunity.
+  var id=isKnownId(sid)?sid:(isKnownId(pid)?pid:(sid||pid));
+  if(id){try{if(window.state)state.activeId=id;}catch(e){}try{if(window.LS)LS.set('ki21_aid',id);}catch(e){}}
+  return id;
+}
+function raw(id){
+  var v='';try{v=String(window.LS&&LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+  if(!clean(v)){try{if(typeof window.getOpportunityOnlySourceV6522==='function')v=String(window.getOpportunityOnlySourceV6522(id)||'');}catch(e){}}
+  return v;
+}
+function crmTokens(text){var a=[];[['HubSpot',/hubspot/i],['Microsoft Dynamics 365',/dynamics\s*365/i],['Salesforce',/salesforce/i],['SAP',/\bSAP\b/i]].forEach(function(x){if(x[1].test(text))a.push(x[0]);});return a;}
+function euroTokens(text){var m=String(text||'').match(/\b\d{1,3}(?:[. ]\d{3})*(?:,\d+)?\s*€/g)||[];return m.map(function(x){return x.replace(/\s+/g,'').toLowerCase();});}
+function headingNames(text){
+  var out=[];String(text||'').split(/\n/).forEach(function(line){var m=line.match(/^\s*(?:#{1,4}\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+){1,4})\s*[–—-]\s*/);if(m)out.push(clean(m[1]));});return out;
+}
+function targetConstraint(id){
+  try{if(typeof window.ki21StrictOpportunityStateV2918==='function'){var st=window.ki21StrictOpportunityStateV2918();if(st&&String(st.id)===String(id))return String(st.constraint||'');}}catch(e){}
+  var t=raw(id),l=t.toLowerCase();
+  if(/sponsor[^.!?\n]{0,140}(offen|nicht bestätigt|fehlt|noch nicht)/i.test(t))return 'sponsor';
+  if(/(finale\s+budgetfreigabe|budgetfreigabe[^.!?\n]{0,100}(offen|fehlt|nicht erteilt)|noch keine budgetfreigabe)/i.test(t))return 'budget';
+  return '';
+}
+function inconsistent(id,result){
+  var r=String(result||''), rr=raw(id);if(!clean(r)||!clean(rr))return false;
+  var targetCrm=crmTokens(rr), resultCrm=crmTokens(r);
+  if(resultCrm.some(function(c){return targetCrm.indexOf(c)<0;}))return true;
+  var targetEu=euroTokens(rr), resultEu=euroTokens(r);
+  if(resultEu.some(function(v){return targetEu.indexOf(v)<0&&accounts().some(function(a){return a&&String(a.id)!==String(id)&&euroTokens(raw(a.id)).indexOf(v)>=0;});}))return true;
+  var targetLow=rr.toLowerCase();
+  for(var i=0;i<accounts().length;i++){
+    var a=accounts()[i];if(!a||String(a.id)===String(id))continue;
+    var names=headingNames(raw(a.id));
+    for(var j=0;j<names.length;j++){var n=names[j];if(n.length>5&&r.indexOf(n)>=0&&targetLow.indexOf(n.toLowerCase())<0)return true;}
+  }
+  var c=targetConstraint(id), low=r.toLowerCase();
+  if(c==='budget'&&/(fehlende sponsorverantwortung|sponsorentscheidung|sponsorrolle[^.!?]{0,80}(offen|fehlt))/i.test(r))return true;
+  if(c==='sponsor'&&/(finale budgetfreigabe|budgetentscheidung durch|budgettopf.*finanziert)/i.test(r))return true;
+  return false;
+}
+function sanitizeOpportunity(id){
+  if(!id)return 0;var cleared=0;
+  for(var i=0;i<5;i++){
+    var key='ki21_st_'+id+'_'+i, d=null;try{d=window.LS&&LS.get(key,null);}catch(e){}
+    if(d&&inconsistent(id,d.result)){d.result='';try{LS.set(key,d);}catch(e){}cleared++;}
+    var bkey='ki21_phase_output_v231_'+id+'_'+i,b='';try{b=String(LS.get(bkey,'')||'');}catch(e){}
+    if(b&&inconsistent(id,b)){try{LS.set(bkey,'');}catch(e){}cleared++;}
+    try{var snap=LS.get('ki21_phase_snap_'+id+'_'+i,null);if(snap&&inconsistent(id,JSON.stringify(snap))){LS.set('ki21_phase_snap_'+id+'_'+i,null);cleared++;}}catch(e){}
+  }
+  return cleared;
+}
+var last='';
+function onSwitch(){
+  var id=authoritativeId();if(!id)return;
+  if(id!==last){last=id;sanitizeOpportunity(id);try{if(typeof window.ki21ApplyOpportunityIsolationV2918==='function')window.ki21ApplyOpportunityIsolationV2918();}catch(e){}}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+// Wrap the real activation path. Sanitization happens before the newly selected
+// opportunity is rendered, so a previous phase result cannot remain visible.
+try{
+  var nativeActivate=window.ki21ActivateOpportunityV105;
+  if(typeof nativeActivate==='function'&&!nativeActivate.__ki21v2932){
+    var wrapped=function(id){var ok=nativeActivate.apply(this,arguments);authoritativeId();sanitizeOpportunity(String(id||''));last=String(id||'');return ok;};
+    wrapped.__ki21v2932=true;wrapped.__native=nativeActivate;window.ki21ActivateOpportunityV105=wrapped;
+  }
+}catch(e){}
+document.addEventListener('click',function(){setTimeout(onSwitch,0);},true);
+document.addEventListener('change',function(){setTimeout(onSwitch,0);},true);
+window.addEventListener('pageshow',function(){setTimeout(onSwitch,0);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',onSwitch,{once:true});else onSwitch();
+setTimeout(onSwitch,250);setTimeout(onSwitch,900);
+window.ki21SanitizeOpportunityOnSwitchV2932=sanitizeOpportunity;
+window.ki21OpportunityResultInconsistentV2932=inconsistent;
+})();
+</script>
+
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -15464,8 +15555,8 @@ function generateKundePDF(aid, cust){
   const oldStation=window.renderStation;if(typeof oldStation==='function')window.renderStation=function(){const out=oldStation.apply(this,arguments);schedule15();return out;};
 })();
 </script>
-<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Enhanced Mobile Readability -->
+<!-- DESIGN_FREEZE: KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Enhanced Mobile Readability -->
 <style id="ki21-premium-typography-v152">
 /* Letzter Typografie-Feinschliff: etwa +1 bis +2 pt bei kleinen Cockpit-Schriften. */
 .ki21-clean-kicker{font-size:11.5px!important;letter-spacing:1.78px!important;margin-bottom:14px!important;}
@@ -15489,7 +15580,7 @@ function generateKundePDF(aid, cust){
   .cockpit-dealstatus{font-size:9.4px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -15510,7 +15601,7 @@ function generateKundePDF(aid, cust){
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -15718,7 +15809,98 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
+<script id="ki21-v2932-opportunity-switch-sanitizer">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
+window.KI21_VERSION=VERSION;
+function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function accounts(){try{return (window.state&&Array.isArray(state.accounts)?state.accounts:[])||[];}catch(e){return [];}}
+function isKnownId(id){return !!accounts().find(function(a){return a&&String(a.id)===String(id);});}
+function authoritativeId(){
+  var sid='';try{sid=String((window.state&&state.activeId)||'');}catch(e){}
+  var pid='';try{pid=String(window.LS&&LS.get('ki21_aid','')||'');}catch(e){}
+  // During a user switch, state.activeId is changed first by the application's
+  // activation function. A valid in-memory selection therefore wins and is
+  // immediately persisted. This prevents an older persisted id from routing
+  // the new screen back to the previous opportunity.
+  var id=isKnownId(sid)?sid:(isKnownId(pid)?pid:(sid||pid));
+  if(id){try{if(window.state)state.activeId=id;}catch(e){}try{if(window.LS)LS.set('ki21_aid',id);}catch(e){}}
+  return id;
+}
+function raw(id){
+  var v='';try{v=String(window.LS&&LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+  if(!clean(v)){try{if(typeof window.getOpportunityOnlySourceV6522==='function')v=String(window.getOpportunityOnlySourceV6522(id)||'');}catch(e){}}
+  return v;
+}
+function crmTokens(text){var a=[];[['HubSpot',/hubspot/i],['Microsoft Dynamics 365',/dynamics\s*365/i],['Salesforce',/salesforce/i],['SAP',/\bSAP\b/i]].forEach(function(x){if(x[1].test(text))a.push(x[0]);});return a;}
+function euroTokens(text){var m=String(text||'').match(/\b\d{1,3}(?:[. ]\d{3})*(?:,\d+)?\s*€/g)||[];return m.map(function(x){return x.replace(/\s+/g,'').toLowerCase();});}
+function headingNames(text){
+  var out=[];String(text||'').split(/\n/).forEach(function(line){var m=line.match(/^\s*(?:#{1,4}\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+){1,4})\s*[–—-]\s*/);if(m)out.push(clean(m[1]));});return out;
+}
+function targetConstraint(id){
+  try{if(typeof window.ki21StrictOpportunityStateV2918==='function'){var st=window.ki21StrictOpportunityStateV2918();if(st&&String(st.id)===String(id))return String(st.constraint||'');}}catch(e){}
+  var t=raw(id),l=t.toLowerCase();
+  if(/sponsor[^.!?\n]{0,140}(offen|nicht bestätigt|fehlt|noch nicht)/i.test(t))return 'sponsor';
+  if(/(finale\s+budgetfreigabe|budgetfreigabe[^.!?\n]{0,100}(offen|fehlt|nicht erteilt)|noch keine budgetfreigabe)/i.test(t))return 'budget';
+  return '';
+}
+function inconsistent(id,result){
+  var r=String(result||''), rr=raw(id);if(!clean(r)||!clean(rr))return false;
+  var targetCrm=crmTokens(rr), resultCrm=crmTokens(r);
+  if(resultCrm.some(function(c){return targetCrm.indexOf(c)<0;}))return true;
+  var targetEu=euroTokens(rr), resultEu=euroTokens(r);
+  if(resultEu.some(function(v){return targetEu.indexOf(v)<0&&accounts().some(function(a){return a&&String(a.id)!==String(id)&&euroTokens(raw(a.id)).indexOf(v)>=0;});}))return true;
+  var targetLow=rr.toLowerCase();
+  for(var i=0;i<accounts().length;i++){
+    var a=accounts()[i];if(!a||String(a.id)===String(id))continue;
+    var names=headingNames(raw(a.id));
+    for(var j=0;j<names.length;j++){var n=names[j];if(n.length>5&&r.indexOf(n)>=0&&targetLow.indexOf(n.toLowerCase())<0)return true;}
+  }
+  var c=targetConstraint(id), low=r.toLowerCase();
+  if(c==='budget'&&/(fehlende sponsorverantwortung|sponsorentscheidung|sponsorrolle[^.!?]{0,80}(offen|fehlt))/i.test(r))return true;
+  if(c==='sponsor'&&/(finale budgetfreigabe|budgetentscheidung durch|budgettopf.*finanziert)/i.test(r))return true;
+  return false;
+}
+function sanitizeOpportunity(id){
+  if(!id)return 0;var cleared=0;
+  for(var i=0;i<5;i++){
+    var key='ki21_st_'+id+'_'+i, d=null;try{d=window.LS&&LS.get(key,null);}catch(e){}
+    if(d&&inconsistent(id,d.result)){d.result='';try{LS.set(key,d);}catch(e){}cleared++;}
+    var bkey='ki21_phase_output_v231_'+id+'_'+i,b='';try{b=String(LS.get(bkey,'')||'');}catch(e){}
+    if(b&&inconsistent(id,b)){try{LS.set(bkey,'');}catch(e){}cleared++;}
+    try{var snap=LS.get('ki21_phase_snap_'+id+'_'+i,null);if(snap&&inconsistent(id,JSON.stringify(snap))){LS.set('ki21_phase_snap_'+id+'_'+i,null);cleared++;}}catch(e){}
+  }
+  return cleared;
+}
+var last='';
+function onSwitch(){
+  var id=authoritativeId();if(!id)return;
+  if(id!==last){last=id;sanitizeOpportunity(id);try{if(typeof window.ki21ApplyOpportunityIsolationV2918==='function')window.ki21ApplyOpportunityIsolationV2918();}catch(e){}}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+// Wrap the real activation path. Sanitization happens before the newly selected
+// opportunity is rendered, so a previous phase result cannot remain visible.
+try{
+  var nativeActivate=window.ki21ActivateOpportunityV105;
+  if(typeof nativeActivate==='function'&&!nativeActivate.__ki21v2932){
+    var wrapped=function(id){var ok=nativeActivate.apply(this,arguments);authoritativeId();sanitizeOpportunity(String(id||''));last=String(id||'');return ok;};
+    wrapped.__ki21v2932=true;wrapped.__native=nativeActivate;window.ki21ActivateOpportunityV105=wrapped;
+  }
+}catch(e){}
+document.addEventListener('click',function(){setTimeout(onSwitch,0);},true);
+document.addEventListener('change',function(){setTimeout(onSwitch,0);},true);
+window.addEventListener('pageshow',function(){setTimeout(onSwitch,0);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',onSwitch,{once:true});else onSwitch();
+setTimeout(onSwitch,250);setTimeout(onSwitch,900);
+window.ki21SanitizeOpportunityOnSwitchV2932=sanitizeOpportunity;
+window.ki21OpportunityResultInconsistentV2932=inconsistent;
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -16367,7 +16549,7 @@ ${structured.salesMethod}`:''].filter(Boolean).join('\n\n');
   if(initialTab)sw(initialTab);
 }
 
-const KI21_VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+const KI21_VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 
 
 function runKi21VersionMigration(){
@@ -20191,7 +20373,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-root{animation:none!important}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Mobile Typography Refinement -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Mobile Typography Refinement -->
 <style id="ki21-premium-typography-v151">
 /* Ausschließlich Typografie/Lesbarkeit: keine Logik- oder Layoutänderung. */
 .ki21-clean-kicker{
@@ -20231,7 +20413,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-chip{font-size:10px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Effective Mobile Typography Fix -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Effective Mobile Typography Fix -->
 <style id="ki21-effective-mobile-typography-v153">
 /* Tatsächlich sichtbare Cockpit-Elemente: klar erkennbare Anhebung der kleinen Schriften. */
 .ki21-clean-kicker{font-size:13px!important;line-height:1.2!important;letter-spacing:1.9px!important;margin-bottom:15px!important;}
@@ -20255,7 +20437,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .cockpit-dealstatus{font-size:9.8px!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Executive Typography Hierarchy -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Executive Typography Hierarchy -->
 <style id="ki21-executive-typography-v154">
 /* Sichtbarer Qualitätssprung durch Kontrast, Gewicht und Hierarchie – ohne Layoutänderung. */
 .ki21-clean-kicker{font-weight:950!important;text-shadow:0 0 18px currentColor!important;}
@@ -20273,7 +20455,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   .ki21-clean-action-text{font-size:13.4px!important;line-height:1.40!important;}
 }
 </style>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — Final Hierarchy & Copy Feedback -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — Final Hierarchy & Copy Feedback -->
 <style id="ki21-final-hierarchy-v155">
 /* Überschriften führen; Kernaussagen bleiben gut lesbar, aber ruhiger als in 1.5.4. */
 .ki21-clean-kicker{
@@ -20475,7 +20657,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 
 /* Pilot Core 1.5.11 — vollständiger Opportunity-Reset und stärkere I-Fragen */
 (function(){
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 
   function allStorageKeys(){
     const keys=[];
@@ -20686,7 +20868,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 /* Pilot Core 1.6.0 — Source-First Analysis Architecture */
 (function(){
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   function aid(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
   function raw(id){
     let t='';
@@ -20897,7 +21079,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21099,7 +21281,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script>
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){try{return (window.state&&state.activeId)||LS.get('ki21_aid','')||'';}catch(e){return '';}}
@@ -21215,7 +21397,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function syncVersion(){
@@ -21312,7 +21494,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v193-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function sync(){
@@ -21394,7 +21576,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v194-final-guard">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function clean(){
@@ -21417,7 +21599,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 <script id="ki21-v210-single-state">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   window.ki21ScoresV173=function(){
@@ -21595,7 +21777,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function activeId(){
@@ -21853,7 +22035,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function keys(){
@@ -22109,7 +22291,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
 (function(){
   'use strict';
 
-  const VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+  const VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
   window.KI21_VERSION=VERSION;
 
   function capture(){
@@ -22277,7 +22459,7 @@ function patch(){ /* v1.9.4: analytical engine retained; legacy DOM injection di
   window.addEventListener('pageshow',install,true);
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
 <script id="ki21-v242-stability-recovery">
 (function(){
 'use strict';
@@ -22371,9 +22553,9 @@ window.addEventListener('pageshow',install,true);
 
 
 
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — shared source of truth for cockpit and qualification phase -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — shared source of truth for cockpit and qualification phase -->
 
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY — confirmed business case remains decision-authoritative -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER — confirmed business case remains decision-authoritative -->
 
 <!-- KI21 2.9.6 FIXED: stable percentage scores + late Business Case authority -->
 <style id="ki21-v296-fixed-style">
@@ -22408,7 +22590,7 @@ window.addEventListener('pageshow',install,true);
 <script>
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 window.KI21_VERSION=VERSION;
 function c(v){return String(v==null?'':v).replace(/\r/g,' ').replace(/\s+/g,' ').trim();}
 function aid(){try{return String((window.state&&window.state.activeId)||(window.LS&&LS.get('ki21_aid',''))||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'');}catch(e){return '';}}
@@ -22460,11 +22642,11 @@ new MutationObserver(schedule).observe(document.documentElement,{subtree:true,ch
 window.ki21ConstraintStateV297=facts;window.ki21ApplyConstraintV297=apply;
 })();
 </script>
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
 <script id="ki21-v298-generalized-status-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 window.KI21_VERSION=VERSION;
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -22518,11 +22700,11 @@ window.ki21ApplyStatusAuthorityV298=apply;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
 <script id="ki21-v2910-generalized-phase4-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 window.KI21_VERSION=VERSION;
 function str(v){return String(v==null?'':v).replace(/\r/g,'').trim();}
 function activeId(){
@@ -22669,11 +22851,11 @@ window.ki21MigratePhase4V2910=migrate;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
 <script id="ki21-v2914-phase-constraint-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 function state(){try{return typeof window.ki21ConstraintStateV297==='function'?(window.ki21ConstraintStateV297()||{}):{};}catch(e){return {};}}
@@ -22743,11 +22925,11 @@ window.ki21BuildTechnicalQualificationV2914=technicalPhase;
 })();
 </script>
 
-<!-- KI21 Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY -->
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
 <script id="ki21-v2918-opportunity-isolation-authority">
 (function(){
 'use strict';
-var VERSION='Pilot Core 2.9.31 ACTIVE OPPORTUNITY ID AUTHORITY';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
 window.KI21_VERSION=VERSION;
 function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
 function activeId(){
@@ -22940,5 +23122,96 @@ setTimeout(schedule,200);setTimeout(schedule,900);
 window.ki21StrictOpportunityStateV2918=strictState;window.ki21ApplyOpportunityIsolationV2918=apply;window.ki21BuildEconomicBuyerPhaseV2918=phaseText;window.ki21BuildBudgetPhaseV2924=phaseText;window.ki21BuildBudgetPhase4V2924=phase4BudgetText;
 })();
 </script>
+
+<!-- KI21 Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER -->
+<script id="ki21-v2932-opportunity-switch-sanitizer">
+(function(){
+'use strict';
+var VERSION='Pilot Core 2.9.32 OPPORTUNITY SWITCH SANITIZER';
+window.KI21_VERSION=VERSION;
+function clean(v){return String(v==null?'':v).replace(/\r/g,'').replace(/[ \t]+/g,' ').trim();}
+function accounts(){try{return (window.state&&Array.isArray(state.accounts)?state.accounts:[])||[];}catch(e){return [];}}
+function isKnownId(id){return !!accounts().find(function(a){return a&&String(a.id)===String(id);});}
+function authoritativeId(){
+  var sid='';try{sid=String((window.state&&state.activeId)||'');}catch(e){}
+  var pid='';try{pid=String(window.LS&&LS.get('ki21_aid','')||'');}catch(e){}
+  // During a user switch, state.activeId is changed first by the application's
+  // activation function. A valid in-memory selection therefore wins and is
+  // immediately persisted. This prevents an older persisted id from routing
+  // the new screen back to the previous opportunity.
+  var id=isKnownId(sid)?sid:(isKnownId(pid)?pid:(sid||pid));
+  if(id){try{if(window.state)state.activeId=id;}catch(e){}try{if(window.LS)LS.set('ki21_aid',id);}catch(e){}}
+  return id;
+}
+function raw(id){
+  var v='';try{v=String(window.LS&&LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+  if(!clean(v)){try{if(typeof window.getOpportunityOnlySourceV6522==='function')v=String(window.getOpportunityOnlySourceV6522(id)||'');}catch(e){}}
+  return v;
+}
+function crmTokens(text){var a=[];[['HubSpot',/hubspot/i],['Microsoft Dynamics 365',/dynamics\s*365/i],['Salesforce',/salesforce/i],['SAP',/\bSAP\b/i]].forEach(function(x){if(x[1].test(text))a.push(x[0]);});return a;}
+function euroTokens(text){var m=String(text||'').match(/\b\d{1,3}(?:[. ]\d{3})*(?:,\d+)?\s*€/g)||[];return m.map(function(x){return x.replace(/\s+/g,'').toLowerCase();});}
+function headingNames(text){
+  var out=[];String(text||'').split(/\n/).forEach(function(line){var m=line.match(/^\s*(?:#{1,4}\s*)?([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]+){1,4})\s*[–—-]\s*/);if(m)out.push(clean(m[1]));});return out;
+}
+function targetConstraint(id){
+  try{if(typeof window.ki21StrictOpportunityStateV2918==='function'){var st=window.ki21StrictOpportunityStateV2918();if(st&&String(st.id)===String(id))return String(st.constraint||'');}}catch(e){}
+  var t=raw(id),l=t.toLowerCase();
+  if(/sponsor[^.!?\n]{0,140}(offen|nicht bestätigt|fehlt|noch nicht)/i.test(t))return 'sponsor';
+  if(/(finale\s+budgetfreigabe|budgetfreigabe[^.!?\n]{0,100}(offen|fehlt|nicht erteilt)|noch keine budgetfreigabe)/i.test(t))return 'budget';
+  return '';
+}
+function inconsistent(id,result){
+  var r=String(result||''), rr=raw(id);if(!clean(r)||!clean(rr))return false;
+  var targetCrm=crmTokens(rr), resultCrm=crmTokens(r);
+  if(resultCrm.some(function(c){return targetCrm.indexOf(c)<0;}))return true;
+  var targetEu=euroTokens(rr), resultEu=euroTokens(r);
+  if(resultEu.some(function(v){return targetEu.indexOf(v)<0&&accounts().some(function(a){return a&&String(a.id)!==String(id)&&euroTokens(raw(a.id)).indexOf(v)>=0;});}))return true;
+  var targetLow=rr.toLowerCase();
+  for(var i=0;i<accounts().length;i++){
+    var a=accounts()[i];if(!a||String(a.id)===String(id))continue;
+    var names=headingNames(raw(a.id));
+    for(var j=0;j<names.length;j++){var n=names[j];if(n.length>5&&r.indexOf(n)>=0&&targetLow.indexOf(n.toLowerCase())<0)return true;}
+  }
+  var c=targetConstraint(id), low=r.toLowerCase();
+  if(c==='budget'&&/(fehlende sponsorverantwortung|sponsorentscheidung|sponsorrolle[^.!?]{0,80}(offen|fehlt))/i.test(r))return true;
+  if(c==='sponsor'&&/(finale budgetfreigabe|budgetentscheidung durch|budgettopf.*finanziert)/i.test(r))return true;
+  return false;
+}
+function sanitizeOpportunity(id){
+  if(!id)return 0;var cleared=0;
+  for(var i=0;i<5;i++){
+    var key='ki21_st_'+id+'_'+i, d=null;try{d=window.LS&&LS.get(key,null);}catch(e){}
+    if(d&&inconsistent(id,d.result)){d.result='';try{LS.set(key,d);}catch(e){}cleared++;}
+    var bkey='ki21_phase_output_v231_'+id+'_'+i,b='';try{b=String(LS.get(bkey,'')||'');}catch(e){}
+    if(b&&inconsistent(id,b)){try{LS.set(bkey,'');}catch(e){}cleared++;}
+    try{var snap=LS.get('ki21_phase_snap_'+id+'_'+i,null);if(snap&&inconsistent(id,JSON.stringify(snap))){LS.set('ki21_phase_snap_'+id+'_'+i,null);cleared++;}}catch(e){}
+  }
+  return cleared;
+}
+var last='';
+function onSwitch(){
+  var id=authoritativeId();if(!id)return;
+  if(id!==last){last=id;sanitizeOpportunity(id);try{if(typeof window.ki21ApplyOpportunityIsolationV2918==='function')window.ki21ApplyOpportunityIsolationV2918();}catch(e){}}
+  try{document.title='KI21 '+VERSION;document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});}catch(e){}
+}
+// Wrap the real activation path. Sanitization happens before the newly selected
+// opportunity is rendered, so a previous phase result cannot remain visible.
+try{
+  var nativeActivate=window.ki21ActivateOpportunityV105;
+  if(typeof nativeActivate==='function'&&!nativeActivate.__ki21v2932){
+    var wrapped=function(id){var ok=nativeActivate.apply(this,arguments);authoritativeId();sanitizeOpportunity(String(id||''));last=String(id||'');return ok;};
+    wrapped.__ki21v2932=true;wrapped.__native=nativeActivate;window.ki21ActivateOpportunityV105=wrapped;
+  }
+}catch(e){}
+document.addEventListener('click',function(){setTimeout(onSwitch,0);},true);
+document.addEventListener('change',function(){setTimeout(onSwitch,0);},true);
+window.addEventListener('pageshow',function(){setTimeout(onSwitch,0);},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',onSwitch,{once:true});else onSwitch();
+setTimeout(onSwitch,250);setTimeout(onSwitch,900);
+window.ki21SanitizeOpportunityOnSwitchV2932=sanitizeOpportunity;
+window.ki21OpportunityResultInconsistentV2932=inconsistent;
+})();
+</script>
+
 </body>
 </html>
