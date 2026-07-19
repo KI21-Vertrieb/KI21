@@ -23996,5 +23996,88 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   window.KI21StructuredEvidence703={version:VERSION,numberKey:numberKey,unitType:unitType,structuredEvidence:structuredEvidence,sanitize:sanitize};
 })();
 </script>
+<!-- KI21 Pilot Core 7.0.4 PERIOD · STATE · LANGUAGE FIX -->
+<script>
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.0.4 PERIOD · STATE · LANGUAGE FIX';
+  window.KI21_VERSION=VERSION;
+  try{document.documentElement.setAttribute('data-ki21-build','7.0.4');}catch(_e){}
+
+  function numberKey(v){
+    var words={ein:'1',eine:'1',einen:'1',einem:'1',einer:'1',eins:'1',zwei:'2',drei:'3',vier:'4',fünf:'5',sechs:'6',sieben:'7',acht:'8',neun:'9',zehn:'10',elf:'11',zwölf:'12'};
+    var x=String(v||'').toLowerCase().trim();
+    if(words[x])x=words[x];
+    return x.replace(/\s+/g,'').replace(/[–—]/g,'-').replace(/,/g,'.');
+  }
+  function unitType(unit){
+    var u=String(unit||'').toLowerCase();
+    if(/deal|opportunit/.test(u))return 'DEAL_COUNT';
+    if(/nutzer|mitarbeiter|person/.test(u))return 'PEOPLE_COUNT';
+    if(/stunde|arbeitstag|tage?/.test(u))return 'EFFORT_TIME';
+    if(/woche|monat/.test(u))return 'CALENDAR_DURATION';
+    if(/eur|€/.test(u))return 'MONEY';
+    return 'OTHER';
+  }
+  function structuredEvidence(t){
+    var list=[];
+    try{list=list.concat((t&&t.quantities)||[],(t&&t.euro)||[]);}catch(_e){}
+    return {
+      schema:'ki21.structured-evidence.v1',
+      metrics:list.map(function(m){return {value:numberKey(m&&m.value),unit:String(m&&m.unit||'').toLowerCase(),type:unitType(m&&m.unit),quote:String(m&&m.quote||'')};}),
+      budget:{approved:!!(t&&t.budget&&t.budget.approved),authority:!!(t&&t.budget&&t.budget.authority),ceiling:(t&&t.budget&&t.budget.ceiling)||null},
+      businessCase:{confirmed:!!(t&&t.businessCase&&t.businessCase.confirmed),open:!!(t&&t.businessCase&&t.businessCase.open)},
+      sponsor:{confirmed:!!(t&&t.sponsor&&t.sponsor.confirmed),open:!!(t&&t.sponsor&&t.sponsor.open)},
+      pilot:{approved:!!(t&&t.pilot&&t.pilot.approved)},
+      technical:{open:!!(t&&t.technical&&t.technical.open)}
+    };
+  }
+  function sanitize(text,t){
+    var src=[];
+    try{src=src.concat((t&&t.quantities)||[],(t&&t.euro)||[]);}catch(_e){}
+    if(!src.length)return String(text||'');
+    var allowed={};
+    src.forEach(function(m){
+      var k=numberKey(m&&m.value),u=String(m&&m.unit||'').toLowerCase();
+      if(!k||!u)return;
+      if(!allowed[k])allowed[k]={};
+      allowed[k][u]=true;
+    });
+    var word='ein(?:e|en|em|er|s)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf';
+    var unit='stunden?|tage?|arbeitstage?|wochen?|monate?|nutzer|mitarbeiter|personen?|deals?|opportunities|eur|€';
+    var rx=new RegExp('(?:\\b|^)((?:\\d+(?:[.,]\\d+)?(?:\\s*[–-]\\s*\\d+(?:[.,]\\d+)?)?)|(?:'+word+'))\\s*('+unit+')\\b','ig');
+    var out=[];
+    String(text||'').split(/\n/).forEach(function(line){
+      var sentences=String(line).split(/(?<=[.!?])\s+/),keep=[];
+      sentences.forEach(function(sentence){
+        var invalid=false,m;rx.lastIndex=0;
+        while((m=rx.exec(sentence))){
+          var key=numberKey(m[1]),u=String(m[2]||'').toLowerCase();
+          if(allowed[key]&&!allowed[key][u]){invalid=true;break;}
+        }
+        if(!invalid)keep.push(sentence);
+      });
+      var joined=keep.join(' ').trim();if(joined)out.push(joined);
+    });
+    return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  // Überschreibt nur die bereits vorhandene Sanitizer-Funktion. Der Boot- und Renderpfad bleibt unverändert.
+  try{window.ki21StructuredEvidence=structuredEvidence;}catch(_e){}
+  try{window.ki21MetricKey=numberKey;}catch(_e){}
+  try{window.ki21UnitType=unitType;}catch(_e){}
+  try{window.sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+  try{sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+
+  function stamp(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',stamp,{once:true});else stamp();
+  window.KI21StructuredEvidence703={version:VERSION,numberKey:numberKey,unitType:unitType,structuredEvidence:structuredEvidence,sanitize:sanitize};
+})();
+</script>
 </body>
 </html>
