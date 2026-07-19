@@ -15981,7 +15981,6 @@ local-output-generators=none
 
 
 
-
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -16316,8 +16315,7 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
-</body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
   win.document.close();
 }
 
@@ -23200,9 +23198,7 @@ function phaseDNA(i){
  return map[i]||'PHASENFOKUS: Arbeite ausschließlich die Aufgabe dieser Phase aus.';
 }
 function truthBlock(t,i){
- const structured=ki21StructuredEvidence(t);
- return `\n\n=== KI21 STRUCTURED EVIDENCE GENERATION 7.0 ===\n`+
- `STRUCTURED_EVIDENCE_JSON: ${JSON.stringify(structured)}\n`+
+ return `\n\n=== KI21 SINGLE SOURCE OF TRUTH ===\n`+
  `Dominanter Engpass: ${t.blocker}\nNächste Kundenentscheidung: ${t.decision}\n`+
  `Sponsorstatus: ${t.maturity.sponsor} — ${t.translations.sponsor}\n`+
  `Budgetstatus: ${t.maturity.budget} — ${t.translations.budget}\n`+
@@ -23264,42 +23260,42 @@ function sanitizeEvidenceBoundOutput(text,t,phaseIndex){
  return s.trim();
 }
 
-function ki21MetricKey(v){
- const words={ein:'1',eine:'1',einen:'1',einem:'1',einer:'1',eins:'1',zwei:'2',drei:'3',vier:'4',fünf:'5',sechs:'6',sieben:'7',acht:'8',neun:'9',zehn:'10',elf:'11',zwölf:'12'};
- let x=String(v||'').toLowerCase().trim(); if(words[x])x=words[x];
- return x.replace(/\s+/g,'').replace(/[–—]/g,'-').replace(/,/g,'.');
-}
+function ki21MetricKey(v){return String(v||'').toLowerCase().replace(/\s+/g,'').replace(/[–—]/g,'-').replace(/,/g,'.');}
 function ki21UnitType(unit){
  const u=String(unit||'').toLowerCase();
  if(/deal|opportunit/.test(u))return 'DEAL_COUNT';
- if(/nutzer|mitarbeiter|person/.test(u))return 'PEOPLE_COUNT';
- if(/stunde|arbeitstag|tage?/.test(u))return 'EFFORT_TIME';
+ if(/nutzer|mitarbeiter/.test(u))return 'PEOPLE_COUNT';
+ if(/stunde|arbeitstag|tag/.test(u))return 'EFFORT_TIME';
  if(/woche|monat/.test(u))return 'CALENDAR_DURATION';
  if(/eur|€/.test(u))return 'MONEY';
  return 'OTHER';
 }
-function ki21StructuredEvidence(t){
- const metrics=[...(t&&t.quantities||[]),...(t&&t.euro||[])].map(m=>({value:ki21MetricKey(m.value),unit:String(m.unit||'').toLowerCase(),type:ki21UnitType(m.unit),quote:String(m.quote||'')}));
- return {schema:'ki21.structured-evidence.v1',metrics,budget:{approved:!!(t&&t.budget&&t.budget.approved),authority:!!(t&&t.budget&&t.budget.authority),ceiling:(t&&t.budget&&t.budget.ceiling)||null},businessCase:{confirmed:!!(t&&t.businessCase&&t.businessCase.confirmed),open:!!(t&&t.businessCase&&t.businessCase.open)},sponsor:{confirmed:!!(t&&t.sponsor&&t.sponsor.confirmed),open:!!(t&&t.sponsor&&t.sponsor.open)},pilot:{approved:!!(t&&t.pilot&&t.pilot.approved)},technical:{open:!!(t&&t.technical&&t.technical.open)}};
-}
 function sanitizeTypedMetricMutations(text,t){
- const s=String(text||''),srcMetrics=[...(t&&t.quantities||[]),...(t&&t.euro||[])]; if(!srcMetrics.length)return s;
- const allowed=new Map(); srcMetrics.forEach(m=>{const key=ki21MetricKey(m.value);if(!key)return;if(!allowed.has(key))allowed.set(key,new Set());allowed.get(key).add(String(m.unit||'').toLowerCase());});
- const word='ein(?:e|en|em|er|s)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf';
- const unit='stunden?|tage?|arbeitstage?|wochen?|monate?|nutzer|mitarbeiter|personen?|deals?|opportunities|eur|€';
- const metricRx=new RegExp('(?:\\b|^)((?:\\d+(?:[.,]\\d+)?(?:\\s*[–-]\\s*\\d+(?:[.,]\\d+)?)?)|(?:'+word+'))\\s*('+unit+')\\b','ig');
+ let s=String(text||'');
+ const srcMetrics=[...(t&&t.quantities||[]),...(t&&t.euro||[])];
+ if(!srcMetrics.length)return s;
+ const exact=new Set(srcMetrics.map(m=>ki21MetricKey(m.value)+'|'+String(m.unit||'').toLowerCase()));
+ const values=[...new Set(srcMetrics.map(m=>ki21MetricKey(m.value)).filter(Boolean))].sort((a,b)=>b.length-a.length);
+ const unitPattern='stunden|tage|arbeitstage|wochen|monate|nutzer|mitarbeiter|deals|opportunities|eur|€';
+ const parts=s.split(/(?<=[.!?])\s+|\n+/);
  const kept=[];
- for(const block of s.split(/\n/)){
-  const good=[];
-  for(const sentence of String(block).split(/(?<=[.!?])\s+/)){
-   let invalid=false,m; metricRx.lastIndex=0;
-   while((m=metricRx.exec(sentence))){const key=ki21MetricKey(m[1]),outUnit=String(m[2]||'').toLowerCase(),units=allowed.get(key);if(!units)continue;const exact=[...units].some(u=>String(u).toLowerCase()===outUnit);if(!exact){invalid=true;break;}}
-   if(!invalid)good.push(sentence);
-  }
-  const joined=good.join(' ').trim(); if(joined)kept.push(joined);
+ for(const part of parts){
+   let invalid=false;
+   const re=new RegExp('(?:\\b|^)(\\d+(?:[.,]\\d+)?(?:\\s*[–-]\\s*\\d+(?:[.,]\\d+)?)?)\\s*('+unitPattern+')\\b','ig');
+   let m;
+   while((m=re.exec(part))){
+     const key=ki21MetricKey(m[1]), unit=String(m[2]||'').toLowerCase();
+     if(exact.has(key+'|'+unit))continue;
+     const sourceSameValue=srcMetrics.filter(x=>ki21MetricKey(x.value)===key);
+     if(sourceSameValue.length && !sourceSameValue.some(x=>String(x.unit||'').toLowerCase()===unit)){
+       invalid=true;break;
+     }
+   }
+   if(!invalid)kept.push(part);
  }
  return kept.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
+
 function audit(text,t,phaseIndex){
  const s=String(text||''), low=s.toLowerCase(), hard=[], soft=[];
  if(/\[[^\]]+\]/.test(s))soft.push('Eckiger Platzhalter im Output');
@@ -23374,10 +23370,6 @@ if(typeof base==='function'&&!base.__ki21v504){
      const repair=enriched+`\n\nEINMALIGER KORREKTURLAUF: Der Entwurf verletzt verbindliche Zustände oder Evidenzgrenzen: ${[...new Set(critical)].join('; ')}. Verwende exakt diese Zustände: ${t.translations.budget} ${t.translations.businessCase} ${t.translations.pilot} ${t.translations.sponsor} Erlaubte Mengen-/Einheiten-Kombinationen: ${allowed}. Entferne jede Wirkung, technische Aussage, historische Behauptung, System-/Excel-Aussage und Einwandbegründung, die nicht ausdrücklich in den Primärdaten belegt ist. Nicht bestätigte Wirkung nur als zu validierende Pilothypothese formulieren. Schreibe jeden Bullet als eigenständigen grammatisch vollständigen Satz; keine Satzfusion aus Business Case und Budgetstatus. Erzeuge den vollständigen Bericht neu, ohne Erklärung.`;
      result=await base(opportunityId,phaseIndex,repair,onStream);
      result=sanitizeEvidenceBoundOutput(result,t,phase);
-     result=sanitizeTypedMetricMutations(result,t);
-     check=audit(result,t,phase);
-   }
-   if(check.hard.some(x=>/^Einheit verändert:/i.test(x))){
      result=sanitizeTypedMetricMutations(result,t);
      check=audit(result,t,phase);
    }
@@ -23890,6 +23882,7 @@ Architecture Foundation
     }catch(_e){}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateVersionUI,{once:true});else updateVersionUI();
+  new MutationObserver(()=>requestAnimationFrame(updateVersionUI)).observe(document.documentElement,{subtree:true,childList:true});
 
   window.KI21StateDriven600={version:VERSION,build:BUILD,getCommittedPhase4,commitPhase4,invalidatePhase4:invalidateDownstream,stateContract};
 })();
@@ -23919,18 +23912,89 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 })();
 </script>
 
-<!-- KI21 Pilot Core 7.0.1 STRUCTURED EVIDENCE · LOAD FIX -->
+
+<!-- KI21 Pilot Core 7.0.3 SAFE BOOT · STRUCTURED EVIDENCE -->
 <script>
 (function(){
- 'use strict';
- const VERSION='Pilot Core 7.0.1 STRUCTURED EVIDENCE · LOAD FIX';
- window.KI21_VERSION=VERSION;
- try{document.documentElement.setAttribute('data-ki21-build','7.0.1');}catch(_e){}
- function update(){try{document.title='KI21 '+VERSION;document.querySelectorAll('body *').forEach(el=>{if(el.children.length===0&&/Pilot Core (?:6\.0\.0|6\.1\.1)[^\n]*/i.test(el.textContent||'')&&String(el.textContent||'').length<120)el.textContent=VERSION;});}catch(_e){}}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update,{once:true});else update();
- window.KI21StructuredEvidence700={version:VERSION,build:'7.0.1'};
+  'use strict';
+  var VERSION='Pilot Core 7.0.3 SAFE BOOT · STRUCTURED EVIDENCE';
+  window.KI21_VERSION=VERSION;
+  try{document.documentElement.setAttribute('data-ki21-build','7.0.3');}catch(_e){}
+
+  function numberKey(v){
+    var words={ein:'1',eine:'1',einen:'1',einem:'1',einer:'1',eins:'1',zwei:'2',drei:'3',vier:'4',fünf:'5',sechs:'6',sieben:'7',acht:'8',neun:'9',zehn:'10',elf:'11',zwölf:'12'};
+    var x=String(v||'').toLowerCase().trim();
+    if(words[x])x=words[x];
+    return x.replace(/\s+/g,'').replace(/[–—]/g,'-').replace(/,/g,'.');
+  }
+  function unitType(unit){
+    var u=String(unit||'').toLowerCase();
+    if(/deal|opportunit/.test(u))return 'DEAL_COUNT';
+    if(/nutzer|mitarbeiter|person/.test(u))return 'PEOPLE_COUNT';
+    if(/stunde|arbeitstag|tage?/.test(u))return 'EFFORT_TIME';
+    if(/woche|monat/.test(u))return 'CALENDAR_DURATION';
+    if(/eur|€/.test(u))return 'MONEY';
+    return 'OTHER';
+  }
+  function structuredEvidence(t){
+    var list=[];
+    try{list=list.concat((t&&t.quantities)||[],(t&&t.euro)||[]);}catch(_e){}
+    return {
+      schema:'ki21.structured-evidence.v1',
+      metrics:list.map(function(m){return {value:numberKey(m&&m.value),unit:String(m&&m.unit||'').toLowerCase(),type:unitType(m&&m.unit),quote:String(m&&m.quote||'')};}),
+      budget:{approved:!!(t&&t.budget&&t.budget.approved),authority:!!(t&&t.budget&&t.budget.authority),ceiling:(t&&t.budget&&t.budget.ceiling)||null},
+      businessCase:{confirmed:!!(t&&t.businessCase&&t.businessCase.confirmed),open:!!(t&&t.businessCase&&t.businessCase.open)},
+      sponsor:{confirmed:!!(t&&t.sponsor&&t.sponsor.confirmed),open:!!(t&&t.sponsor&&t.sponsor.open)},
+      pilot:{approved:!!(t&&t.pilot&&t.pilot.approved)},
+      technical:{open:!!(t&&t.technical&&t.technical.open)}
+    };
+  }
+  function sanitize(text,t){
+    var src=[];
+    try{src=src.concat((t&&t.quantities)||[],(t&&t.euro)||[]);}catch(_e){}
+    if(!src.length)return String(text||'');
+    var allowed={};
+    src.forEach(function(m){
+      var k=numberKey(m&&m.value),u=String(m&&m.unit||'').toLowerCase();
+      if(!k||!u)return;
+      if(!allowed[k])allowed[k]={};
+      allowed[k][u]=true;
+    });
+    var word='ein(?:e|en|em|er|s)?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf';
+    var unit='stunden?|tage?|arbeitstage?|wochen?|monate?|nutzer|mitarbeiter|personen?|deals?|opportunities|eur|€';
+    var rx=new RegExp('(?:\\b|^)((?:\\d+(?:[.,]\\d+)?(?:\\s*[–-]\\s*\\d+(?:[.,]\\d+)?)?)|(?:'+word+'))\\s*('+unit+')\\b','ig');
+    var out=[];
+    String(text||'').split(/\n/).forEach(function(line){
+      var sentences=String(line).split(/(?<=[.!?])\s+/),keep=[];
+      sentences.forEach(function(sentence){
+        var invalid=false,m;rx.lastIndex=0;
+        while((m=rx.exec(sentence))){
+          var key=numberKey(m[1]),u=String(m[2]||'').toLowerCase();
+          if(allowed[key]&&!allowed[key][u]){invalid=true;break;}
+        }
+        if(!invalid)keep.push(sentence);
+      });
+      var joined=keep.join(' ').trim();if(joined)out.push(joined);
+    });
+    return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  // Überschreibt nur die bereits vorhandene Sanitizer-Funktion. Der Boot- und Renderpfad bleibt unverändert.
+  try{window.ki21StructuredEvidence=structuredEvidence;}catch(_e){}
+  try{window.ki21MetricKey=numberKey;}catch(_e){}
+  try{window.ki21UnitType=unitType;}catch(_e){}
+  try{window.sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+  try{sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+
+  function stamp(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',stamp,{once:true});else stamp();
+  window.KI21StructuredEvidence703={version:VERSION,numberKey:numberKey,unitType:unitType,structuredEvidence:structuredEvidence,sanitize:sanitize};
 })();
 </script>
-
 </body>
 </html>
