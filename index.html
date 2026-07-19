@@ -23675,5 +23675,178 @@ Architecture Foundation
 
 <!-- KI21 Pilot Core 5.0.6 FINAL STATE & LANGUAGE GUARD
      Generic deterministic output sanitation; final state, evidence and language guard; maximum one repair call for unresolved critical conflicts. -->
+<!-- KI21 Pilot Core 6.0.0 STATE-DRIVEN GENERATION -->
+<script>
+(function(){
+  'use strict';
+  const VERSION='Pilot Core 6.0.0 STATE-DRIVEN GENERATION';
+  const BUILD='6.0.0';
+  const COMMIT_PREFIX='ki21_phase_commit_v600_';
+  const MIGRATION_KEY='ki21_migration_v600_phase_commits';
+
+  window.KI21_VERSION=VERSION;
+  try{document.documentElement.setAttribute('data-ki21-build',BUILD);}catch(_e){}
+
+  function activeId(){
+    try{return String((window.state&&state.activeId)||LS.get('ki21_aid','')||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'').trim();}
+    catch(_e){return '';}
+  }
+  function phaseKey(id,phase){return 'ki21_st_'+String(id)+'_'+String(phase);}
+  function commitKey(id){return COMMIT_PREFIX+String(id)+'_3';}
+  function safeGet(key,def){
+    try{return (window.LS&&typeof LS.get==='function')?LS.get(key,def):JSON.parse(localStorage.getItem(key)||JSON.stringify(def));}
+    catch(_e){return def;}
+  }
+  function safeSet(key,val){
+    try{if(window.LS&&typeof LS.set==='function')LS.set(key,val);else localStorage.setItem(key,JSON.stringify(val));}catch(_e){}
+  }
+  function safeRemove(key){try{localStorage.removeItem(key);}catch(_e){} }
+  function hash(text){let h=2166136261,s=String(text||'');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
+  function cleanResult(v){return String(v||'').trim();}
+
+  function invalidateDownstream(id,reason){
+    id=String(id||'').trim(); if(!id)return;
+    safeRemove(commitKey(id));
+    safeRemove('ki21_case_assumptions_'+id);
+    safeRemove('ki21_phase_output_v231_'+id+'_3');
+    // Phase 5 must never survive a changed or failed Phase 4.
+    const p5=safeGet(phaseKey(id,4),{fv:{},result:''})||{fv:{},result:''};
+    if(p5.result||p5.prompt||p5.generatedAt){
+      p5.result='';p5.result2='';p5.summary='';p5.detail='';p5.prompt='';p5.generatedAt=null;p5.generationMeta=null;
+      safeSet(phaseKey(id,4),p5);
+    }
+    safeRemove('ki21_phase_output_v231_'+id+'_4');
+    safeSet('ki21_phase_pending_'+id+'_4',true);
+    try{localStorage.setItem('ki21_phase4_invalidation_v600_'+id,JSON.stringify({reason:String(reason||'invalidated'),at:Date.now()}));}catch(_e){}
+  }
+
+  function getCommittedPhase4(id){
+    id=String(id||'').trim();
+    const commit=safeGet(commitKey(id),null);
+    const data=safeGet(phaseKey(id,3),null);
+    const result=cleanResult(data&&data.result);
+    if(!commit||!result||result.length<120)return null;
+    if(commit.resultHash!==hash(result))return null;
+    return {commit,data,result};
+  }
+
+  function commitPhase4(id,data){
+    id=String(id||'').trim();
+    const result=cleanResult(data&&data.result);
+    if(!id||result.length<120){invalidateDownstream(id,'Phase 4 ohne gültiges Ergebnis');return false;}
+    const record={schema:'ki21.phase-commit.v1',build:BUILD,opportunityId:id,phase:4,resultHash:hash(result),savedAt:Date.now(),generatedAt:data.generatedAt||Date.now(),sourceHash:(window.ki21CanonicalDecisionStateV410?window.ki21CanonicalDecisionStateV410(id).sourceHash:null)};
+    safeSet(commitKey(id),record);
+    return true;
+  }
+
+  // One-time clean migration: legacy uncommitted P4/P5 output must not leak into 6.0.
+  try{
+    if(localStorage.getItem(MIGRATION_KEY)!=='1'){
+      const ids=[];
+      const accounts=safeGet('ki21_acc',[])||[];
+      accounts.forEach(a=>{if(a&&a.id)ids.push(String(a.id));});
+      ids.forEach(id=>{
+        invalidateDownstream(id,'6.0 migration: legacy phase state removed');
+        const p4=safeGet(phaseKey(id,3),{fv:{},result:''})||{fv:{},result:''};
+        p4.result='';p4.result2='';p4.summary='';p4.detail='';p4.prompt='';p4.generatedAt=null;p4.generationMeta=null;
+        safeSet(phaseKey(id,3),p4);
+      });
+      localStorage.setItem(MIGRATION_KEY,'1');
+    }
+  }catch(_e){}
+
+  // Atomic phase commit hook. The commit is created only after the normal application
+  // has successfully written a validated Phase-4 result to its durable station record.
+  try{
+    if(window.LS&&typeof LS.set==='function'&&!LS.set.__ki21v600){
+      const originalSet=LS.set.bind(LS);
+      const wrappedSet=function(key,value){
+        const ret=originalSet(key,value);
+        const m=String(key||'').match(/^ki21_st_(.+)_([34])$/);
+        if(m){
+          const id=m[1],phase=Number(m[2]);
+          if(phase===3){
+            if(value&&cleanResult(value.result).length>=120)commitPhase4(id,value);
+            else invalidateDownstream(id,'Phase 4 gelöscht oder nicht erfolgreich gespeichert');
+          }
+        }
+        return ret;
+      };
+      wrappedSet.__ki21v600=true;
+      LS.set=wrappedSet;
+    }
+  }catch(_e){}
+
+  function stateContract(id,phaseIndex){
+    let t=null;
+    try{t=window.ki21CanonicalDecisionStateV410?window.ki21CanonicalDecisionStateV410(id):null;}catch(_e){}
+    if(!t)return '';
+    const phase4=getCommittedPhase4(id);
+    const phase4Block=phaseIndex===4&&phase4?`\nVERBINDLICHER PHASE-4-COMMIT (unverändert übernehmen, nicht neu interpretieren):\n${phase4.result}\nENDE PHASE-4-COMMIT\n`:'';
+    return `\n\n=== KI21 6.0 STATE-DRIVEN GENERATION CONTRACT ===\n`+
+      `Opportunity-ID: ${id}\n`+
+      `Budget: approved=${!!t.budget.approved}; authority=${!!t.budget.authority}; ceiling=${t.budget.ceiling||'OPEN'}\n`+
+      `Business Case: confirmed=${!!t.businessCase.confirmed}; open=${!!t.businessCase.open}\n`+
+      `Sponsor: confirmed=${!!t.sponsor.confirmed}; open=${!!t.sponsor.open}\n`+
+      `Pilot: approved=${!!t.pilot.approved}\n`+
+      `Technical state: open=${!!t.technical.open}\n`+
+      `Dominant blocker: ${t.blocker}\n`+
+      `Next customer decision: ${t.decision}\n`+
+      `GENERATION RULES:\n`+
+      `1. Schreibe ausschließlich Aussagen, die mit den booleschen Zuständen oben vereinbar sind.\n`+
+      `2. approved=false verbietet jede Formulierung wie freigegeben, vorhanden, startklar, kann starten oder Auftrag gewonnen.\n`+
+      `3. confirmed=false verbietet jede Formulierung wie bestätigt, bewiesen, abgestimmt oder belastbar für den betreffenden Zustand.\n`+
+      `4. Zahlen und Einheiten bleiben an ihre ursprüngliche Bedeutung gebunden. Nutzerzahlen dürfen niemals zu Wochen, Deals oder Pilotfällen werden.\n`+
+      `5. Phase 5 darf keine wirtschaftliche Aussage aus Phase 4 aufwerten oder neu berechnen.\n`+
+      `6. Unbelegte technische, historische oder operative Details bleiben vollständig weg.\n`+
+      `7. Offene Zustände werden als nächste Kundenentscheidung formuliert, nicht als Mangel der Analyse.\n`+
+      phase4Block+
+      `=== ENDE KI21 6.0 CONTRACT ===\n`;
+  }
+
+  // Final generation wrapper: Phase 5 is impossible without an atomic, matching P4 commit.
+  try{
+    const previous=window.callKI21Phase;
+    if(typeof previous==='function'&&!previous.__ki21v600){
+      const wrapped=async function(opportunityId,phaseIndex,phasePrompt,onStream){
+        const id=String(opportunityId||activeId()).trim();
+        if(Number(phaseIndex)===3){
+          invalidateDownstream(id,'Neue Phase-4-Generierung begonnen');
+        }
+        if(Number(phaseIndex)===4){
+          const p4=getCommittedPhase4(id);
+          if(!p4){
+            throw new Error('Phase 4 ist noch nicht erfolgreich abgeschlossen. Bitte zuerst die Nutzen-Kosten-Analyse fehlerfrei generieren und speichern. Erst danach kann Angebot & Abschluss auf dem bestätigten wirtschaftlichen Stand aufbauen.');
+          }
+        }
+        const prompt=String(phasePrompt||'')+stateContract(id,Number(phaseIndex));
+        return await previous(opportunityId,phaseIndex,prompt,onStream);
+      };
+      wrapped.__ki21v600=true;
+      window.callKI21Phase=wrapped;
+    }
+  }catch(_e){}
+
+  function updateVersionUI(){
+    try{
+      document.title='KI21 '+VERSION;
+      document.querySelectorAll('body *').forEach(el=>{
+        if(el.children.length===0&&/Pilot Core\s+(?:4\.3\.0|5\.0\.[0-9]+)[^\n]*/i.test(el.textContent||'')){
+          const txt=String(el.textContent||'');
+          if(txt.length<100)el.textContent=VERSION;
+        }
+      });
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateVersionUI,{once:true});else updateVersionUI();
+  new MutationObserver(()=>requestAnimationFrame(updateVersionUI)).observe(document.documentElement,{subtree:true,childList:true});
+
+  window.KI21StateDriven600={version:VERSION,build:BUILD,getCommittedPhase4,commitPhase4,invalidatePhase4:invalidateDownstream,stateContract};
+})();
+</script>
+
+<!-- KI21 Pilot Core 6.0.0
+State-driven generation; atomic Phase-4 commit; Phase-5 prerequisite enforcement;
+stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 </body>
 </html>
