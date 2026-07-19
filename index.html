@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 7.2.2 SINGLE VERSION · RENDER LOCK</title>
+<title>KI21 Pilot Core 7.2.3 PRIMARY STATE &amp; PHASE 4 STABILITY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -12393,7 +12393,7 @@ function renderCockpitSnapshotLiteV4215Unsafe(){
   // v4.260: redundante Vertiefungskacheln entfernt; alle relevanten Inhalte stehen in den vier Kernkacheln.
   // v4.245: Cockpit zeigt nur Business-Case-Zusammenfassung; Erfassung erfolgt in Phase 2 bei den Implikationen.
   // v4.233 UI Cleanup: untere Zusatznavigation entfernt; Phasenwechsel über oberen Tab.
-  wrap.appendChild(h('div',{className:'tagline'},'Pilot Core 7.2.2 SINGLE VERSION · RENDER LOCKxecutive Sales Cockpit'));
+  wrap.appendChild(h('div',{className:'tagline'},'Executive Sales Cockpit'));
   app.appendChild(header);
   app.appendChild(wrap);
   LS.set('ki21_view','cockpit-lite');
@@ -23304,7 +23304,11 @@ function audit(text,t,phaseIndex){
        String(q.value).replace(/\s/g,'').replace(/[–-]/g,'-').replace(/[.,]/g,'.') &&
        String(srcMetric.unit||'').toLowerCase()===outputUnit
      );
-     if(!targetExistsInSource)hard.push('Einheit verändert: '+q.quote+' → '+m[0]);
+     const sameValueMetrics=t.quantities.filter(srcMetric=>
+       String(srcMetric.value).replace(/\s/g,'').replace(/[–-]/g,'-').replace(/[.,]/g,'.')===
+       String(q.value).replace(/\s/g,'').replace(/[–-]/g,'-').replace(/[.,]/g,'.')
+     );
+     if(!targetExistsInSource && sameValueMetrics.length<2)hard.push('Einheit verändert: '+q.quote+' → '+m[0]);
    }
  });
  if(phaseIndex===3&&/(entscheidende[rn]? engpass|größte[rn]? blocker)[^.!?\n]{0,100}sponsor/i.test(s)&&!/roi|wirtschaft|nutzen|wirkungs/i.test(s.slice(0,500)))soft.push('P4 wird vom Organisationsengpass statt von der wirtschaftlichen Analyse dominiert');
@@ -23396,10 +23400,12 @@ function rawSource(id){
  const a=acc(id); let parts=[];
  try{parts.push(localStorage.getItem('ki21_import_raw_'+id)||a.rawImport||a.importText||'');}catch(e){}
  try{parts.push(localStorage.getItem('ki21_import_structured_'+id)||'');}catch(e){}
- try{parts.push(localStorage.getItem('ki21_account_'+id)||'');parts.push(localStorage.getItem('ki21_opportunity_'+id)||'');parts.push(localStorage.getItem('ki21_additions_'+id)||'');parts.push(localStorage.getItem('ki21_kk_'+id)||'');}catch(e){}
- for(let i=0;i<5;i++){
-  try{const st=JSON.parse(localStorage.getItem('ki21_st_'+id+'_'+i)||'null');if(st&&st.fv)parts.push(JSON.stringify(st.fv));parts.push(localStorage.getItem('ki21_stk_'+id+'_'+i)||'');}catch(e){}
- }
+ try{
+  parts.push(localStorage.getItem('ki21_account_'+id)||'');
+  parts.push(localStorage.getItem('ki21_opportunity_'+id)||'');
+  parts.push(localStorage.getItem('ki21_additions_'+id)||'');
+  parts.push(localStorage.getItem('ki21_kk_'+id)||'');
+ }catch(e){}
  return clean(parts.filter(Boolean).join('\n'));
 }
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
@@ -23409,8 +23415,8 @@ function lockedState(id){
  const budgetCeiling=(source.match(/(?:bis|max(?:imal)?|rahmen(?: von)?)\s*(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?)\s*(?:€|eur)/i)||[])[1]||'';
  const budgetFinal=explicit(/(?:konkrete|finale|verbindliche)\s+(?:budget|investitions|pilot)?freigabe\s+(?:ist\s+)?(?:erteilt|bestätigt|erfolgt)|(?:budget|investition|pilot)\s+(?:ist\s+)?(?:final|verbindlich)\s+(?:freigegeben|genehmigt)/i,source) && !explicit(/(?:konkrete|finale|verbindliche)\s+(?:budget|investitions|pilot)?freigabe[^.!?\n]{0,60}(?:offen|ausstehend|nicht)/i,source);
  const budgetAuthority=explicit(/(?:entscheidungs|budget|zeichnungs|freigabe)kompetenz|budgetbefugt|kann\s+(?:bis|maximal)[^.!?\n]{0,35}(?:€|eur)\s+(?:entscheiden|freigeben)/i,source);
- const pilotApproved=explicit(/(?:pilot|projekt)\s+(?:ist\s+)?(?:verbindlich|final|formal)?\s*(?:beauftragt|freigegeben|genehmigt)|auftrag\s+(?:wurde\s+)?erteilt/i,source) && !explicit(/(?:pilot|projekt|investitionsentscheidung)[^.!?\n]{0,70}(?:offen|ausstehend|noch nicht|nicht freigegeben)/i,source);
- const bcConfirmed=explicit(/business\s*case[^.!?\n]{0,50}(?:als\s+entscheidungsgrundlage\s+)?(?:bestätigt|freigegeben|belastbar)/i,source) && !explicit(/(?:roi|business\s*case|wirkung)[^.!?\n]{0,80}(?:offen|noch nicht|nicht belastbar|zu validieren)/i,source);
+ const pilotApproved=explicit(/(?:pilot|projekt)\s+(?:ist\s+)?(?:verbindlich|final|formal)?\s*(?:beauftragt|freigegeben|genehmigt)|auftrag\s+(?:wurde\s+)?erteilt/i,source) && !explicit(/(?:pilot|projekt|investitionsentscheidung|investitionsfreigabe|pilotfreigabe)[^.!?\n]{0,100}(?:offen|ausstehend|noch nicht|nicht freigegeben|nicht erfolgt)/i,source);
+ const bcConfirmed=explicit(/business\s*case[^.!?\n]{0,50}(?:als\s+entscheidungsgrundlage\s+)?(?:bestätigt|freigegeben|belastbar)/i,source) && !explicit(/(?:roi|business\s*case|wirkung|wirkungsannahme)[^.!?\n]{0,120}(?:offen|noch nicht|nicht belastbar|zu validieren|nicht validiert)/i,source);
  const sponsorConfirmed=explicit(/(?:bestätigter|benannter|verbindlicher)\s+sponsor|sponsor(?:rolle|verantwortung)?\s+(?:ist\s+)?(?:bestätigt|übernommen|benannt)/i,source) && !explicit(/sponsor[^.!?\n]{0,65}(?:offen|noch nicht|unklar|nicht bestätigt|lehnt)/i,source);
  let status='Dealstatus: Pilotentscheidung vorbereiten';
  if(pilotApproved)status='Dealstatus: Beauftragt · Projektstart vorbereiten';
@@ -23485,10 +23491,11 @@ function applyUI(){
 }
 migrate();
 let q=false;function schedule(){if(q)return;q=true;requestAnimationFrame(()=>{q=false;applyUI();});}
-new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-window.addEventListener('pageshow',schedule,true);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);
+window.addEventListener('pageshow',schedule,true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);
+document.addEventListener('click',()=>setTimeout(schedule,40),true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-setTimeout(schedule,150);setTimeout(schedule,700);
+setTimeout(schedule,120);
 window.__ki21Build440={version:VERSION,buildId:BUILD};
 })();
 </script>
@@ -24529,60 +24536,23 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 
 
 
-<style id="ki21-v721-runtime-stability">
-#ki21-release-footer-v721{position:static!important;display:block!important;width:100%!important;box-sizing:border-box!important;margin:28px 0 max(120px,calc(86px + env(safe-area-inset-bottom)))!important;padding:0 16px!important;text-align:center!important;color:rgba(167,177,191,.60)!important;font:500 11px/1.4 "DM Sans",sans-serif!important;pointer-events:none!important;z-index:auto!important;transform:none!important;}
-</style><script id="ki21-v721-runtime-stability-script">
-(function(){
-  'use strict';
-  var VERSION='Pilot Core 7.2.2 SINGLE VERSION · RENDER LOCK';
-  function applyOnce(){
-    try{
-      window.KI21_VERSION=VERSION;
-      document.title='KI21 '+VERSION;
-      document.documentElement.setAttribute('data-ki21-build','7.2.1');
-      var m=document.querySelector('meta[name="ki21-build"]');if(m)m.setAttribute('content','7.2.1-20260719');
-      document.querySelectorAll('[id^="ki21-release-footer-"],.ki21-release-footer-715').forEach(function(el){el.remove();});
-      document.querySelectorAll('.tagline').forEach(function(el){
-        var t=String(el.textContent||'').trim();
-        if(/^Pilot Core\s+/i.test(t))el.remove();
-      });
-      var f=document.getElementById('ki21-release-footer-v721');
-      if(!f){f=document.createElement('div');f.id='ki21-release-footer-v721';f.textContent=VERSION;document.body.appendChild(f);}
-    }catch(e){console.warn('KI21 7.2.1 stamp skipped',e);}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyOnce,{once:true});else applyOnce();
-  window.addEventListener('pageshow',function(e){if(e.persisted)applyOnce();},{passive:true});
-})();
-</script>
-<style id="ki21-v722-single-version-lock">
-/* Single visible release source. Old generated taglines stay hidden. */
-.tagline,[id^="ki21-release-footer-"],.ki21-release-footer-715{display:none!important;}
-#ki21-release-footer-v722{
-  display:block!important;position:static!important;inset:auto!important;transform:none!important;
-  width:100%!important;margin:26px 0 max(92px,calc(64px + env(safe-area-inset-bottom)))!important;
-  padding:0 14px!important;text-align:center!important;color:rgba(139,148,158,.72)!important;
-  font:500 11px/1.4 'DM Sans',sans-serif!important;pointer-events:none!important;z-index:auto!important;
-}
+
+<style id="ki21-v723-stable-footer-and-copy">
+.tagline,[class*="ki21-version"],[id*="ki21-version"],.ki21-build-footer,[id^="ki21-release-footer-"]{display:none!important;}
+body::after{content:'Pilot Core 7.2.3 PRIMARY STATE · PHASE 4 STABILITY';display:block;position:static;margin:34px 16px max(120px,calc(86px + env(safe-area-inset-bottom)));color:rgba(167,177,191,.55);font:500 11px/1.35 'DM Sans',sans-serif;letter-spacing:.15px;text-align:left;pointer-events:none;}
 </style>
-<script id="ki21-v722-single-version-lock-script">
+<script id="ki21-v723-primary-state-ui-fix">
 (function(){
  'use strict';
- var VERSION='Pilot Core 7.2.2 SINGLE VERSION · RENDER LOCK';
- function stamp(){
-  try{
-   window.KI21_VERSION=VERSION;
-   document.title='KI21 '+VERSION;
-   document.documentElement.setAttribute('data-ki21-build','7.2.2');
-   var m=document.querySelector('meta[name="ki21-build"]');if(m)m.setAttribute('content','7.2.2-20260719');
-   document.querySelectorAll('[id^="ki21-release-footer-"],.ki21-release-footer-715').forEach(function(el){if(el.id!=='ki21-release-footer-v722')el.remove();});
-   var f=document.getElementById('ki21-release-footer-v722');
-   if(!f){f=document.createElement('div');f.id='ki21-release-footer-v722';document.body.appendChild(f);}
-   f.textContent=VERSION;
-  }catch(e){console.warn('KI21 7.2.2 version lock skipped',e);}
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',stamp,{once:true});else stamp();
- window.addEventListener('pageshow',function(e){if(e.persisted)stamp();},{passive:true});
+ const VERSION='Pilot Core 7.2.3 PRIMARY STATE · PHASE 4 STABILITY';
+ function clean(s){return String(s||'').replace(/\s+/g,' ').trim();}
+ function activeId(){try{return String(localStorage.getItem('ki21_aid')||localStorage.getItem('ki21_active_account')||'');}catch(e){return '';}}
+ function primary(id){let p=[];try{p.push(localStorage.getItem('ki21_import_raw_'+id)||'');}catch(e){}try{p.push(localStorage.getItem('ki21_import_structured_'+id)||'');}catch(e){}try{p.push(localStorage.getItem('ki21_account_'+id)||'',localStorage.getItem('ki21_opportunity_'+id)||'',localStorage.getItem('ki21_additions_'+id)||'');}catch(e){}return clean(p.join('\n'));}
+ function state(){const src=primary(activeId());const negPilot=/(pilot|projekt|investitionsentscheidung|investitionsfreigabe|pilotfreigabe)[^.!?]{0,120}(offen|ausstehend|noch nicht|nicht freigegeben|nicht erfolgt)/i.test(src);const posPilot=/(pilot|projekt)[^.!?]{0,80}(beauftragt|freigegeben|genehmigt)|auftrag[^.!?]{0,40}erteilt/i.test(src)&&!negPilot;const negBC=/(roi|business\s*case|wirkung|wirkungsannahme)[^.!?]{0,140}(offen|noch nicht|nicht belastbar|zu validieren|nicht validiert)/i.test(src);const posBC=/business\s*case[^.!?]{0,70}(bestätigt|belastbar|als entscheidungsgrundlage)/i.test(src)&&!negBC;return {src,posPilot,posBC};}
+ function apply(){try{document.title='KI21 '+VERSION;document.documentElement.setAttribute('data-ki21-build','7.2.3');const m=document.querySelector('meta[name="ki21-build"]');if(m)m.content='7.2.3-20260719';const st=state();[...document.querySelectorAll('body *')].filter(e=>e.children.length===0).forEach(el=>{let x=clean(el.textContent);if(!x||x.length>420)return;let y=x.replace(/\bExecutive Forecast\b/g,'Sales Forecast').replace(/wenn\s*[·•]?\s*ch bei der bestätigt/gi,'wenn die wirtschaftliche Entscheiderin bestätigt').replace(/Dr\. Miriam Albrechtgespräch/gi,'Gespräch mit Dr. Miriam Albrecht');if(!st.posPilot){y=y.replace(/Dealstatus:\s*Beauftragt\s*·\s*Projektstart vorbereiten/gi,'Dealstatus: Pilotentscheidung vorbereiten').replace(/Die Freigabe ist erfolgt, aber Baseline, Messmethode oder Verantwortlichkeit sind noch offen\.?/gi,'Der direkte Zugang zur wirtschaftlichen Entscheiderin fehlt; Business Case und Freigabekriterien sind mit ihr noch nicht validiert.');}if(!st.posBC)y=y.replace(/Der Business Case ist als Entscheidungsgrundlage bestätigt\.?/gi,'Der wirtschaftliche Handlungsbedarf ist plausibel; Wirkung und ROI sind noch im Pilot zu validieren.');if(y!==x)el.textContent=y;});}catch(e){console.warn('KI21 7.2.3 UI fix',e);}}
+ let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(apply,35);}window.addEventListener('pageshow',schedule,true);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();},true);document.addEventListener('click',schedule,true);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();setTimeout(apply,100);window.__ki21Build723={version:VERSION};
 })();
 </script>
+
 </body>
 </html>
