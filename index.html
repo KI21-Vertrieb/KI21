@@ -24406,5 +24406,139 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 })();
 </script>
 
+
+<!-- KI21 Pilot Core 7.1.1 SALES COCKPIT POLISH -->
+<style id="ki21-711-sales-cockpit-polish">
+/* Sales-first hierarchy: action before analysis, complete mobile reading, clean page end. */
+.ki21-clean-root{
+  padding-bottom:0!important;
+  margin-bottom:0!important;
+  gap:12px!important;
+}
+.ki21-clean-card.action{
+  border-color:rgba(167,139,250,.44)!important;
+  background:radial-gradient(circle at 100% 0%,rgba(167,139,250,.15),transparent 36%),linear-gradient(145deg,rgba(34,28,54,.98),rgba(14,18,27,.96))!important;
+}
+.ki21-clean-card.action .ki21-clean-kicker{color:#c9b9ff!important}
+.ki21-clean-card.decision{
+  border-color:rgba(255,138,42,.38)!important;
+  background:radial-gradient(circle at 100% 0%,rgba(255,107,0,.16),transparent 34%),linear-gradient(145deg,rgba(39,28,22,.98),rgba(17,19,26,.96))!important;
+}
+.ki21-clean-card.decision .ki21-clean-kicker{color:#ff9a45!important}
+.ki21-clean-decision,.ki21-clean-action-text,.ki21-clean-success{
+  white-space:normal!important;
+  overflow:visible!important;
+  display:block!important;
+  -webkit-line-clamp:unset!important;
+}
+.ki21-clean-action{
+  grid-template-columns:28px minmax(0,1fr)!important;
+  gap:10px!important;
+  padding:11px 12px!important;
+}
+.ki21-clean-action-num{width:28px!important;height:28px!important}
+.ki21-clean-action-title{font-size:8.2px!important;letter-spacing:1px!important}
+.ki21-clean-action-text{font-size:12.8px!important;line-height:1.42!important}
+.ki21-clean-business-status{font-size:13px!important;line-height:1.44!important}
+.ki21-clean-benefits{display:flex!important;flex-direction:column!important;gap:7px!important}
+.ki21-clean-chip{
+  display:block!important;width:100%!important;border-radius:11px!important;
+  padding:8px 10px!important;font-size:10.8px!important;line-height:1.32!important;
+}
+.ki21-clean-root + .tagline,.tagline{
+  position:static!important;
+  margin:18px 0 0!important;
+  padding:0 0 max(96px,calc(76px + env(safe-area-inset-bottom)))!important;
+}
+@media(max-width:390px){
+  .ki21-clean-root{gap:10px!important}
+  .ki21-clean-action{padding:10px 11px!important}
+  .ki21-clean-action-text{font-size:12.2px!important;line-height:1.40!important}
+  .ki21-clean-decision{font-size:16.8px!important;line-height:1.34!important}
+  .ki21-clean-success{font-size:10.7px!important;line-height:1.42!important}
+  .ki21-clean-chip{font-size:10.3px!important}
+}
+</style>
+<script id="ki21-711-sales-cockpit-polish-script">
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.1.1 SALES COCKPIT POLISH';
+  var busy=false;
+
+  function cleanBenefit(text){
+    return String(text||'')
+      .replace(/^Erwarteter\s+Kundennutzen\s*:\s*/i,'')
+      .replace(/^Erwarteter\s+Nutzen\s*:\s*/i,'')
+      .replace(/^Kundennutzen\s*:\s*/i,'')
+      .trim();
+  }
+
+  function polish(){
+    if(busy)return;
+    busy=true;
+    try{
+      var roots=document.querySelectorAll('.ki21-clean-root');
+      roots.forEach(function(root){
+        var summary=root.querySelector('.ki21-clean-card.summary');
+        var action=root.querySelector('.ki21-clean-card.action');
+        var metrics=root.querySelector('.ki21-clean-metrics');
+        var decision=root.querySelector('.ki21-clean-card.decision');
+        var business=root.querySelector('.ki21-clean-card.business');
+
+        // Daily sales workflow: understand -> act -> assess -> secure customer decision -> prove value.
+        [summary,action,metrics,decision,business].forEach(function(node){if(node)root.appendChild(node);});
+
+        var forecastLabel=root.querySelector('.ki21-clean-metric.forecast .ki21-clean-metric-label');
+        if(forecastLabel)forecastLabel.textContent='Sales Forecast';
+
+        if(decision){
+          var kicker=decision.querySelector('.ki21-clean-kicker');
+          if(kicker)kicker.textContent='Entscheidung im nächsten Kundentermin';
+        }
+
+        if(action){
+          var actionKicker=action.querySelector('.ki21-clean-kicker');
+          if(actionKicker)actionKicker.textContent='Nächster Deal-Schritt';
+        }
+
+        if(business){
+          var businessKicker=business.querySelector('.ki21-clean-kicker');
+          if(businessKicker)businessKicker.textContent='Business Case';
+          var chips=business.querySelectorAll('.ki21-clean-chip');
+          chips.forEach(function(chip){
+            var cleaned=cleanBenefit(chip.textContent);
+            if(cleaned)chip.textContent=cleaned;
+          });
+        }
+      });
+
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.1.1');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+      document.querySelectorAll('body *').forEach(function(el){
+        if(el.children.length===0 && /Pilot Core\s+7\.1\.0[^\n]*/i.test(el.textContent||''))el.textContent=VERSION;
+      });
+    }catch(e){console.warn('KI21 7.1.1 sales cockpit polish',e);}
+    busy=false;
+  }
+
+  function schedule(){setTimeout(polish,0);setTimeout(polish,120);setTimeout(polish,500);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+
+  var observer=new MutationObserver(function(mutations){
+    var relevant=mutations.some(function(m){
+      return Array.prototype.some.call(m.addedNodes||[],function(n){
+        return n&&n.nodeType===1&&(n.matches&&n.matches('.ki21-clean-root')||n.querySelector&&n.querySelector('.ki21-clean-root'));
+      });
+    });
+    if(relevant)schedule();
+  });
+  try{observer.observe(document.documentElement,{childList:true,subtree:true});}catch(_e){}
+
+  window.KI21SalesCockpit711={version:VERSION,polish:polish};
+})();
+</script>
+
 </body>
 </html>
