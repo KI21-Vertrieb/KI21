@@ -24079,5 +24079,97 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   window.KI21StructuredEvidence703={version:VERSION,numberKey:numberKey,unitType:unitType,structuredEvidence:structuredEvidence,sanitize:sanitize};
 })();
 </script>
+
+
+<!-- KI21 Pilot Core 7.0.5 EVIDENCE · STATUS · SPONSOR FIX -->
+<script>
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.0.5 EVIDENCE · STATUS · SPONSOR FIX';
+  window.KI21_VERSION=VERSION;
+  try{document.documentElement.setAttribute('data-ki21-build','7.0.5');}catch(_e){}
+
+  var previousSanitizer=window.sanitizeTypedMetricMutations;
+
+  function evidenceIsOpen(t,text){
+    var raw='';
+    try{raw=JSON.stringify(t||{}).toLowerCase();}catch(_e){}
+    var s=String(text||'').toLowerCase();
+    return /"open"\s*:\s*true/.test(raw)
+      || /noch nicht belastbar|noch zu validieren|muss .* validiert|wirkungsannahme .* offen|konkrete investitionsentscheidung ist offen/.test(s);
+  }
+
+  function normalizeStatusLanguage(text,t){
+    var s=String(text||'');
+    var open=evidenceIsOpen(t,s);
+
+    // Harte Zeilenumbrüche innerhalb von Namen und festen Begriffen reparieren.
+    s=s.replace(/\bDr\.\s*\n\s*(?=[A-ZÄÖÜ])/g,'Dr. ')
+       .replace(/\bvs\.\s*\n\s*/gi,'vs. ')
+       .replace(/\bca\.\s*\n\s*/gi,'ca. ');
+
+    if(open){
+      s=s.replace(/Der wirtschaftliche Nutzen ist belastbar\s*[:–-]?[^\n]*/gi,
+        'Der wirtschaftliche Schmerz ist belastbar quantifiziert. Die Nutzenwirkung ist plausibel, muss aber im Pilot noch validiert werden.')
+       .replace(/Der Business Case steht(?: auf dieser Basis)?\.?/gi,
+        'Der Business Case ist auf dieser Basis noch nicht abschließend belastbar.')
+       .replace(/Business Case bestätigt\s*:/gi,'Wirtschaftliche Ausgangslage bestätigt:')
+       .replace(/Bestätigter Business Case\s*:/gi,'Wirtschaftliche Ausgangslage:')
+       .replace(/•\s*Budget vorhanden\s*:/gi,'• Budgetrahmen grundsätzlich darstellbar:')
+       .replace(/^Budget vorhanden\s*:/gim,'Budgetrahmen grundsätzlich darstellbar:');
+    }
+
+    // Nicht belegte Ergebnisversprechen auf bestätigte Wirkhebel zurückführen.
+    s=s.replace(/weniger Lieferkettenschocks,?\s*/gi,'')
+     .replace(/,?\s*weniger verschobene\/verlorene Deals/gi,'')
+     .replace(/Frühere Erkennung gefährdeter Opportunities und Vermeidung von Forecast-Fehlern\s*→\s*bessere Ressourcenplanung/gi,
+       'Frühere Erkennung gefährdeter Opportunities und weniger unnötige Deal-Reviews → bessere Forecast- und Ressourcenentscheidungen');
+
+    // Sponsor ist eine notwendige Rolle, nicht automatisch eine bestätigte Person.
+    s=s.replace(/Tobias Franke \(Sales Director\) muss eindeutig zur sichtbaren Sponsorrolle bekommen/gi,
+       'Tobias Franke (Sales Director) sollte verbindlich für die sichtbare Sponsorrolle gewonnen werden')
+     .replace(/Tobias Franke \(Sales Director\) muss sich sichtbar als Sponsor[^–\n.]*/gi,
+       'Es braucht einen sichtbar verantwortlichen Sponsor mit ausreichendem Einfluss im Vertrieb. Tobias Franke (Sales Director) ist dafür der naheliegendste Kandidat')
+     .replace(/oder die Geschäftsführung benennt eine andere einflussreiche Person/gi,
+       'Alternativ benennt die Geschäftsführung eine andere einflussreiche Person');
+
+    // Verantwortung eindeutig bei der entscheidungsbefugten Rolle verankern.
+    s=s.replace(/Markus Stein oder Dr\. Sabine Keller mit Tobias Franke klären\s*:/gi,
+       'Dr. Sabine Keller klärt mit Tobias Franke:')
+     .replace(/Mit Dr\. Sabine Keller klären: Falls Tobias nicht sponsort, wen benennt sie als interne Treiberin/gi,
+       'Mit Dr. Sabine Keller klären: Falls Tobias nicht sponsort, wen benennt sie als verantwortliche Person');
+
+    return s.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  function sanitize(text,t){
+    var s=String(text||'');
+    try{
+      if(typeof previousSanitizer==='function')s=previousSanitizer(s,t);
+    }catch(_e){}
+    return normalizeStatusLanguage(s,t);
+  }
+
+  try{window.sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+  try{sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+
+  function stamp(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.0.5');
+      document.querySelectorAll('body *').forEach(function(el){
+        if(el.children.length===0 && /Pilot Core\s+\d+\.\d+\.\d+[^\n]*/i.test(el.textContent||'')){
+          el.textContent=VERSION;
+        }
+      });
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){stamp();setTimeout(stamp,250);setTimeout(stamp,1200);},{once:true});
+  else{stamp();setTimeout(stamp,250);setTimeout(stamp,1200);}
+
+  window.KI21EvidenceStatusSponsor705={version:VERSION,sanitize:sanitize,normalizeStatusLanguage:normalizeStatusLanguage};
+})();
+</script>
 </body>
 </html>
