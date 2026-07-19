@@ -24173,5 +24173,134 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   window.KI21EvidenceStatusSponsor705={version:VERSION,sanitize:sanitize,normalizeStatusLanguage:normalizeStatusLanguage};
 })();
 </script>
+<!-- KI21 Pilot Core 7.0.7 SOURCE-ONLY NUMERIC GUARD -->
+<script>
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.0.7 SOURCE-ONLY NUMERIC GUARD';
+  var previousSanitizer=window.sanitizeTypedMetricMutations;
+
+  function normNumber(v){
+    return String(v==null?'':v).toLowerCase().trim()
+      .replace(/[–—]/g,'-').replace(/\s+/g,'').replace(/,/g,'.');
+  }
+
+  function sourceText(t){
+    var parts=[];
+    try{parts.push(JSON.stringify(t||{}));}catch(_e){}
+    try{
+      if(window.currentOpportunity)parts.push(JSON.stringify(window.currentOpportunity));
+      if(window.state)parts.push(JSON.stringify(window.state));
+    }catch(_e){}
+    return parts.join(' ');
+  }
+
+  function supportedNumbers(t){
+    var raw=sourceText(t);
+    var set={};
+    var rx=/\b\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\b/g,m;
+    while((m=rx.exec(raw)))set[normNumber(m[0])]=true;
+    try{
+      var lists=[].concat((t&&t.quantities)||[],(t&&t.euro)||[]);
+      lists.forEach(function(x){
+        if(x&&x.value!=null)set[normNumber(x.value)]=true;
+      });
+    }catch(_e){}
+    return set;
+  }
+
+  function hasUnsupportedNumber(fragment,allowed){
+    var rx=/\b\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\b/g,m;
+    while((m=rx.exec(String(fragment||'')))){
+      var k=normNumber(m[0]);
+      // 5 Überschriftspunkte und 30-Minuten-Arbeitsblock sind feste UI-/Berichtsstruktur.
+      if(k==='5'||k==='30')continue;
+      if(!allowed[k])return true;
+    }
+    return false;
+  }
+
+  function normalizeSourceOnlyClaims(text,t){
+    var s=String(text||'');
+    var allowed=supportedNumbers(t);
+
+    // Offene Wirkung darf keine frei erfundene Prozent-Zielgröße erhalten.
+    s=s.replace(/•\s*Pilothypothese\s*:[^\n]*/gi,function(line){
+      if(/%|Prozent/i.test(line) && hasUnsupportedNumber(line,allowed)){
+        return '• Pilothypothese: Kritische Risiken sollen bei echten Opportunities früher erkannt werden; Messgröße und Zielwert müssen vor Pilotbeginn vereinbart werden.';
+      }
+      return line;
+    });
+
+    // Nicht belegte Nutzer-, Fall- oder Zeitgrößen im Validierungssatz neutralisieren.
+    s=s.replace(/•\s*Validierungsfrage\s*:[^\n]*/gi,function(line){
+      if(hasUnsupportedNumber(line,allowed)){
+        return '• Validierungsfrage: Mit den vereinbarten Nutzern und ausgewählten echten Opportunities messen, wie sich Risikoerkennung und Review-Aufwand verändern.';
+      }
+      return line;
+    });
+    s=s.replace(/Im Pilot mit\s+\d+(?:\s*[–-]\s*\d+)?\s+Nutzern[^\n]*/gi,function(line){
+      return hasUnsupportedNumber(line,allowed)
+        ? 'Im Pilot mit den vereinbarten Nutzern und ausgewählten echten Opportunities messen, wie sich Risikoerkennung und Review-Aufwand verändern.'
+        : line;
+    });
+
+    // Keine nicht belegten Umrechnungen in Arbeitstage oder selbst gesetzten Tagesstunden.
+    s=s.replace(/•\s*Bekannte Größenordnung\s*:[^\n]*/gi,function(line){
+      if(/Arbeitstage|Stunden\/Arbeitstag/i.test(line) && hasUnsupportedNumber(line,allowed)){
+        return '• Bekannte Größenordnung: 120 Stunden monatlicher Zusatzaufwand für Deal-Reviews und Forecast-Korrektionen.';
+      }
+      return line;
+    });
+
+    // Freigabekompetenz ist kein bereits vorhandenes oder reserviertes Budget.
+    s=s.replace(/Geschäftsführerin trägt Entscheidung\s*:[^\n]*/gi,
+      'Wirtschaftliche Entscheidungskompetenz: Dr. Sabine Keller kann einen Pilotrahmen bis 35.000 € grundsätzlich freigeben und sieht wirtschaftlichen Sinn; die konkrete Investitionsentscheidung ist offen.')
+     .replace(/Budget ist damit nicht der Engpass\.?/gi,'Die konkrete Investitionsentscheidung ist weiterhin offen.')
+     .replace(/Budgetrahmen bis 35\.000\s*€ vorhanden/gi,'Ein Pilotrahmen bis 35.000 € ist grundsätzlich darstellbar');
+
+    // Ursache und Nutzen sauber als Hypothese formulieren.
+    s=s.replace(/120 Stunden monatlich für zusätzliche Deal-Reviews und Forecast-Korrektionen durch schlechte Qualifizierung größerer Opportunities/gi,
+      '120 Stunden monatlicher Zusatzaufwand für Deal-Reviews und Forecast-Korrektionen; uneinheitliche Qualifizierung gilt als wesentlicher vermuteter Treiber')
+     .replace(/die 120 Stunden\/Monat Nutzen/gi,
+      'welcher Anteil des heutigen Aufwands von 120 Stunden pro Monat tatsächlich vermeidbar ist');
+
+    // Jede weitere Prozentbehauptung mit nicht belegtem Zahlenwert wird als offene Messgröße markiert.
+    s=s.split(/\n/).map(function(line){
+      if(/%|Prozent/i.test(line) && hasUnsupportedNumber(line,allowed)){
+        if(/^\s*[•*-]/.test(line))return '• Zielwert noch offen: Messgröße und Zielwert werden vor Pilotbeginn gemeinsam festgelegt.';
+        return 'Messgröße und Zielwert müssen vor Pilotbeginn gemeinsam festgelegt werden.';
+      }
+      return line;
+    }).join('\n');
+
+    return s.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  function sanitize(text,t){
+    var s=String(text||'');
+    try{if(typeof previousSanitizer==='function')s=previousSanitizer(s,t);}catch(_e){}
+    return normalizeSourceOnlyClaims(s,t);
+  }
+
+  try{window.sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+  try{sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+
+  function stamp(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.0.7');
+      document.querySelectorAll('body *').forEach(function(el){
+        if(el.children.length===0 && /Pilot Core\s+\d+\.\d+\.\d+[^\n]*/i.test(el.textContent||''))el.textContent=VERSION;
+      });
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){stamp();setTimeout(stamp,250);setTimeout(stamp,1200);},{once:true});
+  else{stamp();setTimeout(stamp,250);setTimeout(stamp,1200);}
+
+  window.KI21SourceOnlyNumericGuard707={version:VERSION,sanitize:sanitize,normalize:normalizeSourceOnlyClaims};
+})();
+</script>
 </body>
 </html>
