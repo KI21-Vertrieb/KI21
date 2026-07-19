@@ -24302,5 +24302,109 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   window.KI21SourceOnlyNumericGuard707={version:VERSION,sanitize:sanitize,normalize:normalizeSourceOnlyClaims};
 })();
 </script>
+<!-- KI21 Pilot Core 7.1.0 EXECUTIVE LANGUAGE & CONFIDENCE -->
+<script>
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.1.0 EXECUTIVE LANGUAGE & CONFIDENCE';
+  var previousSanitizer=window.sanitizeTypedMetricMutations;
+
+  function isOpenEconomicState(text,t){
+    var s=String(text||'').toLowerCase();
+    var raw='';
+    try{raw=JSON.stringify(t||{}).toLowerCase();}catch(_e){}
+    return /roi[^\n]{0,90}(noch nicht|nicht) belastbar/.test(s)
+      || /laufender nutzen[^\n]{0,90}(noch zu validieren|zu validieren)/.test(s)
+      || /wirkungs(?:annahme|quote)[^\n]{0,100}(offen|validier|fehlt)/.test(s)
+      || /konkrete investitions(?:entscheidung|freigabe)[^\n]{0,80}offen/.test(s)
+      || /"businesscase"\s*:\s*\{[^}]*"open"\s*:\s*true/.test(raw);
+  }
+
+  function executiveLanguage(text,t){
+    var s=String(text||'');
+    var open=isOpenEconomicState(s,t);
+
+    // Feste Begriffe und Namen dürfen nicht durch harte Zeilenumbrüche getrennt werden.
+    s=s.replace(/\bDr\.\s*\n\s*(?=[A-ZÄÖÜ])/g,'Dr. ')
+       .replace(/\bFakten\s+vs\.\s*\n\s*Annahmen/gi,'Fakten vs. Annahmen')
+       .replace(/\bca\.\s*\n\s*/gi,'ca. ');
+
+    if(open){
+      s=s.replace(/Der Business Case als Entscheidungsgrundlage ist bestätigt,?\s*(?:und|;)?\s*ein Budgetrahmen bis\s*([\d.]+\s*€)\s*(?:liegt vor|ist vorhanden)\.?/gi,
+        'Der wirtschaftliche Bedarf ist belastbar. Ein Pilotrahmen bis $1 ist grundsätzlich darstellbar; Wirkung und Investitionsentscheidung sind noch zu validieren.')
+       .replace(/Der Business Case als Entscheidungsgrundlage ist bestätigt\.?/gi,
+        'Der wirtschaftliche Bedarf ist belastbar; der Business Case muss seine Wirkung im Pilot noch belegen.')
+       .replace(/Der Business Case steht(?: auf dieser Basis)?\.?/gi,
+        'Der wirtschaftliche Bedarf ist belastbar; die Nutzenwirkung muss der Pilot noch belegen.')
+       .replace(/Der wirtschaftliche Nutzen ist belastbar\s*[:–-]?[^\n]*/gi,
+        'Der wirtschaftliche Schmerz ist belastbar quantifiziert. Die Nutzenwirkung muss der Pilot noch belegen.');
+    }
+
+    // Budgetstatus konsequent als Rahmen, nicht als reserviertes Budget formulieren.
+    s=s.replace(/•\s*Budgetrahmen vorhanden\s*:/gi,'• Pilotrahmen grundsätzlich darstellbar:')
+     .replace(/•\s*Budget vorhanden\s*:/gi,'• Pilotrahmen grundsätzlich darstellbar:')
+     .replace(/Bis\s*([\d.]+\s*€)\s+für den Piloten sind grundsätzlich verfügbar/gi,
+       'Ein Pilotrahmen bis $1 ist grundsätzlich darstellbar')
+     .replace(/Ein Budgetrahmen bis\s*([\d.]+\s*€)\s+liegt vor/gi,
+       'Ein Pilotrahmen bis $1 ist grundsätzlich darstellbar')
+     .replace(/Budgetrahmen bis\s*([\d.]+\s*€)\s+vorhanden/gi,
+       'Pilotrahmen bis $1 grundsätzlich darstellbar');
+
+    // Natürliche Executive-Sprache statt technischer oder künstlicher Begriffe.
+    s=s.replace(/Vermeidung von Fehler-Forecast-Stunden und damit verbundene Fehlplanung in Presales-Kapazitäten und Umsatzplanung/gi,
+      'Reduktion unnötiger Forecast-Korrekturen und zusätzlicher Deal-Reviews – für verlässlichere Presales- und Umsatzplanung')
+     .replace(/Wirkungsannahme\/Wirkungsquote/gi,'Nachweis im Pilot')
+     .replace(/Wirkungsquote/gi,'nachgewiesener Wirkungsanteil')
+     .replace(/Unsichere Annahme\s*:/gi,'Noch zu validieren:');
+
+    // Rollenempfehlung klar, aber nicht als bestätigte Tatsache formulieren.
+    s=s.replace(/Tobias Franke \(Sales Director\) ist wirksamster Kandidat/gi,
+      'Tobias Franke (Sales Director) ist aufgrund seiner Funktion ein naheliegender Kandidat')
+     .replace(/Tobias Franke[^\n.]{0,80}der wirksamste Multiplikator[^\n.]*/gi,
+      'Tobias Franke ist aufgrund seiner Funktion ein naheliegender Sponsor; alternativ sollte die Geschäftsführung eine andere geeignete Person benennen')
+     .replace(/Voraussetzung für die Pilotfreigabe/gi,'wesentliche Voraussetzung für eine tragfähige Pilotumsetzung');
+
+    // Management-Handlung statt unnötig langer Arbeitsanweisung.
+    s=s.replace(/Mit Dr\. Keller klären:\s*Entweder übernimmt Tobias Franke die sichtbare Sponsorverantwortung, oder es wird eine andere einflussreiche Person im Vertrieb benannt, die den Piloten aktiv trägt und bei Widerständen Verantwortung übernimmt[^\n]*/gi,
+      'Mit Dr. Keller die organisatorische Verantwortung für Akzeptanz und Umsetzung im Vertrieb verbindlich festlegen.')
+     .replace(/Mit Dr\. Sabine Keller \(Geschäftsführerin\) klären, wie sie die Sponsorverantwortung für Akzeptanz und Umsetzung im Vertrieb sichern will – oder wer konkret diese Rolle übernimmt\.?/gi,
+      'Mit Dr. Sabine Keller die organisatorische Verantwortung für Akzeptanz und Umsetzung im Vertrieb verbindlich festlegen.');
+
+    // Falsche Nutzenbezeichnung korrigieren.
+    s=s.replace(/die\s+120\s*Stunden\/Monat\s+Nutzen/gi,
+      'welcher Anteil des heutigen Aufwands von 120 Stunden pro Monat tatsächlich vermeidbar ist');
+
+    // Wiederholte Leerzeilen und Leerzeichen glätten.
+    s=s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    return s;
+  }
+
+  function sanitize(text,t){
+    var s=String(text||'');
+    try{if(typeof previousSanitizer==='function')s=previousSanitizer(s,t);}catch(_e){}
+    return executiveLanguage(s,t);
+  }
+
+  try{window.sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+  try{sanitizeTypedMetricMutations=sanitize;}catch(_e){}
+
+  function stamp(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.1.0');
+      document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
+      document.querySelectorAll('body *').forEach(function(el){
+        if(el.children.length===0 && /Pilot Core\s+\d+\.\d+\.\d+[^\n]*/i.test(el.textContent||''))el.textContent=VERSION;
+      });
+    }catch(_e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){stamp();setTimeout(stamp,250);setTimeout(stamp,1200);},{once:true});
+  else{stamp();setTimeout(stamp,250);setTimeout(stamp,1200);}
+
+  window.KI21ExecutiveLanguage710={version:VERSION,sanitize:sanitize,normalize:executiveLanguage};
+})();
+</script>
+
 </body>
 </html>
