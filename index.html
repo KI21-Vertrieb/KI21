@@ -14515,7 +14515,9 @@ function renderStation(sitId){
         // 3.0.7: Evidence firewall pipeline. The native API result is the only phase output.
         // Legacy phase cleaners/sanitizers are intentionally bypassed because they can
         // inject generic product prices or content from older opportunity heuristics.
-        const finalResult=result;
+        const finalResult=(typeof window.sanitizeTypedMetricMutations==='function')
+          ? window.sanitizeTypedMetricMutations(result,{customer:cust,phaseData:data,prompt:prompt,phaseId:sitId})
+          : result;
         data.result=finalResult;
         data.prompt=prompt;
         data.generatedAt=Date.now();
@@ -24081,13 +24083,13 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 </script>
 
 
-<!-- KI21 Pilot Core 7.0.5 EVIDENCE · STATUS · SPONSOR FIX -->
+<!-- KI21 Pilot Core 7.0.6 EXECUTION PATH FIX -->
 <script>
 (function(){
   'use strict';
-  var VERSION='Pilot Core 7.0.5 EVIDENCE · STATUS · SPONSOR FIX';
+  var VERSION='Pilot Core 7.0.6 EXECUTION PATH FIX';
   window.KI21_VERSION=VERSION;
-  try{document.documentElement.setAttribute('data-ki21-build','7.0.5');}catch(_e){}
+  try{document.documentElement.setAttribute('data-ki21-build','7.0.6');}catch(_e){}
 
   var previousSanitizer=window.sanitizeTypedMetricMutations;
 
@@ -24157,7 +24159,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
     try{
       window.KI21_VERSION=VERSION;
       document.title='KI21 '+VERSION;
-      document.documentElement.setAttribute('data-ki21-build','7.0.5');
+      document.documentElement.setAttribute('data-ki21-build','7.0.6');
       document.querySelectorAll('body *').forEach(function(el){
         if(el.children.length===0 && /Pilot Core\s+\d+\.\d+\.\d+[^\n]*/i.test(el.textContent||'')){
           el.textContent=VERSION;
