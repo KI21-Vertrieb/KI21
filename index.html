@@ -15978,6 +15978,9 @@ local-output-generators=none
 - Open business case cannot become confirmed
 - Damaged Business-Case/Budget sentence fusion is rejected
 -->
+
+
+
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -23202,7 +23205,8 @@ function truthBlock(t,i){
  `Business-Case-Status: ${t.maturity.businessCase} — ${t.translations.businessCase}\n`+
  `Pilotfreigabe: ${t.maturity.pilot} — ${t.translations.pilot}\n`+
  `Technische Startbedingungen: ${t.maturity.technical}\n`+
- `Zahlen mit Einheit und ursprünglicher Bedeutung: ${t.quantities.map(q=>q.quote+' [METRIC/OBSERVED]').join(' | ')||'keine'}\n`+
+ `Zahlen mit Einheit und ursprünglicher Bedeutung: ${t.quantities.map(q=>q.quote+' ['+ki21UnitType(q.unit)+']').join(' | ')||'keine'}\n`+
+ `TYPISIERTE METRIKEN: ${t.quantities.map(q=>ki21UnitType(q.unit)+'='+q.quote).join(' | ')||'keine'}. Eine Zahl darf ausschließlich mit der zugehörigen Einheit und Kategorie verwendet werden.\n`+
  `EVIDENCE-TYPEN: FACT = direkt genannt. METRIC = beobachtete Zahl mit unveränderter Einheit und Bedeutung. ROLE = ausdrücklich genannte Rolle. STATE = bestätigter/offener Zustand. HYPOTHESIS = plausible, aber unbestätigte Wirkung. RECOMMENDATION = empfohlene Aktion. QUESTION = offene Klärung. Eine METRIC darf niemals als neue Auswahlmenge, Pilotgröße oder Empfehlung umgedeutet werden.\n`+
  `STATE TRANSLATION: Verwende die vorgegebenen deutschen Statussätze sinngemäß. SUPPORTED darf niemals als bestätigt, freigegeben oder genehmigt formuliert werden.\n`+
  `PHASE DNA: ${phaseDNA(i)}\n`+
@@ -23255,6 +23259,43 @@ function sanitizeEvidenceBoundOutput(text,t,phaseIndex){
  s=s.replace(/\s+([,.;:!?])/g,'$1').replace(/([.!?]){2,}/g,'$1').replace(/\n{3,}/g,'\n\n');
  return s.trim();
 }
+
+function ki21MetricKey(v){return String(v||'').toLowerCase().replace(/\s+/g,'').replace(/[–—]/g,'-').replace(/,/g,'.');}
+function ki21UnitType(unit){
+ const u=String(unit||'').toLowerCase();
+ if(/deal|opportunit/.test(u))return 'DEAL_COUNT';
+ if(/nutzer|mitarbeiter/.test(u))return 'PEOPLE_COUNT';
+ if(/stunde|arbeitstag|tag/.test(u))return 'EFFORT_TIME';
+ if(/woche|monat/.test(u))return 'CALENDAR_DURATION';
+ if(/eur|€/.test(u))return 'MONEY';
+ return 'OTHER';
+}
+function sanitizeTypedMetricMutations(text,t){
+ let s=String(text||'');
+ const srcMetrics=[...(t&&t.quantities||[]),...(t&&t.euro||[])];
+ if(!srcMetrics.length)return s;
+ const exact=new Set(srcMetrics.map(m=>ki21MetricKey(m.value)+'|'+String(m.unit||'').toLowerCase()));
+ const values=[...new Set(srcMetrics.map(m=>ki21MetricKey(m.value)).filter(Boolean))].sort((a,b)=>b.length-a.length);
+ const unitPattern='stunden|tage|arbeitstage|wochen|monate|nutzer|mitarbeiter|deals|opportunities|eur|€';
+ const parts=s.split(/(?<=[.!?])\s+|\n+/);
+ const kept=[];
+ for(const part of parts){
+   let invalid=false;
+   const re=new RegExp('(?:\\b|^)(\\d+(?:[.,]\\d+)?(?:\\s*[–-]\\s*\\d+(?:[.,]\\d+)?)?)\\s*('+unitPattern+')\\b','ig');
+   let m;
+   while((m=re.exec(part))){
+     const key=ki21MetricKey(m[1]), unit=String(m[2]||'').toLowerCase();
+     if(exact.has(key+'|'+unit))continue;
+     const sourceSameValue=srcMetrics.filter(x=>ki21MetricKey(x.value)===key);
+     if(sourceSameValue.length && !sourceSameValue.some(x=>String(x.unit||'').toLowerCase()===unit)){
+       invalid=true;break;
+     }
+   }
+   if(!invalid)kept.push(part);
+ }
+ return kept.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
 function audit(text,t,phaseIndex){
  const s=String(text||''), low=s.toLowerCase(), hard=[], soft=[];
  if(/\[[^\]]+\]/.test(s))soft.push('Eckiger Platzhalter im Output');
@@ -23311,6 +23352,7 @@ if(typeof base==='function'&&!base.__ki21v504){
    // aber lösen keinen teuren zweiten KI-Aufruf mehr aus.
    let result=await base(opportunityId,phaseIndex,enriched,onStream);
    result=sanitizeEvidenceBoundOutput(result,t,phase);
+   result=sanitizeTypedMetricMutations(result,t);
    let check=audit(result,t,phase);
    const critical=[...check.hard];
    if(!t.budget.approved&&/(pilotbudget|budget|investition)[^.!?\n]{0,55}(bestätigt|freigegeben|genehmigt)|(?:bestätigt|freigegeben|genehmigt)[^.!?\n]{0,55}(pilotbudget|budget|investition)/i.test(String(result||'')))critical.push('Budgetstatus hochgestuft');
@@ -23328,6 +23370,7 @@ if(typeof base==='function'&&!base.__ki21v504){
      const repair=enriched+`\n\nEINMALIGER KORREKTURLAUF: Der Entwurf verletzt verbindliche Zustände oder Evidenzgrenzen: ${[...new Set(critical)].join('; ')}. Verwende exakt diese Zustände: ${t.translations.budget} ${t.translations.businessCase} ${t.translations.pilot} ${t.translations.sponsor} Erlaubte Mengen-/Einheiten-Kombinationen: ${allowed}. Entferne jede Wirkung, technische Aussage, historische Behauptung, System-/Excel-Aussage und Einwandbegründung, die nicht ausdrücklich in den Primärdaten belegt ist. Nicht bestätigte Wirkung nur als zu validierende Pilothypothese formulieren. Schreibe jeden Bullet als eigenständigen grammatisch vollständigen Satz; keine Satzfusion aus Business Case und Budgetstatus. Erzeuge den vollständigen Bericht neu, ohne Erklärung.`;
      result=await base(opportunityId,phaseIndex,repair,onStream);
      result=sanitizeEvidenceBoundOutput(result,t,phase);
+     result=sanitizeTypedMetricMutations(result,t);
      check=audit(result,t,phase);
    }
    const finalEvidenceIssues=(phase===4?check.soft.filter(x=>/Unbestätigte Wirkung|Unbelegte|Technischen Status|Budgetstatus sprachlich|Business Case sprachlich|Beschädigte Satzfusion|Startreife/.test(x)):[]);
@@ -23848,5 +23891,25 @@ Architecture Foundation
 <!-- KI21 Pilot Core 6.0.0
 State-driven generation; atomic Phase-4 commit; Phase-5 prerequisite enforcement;
 stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
+<!-- KI21 Pilot Core 6.1.0 TYPED EVIDENCE ENGINE -->
+<script>
+(function(){
+ 'use strict';
+ const VERSION='Pilot Core 6.1.0 TYPED EVIDENCE ENGINE';
+ window.KI21_VERSION=VERSION;
+ try{document.documentElement.setAttribute('data-ki21-build','6.1.0');}catch(_e){}
+ function update(){
+  try{
+   document.title='KI21 '+VERSION;
+   document.querySelectorAll('body *').forEach(el=>{
+    if(el.children.length===0&&/Pilot Core 6\.0\.0 STATE-DRIVEN GENERATION/i.test(el.textContent||''))el.textContent=VERSION;
+   });
+  }catch(_e){}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update,{once:true});else update();
+ new MutationObserver(()=>requestAnimationFrame(update)).observe(document.documentElement,{subtree:true,childList:true});
+ window.KI21TypedEvidence610={version:VERSION,unitType:window.ki21UnitType||null};
+})();
+</script>
 </body>
 </html>
