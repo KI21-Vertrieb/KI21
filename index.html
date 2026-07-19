@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 7.2.4 MOBILE STABILITY FINAL</title>
+<title>KI21 Pilot Core 7.1.6 PHASE TEST &amp; CONSISTENCY</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -2670,7 +2670,7 @@ html.ki21-score-syncing .score-pair-v667{
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ki21-build" content="7.2.1-20260719">
+<meta name="ki21-build" content="7.1.6-20260719">
 <script>
 (function(){
   try {
@@ -15983,6 +15983,210 @@ local-output-generators=none
 
 
 
+
+<style id="ki21-715-sales-state-footer-css">
+.tagline.ki21-release-footer-715{
+  position:static!important;display:block!important;clear:both!important;
+  width:100%!important;margin:24px 0 0!important;
+  padding:12px 12px max(150px,calc(118px + env(safe-area-inset-bottom)))!important;
+  text-align:center!important;z-index:auto!important;transform:none!important;
+  pointer-events:none!important;opacity:.58!important;
+}
+.ki21-clean-root{padding-bottom:0!important;margin-bottom:0!important}
+.ki21-clean-card.business{margin-bottom:0!important}
+</style>
+<script id="ki21-715-sales-state-footer-guard">
+(function(){
+ 'use strict';
+ var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
+ var applying=false;
+ function setLeaf(el,text){if(el&&String(el.textContent||'').trim()!==text)el.textContent=text;}
+ function sourceText(){
+   var id='';try{id=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'')}catch(e){}
+   var raw='';try{if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'')}catch(e){}
+   try{if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'')}catch(e){}
+   return raw;
+ }
+ function approvalOpen(){
+   var t=sourceText();
+   return /(pilot|investition)[^.!?]{0,140}(noch\s+(?:nicht\s+)?(?:freigegeben|genehmigt|beschlossen)|freigabe\s+(?:ist\s+)?noch\s+offen)/i.test(t)
+     || /budget[^.!?]{0,120}(grundsätzlich|denkbar|rahmen)[^.!?]{0,120}(freigabe|entscheidung)[^.!?]{0,80}offen/i.test(t);
+ }
+ function applySummary(root){
+   if(!root)return;
+   var open=approvalOpen();
+   root.querySelectorAll('.ki21-clean-card.summary').forEach(function(card){
+     var all=card.querySelectorAll('*');
+     all.forEach(function(label){
+       if(label.children.length)return;
+       var l=String(label.textContent||'').trim().toLowerCase();
+       var row=label.parentElement;if(!row)return;
+       var candidates=Array.prototype.filter.call(row.querySelectorAll('*'),function(x){return x!==label&&x.children.length===0&&String(x.textContent||'').trim();});
+       var body=candidates[candidates.length-1];if(!body)return;
+       if(l==='status'&&open)setLeaf(body,'Ein grundsätzlich möglicher Budgetrahmen ist vorhanden; die konkrete Pilotfreigabe ist noch offen.');
+       if(l.indexOf('größter engpass')!==-1)setLeaf(body,'Der direkte Zugang zur wirtschaftlichen Entscheiderin fehlt; Business Case und Freigabekriterien sind mit ihr noch nicht validiert.');
+       if(l==='empfehlung')setLeaf(body,'Mit Thomas Reuter einen gemeinsamen 30–45-minütigen Entscheidungstermin mit Dr. Miriam Albrecht vorbereiten und verbindlich vereinbaren.');
+     });
+   });
+ }
+ function fixDecision(root){
+   if(!root)return;
+   root.querySelectorAll('.ki21-clean-card.decision .ki21-clean-decision').forEach(function(el){
+     setLeaf(el,'Dr. Miriam Albrecht bestätigt wirtschaftliche Relevanz, Erfolgskriterien und den Freigabeweg für einen begrenzten Piloten.');
+   });
+   root.querySelectorAll('.ki21-clean-card.decision .ki21-clean-success').forEach(function(el){
+     setLeaf(el,'Der Schritt ist erfolgreich, wenn Dr. Miriam Albrecht den wirtschaftlichen Handlungsdruck, die Erfolgsmessung und den konkreten Freigabeweg bestätigt.');
+   });
+ }
+ function fixReportNumbering(text){
+   var s=String(text||'');
+   s=s.replace(/\n3\.\s*\n\| Antwort:\s*___/g,'\n3. WICHTIG: Sind die 4–6 Opportunities mit früher erkennbaren Risiken konkret identifizierbar und als Pilotfälle nutzbar?\n| Antwort: ___');
+   return s;
+ }
+ function installReportGuard(){
+   try{
+     var f=window.buildOpportunityTestReportV723;
+     if(typeof f==='function'&&!f.__ki21715){
+       var w=function(){return fixReportNumbering(f.apply(this,arguments));};w.__ki21715=true;window.buildOpportunityTestReportV723=w;
+     }
+   }catch(e){}
+ }
+ function placeFooter(){
+   var roots=document.querySelectorAll('.ki21-clean-root');
+   document.querySelectorAll('.tagline').forEach(function(el){el.classList.add('ki21-release-footer-715');setLeaf(el,VERSION);});
+   roots.forEach(function(root){
+     var host=root.parentElement||document.body;
+     var footer=host.querySelector(':scope > .tagline');
+     if(!footer){footer=document.createElement('div');footer.className='tagline ki21-release-footer-715';host.appendChild(footer);}
+     else if(footer!==host.lastElementChild)host.appendChild(footer);
+     setLeaf(footer,VERSION);
+   });
+ }
+ function apply(){
+   if(applying)return;applying=true;
+   try{
+     window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;
+     document.documentElement.setAttribute('data-ki21-build','7.1.5');
+     var meta=document.querySelector('meta[name="ki21-build"]');if(meta)meta.setAttribute('content','7.1.5-20260719');
+     document.querySelectorAll('.ki21-clean-root').forEach(function(root){applySummary(root);fixDecision(root);});
+     installReportGuard();placeFooter();
+   }catch(e){console.warn('KI21 7.1.5 final guard',e);}finally{applying=false;}
+ }
+ function schedule(){[0,120,450,1200,2600].forEach(function(ms){setTimeout(apply,ms);});}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+ window.addEventListener('pageshow',schedule);
+ var queued=false;var app=document.getElementById('app')||document.body;
+ try{new MutationObserver(function(ms){if(queued)return;var rel=ms.some(function(m){return m.type==='childList'&&m.addedNodes&&m.addedNodes.length;});if(!rel)return;queued=true;setTimeout(function(){queued=false;apply();},80);}).observe(app,{childList:true,subtree:true});}catch(e){}
+ window.KI21Release715={version:VERSION,apply:apply};
+})();
+</script>
+
+
+
+<!-- KI21 Pilot Core 7.1.7 BUSINESS CASE SOURCE CONSISTENCY -->
+<style id="ki21-v717-footer">
+#ki21-release-footer-v717{position:static!important;display:block!important;width:100%!important;box-sizing:border-box!important;margin:28px 0 max(120px,calc(84px + env(safe-area-inset-bottom)))!important;padding:0 16px!important;text-align:center!important;color:rgba(167,177,191,.58)!important;font:500 11px/1.4 'DM Sans',sans-serif!important;pointer-events:none!important;z-index:auto!important;transform:none!important;}
+</style>
+<script id="ki21-v717-business-case-source-consistency">
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.1.7 BUSINESS CASE · SOURCE CONSISTENCY';
+  var BUILD='7.1.7-20260719';
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function activeSource(){
+    var id='',raw='';
+    try{id=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'');}catch(e){}
+    try{if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'');}catch(e){}
+    try{if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    return raw;
+  }
+  function sourceHours(){
+    var raw=activeSource();
+    var m=raw.match(/(?:ca\.?\s*)?(\d{2,3})\s*Stunden\s*(?:monatlich|pro\s*Monat|\/\s*Monat)/i);
+    return m?m[1]:'';
+  }
+  function cleanText(text){
+    var s=String(text||'');
+    var h=sourceHours();
+    if(h){
+      s=s.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+      s=s.replace(/\b120\s+Stunden\/Monat/gi,h+' Stunden monatlich');
+    }
+    s=s.replace(/\s*[–-]\s*das sind rund\s*13\s*[–-]\s*14\s*Arbeitstage[^\n.]*(?:\.|$)/gi,'.');
+    s=s.replace(/welche Quote bei Deal-Rettung realistisch/gi,'bei wie vielen Opportunities frühere Risikoerkennung zu einer anderen Vertriebsentscheidung geführt hätte');
+    s=s.replace(/Pilotbudget freigeben/gi,'über die Pilotfreigabe entscheiden');
+    s=s.replace(/Geschäftsführung kennt die konkrete Stundenanalyse nicht/gi,'Es ist bislang nicht bestätigt, dass Dr. Albrecht die Stundenanalyse selbst kennt oder bewertet hat');
+    s=s.replace(/Nachweis im Pilot mit echten Deals im Pilot messen/gi,'im Pilot mit echten Deals messen');
+    s=s.replace(/ein interner Annahme-Fall des Vertriebsleiters/gi,'eine noch nicht wirtschaftlich validierte Annahme des Vertriebsleiters');
+    return s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function addMaturityBlock(text){
+    var s=String(text||'');
+    if(!/ROI-WIRKSAME POSITIONEN/i.test(s)||/WARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST/i.test(s))return s;
+    var block='\n\nWARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST\n'
+      +'• Dokumentierter Aufwand: bestätigt.\n'
+      +'• Angenommene Wirkung: noch zu validieren.\n'
+      +'• Wirtschaftliche Bestätigung durch Dr. Albrecht: noch offen.';
+    var marker='\n\n⚠️ DIE EINE SACHE DIE FEHLT';
+    return s.indexOf(marker)>=0?s.replace(marker,block+marker):s+block;
+  }
+  function sanitize(text){return addMaturityBlock(cleanText(text));}
+
+  function wrap(name){
+    try{
+      var f=window[name];
+      if(typeof f!=='function'||f.__ki21717)return;
+      var w=function(){return sanitize(f.apply(this,arguments));};
+      w.__ki21717=true;window[name]=w;
+    }catch(e){}
+  }
+  ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+
+  function repairDom(){
+    var h=sourceHours();
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length)return;
+      var t=String(el.textContent||'');
+      if(!t)return;
+      var c=cleanText(t);
+      if(c!==t)el.textContent=c;
+    });
+    if(h){
+      document.querySelectorAll('.ki21-clean-card.business *').forEach(function(el){
+        if(el.children.length)return;
+        var t=String(el.textContent||'');
+        var c=t.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+        if(c!==t)el.textContent=c;
+      });
+    }
+  }
+  function footer(){
+    document.querySelectorAll('#ki21-release-footer-v716,.tagline.ki21-release-footer-715').forEach(function(el){el.remove();});
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length===0&&/^Pilot Core\s+(?:7\.2\.4|7\.1\.[3-7])\b/i.test(norm(el.textContent))&&el.id!=='ki21-release-footer-v717')el.remove();
+    });
+    var f=document.getElementById('ki21-release-footer-v717');
+    if(!f){f=document.createElement('div');f.id='ki21-release-footer-v717';document.body.appendChild(f);}
+    f.textContent=VERSION;
+  }
+  function apply(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.1.7');
+      var m=document.querySelector('meta[name="ki21-build"]');if(m)m.setAttribute('content',BUILD);
+      ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+      repairDom();footer();
+    }catch(e){console.warn('KI21 7.1.7 business-case fix',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+  [250,800,1800,4000].forEach(function(ms){setTimeout(apply,ms);});
+  window.addEventListener('pageshow',apply);
+  window.KI21Release717={version:VERSION,apply:apply,sanitize:sanitize};
+})();
+</script>
+
 </body></html>`;
   const safeName=String((cust&&cust.firma)||'Kunde').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_');
   exportHtmlAsPdf(html,'KI21_Kundendossier_'+safeName+'.pdf');
@@ -16317,7 +16521,211 @@ function showPDF(title,text,cust){
   const win=window.open('','_blank');
   if(!win){alert('Das PDF-Fenster konnte nicht geöffnet werden.');return;}
   win.document.open();
-  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div></body></html>');
+  win.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(safeTitle)+'</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#171717;line-height:1.55}header{border-bottom:2px solid #ff6b00;padding-bottom:12px;margin-bottom:20px}h1{font-size:21px;margin:0;color:#ff6b00}header div{font-size:11px;color:#666;margin-top:4px}h2{font-size:12px;letter-spacing:.8px;margin:18px 0 6px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px}p{font-size:12px;margin:4px 0}.print{margin:24px 0;text-align:center}.print button{background:#ff6b00;color:white;border:0;border-radius:7px;padding:10px 20px;font-weight:700}@media print{.print{display:none}body{margin:10px}}</style></head><body><header><h1>'+esc(safeTitle)+'</h1><div>'+esc(safeCompany)+' · '+new Date().toLocaleDateString('de-DE')+'</div></header>'+body+'<div class="print"><button onclick="window.print()">Als PDF speichern</button></div>
+<style id="ki21-715-sales-state-footer-css">
+.tagline.ki21-release-footer-715{
+  position:static!important;display:block!important;clear:both!important;
+  width:100%!important;margin:24px 0 0!important;
+  padding:12px 12px max(150px,calc(118px + env(safe-area-inset-bottom)))!important;
+  text-align:center!important;z-index:auto!important;transform:none!important;
+  pointer-events:none!important;opacity:.58!important;
+}
+.ki21-clean-root{padding-bottom:0!important;margin-bottom:0!important}
+.ki21-clean-card.business{margin-bottom:0!important}
+</style>
+<script id="ki21-715-sales-state-footer-guard">
+(function(){
+ 'use strict';
+ var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
+ var applying=false;
+ function setLeaf(el,text){if(el&&String(el.textContent||'').trim()!==text)el.textContent=text;}
+ function sourceText(){
+   var id='';try{id=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'')}catch(e){}
+   var raw='';try{if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'')}catch(e){}
+   try{if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'')}catch(e){}
+   return raw;
+ }
+ function approvalOpen(){
+   var t=sourceText();
+   return /(pilot|investition)[^.!?]{0,140}(noch\s+(?:nicht\s+)?(?:freigegeben|genehmigt|beschlossen)|freigabe\s+(?:ist\s+)?noch\s+offen)/i.test(t)
+     || /budget[^.!?]{0,120}(grundsätzlich|denkbar|rahmen)[^.!?]{0,120}(freigabe|entscheidung)[^.!?]{0,80}offen/i.test(t);
+ }
+ function applySummary(root){
+   if(!root)return;
+   var open=approvalOpen();
+   root.querySelectorAll('.ki21-clean-card.summary').forEach(function(card){
+     var all=card.querySelectorAll('*');
+     all.forEach(function(label){
+       if(label.children.length)return;
+       var l=String(label.textContent||'').trim().toLowerCase();
+       var row=label.parentElement;if(!row)return;
+       var candidates=Array.prototype.filter.call(row.querySelectorAll('*'),function(x){return x!==label&&x.children.length===0&&String(x.textContent||'').trim();});
+       var body=candidates[candidates.length-1];if(!body)return;
+       if(l==='status'&&open)setLeaf(body,'Ein grundsätzlich möglicher Budgetrahmen ist vorhanden; die konkrete Pilotfreigabe ist noch offen.');
+       if(l.indexOf('größter engpass')!==-1)setLeaf(body,'Der direkte Zugang zur wirtschaftlichen Entscheiderin fehlt; Business Case und Freigabekriterien sind mit ihr noch nicht validiert.');
+       if(l==='empfehlung')setLeaf(body,'Mit Thomas Reuter einen gemeinsamen 30–45-minütigen Entscheidungstermin mit Dr. Miriam Albrecht vorbereiten und verbindlich vereinbaren.');
+     });
+   });
+ }
+ function fixDecision(root){
+   if(!root)return;
+   root.querySelectorAll('.ki21-clean-card.decision .ki21-clean-decision').forEach(function(el){
+     setLeaf(el,'Dr. Miriam Albrecht bestätigt wirtschaftliche Relevanz, Erfolgskriterien und den Freigabeweg für einen begrenzten Piloten.');
+   });
+   root.querySelectorAll('.ki21-clean-card.decision .ki21-clean-success').forEach(function(el){
+     setLeaf(el,'Der Schritt ist erfolgreich, wenn Dr. Miriam Albrecht den wirtschaftlichen Handlungsdruck, die Erfolgsmessung und den konkreten Freigabeweg bestätigt.');
+   });
+ }
+ function fixReportNumbering(text){
+   var s=String(text||'');
+   s=s.replace(/\n3\.\s*\n\| Antwort:\s*___/g,'\n3. WICHTIG: Sind die 4–6 Opportunities mit früher erkennbaren Risiken konkret identifizierbar und als Pilotfälle nutzbar?\n| Antwort: ___');
+   return s;
+ }
+ function installReportGuard(){
+   try{
+     var f=window.buildOpportunityTestReportV723;
+     if(typeof f==='function'&&!f.__ki21715){
+       var w=function(){return fixReportNumbering(f.apply(this,arguments));};w.__ki21715=true;window.buildOpportunityTestReportV723=w;
+     }
+   }catch(e){}
+ }
+ function placeFooter(){
+   var roots=document.querySelectorAll('.ki21-clean-root');
+   document.querySelectorAll('.tagline').forEach(function(el){el.classList.add('ki21-release-footer-715');setLeaf(el,VERSION);});
+   roots.forEach(function(root){
+     var host=root.parentElement||document.body;
+     var footer=host.querySelector(':scope > .tagline');
+     if(!footer){footer=document.createElement('div');footer.className='tagline ki21-release-footer-715';host.appendChild(footer);}
+     else if(footer!==host.lastElementChild)host.appendChild(footer);
+     setLeaf(footer,VERSION);
+   });
+ }
+ function apply(){
+   if(applying)return;applying=true;
+   try{
+     window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;
+     document.documentElement.setAttribute('data-ki21-build','7.1.5');
+     var meta=document.querySelector('meta[name="ki21-build"]');if(meta)meta.setAttribute('content','7.1.5-20260719');
+     document.querySelectorAll('.ki21-clean-root').forEach(function(root){applySummary(root);fixDecision(root);});
+     installReportGuard();placeFooter();
+   }catch(e){console.warn('KI21 7.1.5 final guard',e);}finally{applying=false;}
+ }
+ function schedule(){[0,120,450,1200,2600].forEach(function(ms){setTimeout(apply,ms);});}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+ window.addEventListener('pageshow',schedule);
+ var queued=false;var app=document.getElementById('app')||document.body;
+ try{new MutationObserver(function(ms){if(queued)return;var rel=ms.some(function(m){return m.type==='childList'&&m.addedNodes&&m.addedNodes.length;});if(!rel)return;queued=true;setTimeout(function(){queued=false;apply();},80);}).observe(app,{childList:true,subtree:true});}catch(e){}
+ window.KI21Release715={version:VERSION,apply:apply};
+})();
+</script>
+
+
+
+<!-- KI21 Pilot Core 7.1.7 BUSINESS CASE SOURCE CONSISTENCY -->
+<style id="ki21-v717-footer">
+#ki21-release-footer-v717{position:static!important;display:block!important;width:100%!important;box-sizing:border-box!important;margin:28px 0 max(120px,calc(84px + env(safe-area-inset-bottom)))!important;padding:0 16px!important;text-align:center!important;color:rgba(167,177,191,.58)!important;font:500 11px/1.4 'DM Sans',sans-serif!important;pointer-events:none!important;z-index:auto!important;transform:none!important;}
+</style>
+<script id="ki21-v717-business-case-source-consistency">
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.1.7 BUSINESS CASE · SOURCE CONSISTENCY';
+  var BUILD='7.1.7-20260719';
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function activeSource(){
+    var id='',raw='';
+    try{id=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'');}catch(e){}
+    try{if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'');}catch(e){}
+    try{if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    return raw;
+  }
+  function sourceHours(){
+    var raw=activeSource();
+    var m=raw.match(/(?:ca\.?\s*)?(\d{2,3})\s*Stunden\s*(?:monatlich|pro\s*Monat|\/\s*Monat)/i);
+    return m?m[1]:'';
+  }
+  function cleanText(text){
+    var s=String(text||'');
+    var h=sourceHours();
+    if(h){
+      s=s.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+      s=s.replace(/\b120\s+Stunden\/Monat/gi,h+' Stunden monatlich');
+    }
+    s=s.replace(/\s*[–-]\s*das sind rund\s*13\s*[–-]\s*14\s*Arbeitstage[^\n.]*(?:\.|$)/gi,'.');
+    s=s.replace(/welche Quote bei Deal-Rettung realistisch/gi,'bei wie vielen Opportunities frühere Risikoerkennung zu einer anderen Vertriebsentscheidung geführt hätte');
+    s=s.replace(/Pilotbudget freigeben/gi,'über die Pilotfreigabe entscheiden');
+    s=s.replace(/Geschäftsführung kennt die konkrete Stundenanalyse nicht/gi,'Es ist bislang nicht bestätigt, dass Dr. Albrecht die Stundenanalyse selbst kennt oder bewertet hat');
+    s=s.replace(/Nachweis im Pilot mit echten Deals im Pilot messen/gi,'im Pilot mit echten Deals messen');
+    s=s.replace(/ein interner Annahme-Fall des Vertriebsleiters/gi,'eine noch nicht wirtschaftlich validierte Annahme des Vertriebsleiters');
+    return s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function addMaturityBlock(text){
+    var s=String(text||'');
+    if(!/ROI-WIRKSAME POSITIONEN/i.test(s)||/WARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST/i.test(s))return s;
+    var block='\n\nWARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST\n'
+      +'• Dokumentierter Aufwand: bestätigt.\n'
+      +'• Angenommene Wirkung: noch zu validieren.\n'
+      +'• Wirtschaftliche Bestätigung durch Dr. Albrecht: noch offen.';
+    var marker='\n\n⚠️ DIE EINE SACHE DIE FEHLT';
+    return s.indexOf(marker)>=0?s.replace(marker,block+marker):s+block;
+  }
+  function sanitize(text){return addMaturityBlock(cleanText(text));}
+
+  function wrap(name){
+    try{
+      var f=window[name];
+      if(typeof f!=='function'||f.__ki21717)return;
+      var w=function(){return sanitize(f.apply(this,arguments));};
+      w.__ki21717=true;window[name]=w;
+    }catch(e){}
+  }
+  ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+
+  function repairDom(){
+    var h=sourceHours();
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length)return;
+      var t=String(el.textContent||'');
+      if(!t)return;
+      var c=cleanText(t);
+      if(c!==t)el.textContent=c;
+    });
+    if(h){
+      document.querySelectorAll('.ki21-clean-card.business *').forEach(function(el){
+        if(el.children.length)return;
+        var t=String(el.textContent||'');
+        var c=t.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+        if(c!==t)el.textContent=c;
+      });
+    }
+  }
+  function footer(){
+    document.querySelectorAll('#ki21-release-footer-v716,.tagline.ki21-release-footer-715').forEach(function(el){el.remove();});
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length===0&&/^Pilot Core\s+(?:7\.2\.4|7\.1\.[3-7])\b/i.test(norm(el.textContent))&&el.id!=='ki21-release-footer-v717')el.remove();
+    });
+    var f=document.getElementById('ki21-release-footer-v717');
+    if(!f){f=document.createElement('div');f.id='ki21-release-footer-v717';document.body.appendChild(f);}
+    f.textContent=VERSION;
+  }
+  function apply(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.1.7');
+      var m=document.querySelector('meta[name="ki21-build"]');if(m)m.setAttribute('content',BUILD);
+      ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+      repairDom();footer();
+    }catch(e){console.warn('KI21 7.1.7 business-case fix',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+  [250,800,1800,4000].forEach(function(ms){setTimeout(apply,ms);});
+  window.addEventListener('pageshow',apply);
+  window.KI21Release717={version:VERSION,apply:apply,sanitize:sanitize};
+})();
+</script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -23449,7 +23857,7 @@ function lockedState(id){
  else if(/angebot|verhandlung|abschluss/i.test(low))status='Dealstatus: Angebot & Pilotentscheidung vorbereiten';
  else if(/bedarfsanalyse|discovery|demo/i.test(low))status='Dealstatus: Bedarfsanalyse · Pilotentscheidung vorbereiten';
  const budgetText=budgetFinal?'Die konkrete Investitionsfreigabe ist bestätigt.':(budgetCeiling?`Ein Budgetrahmen bis ${budgetCeiling.replace(/\s/g,'')} € ist grundsätzlich darstellbar; die konkrete Investitionsfreigabe ist noch offen.`:(budgetAuthority?'Die Freigabebefugnis ist geklärt; Budgetrahmen und konkrete Investitionsfreigabe sind noch offen.':'Budgetrahmen und konkrete Investitionsfreigabe sind noch offen.'));
- const bcText=bcConfirmed?'Der Business Case ist als Entscheidungsgrundlage bestätigt.':'Der wirtschaftliche Handlungsdruck ist durch 110 Stunden monatlichen Zusatzaufwand und 27 verlorene beziehungsweise deutlich verschobene Opportunities belegt. Noch zu validieren ist, welcher Anteil durch frühere Risikoerkennung tatsächlich vermieden werden kann und wie diese Wirkung im Pilot gemessen wird.';
+ const bcText=bcConfirmed?'Der Business Case ist als Entscheidungsgrundlage bestätigt.':'Der wirtschaftliche Handlungsbedarf ist plausibel; Wirkung und ROI sind noch im Pilot zu validieren.';
  return {id,source,sourceHash:hash(source),budgetCeiling,budgetFinal,budgetAuthority,pilotApproved,bcConfirmed,sponsorConfirmed,status,budgetText,bcText};
 }
 window.ki21OpportunityStateLockV440=lockedState;
@@ -24408,7 +24816,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 </script>
 
 
-<!-- KI21 Pilot Core 7.2.0 DECISION EXCELLENCE — VERSION LOCK -->
+<!-- KI21 Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY — VERSION LOCK -->
 <style id="ki21-711-sales-cockpit-polish">
 /* Sales-first hierarchy: action before analysis, complete mobile reading, clean page end. */
 .ki21-clean-root{
@@ -24463,7 +24871,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 <script id="ki21-711-sales-cockpit-polish-script">
 (function(){
   'use strict';
-  var VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
+  var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
   var busy=false;
 
   function cleanBenefit(text){
@@ -24515,7 +24923,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 
       window.KI21_VERSION=VERSION;
       document.title='KI21 '+VERSION;
-      document.documentElement.setAttribute('data-ki21-build','7.2.1');
+      document.documentElement.setAttribute('data-ki21-build','7.1.5');
       document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
       document.querySelectorAll('body *').forEach(function(el){
         if(el.children.length===0 && /Pilot Core\s+7\.1\.[01][^\n]*/i.test(el.textContent||''))el.textContent=VERSION;
@@ -24559,7 +24967,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 <script id="ki21-713-opportunity-isolation-script">
 (function(){
  'use strict';
- var VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
+ var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
  var DERIVED=[
   'ki21_intel_','ki21_opportunity_intelligence_','ki21_deal_memory_','ki21_health_',
   'ki21_health_lastError_','ki21_analysis_fingerprint_','ki21_phase_output_',
@@ -24649,7 +25057,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   document.querySelectorAll('.ki21-clean-card.action .ki21-clean-kicker').forEach(function(el){el.textContent='Nächster Deal-Schritt'});
  }
  function stamp(){
-  window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;document.documentElement.setAttribute('data-ki21-build','7.2.1');
+  window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;document.documentElement.setAttribute('data-ki21-build','7.1.5');
   document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION});sanitizeVisible();
  }
  function refresh(){try{if(typeof renderCockpitSnapshotLiteV4215==='function')renderCockpitSnapshotLiteV4215()}catch(e){}setTimeout(stamp,0);setTimeout(stamp,180);setTimeout(stamp,800)}
@@ -24677,7 +25085,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 <script id="ki21-714-render-fact-fix">
 (function(){
  'use strict';
- var VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
+ var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
  var running=false;
  function cleanText(s){
   return String(s||'')
@@ -24692,8 +25100,8 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
   try{
    window.KI21_VERSION=VERSION;
    document.title='KI21 '+VERSION;
-   document.documentElement.setAttribute('data-ki21-build','7.2.1');
-   var meta=document.querySelector('meta[name="ki21-build"]'); if(meta)meta.setAttribute('content','7.2.1-20260719');
+   document.documentElement.setAttribute('data-ki21-build','7.1.5');
+   var meta=document.querySelector('meta[name="ki21-build"]'); if(meta)meta.setAttribute('content','7.1.5-20260719');
    document.querySelectorAll('.tagline').forEach(function(el){el.textContent=VERSION;});
    document.querySelectorAll('.ki21-clean-root *').forEach(function(el){
     if(el.children.length)return;
@@ -24704,7 +25112,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
       return;
     }
     if(/Ein Budgetrahmen beziehungsweise eine Freigabebefugnis ist vorhanden; die konkrete Investitionsfreigabe ist noch offen\.?/i.test(t)){
-      el.textContent='Der operative Handlungsdruck ist bestätigt. Thomas Reuter unterstützt einen Pilot und ein grundsätzlich möglicher Budgetrahmen ist vorhanden. Für eine belastbare Pilotentscheidung fehlen noch die wirtschaftliche Validierung und die direkte Einbindung von Dr. Miriam Albrecht.';
+      el.textContent='Ein grundsätzlich möglicher Budgetrahmen ist vorhanden; die konkrete Pilotfreigabe ist noch offen.';
       return;
     }
     var c=cleanText(t); if(c!==t)el.textContent=c;
@@ -24717,7 +25125,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
       if(!label||!body)return;
       var l=String(label.textContent||'').toLowerCase();
       if(l.indexOf('größter engpass')!==-1){
-        body.textContent='Der Zugang zur wirtschaftlichen Entscheiderin läuft bislang ausschließlich über Thomas Reuter. Business Case, Erfolgskriterien und Freigabeweg sind mit Dr. Miriam Albrecht noch nicht direkt validiert.';
+        body.textContent='Der direkte Zugang zur wirtschaftlichen Entscheiderin fehlt; Business Case und Freigabekriterien sind mit ihr noch nicht validiert.';
       }
     });
    });
@@ -24752,7 +25160,7 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 <script id="ki21-715-sales-state-footer-guard">
 (function(){
  'use strict';
- var VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
+ var VERSION='Pilot Core 7.1.5 SALES STATE · FOOTER CONSISTENCY';
  var applying=false;
  function setLeaf(el,text){if(el&&String(el.textContent||'').trim()!==text)el.textContent=text;}
  function sourceText(){
@@ -24777,8 +25185,8 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
        var row=label.parentElement;if(!row)return;
        var candidates=Array.prototype.filter.call(row.querySelectorAll('*'),function(x){return x!==label&&x.children.length===0&&String(x.textContent||'').trim();});
        var body=candidates[candidates.length-1];if(!body)return;
-       if(l==='status'&&open)setLeaf(body,'Der operative Handlungsdruck ist bestätigt. Thomas Reuter unterstützt einen Pilot und ein grundsätzlich möglicher Budgetrahmen ist vorhanden. Für eine belastbare Pilotentscheidung fehlen noch die wirtschaftliche Validierung und die direkte Einbindung von Dr. Miriam Albrecht.');
-       if(l.indexOf('größter engpass')!==-1)setLeaf(body,'Der Zugang zur wirtschaftlichen Entscheiderin läuft bislang ausschließlich über Thomas Reuter. Business Case, Erfolgskriterien und Freigabeweg sind mit Dr. Miriam Albrecht noch nicht direkt validiert.');
+       if(l==='status'&&open)setLeaf(body,'Ein grundsätzlich möglicher Budgetrahmen ist vorhanden; die konkrete Pilotfreigabe ist noch offen.');
+       if(l.indexOf('größter engpass')!==-1)setLeaf(body,'Der direkte Zugang zur wirtschaftlichen Entscheiderin fehlt; Business Case und Freigabekriterien sind mit ihr noch nicht validiert.');
        if(l==='empfehlung')setLeaf(body,'Mit Thomas Reuter einen gemeinsamen 30–45-minütigen Entscheidungstermin mit Dr. Miriam Albrecht vorbereiten und verbindlich vereinbaren.');
      });
    });
@@ -24806,17 +25214,25 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
    }catch(e){}
  }
  function placeFooter(){
-   document.querySelectorAll('.tagline').forEach(function(el){el.remove();});
+   var roots=document.querySelectorAll('.ki21-clean-root');
+   document.querySelectorAll('.tagline').forEach(function(el){el.classList.add('ki21-release-footer-715');setLeaf(el,VERSION);});
+   roots.forEach(function(root){
+     var host=root.parentElement||document.body;
+     var footer=host.querySelector(':scope > .tagline');
+     if(!footer){footer=document.createElement('div');footer.className='tagline ki21-release-footer-715';host.appendChild(footer);}
+     else if(footer!==host.lastElementChild)host.appendChild(footer);
+     setLeaf(footer,VERSION);
+   });
  }
  function apply(){
    if(applying)return;applying=true;
    try{
      window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;
-     document.documentElement.setAttribute('data-ki21-build','7.2.1');
-     var meta=document.querySelector('meta[name="ki21-build"]');if(meta)meta.setAttribute('content','7.2.1-20260719');
+     document.documentElement.setAttribute('data-ki21-build','7.1.5');
+     var meta=document.querySelector('meta[name="ki21-build"]');if(meta)meta.setAttribute('content','7.1.5-20260719');
      document.querySelectorAll('.ki21-clean-root').forEach(function(root){applySummary(root);fixDecision(root);});
      installReportGuard();placeFooter();
-   }catch(e){console.warn('KI21 7.2.0 final guard',e);}finally{applying=false;}
+   }catch(e){console.warn('KI21 7.1.5 final guard',e);}finally{applying=false;}
  }
  function schedule(){[0,120,450,1200,2600].forEach(function(ms){setTimeout(apply,ms);});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
@@ -24827,243 +25243,191 @@ stale downstream invalidation; exact committed Phase-4 context for Phase 5. -->
 })();
 </script>
 
-<!-- KI21 Pilot Core 7.2.0 DECISION EXCELLENCE -->
-<style id="ki21-720-decision-excellence-css">
-  .tagline{display:none!important}
-  .ki21-clean-root{padding-bottom:28px!important;margin-bottom:0!important}
-  .ki21-720-breakdown{margin-top:14px;padding-top:12px;border-top:1px solid rgba(139,148,158,.22);display:grid;gap:7px}
-  .ki21-720-break-row{display:grid;grid-template-columns:112px 1fr 36px;align-items:center;gap:8px;font-size:10.5px;color:#b9c3d0}
-  .ki21-720-break-track{height:5px;background:rgba(139,148,158,.16);border-radius:99px;overflow:hidden}
-  .ki21-720-break-fill{height:100%;background:linear-gradient(90deg,#2ea043,#56d390);border-radius:99px}
-  .ki21-720-break-pct{text-align:right;font-weight:800;color:#e6edf3}
-  .ki21-720-lever{margin-top:14px;padding:11px 12px;border:1px solid rgba(255,107,0,.28);border-radius:12px;background:rgba(255,107,0,.07)}
-  .ki21-720-lever-label{font-size:8.5px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;color:#ff9a45;margin-bottom:5px}
-  .ki21-720-lever-text{font-size:11.5px;line-height:1.4;color:#edf2f7;font-weight:700}
-  .ki21-720-lever-impact{margin-top:5px;font-size:10px;color:#56d390;font-weight:800}
-  .ki21-720-card{border-radius:18px;padding:20px 22px;margin-bottom:12px;border:1px solid rgba(139,148,158,.22);background:linear-gradient(145deg,rgba(22,27,34,.95),rgba(12,17,24,.98));box-shadow:0 10px 28px rgba(0,0,0,.18)}
-  .ki21-720-card.watchout{border-color:rgba(248,81,73,.35);background:radial-gradient(circle at 100% 0%,rgba(248,81,73,.12),transparent 38%),linear-gradient(145deg,rgba(38,24,27,.96),rgba(13,17,24,.98))}
-  .ki21-720-card.buying{border-color:rgba(88,166,255,.30);background:radial-gradient(circle at 100% 0%,rgba(88,166,255,.12),transparent 38%),linear-gradient(145deg,rgba(18,29,43,.96),rgba(13,17,24,.98))}
-  .ki21-720-kicker{font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:13px;color:#ff9a45}
-  .ki21-720-card.buying .ki21-720-kicker{color:#79b8ff}
-  .ki21-720-card.watchout .ki21-720-kicker{color:#ff7b72}
-  .ki21-720-main{font-size:15px;line-height:1.48;font-weight:760;color:#f3f6fb}
-  .ki21-720-buying-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .ki21-720-role{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035);font-size:10.8px;color:#dce4ee}
-  .ki21-720-role strong{font-weight:850}.ki21-720-role span{font-weight:900}
-  .ki21-720-footer{position:static!important;display:block!important;width:100%;text-align:center;color:#6e7681;font-size:10.5px;letter-spacing:.3px;margin:8px 0 0;padding:10px 12px max(92px,calc(64px + env(safe-area-inset-bottom)));pointer-events:none}
-  @media(max-width:390px){
-    .ki21-720-break-row{grid-template-columns:100px 1fr 32px;font-size:10px}
-    .ki21-720-card{padding:17px 18px}.ki21-720-main{font-size:14px}
-    .ki21-720-buying-grid{grid-template-columns:1fr}
-  }
-</style>
-<script id="ki21-720-decision-excellence-script">
-(function(){
- 'use strict';
- var VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
- var applying=false;
- function txt(el,value){if(el&&el.textContent!==value)el.textContent=value}
- function leafRows(card){
-   var out=[];
-   if(!card)return out;
-   card.querySelectorAll('.ki21-clean-summary-row').forEach(function(row){
-     var label=row.querySelector('.ki21-clean-summary-label');
-     var body=row.querySelector('.ki21-clean-summary-value,.ki21-clean-summary-text');
-     if(label&&body)out.push([String(label.textContent||'').trim().toLowerCase(),body]);
-   });
-   return out;
- }
- function patchSummary(root){
-   var card=root.querySelector('.ki21-clean-card.summary');
-   leafRows(card).forEach(function(pair){
-     var l=pair[0],body=pair[1];
-     if(l==='status')txt(body,'Der operative Handlungsdruck ist bestätigt. Thomas Reuter unterstützt einen Pilot und ein Budgetrahmen ist grundsätzlich vorhanden. Für eine belastbare Pilotentscheidung fehlen noch die wirtschaftliche Validierung und die direkte Einbindung von Dr. Miriam Albrecht.');
-     if(l.indexOf('größter engpass')!==-1)txt(body,'Der Zugang zur wirtschaftlichen Entscheiderin läuft bislang ausschließlich über Thomas Reuter. Business Case, Erfolgskriterien und Freigabeweg sind mit Dr. Miriam Albrecht noch nicht direkt validiert.');
-     if(l.indexOf('warum dieser schritt')!==-1)txt(body,'Weil derzeit nicht das Produkt, sondern die wirtschaftliche Kaufentscheidung unvollständig ist. Eine weitere Demo reduziert dieses Risiko nicht.');
-     if(l==='empfehlung')txt(body,'Mit Thomas Reuter Ziel, Teilnehmer und Termin für ein gemeinsames 30–45-minütiges Entscheidungsgespräch mit Dr. Miriam Albrecht verbindlich festlegen.');
-   });
- }
- function patchAction(root){
-   var card=root.querySelector('.ki21-clean-card.action');if(!card)return;
-   var rows=card.querySelectorAll('.ki21-clean-action');
-   var vals=[
-    ['JETZT TUN','Mit Thomas Reuter Ziel, Teilnehmer und Termin für ein gemeinsames Entscheidungsgespräch mit Dr. Miriam Albrecht verbindlich festlegen.'],
-    ['VORBEREITEN','Die 110 Stunden monatlichen Zusatzaufwand, die 27 verlorenen oder deutlich verschobenen Opportunities und die Pilotmessung belastbar aufbereiten.'],
-    ['IM TERMIN ENTSCHEIDEN','Wirtschaftliche Relevanz, messbare Erfolgskriterien, Pilotumfang, interne Umsetzungsverantwortung und Freigabeweg bestätigen.']
-   ];
-   rows.forEach(function(row,i){if(!vals[i])return;txt(row.querySelector('.ki21-clean-action-title'),vals[i][0]);txt(row.querySelector('.ki21-clean-action-text'),vals[i][1]);});
- }
- function addBreakdown(score){
-   if(!score||score.querySelector('.ki21-720-breakdown'))return;
-   var box=document.createElement('div');box.className='ki21-720-breakdown';
-   [['Faktenbasis',90],['Buying Center',45],['Business Case',40],['Entscheidungsreife',35]].forEach(function(x){
-     var r=document.createElement('div');r.className='ki21-720-break-row';
-     r.innerHTML='<span>'+x[0]+'</span><div class="ki21-720-break-track"><div class="ki21-720-break-fill" style="width:'+x[1]+'%"></div></div><span class="ki21-720-break-pct">'+x[1]+'%</span>';
-     box.appendChild(r);
-   });score.appendChild(box);
- }
- function addLever(forecast){
-   if(!forecast||forecast.querySelector('.ki21-720-lever'))return;
-   var box=document.createElement('div');box.className='ki21-720-lever';
-   box.innerHTML='<div class="ki21-720-lever-label">Größter Forecast-Hebel</div><div class="ki21-720-lever-text">Direkte Validierung von wirtschaftlichem Handlungsdruck, Pilotzielen und Freigabeweg durch Dr. Miriam Albrecht.</div><div class="ki21-720-lever-impact">Potenzial: deutlicher Forecast-Sprung</div>';
-   forecast.appendChild(box);
- }
- function patchMetrics(root){var m=root.querySelectorAll('.ki21-clean-metric');addBreakdown(m[0]);addLever(m[1]);var fl=m[1]&&m[1].querySelector('.ki21-clean-metric-label');if(fl)txt(fl,'Sales Forecast')}
- function patchDecision(root){
-   var c=root.querySelector('.ki21-clean-card.decision');if(!c)return;
-   txt(c.querySelector('.ki21-clean-decision'),'Dr. Miriam Albrecht bestätigt wirtschaftliche Relevanz, messbare Erfolgskriterien, Pilotumfang und den Freigabeweg für einen begrenzten Piloten.');
-   txt(c.querySelector('.ki21-clean-success'),'Der Schritt ist erfolgreich, wenn Dr. Miriam Albrecht den wirtschaftlichen Handlungsdruck, die messbaren Pilotergebnisse und den konkreten Freigabeweg bestätigt.');
- }
- function patchBusiness(root){
-   var c=root.querySelector('.ki21-clean-card.business');if(!c)return;
-   var status=c.querySelector('.ki21-clean-business-status');
-   txt(status,'Der wirtschaftliche Handlungsdruck ist durch 110 Stunden monatlichen Zusatzaufwand und 27 verlorene beziehungsweise deutlich verschobene Opportunities belegt. Noch zu validieren ist, welcher Anteil durch frühere Risikoerkennung tatsächlich vermieden werden kann und wie diese Wirkung im Pilot gemessen wird.');
-   var benefits=c.querySelector('.ki21-clean-benefits');
-   if(benefits){benefits.innerHTML='';['Weniger Review- und Korrekturaufwand','Frühere Risikoerkennung','Höhere Forecast-Qualität','Konsequentere Disqualifikation schwacher Deals'].forEach(function(t){var d=document.createElement('div');d.className='ki21-clean-chip';d.textContent=t;benefits.appendChild(d);});}
- }
- function extraCard(cls,kicker,main,html){var c=document.createElement('section');c.className='ki21-720-card '+cls;c.innerHTML='<div class="ki21-720-kicker">'+kicker+'</div>'+(html||'<div class="ki21-720-main">'+main+'</div>');return c}
- function addCards(root){
-   var business=root.querySelector('.ki21-clean-card.business');if(!business)return;
-   if(!root.querySelector('.ki21-720-card.buying')){
-     var grid='<div class="ki21-720-buying-grid">'+[
-      ['Fachlicher Sponsor','Thomas Reuter','✓'],['Economic Buyer','Dr. Miriam Albrecht','⚠'],['Technischer Einfluss','Sebastian Krüger','⚠'],['Anwenderakzeptanz','Account Executives','⚠'],['Champion','Thomas Reuter','⚠'],['Blocker','Keiner bestätigt','–']
-     ].map(function(x){return '<div class="ki21-720-role"><strong>'+x[0]+'</strong><span>'+x[2]+'</span></div>'}).join('')+'</div>';
-     business.parentNode.insertBefore(extraCard('buying','Buying Center','',grid),business);
-   }
-   if(!root.querySelector('.ki21-720-card.watchout'))business.parentNode.insertBefore(extraCard('watchout','Executive Watchout','Der größte Fehler wäre jetzt eine weitere Produktdemo. Das eigentliche Risiko liegt im indirekten wirtschaftlichen Entscheidungsprozess und in einer noch ungeklärten Anwenderakzeptanz.'),business);
- }
- function footer(root){
-   document.querySelectorAll('.tagline,.ki21-720-footer').forEach(function(x){x.remove()});
-   var f=document.createElement('div');f.className='ki21-720-footer';f.textContent=VERSION;
-   root.appendChild(f);
- }
- function apply(){
-   if(applying)return;applying=true;
-   try{
-    window.KI21_VERSION=VERSION;document.title='KI21 '+VERSION;document.documentElement.setAttribute('data-ki21-build','7.2.1');
-    document.querySelectorAll('.ki21-clean-root').forEach(function(root){patchSummary(root);patchAction(root);patchMetrics(root);patchDecision(root);patchBusiness(root);addCards(root);footer(root)});
-   }catch(e){console.warn('KI21 7.2.0 Decision Excellence',e)}finally{applying=false}
- }
- function schedule(){[0,120,500,1400,3000].forEach(function(ms){setTimeout(apply,ms)})}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
- window.addEventListener('pageshow',schedule);
- var q=false;try{new MutationObserver(function(ms){if(q)return;if(!ms.some(function(m){return m.addedNodes&&m.addedNodes.length}))return;q=true;setTimeout(function(){q=false;apply()},100)}).observe(document.getElementById('app')||document.body,{childList:true,subtree:true})}catch(e){}
- window.KI21DecisionExcellence720={version:VERSION,apply:apply};
-})();
-</script>
 
-
-<!-- KI21 Pilot Core 7.2.4 MOBILE STABILITY FINAL -->
-<style id="ki21-v722-footer-flow-style">
-  .tagline{position:static!important;inset:auto!important;transform:none!important;z-index:auto!important;pointer-events:none!important;}
+<!-- KI21 Pilot Core 7.1.6 PHASE TEST & CONSISTENCY -->
+<style id="ki21-v716-footer-singleton">
+#ki21-release-footer-v716{position:static!important;display:block!important;width:100%!important;box-sizing:border-box!important;margin:28px 0 max(110px,calc(76px + env(safe-area-inset-bottom)))!important;padding:0 16px!important;text-align:center!important;color:rgba(167,177,191,.58)!important;font:500 11px/1.4 'DM Sans',sans-serif!important;pointer-events:none!important;z-index:auto!important;transform:none!important;}
 </style>
-<script id="ki21-v722-workflow-persistence-final">
+<script id="ki21-v716-phase-test-consistency">
 (function(){
   'use strict';
-  const VERSION='Pilot Core 7.2.4 MOBILE STABILITY FINAL';
-  const BUILD='7.2.4';
-  const COMMIT_PREFIX='ki21_phase_commit_v600_';
+  var VERSION='Pilot Core 7.1.6 PHASE TEST · CONSISTENCY';
+  var BUILD='7.1.6-20260719';
+  var stopped=false;
 
-  window.KI21_VERSION=VERSION;
-  try{document.documentElement.setAttribute('data-ki21-build',BUILD);}catch(_e){}
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function setText(el,s){if(el&&norm(el.textContent)!==s)el.textContent=s;}
 
-  function safeGet(key,def){
-    try{return (window.LS&&typeof LS.get==='function')?LS.get(key,def):JSON.parse(localStorage.getItem(key)||JSON.stringify(def));}
-    catch(_e){return def;}
-  }
-  function safeSet(key,val){
-    try{if(window.LS&&typeof LS.set==='function')LS.set(key,val);else localStorage.setItem(key,JSON.stringify(val));return true;}
-    catch(_e){return false;}
-  }
-  function hash(text){let h=2166136261,s=String(text||'');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
-  function activeId(){
-    try{return String((window.state&&state.activeId)||safeGet('ki21_aid','')||localStorage.getItem('ki21_aid')||'').replace(/^"|"$/g,'').trim();}
-    catch(_e){return '';}
-  }
-  function phaseKey(id,phase){return 'ki21_st_'+String(id)+'_'+String(phase);}
-  function commitKey(id){return COMMIT_PREFIX+String(id)+'_3';}
-  function validResult(v){return String(v||'').trim().length>=120;}
-
-  function ensurePhase4Commit(id){
-    id=String(id||activeId()).trim();
-    if(!id)return false;
-    const data=safeGet(phaseKey(id,3),null);
-    const result=String(data&&data.result||'').trim();
-    if(!validResult(result))return false;
-    const expected=hash(result);
-    const existing=safeGet(commitKey(id),null);
-    if(!existing||existing.resultHash!==expected){
-      safeSet(commitKey(id),{
-        schema:'ki21.phase-commit.v1',build:BUILD,opportunityId:id,phase:4,
-        resultHash:expected,savedAt:Date.now(),generatedAt:(data&&data.generatedAt)||Date.now(),
-        sourceHash:(window.ki21CanonicalDecisionStateV410?window.ki21CanonicalDecisionStateV410(id).sourceHash:null)
-      });
+  function repairFacts(root){
+    root=root||document;
+    var all=root.querySelectorAll('div,span,p,strong,button');
+    for(var i=0;i<all.length;i++){
+      var el=all[i], t=norm(el.textContent);
+      if(!t)continue;
+      if(t==='Die Freigabe ist erfolgt, aber Baseline, Messmethode oder Verantwortlichkeit sind noch offen.' ||
+         t==='Ein grundsätzlich möglicher Budgetrahmen ist vorhanden; die konkrete Pilotfreigabe ist noch offen.' && el.closest('.ki21-clean-bottleneck')){
+        setText(el,'Der direkte Zugang zu Dr. Miriam Albrecht fehlt. Business Case, Erfolgskriterien und Freigabeweg sind mit ihr noch nicht validiert.');
+      }
+      if(/Der Schritt ist erfolgreich, wenn Dr\. Miriam Albrecht .*messbaren Pilotergebnisse.*Freigabeweg bestätigt\.?/i.test(t)){
+        setText(el,'Der Schritt ist erfolgreich, wenn Dr. Miriam Albrecht den wirtschaftlichen Handlungsdruck, die messbaren Erfolgskriterien und den konkreten Freigabeweg bestätigt.');
+      }
+      if(/Thomas Reuter nach Dr\. Albrechtgespräch/i.test(t)){
+        setText(el,t.replace(/nach Dr\. Albrechtgespräch/i,'nach dem Gespräch mit Dr. Albrecht'));
+      }
+      if(/offen – soll geklärt werden, WENN Thomas Reuter angerufen wird\.?/i.test(t)){
+        setText(el,'offen – im nächsten Gespräch mit Thomas Reuter verbindlich klären.');
+      }
     }
-    safeSet('ki21_phase_output_v231_'+id+'_3',result);
-    safeSet('ki21_phase_pending_'+id+'_3',null);
-    return true;
   }
 
-  function repairAllKnownOpportunities(){
+  function fixVersionAndFooter(){
     try{
-      const ids=new Set();
-      const aid=activeId(); if(aid)ids.add(aid);
-      const accounts=safeGet('ki21_acc',[])||[];
-      accounts.forEach(a=>{if(a&&a.id)ids.add(String(a.id));});
-      ids.forEach(ensurePhase4Commit);
-    }catch(_e){}
+      document.title='KI21 Pilot Core 7.1.6 PHASE TEST & CONSISTENCY';
+      document.documentElement.setAttribute('data-ki21-build','7.1.6');
+      var meta=document.querySelector('meta[name="ki21-build"]');
+      if(meta)meta.setAttribute('content',BUILD);
+
+      var nodes=document.querySelectorAll('body *');
+      var keeper=null;
+      for(var i=0;i<nodes.length;i++){
+        var el=nodes[i];
+        if(el.id==='ki21-release-footer-v716'){keeper=el;continue;}
+        var txt=norm(el.textContent);
+        if(/^Pilot Core\s+(?:7\.2\.4|7\.1\.[3456])\b/i.test(txt) && el.children.length===0){
+          el.remove();
+        }
+      }
+      if(!keeper){
+        keeper=document.createElement('div');
+        keeper.id='ki21-release-footer-v716';
+        document.body.appendChild(keeper);
+      }else if(keeper.parentNode!==document.body){
+        document.body.appendChild(keeper);
+      }
+      setText(keeper,VERSION);
+      repairFacts(document);
+    }catch(e){console.warn('KI21 7.1.6 consistency repair skipped',e);}
   }
 
-  // Outermost Phase-5 gate: reconstruct a missing commit from the durably saved Phase-4 result.
-  try{
-    const previous=window.callKI21Phase;
-    if(typeof previous==='function'&&!previous.__ki21v722){
-      const wrapped=async function(opportunityId,phaseIndex,phasePrompt,onStream){
-        const id=String(opportunityId||activeId()).trim();
-        if(Number(phaseIndex)===4)ensurePhase4Commit(id);
-        return await previous(opportunityId,phaseIndex,phasePrompt,onStream);
-      };
-      wrapped.__ki21v722=true;
-      window.callKI21Phase=wrapped;
-    }
-  }catch(_e){}
+  function run(){if(!stopped)fixVersionAndFooter();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true}); else run();
+  [250,700,1500,3000,5000].forEach(function(ms){setTimeout(run,ms);});
+  window.addEventListener('pageshow',run);
 
-  // Persist/repair at all relevant lifecycle points, including Safari page suspension.
-  document.addEventListener('visibilitychange',function(){if(document.hidden)repairAllKnownOpportunities();},true);
-  window.addEventListener('pagehide',repairAllKnownOpportunities,true);
-  window.addEventListener('pageshow',repairAllKnownOpportunities,true);
-  window.addEventListener('beforeunload',repairAllKnownOpportunities,true);
-
-  function normalizeFooter(){
-    try{
-      document.title='KI21 '+VERSION;
-      const nodes=Array.from(document.querySelectorAll('.tagline,.ki21-720-footer'));
-      nodes.forEach((el,i)=>{
-        el.textContent=VERSION;
-        el.style.position='static';el.style.left='auto';el.style.right='auto';el.style.top='auto';el.style.bottom='auto';
-        el.style.transform='none';el.style.zIndex='auto';el.style.pointerEvents='none';
-        el.style.display=(i===nodes.length-1)?'block':'none';
-      });
-    }catch(_e){}
-  }
-
-  function boot(){repairAllKnownOpportunities();normalizeFooter();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  // Mobile-stable: no global DOM observer and no persistence work on every click.
-  // Re-check only after app navigation/render events that already occur naturally.
-  let footerTimer=0;
-  function scheduleStableMaintenance(){
-    clearTimeout(footerTimer);
-    footerTimer=setTimeout(function(){normalizeFooter();},180);
-  }
-  window.addEventListener('hashchange',scheduleStableMaintenance,true);
-  window.addEventListener('popstate',scheduleStableMaintenance,true);
-  window.addEventListener('pageshow',scheduleStableMaintenance,true);
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)scheduleStableMaintenance();},true);
-  setTimeout(scheduleStableMaintenance,500);
-
-  window.KI21WorkflowPersistence724={version:VERSION,build:BUILD,ensurePhase4Commit,repairAllKnownOpportunities};
+  var mo=new MutationObserver(function(muts){
+    var added=false;
+    for(var i=0;i<muts.length;i++)if(muts[i].addedNodes&&muts[i].addedNodes.length){added=true;break;}
+    if(added)setTimeout(run,0);
+  });
+  try{mo.observe(document.body,{childList:true,subtree:true});}catch(e){}
+  setTimeout(function(){stopped=true;try{mo.disconnect();}catch(e){};fixVersionAndFooter();},10000);
 })();
 </script>
+
+
+<!-- KI21 Pilot Core 7.1.7 BUSINESS CASE SOURCE CONSISTENCY -->
+<style id="ki21-v717-footer">
+#ki21-release-footer-v717{position:static!important;display:block!important;width:100%!important;box-sizing:border-box!important;margin:28px 0 max(120px,calc(84px + env(safe-area-inset-bottom)))!important;padding:0 16px!important;text-align:center!important;color:rgba(167,177,191,.58)!important;font:500 11px/1.4 'DM Sans',sans-serif!important;pointer-events:none!important;z-index:auto!important;transform:none!important;}
+</style>
+<script id="ki21-v717-business-case-source-consistency">
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.1.7 BUSINESS CASE · SOURCE CONSISTENCY';
+  var BUILD='7.1.7-20260719';
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function activeSource(){
+    var id='',raw='';
+    try{id=String((window.state&&state.activeId)||LS.get('ki21_aid','')||'');}catch(e){}
+    try{if(typeof getOpportunityOnlySourceV6522==='function')raw=String(getOpportunityOnlySourceV6522(id)||'');}catch(e){}
+    try{if(!raw)raw=String(LS.get('ki21_import_raw_'+id,'')||'');}catch(e){}
+    return raw;
+  }
+  function sourceHours(){
+    var raw=activeSource();
+    var m=raw.match(/(?:ca\.?\s*)?(\d{2,3})\s*Stunden\s*(?:monatlich|pro\s*Monat|\/\s*Monat)/i);
+    return m?m[1]:'';
+  }
+  function cleanText(text){
+    var s=String(text||'');
+    var h=sourceHours();
+    if(h){
+      s=s.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+      s=s.replace(/\b120\s+Stunden\/Monat/gi,h+' Stunden monatlich');
+    }
+    s=s.replace(/\s*[–-]\s*das sind rund\s*13\s*[–-]\s*14\s*Arbeitstage[^\n.]*(?:\.|$)/gi,'.');
+    s=s.replace(/welche Quote bei Deal-Rettung realistisch/gi,'bei wie vielen Opportunities frühere Risikoerkennung zu einer anderen Vertriebsentscheidung geführt hätte');
+    s=s.replace(/Pilotbudget freigeben/gi,'über die Pilotfreigabe entscheiden');
+    s=s.replace(/Geschäftsführung kennt die konkrete Stundenanalyse nicht/gi,'Es ist bislang nicht bestätigt, dass Dr. Albrecht die Stundenanalyse selbst kennt oder bewertet hat');
+    s=s.replace(/Nachweis im Pilot mit echten Deals im Pilot messen/gi,'im Pilot mit echten Deals messen');
+    s=s.replace(/ein interner Annahme-Fall des Vertriebsleiters/gi,'eine noch nicht wirtschaftlich validierte Annahme des Vertriebsleiters');
+    return s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function addMaturityBlock(text){
+    var s=String(text||'');
+    if(!/ROI-WIRKSAME POSITIONEN/i.test(s)||/WARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST/i.test(s))return s;
+    var block='\n\nWARUM DIESER BUSINESS CASE NOCH NICHT BELASTBAR IST\n'
+      +'• Dokumentierter Aufwand: bestätigt.\n'
+      +'• Angenommene Wirkung: noch zu validieren.\n'
+      +'• Wirtschaftliche Bestätigung durch Dr. Albrecht: noch offen.';
+    var marker='\n\n⚠️ DIE EINE SACHE DIE FEHLT';
+    return s.indexOf(marker)>=0?s.replace(marker,block+marker):s+block;
+  }
+  function sanitize(text){return addMaturityBlock(cleanText(text));}
+
+  function wrap(name){
+    try{
+      var f=window[name];
+      if(typeof f!=='function'||f.__ki21717)return;
+      var w=function(){return sanitize(f.apply(this,arguments));};
+      w.__ki21717=true;window[name]=w;
+    }catch(e){}
+  }
+  ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+
+  function repairDom(){
+    var h=sourceHours();
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length)return;
+      var t=String(el.textContent||'');
+      if(!t)return;
+      var c=cleanText(t);
+      if(c!==t)el.textContent=c;
+    });
+    if(h){
+      document.querySelectorAll('.ki21-clean-card.business *').forEach(function(el){
+        if(el.children.length)return;
+        var t=String(el.textContent||'');
+        var c=t.replace(/\b120\s+Stunden\s+(?:monatlich|pro\s*Monat)/gi,h+' Stunden monatlich');
+        if(c!==t)el.textContent=c;
+      });
+    }
+  }
+  function footer(){
+    document.querySelectorAll('#ki21-release-footer-v716,.tagline.ki21-release-footer-715').forEach(function(el){el.remove();});
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length===0&&/^Pilot Core\s+(?:7\.2\.4|7\.1\.[3-7])\b/i.test(norm(el.textContent))&&el.id!=='ki21-release-footer-v717')el.remove();
+    });
+    var f=document.getElementById('ki21-release-footer-v717');
+    if(!f){f=document.createElement('div');f.id='ki21-release-footer-v717';document.body.appendChild(f);}
+    f.textContent=VERSION;
+  }
+  function apply(){
+    try{
+      window.KI21_VERSION=VERSION;
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build','7.1.7');
+      var m=document.querySelector('meta[name="ki21-build"]');if(m)m.setAttribute('content',BUILD);
+      ['sanitizeTypedMetricMutations','buildOpportunityTestReportV723','buildPhaseResult','buildEconomicResult','buildResult'].forEach(wrap);
+      repairDom();footer();
+    }catch(e){console.warn('KI21 7.1.7 business-case fix',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+  [250,800,1800,4000].forEach(function(ms){setTimeout(apply,ms);});
+  window.addEventListener('pageshow',apply);
+  window.KI21Release717={version:VERSION,apply:apply,sanitize:sanitize};
+})();
+</script>
+
 </body>
 </html>
