@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="dark" name="color-scheme"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
-<title>KI21 Pilot Core 7.3.3.1 FACT LOCK · BOOT SAFE</title>
+<title>KI21 Pilot Core 7.3.3.2 STATE CONSISTENCY · BOOT SAFE</title>
 <!-- v4.260 Cockpit Core Only: vier zentrale Cockpit-Kacheln, ohne redundante Analyse- und Best-Step-Boxen. -->
 <!-- v4.262 Executive Briefing: vier Kernkacheln mit verdichteten Aussagen und aktiven nächsten Schritten. -->
 <!-- v4.233 UI Cleanup Candidate: basiert auf v4.232; nur UI-Aufräumen Score-Hebel und redundante Unter-Navigation. -->
@@ -24876,5 +24876,125 @@ html[data-ki21-unified-ready="1"] .ki21-clean-root{visibility:visible!important;
   window.KI21FactLockROI733={version:VERSION,build:BUILD,sanitizeText:sanitizeText,guardPrompt:guardPrompt};
 })();
 </script>
+
+
+<style id="ki21-v7332-final-state-style">
+.tagline,[class*="ki21-version"],[id*="ki21-version"],.ki21-build-footer,[id^="ki21-release-footer-"],#ki21-unified-footer-730{display:none!important}
+#ki21-release-footer-7332{display:block!important;position:relative!important;width:100%!important;box-sizing:border-box!important;margin:26px 0 0!important;padding:18px 16px max(150px,calc(120px + env(safe-area-inset-bottom)))!important;color:rgba(167,177,191,.56)!important;font:500 11px/1.35 'DM Sans',sans-serif!important;letter-spacing:.15px!important;text-align:left!important;pointer-events:none!important;z-index:1!important}
+</style>
+<script id="ki21-v7332-final-state-consistency">
+(function(){
+  'use strict';
+  var VERSION='Pilot Core 7.3.3.2 STATE CONSISTENCY · BOOT SAFE';
+  var BUILD='7.3.3.2-state-consistency-boot-safe';
+  var busy=false, timer=0, observer=null;
+
+  function activeId(){
+    try{if(window.state&&state.activeId)return String(state.activeId)}catch(e){}
+    try{var v=localStorage.getItem('ki21_aid')||localStorage.getItem('ki21_active_account')||'';try{v=JSON.parse(v)}catch(_e){}return String(v||'')}catch(e){return ''}
+  }
+  function primary(){
+    var id=activeId(),v='';
+    try{if(id)v=localStorage.getItem('ki21_import_raw_'+id)||''}catch(e){}
+    try{v=JSON.parse(v)}catch(e){}
+    return String(v||'').replace(/\r/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function pick(text,re,fallback){var m=String(text||'').match(re);return m&&m[1]?m[1].trim():fallback}
+  function stateFromPrimary(){
+    var s=primary();
+    var open=/(?:pilot|pilotfreigabe|investitionsfreigabe|investitionsentscheidung|konkrete\s+freigabe|freigabe)[^.!?]{0,240}(?:offen|steht\s+aus|ausstehend|noch\s+nicht|nicht\s+freigegeben|nicht\s+erteilt|nicht\s+bestätigt)/i.test(s)
+      ||/(?:offen|ausstehend|noch\s+nicht)[^.!?]{0,120}(?:pilotfreigabe|investitionsfreigabe|investitionsentscheidung|freigabe)/i.test(s);
+    var approved=!open&&/(?:pilot|projekt)[^.!?]{0,130}(?:ausdrücklich\s+beauftragt|final\s+freigegeben|verbindlich\s+genehmigt|ist\s+freigegeben|auftrag\s+erteilt)/i.test(s);
+    var buyer=pick(s,/(Dr\.\s*Miriam\s*Albrecht)/i,'Dr. Miriam Albrecht');
+    var sponsor=pick(s,/(Thomas\s+Reuter)/i,'Thomas Reuter');
+    if(approved){
+      return {approved:true,buyer:buyer,sponsor:sponsor,
+        deal:'Beauftragt · Projektstart vorbereiten',
+        status:'Die Pilotentscheidung ist getroffen. Jetzt müssen Start, Messung und Verantwortlichkeiten verbindlich abgesichert werden.',
+        blocker:'Starttermin, Messmethode oder interne Verantwortlichkeit sind noch nicht verbindlich bestätigt.',
+        reason:'Der Kaufentscheid ist gefallen. Fortschritt entsteht jetzt durch einen sauberen Projektstart, nicht durch weitere Verkaufsqualifizierung.',
+        recommendation:'Starttermin, Messkriterien, Datenquelle, Verantwortliche und Auswertungstermin schriftlich bestätigen lassen.',
+        decision:'Starttermin, Messmodell, Verantwortlichkeiten und Auswertungstermin verbindlich bestätigen.',
+        success:'Der Schritt ist erfolgreich, wenn Start, Datenbasis, Messverantwortung und Auswertungstermin vereinbart sind.',
+        up:'Erhöht sich deutlich, wenn Starttermin, Messmodell und Verantwortlichkeiten verbindlich bestätigt sind.',
+        down:'Sinkt deutlich, wenn Start, Datenzugang oder Messverantwortung weiter offen bleiben.',
+        business:'Der Business Case ist als Entscheidungsgrundlage bestätigt; die konkrete Wirkung wird im Pilot gemessen.'};
+    }
+    return {approved:false,buyer:buyer,sponsor:sponsor,
+      deal:'Pilotentscheidung vorbereiten',
+      status:'Ein Budgetrahmen beziehungsweise eine Freigabebefugnis ist vorhanden; die konkrete Investitionsfreigabe ist noch offen.',
+      blocker:'Die wirtschaftliche Entscheiderin hat Schmerz, Wirkungsannahme und Erfolgskriterien noch nicht selbst validiert.',
+      reason:'Der aktuelle Engpass ist keine Produktbewertung, sondern eine noch unvollständige Kaufentscheidung. Eine weitere Demo reduziert dieses Risiko daher nicht.',
+      recommendation:'Mit '+sponsor+' einen gemeinsamen Entscheidungstermin mit '+buyer+' vorbereiten und verbindlich vereinbaren.',
+      decision:'Im nächsten Kundentermin wirtschaftliche Relevanz, Erfolgskriterien, Sponsorverantwortung und Freigabeweg bestätigen.',
+      success:'Der Schritt ist erfolgreich, wenn '+buyer+' den Handlungsdruck, die Erfolgsmessung und den konkreten Freigabeweg bestätigt.',
+      up:'Erhöht sich deutlich, wenn '+buyer+' wirtschaftliche Relevanz, Erfolgskriterien und Freigabeweg bestätigt.',
+      down:'Sinkt deutlich, wenn kein direkter Zugang zur wirtschaftlichen Entscheiderin entsteht oder der Nutzen nicht validiert wird.',
+      business:'Ein operativer Handlungsbedarf ist dokumentiert. Der Business Case ist noch nicht als belastbare Entscheidungsgrundlage bestätigt.'};
+  }
+  function setText(root,sel,text){var e=root&&root.querySelector(sel);if(e&&e.textContent!==text)e.textContent=text}
+  function apply(){
+    if(busy)return;busy=true;
+    try{
+      var st=stateFromPrimary();
+      document.title='KI21 '+VERSION;
+      document.documentElement.setAttribute('data-ki21-build',BUILD);
+      var meta=document.querySelector('meta[name="ki21-build"]');if(meta)meta.setAttribute('content',BUILD);
+      document.querySelectorAll('#ki21-dealstatus,.cockpit-dealstatus,[data-ki21="dealstatus"]').forEach(function(e){e.textContent='Dealstatus: '+st.deal});
+      var root=document.querySelector('.ki21-clean-root');
+      if(root){
+        var summary=root.querySelector('.ki21-clean-card.summary');
+        var rows=summary?summary.querySelectorAll('.ki21-clean-summary-row'):[];
+        if(rows[0])setText(rows[0],'.ki21-clean-text',st.status);
+        if(rows[1])setText(rows[1],'.ki21-clean-text',st.blocker);
+        setText(summary,'.ki21-clean-reason-text',st.reason);
+        if(rows[2])setText(rows[2],'.ki21-clean-text',st.recommendation);
+        var forecast=root.querySelector('.ki21-clean-metric.forecast');
+        if(forecast){
+          setText(forecast,'.ki21-clean-metric-label','EXECUTIVE FORECAST');
+          var lines=forecast.querySelectorAll('.ki21-clean-forecast-line');
+          if(lines[0])lines[0].textContent='↑ '+st.up;
+          if(lines[1])lines[1].textContent='↓ '+st.down;
+        }
+        var decision=root.querySelector('.ki21-clean-card.decision');
+        setText(decision,'.ki21-clean-kicker','NÄCHSTE KUNDENENTSCHEIDUNG');
+        setText(decision,'.ki21-clean-decision',st.decision);
+        setText(decision,'.ki21-clean-success',st.success);
+        var business=root.querySelector('.ki21-clean-card.business');
+        setText(business,'.ki21-clean-business-status',st.business);
+      }
+      document.querySelectorAll('[data-ki21-release-footer],.ki21-release-footer-v732,.ki21-release-footer-v733,#ki21-unified-footer-730').forEach(function(e){e.remove()});
+      var footer=document.getElementById('ki21-release-footer-7332');
+      if(!footer){footer=document.createElement('div');footer.id='ki21-release-footer-7332';document.body.appendChild(footer)}
+      footer.textContent=VERSION;
+      window.KI21OpportunityState=Object.freeze(st);
+    }catch(e){console.error('KI21 7.3.3.2 state consistency',e)}finally{busy=false}
+  }
+  function schedule(){clearTimeout(timer);timer=setTimeout(apply,50)}
+
+  var oldReport=window.buildOpportunityTestReportV723;
+  if(typeof oldReport==='function'&&!oldReport.__ki217332){
+    var wrapped=function(){
+      var r=String(oldReport.apply(this,arguments)||'');
+      r=r.replace(/Vermeidbar Anteil/gi,'Vermeidbarer Anteil')
+         .replace(/frühere Risikoerkennung möglich sein können/gi,'Risiken möglicherweise früher hätten erkannt werden können')
+         .replace(/\s*\(ca\.\s*1\.320\s*Stunden\s*jährlich\)/gi,'')
+         .replace(/mit KI21 GmbH klären/gi,'konkreten Angebotspreis ergänzen')
+         .replace(/welcher Anteil der 110 Stunden monatlich wird durch bessere Opportunity-Qualifizierung tatsächlich vermieden, und zu welchem €-Wert pro Stunde rechnet die Geschäftsführung\?/gi,'welche Wirkungsquote im Pilot gemessen werden soll und mit welchem internen Kostenwert die Geschäftsführung die Zeitersparnis bewertet?')
+         .replace(/Dr\.\s*Albrecht muss konkretisieren, welche Quote der 110 Stunden als vermeidbar gilt, bevor ein belastbarer Business Case besteht\./gi,'Mit Dr. Albrecht muss festgelegt werden, welche Wirkungsquote im Pilot gemessen wird. Erst die gemessene Wirkung ermöglicht einen belastbaren Business Case.')
+         .replace(/Deal ist entscheidungsnah/gi,'Die Opportunity hat eine belastbare fachliche Grundlage, ist aber noch nicht entscheidungsreif');
+      return r;
+    };
+    wrapped.__ki217332=true;window.buildOpportunityTestReportV723=wrapped;
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+  observer=new MutationObserver(schedule);observer.observe(document.body,{childList:true,subtree:true});
+  window.addEventListener('pageshow',apply);
+  setTimeout(apply,250);setTimeout(apply,900);
+  window.KI21FinalStateGuard7332={version:VERSION,apply:apply,state:stateFromPrimary};
+})();
+</script>
+
 </body>
 </html>
