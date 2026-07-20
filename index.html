@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.4 · Decision Intelligence</title>
+<title>KI21 Core 8.1.5 · Stakeholder Parsing Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.4 · Decision Intelligence';
+const VERSION='KI21 Core 8.1.5 · Stakeholder Parsing Fix';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -928,5 +928,108 @@ buildReport=function(){
 };
 </script>
 
+
+<script>
+// ── 8.1.5 STAKEHOLDER PARSING FIX ─────────────────────────
+function stakeholderRecords815(raw){
+  const text=String(raw||'').replace(/\r/g,'');
+  const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  let inStakeholders=false;
+  const records=[];
+  const stop=/^(schmerz|budget|pilot|ausgangssituation|qualifizierungsstand|erwartete einwände|aktuell sinnvoller)/i;
+  for(const line of lines){
+    if(/^stakeholder\s*$/i.test(line)){inStakeholders=true;continue;}
+    if(inStakeholders && stop.test(line)) break;
+    if(!inStakeholders) continue;
+    const parts=line.split(/\s+[–—-]\s+/).map(x=>x.trim()).filter(Boolean);
+    if(parts.length<2) continue;
+    const name=parts[0];
+    if(!/^(?:dr\.|prof\.|dipl\.-?\w+\.?\s+)?[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+)+$/u.test(name)) continue;
+    const functionTitle=parts[1]||'';
+    const role=parts.slice(2).join(' – ');
+    records.push({name,functionTitle,role,raw:line});
+  }
+  return records;
+}
+function cleanPersonName815(value){
+  let v=String(value||'').replace(/\r/g,' ').replace(/\n+/g,' ').trim();
+  v=v.split(/\s+[–—-]\s+/)[0].trim();
+  v=v.replace(/\s+Funktion\s*:.*$/i,'').trim();
+  const m=v.match(/(?:Dr\.|Prof\.)?\s*[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+)+/u);
+  return m?m[0].trim():'';
+}
+function parseImport815(raw){
+  const text=normalize(raw), low=text.toLowerCase();
+  const company=matchValue(text,[/firmenname\s*:\s*([^\n]+)/i,/unternehmen\s*:\s*([^\n]+)/i]);
+  const name=matchValue(text,[/opportunity(?:-name)?\s*:\s*([^\n]+)/i,/projekt(?:name)?\s*:\s*([^\n]+)/i])||'Neue Opportunity';
+  const phase=matchValue(text,[/phase\s*:\s*([^\n]+)/i,/opportunity-status\s*:\s*([^\n]+)/i])||'Qualifizierung';
+  const hours=(text.match(/(\d{1,4})\s*stunden[^\n.]{0,60}(?:pro|je)\s*monat/i)||[])[1]||'';
+  const lost=(text.match(/(\d{1,4})\s+(?:größere\s+)?opportunit(?:y|ies)[^\n.]{0,80}(?:verloren|verschoben)/i)||[])[1]||'';
+  const possible=(text.match(/(?:bei\s*)?(\d+\s*(?:-|–|bis)\s*\d+)\s+(?:davon|opportunit)/i)||[])[1]||'';
+  const budget=(text.match(/(?:budgetrahmen|budget)[^\n.]{0,40}(?:bis|von)?\s*([\d.]+)\s*(?:€|euro)/i)||[])[1]||'';
+  const approvalOpen=/(konkrete\s+)?(?:investitions|pilot)?freigabe[^.!?]{0,100}(offen|noch nicht|steht aus|nicht erteilt)/i.test(text)||/(pilot|investition)[^.!?]{0,100}(noch nicht freigegeben|nicht freigegeben)/i.test(text);
+  const approvalConfirmed=!approvalOpen&&/(investitions|pilot)?freigabe[^.!?]{0,80}(erteilt|bestätigt|erfolgt)|(?:pilot|auftrag)[^.!?]{0,80}(beauftragt|freigegeben)/i.test(text);
+  const stakeholders=stakeholderRecords815(raw);
+  const buyerRecord=stakeholders.find(r=>/wirtschaftliche\s+entscheider|geschäftsführ/i.test(`${r.functionTitle} ${r.role}`))||null;
+  const sponsorRecord=stakeholders.find(r=>/fachlicher\s+sponsor|\bsponsor\b/i.test(r.role))||null;
+  const economicBuyerName=buyerRecord?buyerRecord.name:'';
+  const economicBuyerFunction=buyerRecord?buyerRecord.functionTitle:'';
+  const economicBuyerRole=buyerRecord?buyerRecord.role:'';
+  const economicBuyerOpen=!!buyerRecord && /(noch nicht eingebunden|nicht eingebunden|noch nicht beteiligt)/i.test(buyerRecord.role) || /(geschäftsführ|wirtschaftliche\s+entscheider)[^.!?]{0,150}(kennt .* noch nicht|nicht beteiligt|noch nicht gehört)/i.test(text);
+  const sponsor=!!sponsorRecord || /(sponsor|fachlicher\s+sponsor)/i.test(text);
+  const successOpen=/(erfolgskriterien|messgrößen)[^.!?]{0,140}(noch nicht|nicht .* bestätigt|offen|intern diskutiert)/i.test(text);
+  const priceOpen=/(angebotspreis|konkrete kosten|pilotpreis)[^.!?]{0,100}(offen|nicht hinterlegt|noch nicht)/i.test(text);
+  const ev=[];
+  if(company)ev.push(evidence('company',company));
+  if(hours)ev.push(evidence('monthly_hours',Number(hours)));
+  if(lost)ev.push(evidence('lost_opportunities',Number(lost)));
+  if(possible)ev.push(evidence('possible_early_detection',possible,'hypothesis'));
+  if(budget)ev.push(evidence('budget_ceiling',Number(budget.replace(/\./g,''))));
+  if(buyerRecord)ev.push(evidence('economic_buyer_name',buyerRecord.name,'confirmed'));
+  ev.push(evidence('approval',approvalConfirmed?'confirmed':approvalOpen?'open':'unknown',approvalConfirmed?'confirmed':'open'));
+  ev.push(evidence('economic_buyer',economicBuyerOpen?'not_involved':economicBuyerName?'identified':'unknown',economicBuyerOpen?'open':economicBuyerName?'confirmed':'open'));
+  ev.push(evidence('sponsor',sponsor?'present':'unknown',sponsor?'confirmed':'open'));
+  ev.push(evidence('success_criteria',successOpen?'open':'unknown','open'));
+  if(priceOpen)ev.push(evidence('price','open','open'));
+  return {company:company||'Unbekanntes Unternehmen',name,phase,hours:Number(hours||0),lost:Number(lost||0),possible,budget:Number((budget||'0').replace(/\./g,'')),approvalOpen,approvalConfirmed,economicBuyerOpen,economicBuyerName,economicBuyerFunction,economicBuyerRole,stakeholders,sponsor,successOpen,priceOpen,evidence:ev};
+}
+parseImport=parseImport815;
+
+// Existing locally stored opportunities are repaired from their original CRM text.
+try{
+  Object.values(state.opportunities||{}).forEach(o=>{
+    if(!o||!o.raw)return;
+    const repaired=parseImport815(o.raw);
+    const old=o.parsed||{};
+    // Preserve later operational fields not produced by the CRM parser.
+    o.parsed={...old,...repaired,evidence:repaired.evidence};
+    o.evidence=repaired.evidence;
+    o.updatedAt=now();
+  });
+  save();
+}catch(e){console.warn('8.1.5 stakeholder migration skipped',e)}
+
+// Decision text always uses a clean person name, never a function or source line.
+const _decisionInsights815=decisionInsights814;
+decisionInsights814=function(opp,ds){
+  const p=opp.parsed||{};
+  const clean=cleanPersonName815(p.economicBuyerName);
+  if(clean && clean!==p.economicBuyerName) p.economicBuyerName=clean;
+  const result=_decisionInsights815(opp,ds);
+  result.buyerName=clean||'die wirtschaftliche Entscheiderin';
+  const bn=result.buyerName;
+  if(ds.buyer==='not_involved'){
+    result.assessment=`Der operative Schmerz ist belegt, der wirtschaftliche Nutzen jedoch noch nicht. Die Opportunity besitzt damit einen realen Handlungsanlass, aber noch keinen belastbaren Investitionsgrund. Der Deal kann erst vorankommen, wenn ${bn} den Aufwand persönlich bestätigt und festlegt, welche messbare Verbesserung eine Pilotfreigabe rechtfertigt.`;
+    result.decision=`Soll ${bn} die wirtschaftliche Relevanz des KI21-Piloten prüfen – und anhand welcher messbaren Kriterien soll anschließend über die Freigabe entschieden werden?`;
+    result.blocker=`Der Deal wird derzeit fachlich vom Vertrieb getragen, aber wirtschaftlich noch von niemandem. Solange ${bn} Problem, Wirkung und Entscheidungsmaßstab nicht bestätigt, bleibt der vorhandene Budgetrahmen theoretisch.`;
+    result.actions[0]=`${bn} in einen gemeinsamen Entscheidungstermin mit Sponsor und Sales Operations holen.`;
+    result.risks=result.risks.map(x=>x.replace(/^.*? hat Problem, Nutzen und Freigabemaßstab/,`${bn} hat Problem, Nutzen und Freigabemaßstab`));
+    result.five=result.five.map(x=>/kennt bzw\. bestätigt/.test(x)?`${bn} kennt bzw. bestätigt die wirtschaftliche Ausgangslage noch nicht persönlich.`:x);
+  }
+  return result;
+};
+
+try{render()}catch(e){console.warn('8.1.5 rerender skipped',e)}
+</script>
 </body>
 </html>
