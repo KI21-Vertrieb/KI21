@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.6 · Stakeholder State Quality Fix</title>
+<title>KI21 Core 8.1.7 · Stakeholder Core & Diagnostic Report</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.6 · Stakeholder State Quality Fix';
+const VERSION='KI21 Core 8.1.7 · Stakeholder Core & Diagnostic Report';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1116,6 +1116,123 @@ decisionInsights814=function(opp,ds){
 };
 
 try{save();render()}catch(e){console.warn('8.1.6 rerender skipped',e)}
+</script>
+
+<script>
+// ── 8.1.7 STAKEHOLDER CORE + COMPLETE DIAGNOSTIC REPORT ──────────
+function cap817(text){const s=String(text||'');return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
+function sourceCorpus817(opp){
+  const parts=[];
+  if(opp&&opp.raw)parts.push(opp.raw);
+  if(opp&&Array.isArray(opp.structuredImport))parts.push(opp.structuredImport.map(x=>x&&x.line||'').filter(Boolean).join('\n'));
+  if(opp&&Array.isArray(opp.additions))parts.push(opp.additions.map(x=>typeof x==='string'?x:(x&&x.text)||'').filter(Boolean).join('\n'));
+  return parts.join('\n').replace(/\r/g,'');
+}
+function personAtLineStart817(line){
+  const left=String(line||'').split(/\s+[–—-]\s+/)[0].trim();
+  const m=left.match(/^(?:(?:Dr\.|Prof\.)\s+)?[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+)+$/u);
+  return m?m[0].trim():'';
+}
+function stakeholderCore817(opp){
+  const p=opp.parsed||(opp.parsed={});
+  const corpus=sourceCorpus817(opp);
+  const lines=corpus.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  let records=[];
+  try{records=stakeholderRecords815(corpus)||[]}catch(e){}
+  // Recover stakeholder lines even if section headings were lost by canonical import.
+  for(const line of lines){
+    const name=personAtLineStart817(line);
+    if(!name)continue;
+    const parts=line.split(/\s+[–—-]\s+/).map(x=>x.trim()).filter(Boolean);
+    if(parts.length<2)continue;
+    if(!records.some(r=>r.name===name))records.push({name,functionTitle:parts[1]||'',role:parts.slice(2).join(' – '),raw:line});
+  }
+  // Prefer explicit economic-decision role, then finance/operations managing director.
+  let buyer=records.find(r=>/wirtschaftliche\s+entscheider(?:in)?|economic buyer/i.test(`${r.functionTitle} ${r.role} ${r.raw||''}`));
+  if(!buyer)buyer=records.find(r=>/geschäftsführ(?:erin)?[^\n]*(?:finanzen|finance|operations)|(?:finanzen|finance|operations)[^\n]*geschäftsführ/i.test(`${r.functionTitle} ${r.role} ${r.raw||''}`));
+  // Last-resort proximity extraction from a line containing the role.
+  if(!buyer){
+    const roleLine=lines.find(l=>/wirtschaftliche\s+entscheider(?:in)?/i.test(l));
+    if(roleLine){
+      const nm=personAtLineStart817(roleLine)||cleanPersonName815(roleLine);
+      if(nm)buyer={name:nm,functionTitle:'',role:roleLine,raw:roleLine};
+    }
+  }
+  if(buyer){
+    const nm=cleanPersonName815(buyer.name)||personAtLineStart817(buyer.raw);
+    if(nm)p.economicBuyerName=nm;
+    p.economicBuyerFunction=buyer.functionTitle||p.economicBuyerFunction||'';
+    p.economicBuyerRole=buyer.role||p.economicBuyerRole||'';
+  }
+  p.stakeholders=records;
+  const buyerText=buyer?`${buyer.role||''} ${buyer.raw||''}`:corpus;
+  const open=/noch nicht eingebunden|nicht eingebunden|noch nicht beteiligt|noch nicht persönlich eingebunden|kennt[^.!?\n]{0,100}noch nicht/i.test(buyerText)
+    || /wirtschaftliche\s+entscheider(?:in)?[^.!?\n]{0,180}(noch nicht eingebunden|nicht eingebunden|noch nicht beteiligt)/i.test(corpus);
+  if(open)p.economicBuyerOpen=true;
+  return {records,buyer,name:cleanPersonName815(p.economicBuyerName)};
+}
+
+Object.values(state.opportunities||{}).forEach(o=>{if(o)stakeholderCore817(o)});
+
+const _derive817=derive;
+derive=function(opp){
+  const core=stakeholderCore817(opp);
+  const d=_derive817(opp),p=opp.parsed||{};
+  if(p.economicBuyerOpen)d.buyer='not_involved';
+  else if(core.name)d.buyer='identified';
+  else d.buyer='unknown';
+  if(d.approval==='open' && d.buyer!=='identified')d.dealStatus='Qualifizierung · wirtschaftlichen Entscheidungsweg klären';
+  return d;
+};
+
+const _decisionInsights817=decisionInsights814;
+decisionInsights814=function(opp,ds){
+  const core=stakeholderCore817(opp),p=opp.parsed||{};
+  const r=_decisionInsights817(opp,ds);
+  const bn=core.name||'die wirtschaftliche Entscheiderin';
+  const Bn=cap817(bn);
+  r.buyerName=bn;
+  if(ds.buyer==='not_involved'||p.economicBuyerOpen){
+    r.assessment=`Der operative Schmerz ist belegt, der wirtschaftliche Nutzen jedoch noch nicht. Die Opportunity besitzt damit einen realen Handlungsanlass, aber noch keinen belastbaren Investitionsgrund. Der Deal kann erst vorankommen, wenn ${bn} den Aufwand persönlich bestätigt und festlegt, welche messbare Verbesserung eine Pilotfreigabe rechtfertigt.`;
+    r.decision=`Soll ${bn} die wirtschaftliche Relevanz des KI21-Piloten prüfen – und anhand welcher messbaren Kriterien soll anschließend über die Freigabe entschieden werden?`;
+    r.blocker=`Der Deal wird derzeit fachlich vom Vertrieb getragen, aber wirtschaftlich noch von niemandem. Solange ${bn} Problem, Wirkung und Entscheidungsmaßstab nicht bestätigt, bleibt der vorhandene Budgetrahmen theoretisch.`;
+    r.actions[0]=`${Bn} in einen gemeinsamen Entscheidungstermin mit Sponsor und Sales Operations holen.`;
+    const buyerRisk=`${Bn} hat Problem, Nutzen und Freigabemaßstab noch nicht persönlich bestätigt.`;
+    r.risks=[buyerRisk,...(r.risks||[]).filter(x=>!/Problem, Nutzen und Freigabemaßstab|wirtschaftliche Entscheiderin.*persönlich|Dr\. Miriam Albrecht.*persönlich/i.test(x))];
+    const buyerFact=`${Bn} kennt beziehungsweise bestätigt die wirtschaftliche Ausgangslage noch nicht persönlich.`;
+    r.five=uniqueFive816([...(r.five||[]).filter(x=>!/kennt (?:bzw\.|beziehungsweise) bestätigt|wirtschaftliche Entscheiderin.*eingebunden|Dr\. Miriam Albrecht.*eingebunden/i.test(x)),buyerFact],opp);
+  }
+  return r;
+};
+
+function lines817(title,arr,empty='— keine Angaben —'){
+  const a=(arr||[]).filter(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
+  return `${title}\n${a.length?a.map(x=>'• '+(typeof x==='string'?x:JSON.stringify(x))).join('\n'):'• '+empty}`;
+}
+function safeJson817(v){try{return JSON.stringify(v,null,2)}catch(e){return String(v)}}
+function completeReport817(){
+  const m=model();if(!m)return'';
+  const {opp,ds,out}=m,p=opp.parsed||{};
+  const core=stakeholderCore817(opp);
+  const areas=['qualification','need','demo','objections','value','offer','close'];
+  const areaNames={qualification:'QUALIFIZIERUNG',need:'BEDARFSANALYSE',demo:'DEMO',objections:'EINWANDBEHANDLUNG',value:'WIRTSCHAFTLICHER NUTZEN & ROI',offer:'ANGEBOT',close:'ABSCHLUSS'};
+  const areaBlocks=[];
+  for(const key of areas){
+    let a=null;
+    try{a=processArea811(m,key)}catch(e){try{a=areaContent811(m,key)}catch(_){}}
+    if(!a)continue;
+    areaBlocks.push(`\n${areaNames[key]}\nEinschätzung: ${a.assessment||'—'}\n${lines817('Bestätigte Fakten:',a.confirmed)}\n${lines817('Offene Punkte:',a.open)}\n${lines817('Risiken:',a.risks)}\nStrategie: ${a.strategy||'—'}\nZentrale Entscheidung: ${a.decision||'—'}\nNächster Schritt: ${a.next||'—'}`);
+  }
+  const qual=opp.qualificationAnswers||opp.qualAnswers||p.qualificationAnswers||{};
+  const spin=opp.spinAnswers||p.spinAnswers||{};
+  const offers=opp.offerParameters||p.offerParameters||{};
+  const adds=(opp.additions||[]).map(x=>typeof x==='string'?x:(x&&x.text)||safeJson817(x));
+  const structured=(opp.structuredImport||[]).map(x=>`${x.kind||'?'} | ${x.category||'?'} | ${x.line||''}`);
+  const evidence=(p.evidence||opp.evidence||[]).map(x=>`${x.type||x.key||'?'} | ${x.status||x.kind||'?'} | ${safeJson817(x.value)}`);
+  return `KI21 VOLLSTÄNDIGER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${p.company} · ${p.name}\n\n=== SALES DECISION BRIEF ===\n\nEINSCHÄTZUNG\n${out.assessment}\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n${out.facts.slice(0,5).map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${out.decision}\n\nGRÖSSTER ENGPASS\n• ${out.blocker}\n\nBUSINESS CASE UND NUTZEN\n• ${out.businessCase}\n• ROI ist erst belastbar, wenn Wirkungsquote, Zeitwert, Pilotpreis und Messzeitraum bestätigt sind.\n\nOFFENE PUNKTE\n${out.risks.map(x=>'• '+x).join('\n')}\n\nNÄCHSTER SCHRITT\n${out.actions.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n=== STATE CHECK ===\n• Freigabe: ${ds.approval}\n• Wirtschaftlicher Entscheider: ${ds.buyer}\n• Erkannter Name: ${core.name||'NICHT ERKANNT'}\n• Funktion: ${p.economicBuyerFunction||'—'}\n• Rolle: ${p.economicBuyerRole||'—'}\n• Business Case: ${ds.businessCase}\n• Dealstatus: ${ds.dealStatus}\n• Opportunity Score: ${ds.score}%\n• Entscheidungsreife: ${ds.readiness}%\n• Forecast: ${ds.forecast}%\n\n=== IMPORT- UND EVIDENZDIAGNOSE ===\n${lines817('Erkannte Stakeholder:',core.records.map(r=>`${r.name} | ${r.functionTitle||'—'} | ${r.role||'—'}`))}\n\n${lines817('Strukturierte Importaussagen:',structured)}\n\n${lines817('Evidence State:',evidence)}\n\nPARSED STATE\n${safeJson817({company:p.company,name:p.name,phase:p.phase,hours:p.hours,lost:p.lost,possible:p.possible,budget:p.budget,approvalOpen:p.approvalOpen,approvalConfirmed:p.approvalConfirmed,economicBuyerName:p.economicBuyerName,economicBuyerFunction:p.economicBuyerFunction,economicBuyerRole:p.economicBuyerRole,economicBuyerOpen:p.economicBuyerOpen,sponsor:p.sponsor,successOpen:p.successOpen,priceOpen:p.priceOpen})}\n\n=== EINGABEN ===\nQUALIFIZIERUNGSANTWORTEN\n${safeJson817(qual)}\n\nSPIN-ANTWORTEN\n${safeJson817(spin)}\n\nANGEBOTSPARAMETER\n${safeJson817(offers)}\n\n${lines817('ERGÄNZUNGEN',adds)}\n\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n${areaBlocks.length?areaBlocks.join('\n'):'Keine Bereichsanalysen verfügbar.'}\n\n=== ROHDATEN DES CRM-IMPORTS ===\n${opp.raw||'—'}\n\n=== TECHNISCHE DIAGNOSE ===\n• Opportunity-ID: ${opp.id||state.activeId||'—'}\n• Aktualisiert: ${opp.updatedAt||'—'}\n• Anzahl Stakeholder: ${core.records.length}\n• Anzahl strukturierter Importaussagen: ${(opp.structuredImport||[]).length}\n• Anzahl Evidence-Einträge: ${(p.evidence||opp.evidence||[]).length}\n• Anzahl Ergänzungen: ${(opp.additions||[]).length}\n• Vollständiger Name verwendet: ${core.name?'JA':'NEIN'}\n• Erwartete Hauptblockade: ${ds.buyer==='not_involved'?'Entscheider noch nicht eingebunden':'siehe State Check'}\n`;
+}
+buildReport=completeReport817;
+try{save();render()}catch(e){console.warn('8.1.7 rerender skipped',e)}
 </script>
 
 </body>
