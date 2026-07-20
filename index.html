@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.1 · Process Navigation & Guided Questions</title>
+<title>KI21 Core 8.1.2 · Controlled CRM Import</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.1 · Process Navigation & Guided Questions';
+const VERSION='KI21 Core 8.1.2 · Controlled CRM Import';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -686,6 +686,63 @@ handleAction=function(el){
   return _handleAction811(el);
 };
 save();render();
+</script>
+
+
+<style>
+.import-preview{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.import-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.import-mini{min-height:34px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:11px;font-weight:850}
+.import-item{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:13px;padding:11px;background:#0d131d}
+.import-item input{width:19px;height:19px;margin-top:2px;accent-color:var(--orange)}
+.import-cat{font-size:9px;font-weight:950;letter-spacing:1px;text-transform:uppercase;color:#ff9b45;margin-bottom:4px}
+.import-value{font-size:12.5px;line-height:1.45;color:var(--text)}
+.import-kind{display:inline-block;margin-top:6px;padding:3px 7px;border-radius:999px;border:1px solid var(--line);font-size:8px;font-weight:900;color:var(--muted)}
+.import-kind.hypothesis{color:var(--yellow);border-color:rgba(216,165,58,.35)}
+.import-kind.open{color:var(--red);border-color:rgba(255,123,114,.35)}
+.import-step{font-size:10px;color:var(--muted);margin-top:7px}
+</style>
+<script>
+function classifyImportLine812(line){
+  const l=String(line||'').trim(), low=l.toLowerCase();
+  let category='Weitere Information',kind='Fakt';
+  if(/firmenname|branche|standort|mitarbeiter|umsatz|vertriebsmodell|crm-system|weitere systeme/.test(low))category='Unternehmen';
+  else if(/opportunity|phase|status|projekt|entscheidungszeitraum/.test(low))category='Opportunity';
+  else if(/stakeholder|sponsor|entscheider|geschäftsführ|vertriebsleiter|sales operations|prüfer/.test(low))category='Stakeholder';
+  else if(/stunden|aufwand|deal-review|forecast|datenaufbereitung|verloren|verschoben|schmerz/.test(low))category='Schmerz & Aufwand';
+  else if(/budget|freigabe|entscheidung|erfolgskriterien/.test(low))category='Budget & Entscheidung';
+  else if(/pilot|nutzer|enterprise-deals|laufzeit|starttermin|mess/.test(low))category='Pilot';
+  else if(/einwand|risiko|offen|noch nicht|nicht bestätigt|möglicherweise|könnte/.test(low))category='Risiko / offener Punkt';
+  if(/möglicherweise|könnte|annahme|hypothese|nicht bestätigt, dass/.test(low))kind='Hypothese';
+  if(/offen|noch nicht|steht aus|nicht eingebunden|nicht bestätigt|nicht festgelegt/.test(low))kind='Offen';
+  return {category,kind};
+}
+function scanImport812(raw){
+  const lines=String(raw||'').split(/\n+/).map(x=>x.trim()).filter(x=>x && !/^[-–—]+$/.test(x) && !/^(crm-import|unternehmen|opportunity|stakeholder|schmerz und aufwand|budget und entscheidung|pilot|ausgangssituation|qualifizierungsstand|erwartete einwände und risiken|aktuell sinnvoller nächster kundenschritt)$/i.test(x));
+  const seen=new Set(),items=[];
+  lines.forEach((line,i)=>{const key=line.toLowerCase();if(seen.has(key))return;seen.add(key);const c=classifyImportLine812(line);items.push({id:'imp-'+i,line,category:c.category,kind:c.kind,selected:true});});
+  return items;
+}
+function renderImportPreview812(items){
+  const box=document.getElementById('importPreview812');if(!box)return;
+  if(!items.length){box.innerHTML='<div class="muted">Keine verwertbaren Informationen erkannt.</div>';return;}
+  box.innerHTML=items.map((it,i)=>`<label class="import-item"><input type="checkbox" data-import-index="${i}" ${it.selected?'checked':''}><span><div class="import-cat">${esc(it.category)}</div><div class="import-value">${esc(it.line)}</div><span class="import-kind ${it.kind==='Hypothese'?'hypothesis':it.kind==='Offen'?'open':''}">${esc(it.kind)}</span></span></label>`).join('');
+  box.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.addEventListener('change',()=>{items[Number(cb.dataset.importIndex)].selected=cb.checked;updateImportCount812(items)}));
+  updateImportCount812(items);
+}
+function updateImportCount812(items){const el=document.getElementById('importCount812');if(el)el.textContent=`${items.filter(x=>x.selected).length} von ${items.length} Informationen ausgewählt`;}
+openImport=function(){
+  let items=[];
+  openModal(`<div class="sheet-title">CRM-Import prüfen</div><div class="sheet-sub">KI21 scannt den Text, zeigt jede erkannte Information und übernimmt erst nach deiner Bestätigung die ausgewählten Daten.</div><div id="importStep1"><textarea id="importText" placeholder="CRM-Import hier einfügen …">${current()?'':DEMO}</textarea><div class="actions"><button class="btn" id="cancelImport812">Abbrechen</button><button class="btn primary" id="scanImport812">Import scannen</button></div></div><div id="importStep2" style="display:none"><div class="import-step">Erkannte Zuordnungen prüfen. Häkchen können jederzeit entfernt oder wieder gesetzt werden.</div><div class="import-toolbar"><button class="import-mini" id="allImport812">Alle auswählen</button><button class="import-mini" id="noneImport812">Alle abwählen</button><button class="import-mini" id="backImport812">Text ändern</button></div><div id="importCount812" class="sheet-sub"></div><div id="importPreview812" class="import-preview"></div><div class="actions"><button class="btn" id="cancelImportFinal812">Abbrechen</button><button class="btn primary" id="applyImport812">Ausgewählte Daten übernehmen</button></div></div>`);
+  const step1=document.getElementById('importStep1'),step2=document.getElementById('importStep2'),ta=document.getElementById('importText');
+  document.getElementById('cancelImport812').onclick=closeModal;
+  document.getElementById('scanImport812').onclick=()=>{const raw=normalize(ta.value);if(!raw){toast('Bitte CRM-Text einfügen.');return;}items=scanImport812(raw);step1.style.display='none';step2.style.display='block';renderImportPreview812(items);};
+  document.getElementById('allImport812').onclick=()=>{items.forEach(x=>x.selected=true);renderImportPreview812(items)};
+  document.getElementById('noneImport812').onclick=()=>{items.forEach(x=>x.selected=false);renderImportPreview812(items)};
+  document.getElementById('backImport812').onclick=()=>{step2.style.display='none';step1.style.display='block'};
+  document.getElementById('cancelImportFinal812').onclick=closeModal;
+  document.getElementById('applyImport812').onclick=()=>{const selected=items.filter(x=>x.selected);if(!selected.length){toast('Bitte mindestens eine Information auswählen.');return;}const selectedRaw=selected.map(x=>x.line).join('\n');newOpportunity(selectedRaw);closeModal();render();toast(`${selected.length} Informationen übernommen und automatisch zugeordnet.`);};
+};
 </script>
 
 </body>
