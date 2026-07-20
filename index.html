@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.9 · Import Runtime Fix</title>
+<title>KI21 Core 8.2.0 · Runtime Stabilization</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -1461,6 +1461,93 @@ function fullReport819(){
 buildReport=fullReport819;
 openReport=function(){const txt=fullReport819();openModal(`<div class="sheet-title">KI21 Qualitäts- und Entscheidungsbericht</div><div class="sheet-sub">Vollständige Diagnose für die Qualitätsprüfung.</div><div class="report" id="reportText">${esc(txt)}</div><div class="actions"><button class="btn" id="closeReport819">Schließen</button><button class="btn primary" id="copyReport819">Bericht kopieren</button></div>`);document.getElementById('closeReport819').onclick=closeModal;document.getElementById('copyReport819').onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast('Bericht kopiert.')}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Bericht kopiert.')}}};
 try{save();render()}catch(e){console.warn('8.1.9 runtime refresh skipped',e)}
+</script>
+
+
+<script>
+(function(){
+  const V820='KI21 Core 8.2.0 · Runtime Stabilization';
+  try{ VERSION=V820; }catch(e){}
+
+  function rawOf(opp){ return String((opp&& (opp.originalRaw||opp.raw))||''); }
+  function cleanLines(raw){ return raw.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean); }
+  function isHeader(x){ return /^(Unternehmen|Opportunity|Stakeholder|Schmerz|Budget|Pilot|Weitere Information|Ausgangssituation|Qualifizierungsstand|Erwartete|Aktuell sinnvoller)/i.test(x); }
+  function isField(x){ return /^(Funktion|Rolle|Haltung|Status|Einfluss|Entscheidungsbefugnis|Interesse|Offener Punkt)\s*:/i.test(x); }
+  function isName(x){
+    if(!x||isHeader(x)||isField(x)||/^\*/.test(x)) return false;
+    if(/^(Dr\.|Prof\.)$/i.test(x)) return false;
+    return /^(?:(?:Dr\.|Prof\.)\s+)?[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.'-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.'-]+){1,3}$/.test(x);
+  }
+  function parseStakeholders(raw){
+    const lines=cleanLines(raw), res=[]; let inSec=false, cur=null, pendingTitle='';
+    for(let i=0;i<lines.length;i++){
+      let line=lines[i];
+      if(/^Stakeholder$/i.test(line)){inSec=true;cur=null;continue;}
+      if(inSec && isHeader(line) && !/^Stakeholder$/i.test(line)) break;
+      if(!inSec) continue;
+      if(/^(Dr\.|Prof\.)$/i.test(line)){ pendingTitle=line; continue; }
+      if(pendingTitle && isName(line)){ line=pendingTitle+' '+line; pendingTitle=''; }
+      if(isName(line)){
+        cur={name:line,functionTitle:'',role:'',status:'',attitude:'',influence:'',authority:''}; res.push(cur); continue;
+      }
+      if(!cur) continue;
+      const m=line.match(/^([^:]+):\s*(.*)$/); if(!m) continue;
+      const k=m[1].toLowerCase(),v=m[2].trim();
+      if(k==='funktion')cur.functionTitle=v;
+      else if(k==='rolle')cur.role=v;
+      else if(k==='status')cur.status=v;
+      else if(k==='haltung')cur.attitude=v;
+      else if(k==='einfluss')cur.influence=v;
+      else if(k==='entscheidungsbefugnis')cur.authority=v;
+    }
+    return res;
+  }
+  function deNumber(raw, label){
+    const re=new RegExp(label+'[^\\n]{0,100}?([0-9]{1,3}(?:\\.[0-9]{3})+|[0-9]+)','i');
+    const m=raw.match(re); return m?Number(m[1].replace(/\./g,'')):0;
+  }
+  function repair(opp){
+    if(!opp) return null;
+    opp.parsed=opp.parsed||{}; const p=opp.parsed, raw=rawOf(opp);
+    const people=parseStakeholders(raw); p.stakeholders=people;
+    const buyer=people.find(x=>/wirtschaftliche\s+entscheider|geschäftsführ/i.test((x.role||'')+' '+(x.functionTitle||'')));
+    if(buyer){ p.economicBuyerName=buyer.name; p.economicBuyerFunction=buyer.functionTitle; p.economicBuyerRole=buyer.role; p.economicBuyerOpen=/noch nicht|nicht aktiv|nicht eingebunden|unbekannt/i.test((buyer.status||'')+' '+(buyer.attitude||'')); }
+    const budget=deNumber(raw,'Budgetrahmen(?:\\s+von)?(?:\\s+bis)?'); if(budget)p.budget=budget;
+    const poss=raw.match(/(?:bei|etwa)\s*(\d+)\s*[–-]\s*(\d+)[^\n]{0,100}(?:früher erkannt|Risiken)/i); if(poss)p.possible=poss[1]+'–'+poss[2];
+    return p;
+  }
+  function processAnalyses(p){
+    const buyer=p.economicBuyerName||'die wirtschaftliche Entscheiderin';
+    return [
+      ['Qualifizierung',`Sponsor ist vorhanden; ${buyer} ist als wirtschaftliche Entscheiderin identifiziert, aber noch nicht aktiv eingebunden. Budgetrahmen und Freigabe sind getrennt zu behandeln.`],
+      ['Bedarfsanalyse',`${p.hours||0} Stunden Zusatzaufwand pro Monat sind belegt. Noch unbestätigt ist, welcher Anteil davon tatsächlich vermeidbar ist und welche Auswirkungen aus Sicht der Entscheiderin priorisiert werden.`],
+      ['Demo','Noch fehlen bestätigte Bewertungskriterien für eine Demo. Die Demo sollte nicht allgemein, sondern anhand echter Enterprise-Deals und der vereinbarten Erfolgskriterien geführt werden.'],
+      ['Einwandbehandlung','Bestätigte Kundeneinwände liegen noch nicht vor. Potenziell relevant sind zusätzlicher Pflegeaufwand, parallele Systeme und eine noch unbewiesene Wirkung. Diese Punkte dürfen nicht als geäußerte Einwände dargestellt werden.'],
+      ['Wirtschaftlicher Nutzen & ROI',`${p.hours?String(p.hours*12):'Noch keine'} Stunden Jahresaufwand bilden den belastbaren Ausgangswert. ROI bleibt offen, bis Zeitwert, Wirkungsquote, Pilotpreis und Messzeitraum bestätigt sind.`],
+      ['Angebot','Ein Angebot ist erst belastbar, wenn Pilotumfang, Messlogik, Erfolgskriterien, Preis und Freigabeweg gemeinsam bestätigt wurden.'],
+      ['Abschluss','Der Abschluss ist derzeit nicht die nächste Entscheidung. Zuerst müssen wirtschaftliche Relevanz, Entscheidungsmaßstab und Pilotfreigabeweg mit der Entscheiderin geklärt werden.']
+    ];
+  }
+  function report820(){
+    const opp=(typeof current==='function'?current():null); if(!opp)return 'Keine Opportunity vorhanden.';
+    const p=repair(opp)||{}; const ds=(typeof derive==='function'?derive(opp):{}); const buyer=p.economicBuyerName||'die wirtschaftliche Entscheiderin';
+    const people=(p.stakeholders||[]).map(x=>`• ${x.name} | ${x.functionTitle||'—'} | ${x.role||'—'} | Status: ${x.status||'—'}`).join('\n')||'• — keine Angaben —';
+    const areas=processAnalyses(p).map(([n,t])=>`\n--- ${n} ---\n${t}`).join('\n');
+    return `KI21 VOLLSTÄNDIGER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${V820}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${p.company||'—'} · ${p.name||'—'}\n\n=== SALES DECISION BRIEF ===\n\nEINSCHÄTZUNG\nDer operative Schmerz ist belegt, der wirtschaftliche Nutzen jedoch noch nicht. Der Deal kann erst vorankommen, wenn ${buyer} den Aufwand persönlich bestätigt und festlegt, welche messbare Verbesserung eine Pilotfreigabe rechtfertigt.\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n• ${p.hours||0} Stunden Zusatzaufwand pro Monat entsprechen ${(p.hours||0)*12} Stunden pro Jahr.\n• ${buyer} ist identifiziert, aber noch nicht aktiv eingebunden.\n• Ein Budgetrahmen von ${Number(p.budget||0).toLocaleString('de-DE')} € ist bekannt; die konkrete Freigabe bleibt offen.\n• ${p.lost||0} verlorene oder verschobene Opportunities zeigen Relevanz, beweisen aber keine vermeidbare Wirkung.\n• Pilotumfang, Erfolgskriterien, Messlogik und Preis sind noch nicht gemeinsam bestätigt.\n\nZENTRALE KUNDENENTSCHEIDUNG\n• Soll ${buyer} die wirtschaftliche Relevanz des KI21-Piloten bestätigen – und anhand welcher messbaren Kriterien soll anschließend über die Freigabe entschieden werden?\n\nGRÖSSTER ENGPASS\n• Der Deal wird fachlich vom Vertrieb getragen, wirtschaftlich aber noch nicht von ${buyer}. Solange Problem, Wirkung und Entscheidungsmaßstab nicht bestätigt sind, bleibt der Budgetrahmen theoretisch.\n\n=== STATE CHECK ===\n• Wirtschaftlicher Entscheider: ${p.economicBuyerOpen?'not_involved':p.economicBuyerName?'identified':'unknown'}\n• Erkannter Name: ${p.economicBuyerName||'NICHT ERKANNT'}\n• Funktion: ${p.economicBuyerFunction||'—'}\n• Rolle: ${p.economicBuyerRole||'—'}\n• Budget: ${p.budget||0}\n• Opportunity Score: ${ds.score||'—'}%\n• Forecast: ${ds.forecast||'—'}%\n\n=== ERKANNTE STAKEHOLDER ===\n${people}\n\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n${areas}\n\n=== UNVERÄNDERTER ORIGINALIMPORT ===\n${rawOf(opp)}\n\n=== TECHNISCHE DIAGNOSE ===\n• Anzahl Stakeholder: ${(p.stakeholders||[]).length}\n• Vollständiger Name verwendet: ${p.economicBuyerName?'JA':'NEIN'}\n• Budget korrekt erkannt: ${p.budget>0?'JA':'NEIN'}\n• Bereichsanalysen erzeugt: 7/7`;
+  }
+  window.openReport=function(){
+    const txt=report820();
+    openModal(`<div class="sheet-title">KI21 Qualitäts- und Entscheidungsbericht</div><div class="sheet-sub">Runtime-stabilisierte Diagnose.</div><div class="report" id="reportText">${esc(txt)}</div><div class="actions"><button class="btn" id="closeReport820">Schließen</button><button class="btn primary" id="copyReport820">Bericht kopieren</button></div>`);
+    document.getElementById('closeReport820').onclick=closeModal;
+    document.getElementById('copyReport820').onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast('Bericht kopiert.')}catch(e){}};
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    try{
+      const opp=(typeof current==='function'?current():null); if(opp){repair(opp); if(typeof save==='function')save(); if(typeof render==='function')render();}
+      document.querySelectorAll('.version,.footer').forEach(el=>el.textContent=el.textContent.replace(/KI21 Core 8\.1\.9[^·<]*/,'KI21 Core 8.2.0 · Runtime Stabilization'));
+    }catch(e){console.error('8.2.0 stabilization failed',e);}
+  });
+})();
 </script>
 
 </body>
