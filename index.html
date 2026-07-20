@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.7 · Stakeholder Core & Diagnostic Report</title>
+<title>KI21 Core 8.1.8 · Structured Import Core Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.7 · Stakeholder Core & Diagnostic Report';
+const VERSION='KI21 Core 8.1.8 · Structured Import Core Fix';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1233,6 +1233,137 @@ function completeReport817(){
 }
 buildReport=completeReport817;
 try{save();render()}catch(e){console.warn('8.1.7 rerender skipped',e)}
+</script>
+
+<script>
+// ── 8.1.8 STRUCTURED IMPORT CORE FIX ─────────────────────────
+VERSION='KI21 Core 8.1.8 · Structured Import Core Fix';
+
+function germanNumber818(value){
+  const s=String(value||'').trim().replace(/\s/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
+  const n=Number(s.replace(/[^0-9.-]/g,''));
+  return Number.isFinite(n)?n:0;
+}
+function normalizeHonorificLines818(raw){
+  const lines=String(raw||'').replace(/\r/g,'').split('\n');
+  const out=[];
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i].trim();
+    if(/^(Dr\.|Prof\.)$/i.test(line) && lines[i+1]){out.push(`${line} ${lines[++i].trim()}`);continue;}
+    out.push(line);
+  }
+  return out;
+}
+function isPersonName818(line){
+  const s=String(line||'').trim();
+  if(!s||/:/.test(s)||s.length>80)return false;
+  if(/^(Unternehmen|Opportunity|Stakeholder|Schmerz|Budget|Pilot|Ausgangssituation|Qualifizierungsstand|Mögliche|Bestätigt|Noch offen|Zentrale|Ziel des Termins)/i.test(s))return false;
+  return /^(?:(?:Dr\.|Prof\.)\s+)?[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+)+$/u.test(s);
+}
+function stakeholderRecords818(raw){
+  const lines=normalizeHonorificLines818(raw);
+  const records=[];let inSec=false,current=null;
+  const section=/^(unternehmen|opportunity|stakeholder|schmerz|budget|pilot|ausgangssituation|qualifizierungsstand|erwartete|aktuell sinnvoller)/i;
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];if(!line)continue;
+    if(/^stakeholder\s*$/i.test(line)){inSec=true;current=null;continue;}
+    if(inSec && section.test(line) && !/^stakeholder/i.test(line)){inSec=false;current=null;}
+    if(!inSec)continue;
+    if(isPersonName818(line)){
+      current={name:line,functionTitle:'',role:'',status:'',attitude:'',influence:'',authority:'',rawLines:[line]};
+      records.push(current);continue;
+    }
+    if(!current)continue;
+    current.rawLines.push(line);
+    const m=line.match(/^([^:]{2,40}):\s*(.+)$/);if(!m)continue;
+    const key=m[1].trim().toLowerCase(),val=m[2].trim();
+    if(/^funktion/.test(key))current.functionTitle=val;
+    else if(/^rolle/.test(key))current.role=val;
+    else if(/^status/.test(key))current.status=val;
+    else if(/^haltung/.test(key))current.attitude=val;
+    else if(/^einfluss/.test(key))current.influence=val;
+    else if(/^entscheidungsbefugnis/.test(key))current.authority=val;
+    else if(/^offener punkt/.test(key))current.openPoint=val;
+  }
+  return records;
+}
+function enrichParsed818(opp){
+  if(!opp)return null;const p=opp.parsed||(opp.parsed={});
+  const source=opp.originalRaw||opp.raw||'';
+  const recs=stakeholderRecords818(source);
+  p.stakeholders=recs;
+  const buyer=recs.find(r=>/wirtschaftliche\s+entscheider(?:in)?/i.test(r.role)||/geschäftsführ/i.test(r.functionTitle)&&/(finanz|operations)/i.test(r.functionTitle));
+  const sponsor=recs.find(r=>/fachlicher\s+sponsor|\bsponsor\b/i.test(r.role));
+  if(buyer){p.economicBuyerName=buyer.name;p.economicBuyerFunction=buyer.functionTitle;p.economicBuyerRole=buyer.role;}
+  p.economicBuyerOpen=!!(buyer && /noch nicht|nicht eingebunden|unbekannt/i.test(`${buyer.status} ${buyer.attitude} ${buyer.openPoint||''}`)) || /wirtschaftliche\s+entscheider(?:in)?[^\n]{0,160}(noch nicht eingebunden|nicht eingebunden)/i.test(source);
+  p.sponsor=!!sponsor || p.sponsor;
+  const bm=source.match(/(?:Budgetrahmen[^\n]{0,100}?bis|Budget[^\n]{0,100}?bis)\s*([\d.]+(?:,\d+)?)\s*(?:€|Euro)/i);
+  if(bm)p.budget=germanNumber818(bm[1]);
+  const pm=source.match(/(?:bei\s+etwa\s+)?(\d+\s*(?:-|–|bis)\s*\d+)\s+(?:dieser\s+)?Opportunit/i);
+  if(pm)p.possible=pm[1].replace(/\s+/g,' ');
+  p.evidence=(p.evidence||[]).filter(e=>!['budget_ceiling','economic_buyer'].includes(e.type));
+  if(p.budget)p.evidence.push(evidence('budget_ceiling',p.budget));
+  p.evidence.push(evidence('economic_buyer',p.economicBuyerOpen?'not_involved':p.economicBuyerName?'identified':'unknown',p.economicBuyerOpen?'open':p.economicBuyerName?'confirmed':'open'));
+  opp.evidence=p.evidence;return {records:recs,buyer,sponsor};
+}
+
+const _parseImport818=parseImport;
+parseImport=function(raw){
+  const p=_parseImport818(raw);const tmp={raw,originalRaw:raw,parsed:p};enrichParsed818(tmp);return tmp.parsed;
+};
+
+function scanImport818(raw){
+  const lines=normalizeHonorificLines818(raw);const headings=new Set(['crm-import','unternehmen','opportunity','stakeholder','schmerz und aufwand','budget und entscheidung','pilot','ausgangssituation','qualifizierungsstand','erwartete einwände und risiken','aktuell sinnvoller nächster kundenschritt']);
+  let section='Weitere Information',context='',items=[],seen=new Set();
+  for(const rawLine of lines){
+    let line=String(rawLine||'').trim();if(!line||/^[-–—]+$/.test(line))continue;
+    const low=line.toLowerCase();
+    if(headings.has(low)){section=line;context='';continue;}
+    if(/^(bestätigt sind|noch offen sind|noch nicht verbindlich festgelegt sind|mögliche pilotziele|mögliche einwände|zentrale deal-risiken|ziel des termins):?$/i.test(line)){context=low.replace(/:$/,'');continue;}
+    const parts=/^[^:]{1,35}:\s*.+/.test(line)?[line]:line.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9])/);
+    for(let statement of parts){statement=statement.trim();if(!statement)continue;const key=`${section}|${context}|${statement}`.toLowerCase();if(seen.has(key))continue;seen.add(key);
+      const c=classifyImportLine813(statement,section);let kind=c.kind,category=c.category;
+      if(context==='noch offen sind'||context==='noch nicht verbindlich festgelegt sind')kind='Offen';
+      if(context==='mögliche pilotziele')kind='Hypothese';
+      if(context==='mögliche einwände')kind='Hypothese';
+      if(context==='zentrale deal-risiken')kind=/nicht|offen|fehlt|unklar/i.test(statement)?'Offen':'Hypothese';
+      if(context==='ziel des termins')kind='Hypothese';
+      if(context==='bestätigt sind')kind='Fakt';
+      items.push({id:'imp818-'+items.length,line:statement,section,context,category,kind,meaning:c.meaning,selected:true});
+    }
+  }
+  return items;
+}
+scanImport813=scanImport818;
+
+openImport=function(){
+  let items=[],original='';
+  openModal(`<div class="sheet-title">CRM-Import prüfen</div><div class="sheet-sub">KI21 erkennt Personen, Fakten, Hypothesen und offene Punkte. Der unveränderte Originaltext bleibt erhalten.</div><div id="importStep1"><textarea id="importText" placeholder="CRM-Import hier einfügen …">${current()?'':DEMO}</textarea><div class="actions"><button class="btn" id="cancel818">Abbrechen</button><button class="btn primary" id="scan818">Import analysieren</button></div></div><div id="importStep2" style="display:none"><div class="import-step">Prüfe Zuordnung und Evidenz. Häkchen können geändert werden.</div><div class="import-toolbar"><button class="import-mini" id="all818">Alle auswählen</button><button class="import-mini" id="none818">Alle abwählen</button><button class="import-mini" id="back818">Text ändern</button></div><div id="importCount813" class="sheet-sub"></div><div id="importPreview813" class="import-preview"></div><div class="actions"><button class="btn" id="cancelFinal818">Abbrechen</button><button class="btn primary" id="apply818">Ausgewählte Daten übernehmen</button></div></div>`);
+  const step1=document.getElementById('importStep1'),step2=document.getElementById('importStep2'),ta=document.getElementById('importText');
+  document.getElementById('cancel818').onclick=closeModal;
+  document.getElementById('scan818').onclick=()=>{original=normalize(ta.value);if(!original){toast('Bitte CRM-Text einfügen.');return;}items=scanImport818(original);step1.style.display='none';step2.style.display='block';renderImportPreview813(items);};
+  document.getElementById('all818').onclick=()=>{items.forEach(x=>x.selected=true);renderImportPreview813(items)};
+  document.getElementById('none818').onclick=()=>{items.forEach(x=>x.selected=false);renderImportPreview813(items)};
+  document.getElementById('back818').onclick=()=>{step2.style.display='none';step1.style.display='block'};
+  document.getElementById('cancelFinal818').onclick=closeModal;
+  document.getElementById('apply818').onclick=()=>{const selected=items.filter(x=>x.selected);if(!selected.length){toast('Bitte mindestens eine Information auswählen.');return;}const selectedRaw=selected.map(x=>x.line).join('\n');const id=newOpportunity(selectedRaw);const o=state.opportunities[id];o.originalRaw=original;o.raw=original;o.structuredImport=selected.map(x=>({line:x.line,section:x.section,context:x.context,category:x.category,kind:x.kind,meaning:x.meaning,source:'CRM-Import'}));o.parsed=parseImport(original);enrichParsed818(o);o.updatedAt=now();save();closeModal();render();toast(`${selected.length} Informationen strukturiert übernommen.`);};
+};
+
+const _derive818=derive;
+derive=function(opp){enrichParsed818(opp);const d=_derive818(opp);if(d.approval==='open'&&d.buyer!=='identified')d.dealStatus='Qualifizierung · wirtschaftlichen Entscheidungsweg klären';return d;};
+
+function completeReport818(){
+  const m=model();if(!m)return'';const {opp,ds,out}=m,p=opp.parsed||{};const core=enrichParsed818(opp)||{records:[]};
+  const areas=processAreaData(m)||[];
+  const areaText=areas.map(a=>`\n${a.name.toUpperCase()}\nStatus: ${a.status}\nEinschätzung: ${a.analysis.assessment||'—'}\n${lines817('Bestätigte Fakten:',a.analysis.confirmed)}\n${lines817('Offene Punkte:',a.analysis.open)}\n${lines817('Risiken:',a.analysis.risks)}\nStrategie: ${a.analysis.strategy||'—'}\nZentrale Entscheidung: ${a.analysis.decision||'—'}\nNächster Schritt: ${a.analysis.next||'—'}`).join('\n');
+  const structured=(opp.structuredImport||[]).map(x=>`${x.kind||'?'} | ${x.category||'?'} | Kontext: ${x.context||'—'} | ${x.line||''}`);
+  const evidence=(p.evidence||opp.evidence||[]).map(x=>`${x.type||x.key||'?'} | ${x.status||x.kind||'?'} | ${safeJson817(x.value)}`);
+  return `KI21 VOLLSTÄNDIGER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${p.company} · ${p.name}\n\n=== SALES DECISION BRIEF ===\n\nEINSCHÄTZUNG\n${out.assessment}\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n${out.facts.slice(0,5).map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${out.decision}\n\nGRÖSSTER ENGPASS\n• ${out.blocker}\n\nBUSINESS CASE UND NUTZEN\n• ${out.businessCase}\n• ROI ist erst belastbar, wenn Wirkungsquote, Zeitwert, Pilotpreis und Messzeitraum bestätigt sind.\n\nOFFENE PUNKTE\n${out.risks.map(x=>'• '+x).join('\n')}\n\nNÄCHSTER SCHRITT\n${out.actions.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n=== STATE CHECK ===\n• Freigabe: ${ds.approval}\n• Wirtschaftlicher Entscheider: ${ds.buyer}\n• Erkannter Name: ${p.economicBuyerName||'NICHT ERKANNT'}\n• Funktion: ${p.economicBuyerFunction||'—'}\n• Rolle: ${p.economicBuyerRole||'—'}\n• Budget: ${p.budget||0}\n• Business Case: ${ds.businessCase}\n• Dealstatus: ${ds.dealStatus}\n• Opportunity Score: ${ds.score}%\n• Entscheidungsreife: ${ds.readiness}%\n• Forecast: ${ds.forecast}%\n\n=== IMPORT- UND EVIDENZDIAGNOSE ===\n${lines817('Erkannte Stakeholder:',(p.stakeholders||[]).map(r=>`${r.name} | ${r.functionTitle||'—'} | ${r.role||'—'} | Status: ${r.status||'—'}`))}\n\n${lines817('Strukturierte Importaussagen:',structured)}\n\n${lines817('Evidence State:',evidence)}\n\nPARSED STATE\n${safeJson817({company:p.company,name:p.name,phase:p.phase,hours:p.hours,lost:p.lost,possible:p.possible,budget:p.budget,approvalOpen:p.approvalOpen,approvalConfirmed:p.approvalConfirmed,economicBuyerName:p.economicBuyerName,economicBuyerFunction:p.economicBuyerFunction,economicBuyerRole:p.economicBuyerRole,economicBuyerOpen:p.economicBuyerOpen,sponsor:p.sponsor,successOpen:p.successOpen,priceOpen:p.priceOpen})}\n\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n${areaText||'Keine Bereichsanalysen verfügbar.'}\n\n=== UNVERÄNDERTER ORIGINALIMPORT ===\n${opp.originalRaw||opp.raw||'—'}\n\n=== TECHNISCHE DIAGNOSE ===\n• Opportunity-ID: ${opp.id||state.activeId||'—'}\n• Anzahl Stakeholder: ${(p.stakeholders||[]).length}\n• Anzahl strukturierter Importaussagen: ${(opp.structuredImport||[]).length}\n• Vollständiger Name verwendet: ${p.economicBuyerName?'JA':'NEIN'}\n• Budget korrekt erkannt: ${p.budget>0?'JA':'NEIN'}\n• Bereichsanalysen erzeugt: ${areas.length}/7\n`;
+}
+buildReport=completeReport818;
+
+Object.values(state.opportunities||{}).forEach(o=>{if(o){if(!o.originalRaw)o.originalRaw=o.raw;enrichParsed818(o)}});
+save();render();
 </script>
 
 </body>
