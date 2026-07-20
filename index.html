@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.5 · Stakeholder Parsing Fix</title>
+<title>KI21 Core 8.1.6 · Stakeholder State Quality Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.5 · Stakeholder Parsing Fix';
+const VERSION='KI21 Core 8.1.6 · Stakeholder State Quality Fix';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1031,5 +1031,92 @@ decisionInsights814=function(opp,ds){
 
 try{render()}catch(e){console.warn('8.1.5 rerender skipped',e)}
 </script>
+
+<script>
+// ── 8.1.6 STAKEHOLDER STATE + REPORT QUALITY FIX ──────────
+function sourceText816(opp){
+  const structured=(opp&&Array.isArray(opp.structuredImport)?opp.structuredImport:[])
+    .map(x=>x&&x.line?x.line:'').filter(Boolean).join('\n');
+  return [opp&&opp.raw||'', structured].filter(Boolean).join('\n');
+}
+function recoverBuyer816(opp){
+  const p=opp.parsed||{};
+  const source=sourceText816(opp);
+  const records=stakeholderRecords815(source);
+  let rec=records.find(r=>/wirtschaftliche\s+entscheider|geschäftsführ/i.test(`${r.functionTitle} ${r.role}`));
+  if(!rec){
+    const m=source.match(/((?:Dr\.|Prof\.)?\s*[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+)+)\s*[–—-]\s*([^\n]+?)(?:\s*[–—-]\s*|$)([^\n]*(?:wirtschaftliche\s+Entscheiderin|wirtschaftlicher\s+Entscheider)[^\n]*)/iu);
+    if(m) rec={name:m[1].trim(),functionTitle:(m[2]||'').trim(),role:(m[3]||'').trim()};
+  }
+  if(rec){
+    p.economicBuyerName=cleanPersonName815(rec.name);
+    p.economicBuyerFunction=rec.functionTitle||p.economicBuyerFunction||'';
+    p.economicBuyerRole=rec.role||p.economicBuyerRole||'';
+  }
+  const buyerOpen=/(wirtschaftliche\s+entscheider(?:in)?|geschäftsführ(?:erin)?)[^.!?\n]{0,180}(noch nicht eingebunden|nicht eingebunden|noch nicht beteiligt|kennt[^.!?\n]{0,80}noch nicht)/i.test(source)
+    || /noch nicht eingebunden/i.test(p.economicBuyerRole||'');
+  if(buyerOpen) p.economicBuyerOpen=true;
+  return p;
+}
+Object.values(state.opportunities||{}).forEach(o=>{if(o)recoverBuyer816(o)});
+
+const _derive816=derive;
+derive=function(opp){
+  recoverBuyer816(opp);
+  const d=_derive816(opp),p=opp.parsed||{};
+  if(p.economicBuyerOpen)d.buyer='not_involved';
+  else if(cleanPersonName815(p.economicBuyerName))d.buyer='identified';
+  else d.buyer='unknown';
+  if(d.approval==='open' && d.buyer!=='identified')d.dealStatus='Qualifizierung · wirtschaftlichen Entscheidungsweg klären';
+  return d;
+};
+
+function uniqueFive816(items,context){
+  const seen=new Set(),out=[];
+  for(const item of items||[]){
+    const v=String(item||'').trim();
+    const key=v.toLowerCase().replace(/\s+/g,' ');
+    if(v&&!seen.has(key)){seen.add(key);out.push(v)}
+  }
+  const p=context.parsed||{};
+  const fallbacks=[
+    p.budget?`Ein Budgetrahmen bis ${Number(p.budget).toLocaleString('de-DE')} € ist vorhanden, aber noch nicht freigegeben.`:'Der verbindliche Budget- und Freigaberahmen ist noch offen.',
+    p.economicBuyerOpen?'Die wirtschaftliche Entscheiderin ist identifiziert, aber noch nicht persönlich eingebunden.':'Der wirtschaftliche Entscheidungsweg ist noch nicht vollständig bestätigt.',
+    p.successOpen?'Erfolgskriterien und Messlogik sind noch nicht gemeinsam bestätigt.':'Die Messlogik für den Pilot muss verbindlich festgelegt werden.',
+    p.priceOpen?'Ein konkreter Pilotpreis fehlt noch.':'Pilotumfang und Preis müssen mit dem Freigaberahmen abgeglichen werden.',
+    'Der nächste Fortschritt hängt von einer bestätigten Kundenentscheidung ab, nicht von weiterer interner Vorbereitung.'
+  ];
+  for(const f of fallbacks){
+    const key=f.toLowerCase().replace(/\s+/g,' ');
+    if(out.length<5&&!seen.has(key)){seen.add(key);out.push(f)}
+  }
+  return out.slice(0,5);
+}
+
+const _decisionInsights816=decisionInsights814;
+decisionInsights814=function(opp,ds){
+  recoverBuyer816(opp);
+  const p=opp.parsed||{};
+  const clean=cleanPersonName815(p.economicBuyerName);
+  const r=_decisionInsights816(opp,ds);
+  const bn=clean||'die wirtschaftliche Entscheiderin';
+  r.buyerName=bn;
+  r.five=uniqueFive816(r.five,opp);
+  if(ds.buyer==='not_involved'||p.economicBuyerOpen){
+    r.assessment=`Der operative Schmerz ist belegt, der wirtschaftliche Nutzen jedoch noch nicht. Die Opportunity besitzt damit einen realen Handlungsanlass, aber noch keinen belastbaren Investitionsgrund. Der Deal kann erst vorankommen, wenn ${bn} den Aufwand persönlich bestätigt und festlegt, welche messbare Verbesserung eine Pilotfreigabe rechtfertigt.`;
+    r.decision=`Soll ${bn} die wirtschaftliche Relevanz des KI21-Piloten prüfen – und anhand welcher messbaren Kriterien soll anschließend über die Freigabe entschieden werden?`;
+    r.blocker=`Der Deal wird derzeit fachlich vom Vertrieb getragen, aber wirtschaftlich noch von niemandem. Solange ${bn} Problem, Wirkung und Entscheidungsmaßstab nicht bestätigt, bleibt der vorhandene Budgetrahmen theoretisch.`;
+    r.actions[0]=`${bn} in einen gemeinsamen Entscheidungstermin mit Sponsor und Sales Operations holen.`;
+    const missing=`${bn} hat Problem, Nutzen und Freigabemaßstab noch nicht persönlich bestätigt.`;
+    r.risks=[missing,...r.risks.filter(x=>!/Problem, Nutzen und Freigabemaßstab|wirtschaftliche Entscheiderin.*persönlich/i.test(x))];
+    const buyerFact=`${bn} kennt bzw. bestätigt die wirtschaftliche Ausgangslage noch nicht persönlich.`;
+    r.five=uniqueFive816([...(r.five||[]).filter(x=>!/kennt bzw\. bestätigt|wirtschaftliche Entscheiderin.*eingebunden/i.test(x)),buyerFact],opp);
+  }
+  return r;
+};
+
+try{save();render()}catch(e){console.warn('8.1.6 rerender skipped',e)}
+</script>
+
 </body>
 </html>
