@@ -587,5 +587,107 @@ if(!['cockpit','process','inputs'].includes(state.view))state.view='cockpit';
 save();render();
 </script>
 
+
+<style>
+.process-item.open .process-panel{display:block}
+.guided-question{padding:12px 0;border-top:1px solid var(--line)}
+.guided-question:first-child{border-top:0}
+.guided-label{font-weight:750;line-height:1.4;margin-bottom:7px}
+.guided-context{font-size:12px;color:var(--muted);margin-bottom:7px}
+.guided-answer{width:100%;min-height:82px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--text);padding:11px 12px;font:inherit;resize:vertical}
+.facts-compact{display:flex;flex-wrap:wrap;gap:7px}
+.fact-chip{font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:var(--soft)}
+</style>
+<script>
+VERSION='KI21 Core 8.1.1 · Process Navigation & Guided Questions';
+state.processOpen = Number.isInteger(state.processOpen) ? state.processOpen : null;
+
+function areaFacts811(m,key){
+  const p=m.opp.parsed,ds=m.ds;
+  const map={
+    qualification:[p.sponsor?'Fachlicher Sponsor identifiziert':'',p.economicBuyerName?'Wirtschaftliche Entscheiderin identifiziert':'',p.budget?`Budgetrahmen bis ${p.budget.toLocaleString('de-DE')} € bekannt`:''].filter(Boolean),
+    need:[p.hours?`${p.hours} Stunden Zusatzaufwand pro Monat belegt`:'',p.lost?`${p.lost} verlorene oder verschobene Opportunities dokumentiert`:''].filter(Boolean),
+    demo:[],
+    objection:[],
+    roi:[p.hours?'Operativer Ausgangswert beziffert':'',p.budget?'Budgetrahmen vorhanden':''].filter(Boolean),
+    offer:[p.budget?'Budgetrahmen bekannt':'',p.priceOpen?'Konkreter Preis noch offen':''].filter(Boolean),
+    close:[ds.approval==='confirmed'?'Investitionsfreigabe bestätigt':'',ds.approval==='open'?'Investitionsfreigabe offen':''].filter(Boolean)
+  };
+  return map[key]||[];
+}
+
+processAreaData=function(m){
+  const p=m.opp.parsed,ds=m.ds,out=m.out,ph=ensurePhaseData(m.opp);
+  const g=i=>ph[i]&&ph[i].generatedAnalysis;
+  const mk=(key,assessment,open,strategy,next,generated)=>({assessment:(generated&&generated.assessment)||assessment,confirmed:areaFacts811(m,key),open:(generated&&generated.open)||open,risks:(generated&&generated.risks)||[],strategy:(generated&&generated.strategy)||strategy,decision:(generated&&generated.decision)||out.decision,next:(generated&&generated.next)||next});
+  return [
+    {name:'Qualifizierung',sub:'Problem, Sponsor, Entscheider und Entscheidungsweg',analysis:mk('qualification',out.assessment,out.risks,'Entscheider, Sponsor und verbindlichen Entscheidungsweg absichern.',out.actions[0],g(0)),status:ds.buyer==='identified'?'teilweise geklärt':'offen'},
+    {name:'Bedarfsanalyse',sub:'Situation, Problem, Auswirkungen und gewünschter Nutzen',analysis:mk('need','Der Bedarf ist erkennbar, aber noch nicht vollständig aus Kundensicht validiert.',out.risks,'Mit SPIN die Auswirkungen und den gewünschten Nutzen vertiefen.',out.actions[0],g(1)),status:p.hours||p.lost?'teilweise geklärt':'offen'},
+    {name:'Demo',sub:'Lösungsbild, relevante Anwendungsfälle und bestätigte Passung',analysis:mk('demo','Die Demo muss sich an bestätigten Problemen und Entscheidungskriterien orientieren.',['Demo-Ziel und Nachweiskriterien sind noch nicht vollständig bestätigt.'],'Nur entscheidungsrelevante Anwendungsfälle zeigen.','Demo-Ziel und Erfolgskriterien bestätigen.',null),status:'offen'},
+    {name:'Einwandbehandlung',sub:'Einwände, Widerstände und geeignete Argumentation',analysis:mk('objection','Einwände werden aus Ergänzungen und Gesprächsergebnissen erkannt.',['Konkrete Einwände und ihre Ursachen sind noch nicht vollständig dokumentiert.'],'Einwände auf Ursache, Risiko und erforderlichen Nachweis zurückführen.','Nächsten entscheidungsrelevanten Einwand klären.',g(2)),status:g(2)?'teilweise geklärt':'offen'},
+    {name:'Wirtschaftlicher Nutzen & ROI',sub:'Nutzenhypothese, Business Case und finanzielle Wirkung',analysis:mk('roi',out.businessCase,out.risks,'Problemwert, Wirkung und Messlogik sauber trennen.','Wirkungsannahme und Erfolgskriterien bestätigen.',g(3)),status:ds.businessCase==='problem_quantified'?'teilweise geklärt':'offen'},
+    {name:'Angebot',sub:'Leistungsumfang, Konditionen, Kriterien und Angebotsrisiken',analysis:mk('offer','Das Angebot muss an bestätigte Entscheidungskriterien und Pilotziele gebunden sein.',['Leistungsumfang, Preis und Freigabebedingungen prüfen.'],'Angebot konsequent auf die bestätigte Entscheidung ausrichten.','Angebotsparameter mit dem Kunden abstimmen.',g(4)),status:ds.approval==='confirmed'?'belastbar':'offen'},
+    {name:'Abschluss',sub:'Freigabe, Einkauf, Verhandlung und verbindlicher Start',analysis:mk('close',out.assessment,out.risks,'Abschluss als Folge bestätigter Kundenentscheidungen führen.',out.actions[0],g(4)),status:ds.approval==='confirmed'?'belastbar':'offen'}
+  ];
+};
+
+const QUAL_QUESTIONS_811=[
+  ['Problemrelevanz','Welches konkrete geschäftliche Problem soll der Kunde lösen – und wie hoch ist seine Priorität?'],
+  ['Sponsor','Wer treibt das Vorhaben intern aktiv voran und welchen persönlichen Nutzen hat diese Person?'],
+  ['Wirtschaftliche Entscheidung','Wer kann Budget und Investition verbindlich freigeben?'],
+  ['Entscheidungsprozess','Welche Personen, Gremien und formalen Schritte entscheiden über die Beauftragung?'],
+  ['Budget','Ist ein realer Budgetrahmen vorhanden oder muss er erst geschaffen werden?'],
+  ['Zeitplan','Bis wann soll entschieden werden und welches Ereignis erzeugt echten Zeitdruck?']
+];
+const SPIN_QUESTIONS_811=[
+  ['Situation','Wie läuft der relevante Prozess heute konkret ab?'],
+  ['Problem','Wo entstehen dabei Fehler, Verzögerungen, Aufwand oder Risiken?'],
+  ['Auswirkung','Welche operativen, finanziellen oder strategischen Folgen hat das Problem?'],
+  ['Nutzen','Was würde sich messbar verbessern, wenn das Problem gelöst wird?']
+];
+function guidedStore811(){const o=current();o.guidedInputs=o.guidedInputs||{qualification:{},spin:{},offer:{}};return o.guidedInputs}
+function guidedQuestionsHtml811(type){
+  const list=type==='qualification'?QUAL_QUESTIONS_811:SPIN_QUESTIONS_811;
+  const store=guidedStore811()[type]||{};
+  return `<div>${list.map((q,i)=>`<div class="guided-question"><div class="guided-context">${esc(q[0])}</div><label class="guided-label" for="g-${type}-${i}">${esc(q[1])}</label><textarea id="g-${type}-${i}" class="guided-answer" data-guided-type="${type}" data-guided-key="q${i}" placeholder="Antwort oder Gesprächserkenntnis eintragen">${esc(store['q'+i]||'')}</textarea></div>`).join('')}</div><div class="input-actions"><button class="btn" data-action="input-cancel">Abbrechen</button><button class="btn primary" data-action="guided-save" data-type="${type}">Speichern & auswerten</button></div>`;
+}
+const _renderInputs811=renderInputs;
+renderInputs=function(m){
+  _renderInputs811(m);
+  if(state.inputEdit==='qualification'){
+    const cards=[...document.querySelectorAll('.input-card')];
+    const card=cards.find(c=>c.querySelector('.input-title')?.textContent==='Qualifizierungsfragen');
+    if(card){const body=card.querySelector('.input-body');if(body)body.innerHTML=guidedQuestionsHtml811('qualification');}
+  }
+  if(state.inputEdit==='spin'){
+    const cards=[...document.querySelectorAll('.input-card')];
+    const card=cards.find(c=>c.querySelector('.input-title')?.textContent==='SPIN-Fragen');
+    if(card){const body=card.querySelector('.input-body');if(body)body.innerHTML=guidedQuestionsHtml811('spin');}
+  }
+};
+
+const _handleAction811=handleAction;
+handleAction=function(el){
+  const a=el&&el.dataset?el.dataset.action:'';
+  if(a==='process-toggle'){
+    const idx=Number(el.dataset.index||0),item=el.closest('.process-item'),wasOpen=item&&item.classList.contains('open');
+    document.querySelectorAll('.process-item.open').forEach(x=>x.classList.remove('open'));
+    state.processOpen=wasOpen?null:idx;
+    if(item&&!wasOpen)item.classList.add('open');
+    save();
+    return;
+  }
+  if(a==='guided-save'){
+    const type=el.dataset.type,store=guidedStore811();store[type]=store[type]||{};
+    document.querySelectorAll(`[data-guided-type="${type}"]`).forEach(x=>store[type][x.dataset.guidedKey]=normalize(x.value));
+    const text=Object.values(store[type]).filter(Boolean).join('\n');
+    if(text){const o=current();const adds=ensureAdditions(o);adds.push({id:uid(),at:now(),text:`${type==='spin'?'SPIN-Erkenntnisse':'Qualifizierungsantworten'}:\n${text}`});o.updatedAt=now();o.parsed=parseImport(combinedEvidence(o));o.evidence=o.parsed.evidence;refreshAutomaticPhase4(o,true);}
+    state.inputEdit=null;save();render();toast('Gespeichert und Verkaufsprozess aktualisiert.');return;
+  }
+  return _handleAction811(el);
+};
+save();render();
+</script>
+
 </body>
 </html>
