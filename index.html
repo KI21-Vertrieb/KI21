@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.0.8 · PHASE INTELLIGENCE GENERATOR';
+const VERSION='KI21 Core 8.0.10 · VISIBLE PHASE ANALYSIS';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -323,15 +323,21 @@ function phaseIntelligenceContent(index,m){
   return{assessment,confirmed,open,risks,strategy,decision,questions,next:r.next};
 }
 function generatePhaseIntelligence(index){
-  const m=model();if(!m)return;index=Math.max(0,Math.min(4,Number(index||0)));const phase=ensurePhaseData(m.opp)[index];const content=phaseIntelligenceContent(index,m);const generated={id:uid(),at:now(),sourceFingerprint:phaseSourceFingerprint(m.opp),...content};
-  if(phase.generatedAnalysis)phase.analysisHistory=(phase.analysisHistory||[]).concat([phase.generatedAnalysis]).slice(-10);
-  phase.generatedAnalysis=generated;phase.started=true;phase.updatedAt=generated.at;m.opp.updatedAt=generated.at;save();toast('Ausführliche Phasenanalyse erzeugt.');render();
+  const m=model();if(!m)return;index=Math.max(0,Math.min(4,Number(index||0)));
+  state.phaseGenerating=index;save();render();
+  setTimeout(function(){
+    const fresh=model();if(!fresh)return;const phase=ensurePhaseData(fresh.opp)[index];const content=phaseIntelligenceContent(index,fresh);const generated={id:uid(),at:now(),sourceFingerprint:phaseSourceFingerprint(fresh.opp),...content};
+    if(phase.generatedAnalysis)phase.analysisHistory=(phase.analysisHistory||[]).concat([phase.generatedAnalysis]).slice(-10);
+    phase.generatedAnalysis=generated;phase.started=true;phase.updatedAt=generated.at;fresh.opp.updatedAt=generated.at;state.phaseGenerating=null;save();render();
+    setTimeout(function(){const el=document.getElementById('phase-intelligence-result');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},60);
+    toast('Phasenanalyse erstellt und angezeigt.');
+  },180);
 }
 function renderPhaseIntelligence(index,m){
   const phase=ensurePhaseData(m.opp)[index],g=phase.generatedAnalysis;
-  if(!g)return `<section class="card phase-intel-card"><div class="phase-intel-title">Ausführliche Phasenanalyse</div><div class="phase-intel-empty">Noch keine ausführliche Analyse erzeugt. KI21 verbindet CRM-Daten, Deal-State, Phasenantworten und Ergänzungen zu einer vollständigen Bewertung.</div><button class="btn primary full" data-action="phase-generate">Ausführliche Phasenanalyse erzeugen</button></section>`;
+  if(!g){const loading=Number(state.phaseGenerating)===Number(index);return `<section id="phase-intelligence-result" class="card phase-intel-card"><div class="phase-intel-title">Ausführliche Phasenanalyse</div><div class="phase-intel-empty">Noch keine ausführliche Analyse vorhanden. KI21 erstellt sie direkt aus CRM-Daten, zentralem Deal-State, Phasenantworten und Ergänzungen.</div><button class="btn primary full" data-action="phase-generate" ${loading?'disabled':''}>${loading?'Analyse wird erstellt …':'Phasenanalyse jetzt erstellen'}</button><div class="phase-intel-meta" style="margin-top:10px">Hinweis: Diese Alpha-Version erzeugt die Analyse lokal regelbasiert aus dem aktuellen Opportunity-State. Es findet noch kein externer KI-Aufruf statt.</div></section>`;}
   const list=(arr,empty)=>arr&&arr.length?`<div class="phase-intel-list">${arr.map(x=>`<div class="phase-intel-item">${esc(x)}</div>`).join('')}</div>`:`<div class="phase-intel-text">${esc(empty)}</div>`;
-  return `<section class="card phase-intel-card"><div class="phase-intel-head"><div><div class="kicker">KI21 Phase Intelligence</div><div class="phase-intel-title">Ausführliche Phasenanalyse</div><div class="phase-intel-meta">Erzeugt am ${new Date(g.at).toLocaleString('de-DE')} · Versionierter Phasenstand</div></div><span class="badge ok">ERZEUGT</span></div><div class="phase-intel-section"><div class="phase-intel-label">Einschätzung</div><div class="phase-intel-text">${esc(g.assessment)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Bestätigte Fakten</div>${list(g.confirmed,'Noch keine bestätigten Fakten.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Offene Punkte</div>${list(g.open,'Keine kritischen offenen Punkte erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Risiken</div>${list(g.risks,'Keine besonderen Risiken erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Empfohlene Strategie</div><div class="phase-intel-text">${esc(g.strategy)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Fehlende Kundenentscheidung</div><div class="phase-intel-text">${esc(g.decision)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Relevante Fragen</div>${list(g.questions,'Keine zusätzlichen Fragen.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Nächster Kundenschritt</div><div class="phase-intel-text">${esc(g.next)}</div></div><div class="phase-intel-actions"><button class="btn" data-action="phase-generate">Analyse neu erzeugen</button><button class="btn primary" data-action="phase-review">Neue Informationen prüfen</button></div></section>`;
+  return `<section id="phase-intelligence-result" class="card phase-intel-card"><div class="phase-intel-head"><div><div class="kicker">KI21 Phase Intelligence</div><div class="phase-intel-title">Ausführliche Phasenanalyse</div><div class="phase-intel-meta">Erzeugt am ${new Date(g.at).toLocaleString('de-DE')} · Versionierter Phasenstand</div></div><span class="badge ok">ERZEUGT</span></div><div class="phase-intel-section"><div class="phase-intel-label">Einschätzung</div><div class="phase-intel-text">${esc(g.assessment)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Bestätigte Fakten</div>${list(g.confirmed,'Noch keine bestätigten Fakten.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Offene Punkte</div>${list(g.open,'Keine kritischen offenen Punkte erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Risiken</div>${list(g.risks,'Keine besonderen Risiken erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Empfohlene Strategie</div><div class="phase-intel-text">${esc(g.strategy)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Fehlende Kundenentscheidung</div><div class="phase-intel-text">${esc(g.decision)}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Relevante Fragen</div>${list(g.questions,'Keine zusätzlichen Fragen.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Nächster Kundenschritt</div><div class="phase-intel-text">${esc(g.next)}</div></div><div class="phase-intel-actions"><button class="btn" data-action="phase-generate">Analyse aus aktuellem Stand neu erstellen</button><button class="btn primary" data-action="phase-review">Neue Informationen prüfen</button></div></section>`;
 }
 
 function renderPhaseResultCard(index,m){
@@ -389,6 +395,65 @@ dedupeOpportunities();
 if(!state.activeId||!state.opportunities[state.activeId]){newOpportunity(DEMO)}
 Object.values(state.opportunities).forEach(ensurePhaseData);save();
 render();
+</script>
+
+<style id="ki21-8010-phase-analysis-result-fix">
+.phase-analysis-open-btn{margin-top:10px;width:100%}
+.phase-intel-card{scroll-margin-top:18px}
+.phase-intel-modal{max-height:68vh;overflow:auto;padding-right:2px}
+.phase-intel-modal .phase-intel-section{padding:12px 0;border-top:1px solid var(--line)}
+.phase-intel-modal .phase-intel-section:first-child{border-top:0}
+</style>
+<script id="ki21-8010-phase-analysis-result-fix">
+(function(){
+  'use strict';
+  const oldHandle=window.handleAction;
+  function phaseAnalysisHtml8010(g){
+    const arr=(xs,empty)=>xs&&xs.length?`<div class="phase-intel-list">${xs.map(x=>`<div class="phase-intel-item">${esc(x)}</div>`).join('')}</div>`:`<div class="phase-intel-text">${esc(empty)}</div>`;
+    return `<div class="phase-intel-modal"><div class="phase-intel-section"><div class="phase-intel-label">Einschätzung</div><div class="phase-intel-text">${esc(g.assessment||'')}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Bestätigte Fakten</div>${arr(g.confirmed,'Noch keine bestätigten Fakten.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Offene Punkte</div>${arr(g.open,'Keine kritischen offenen Punkte erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Risiken</div>${arr(g.risks,'Keine besonderen Risiken erkannt.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Empfohlene Strategie</div><div class="phase-intel-text">${esc(g.strategy||'')}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Fehlende Kundenentscheidung</div><div class="phase-intel-text">${esc(g.decision||'')}</div></div><div class="phase-intel-section"><div class="phase-intel-label">Relevante Fragen</div>${arr(g.questions,'Keine zusätzlichen Fragen.')}</div><div class="phase-intel-section"><div class="phase-intel-label">Nächster Kundenschritt</div><div class="phase-intel-text">${esc(g.next||'')}</div></div></div>`;
+  }
+  function openPhaseAnalysis8010(index){
+    const m=model(); if(!m)return;
+    index=Math.max(0,Math.min(4,Number(index||0)));
+    const g=ensurePhaseData(m.opp)[index].generatedAnalysis;
+    if(!g){toast('Noch keine Phasenanalyse vorhanden.');return;}
+    openModal(`<div class="sheet-title">Ausführliche Phasenanalyse</div><div class="sheet-sub">Phase ${index+1} · erzeugt am ${new Date(g.at).toLocaleString('de-DE')}</div>${phaseAnalysisHtml8010(g)}<div class="actions"><button class="btn" data-action="close-modal">Schließen</button><button class="btn primary" data-action="phase-generate">Analyse neu erstellen</button></div>`);
+  }
+  window.generatePhaseIntelligence=function(index){
+    const m=model(); if(!m)return;
+    index=Math.max(0,Math.min(4,Number(index||0)));
+    state.phaseGenerating=index; save(); render();
+    setTimeout(function(){
+      const fresh=model(); if(!fresh)return;
+      const phase=ensurePhaseData(fresh.opp)[index];
+      const content=phaseIntelligenceContent(index,fresh);
+      const generated={id:uid(),at:now(),sourceFingerprint:phaseSourceFingerprint(fresh.opp),...content};
+      if(phase.generatedAnalysis)phase.analysisHistory=(phase.analysisHistory||[]).concat([phase.generatedAnalysis]).slice(-10);
+      phase.generatedAnalysis=generated;
+      phase.started=true;
+      phase.updatedAt=generated.at;
+      fresh.opp.updatedAt=generated.at;
+      state.phaseGenerating=null;
+      state.view='phase';
+      state.phaseIndex=index;
+      save();
+      render();
+      setTimeout(function(){openPhaseAnalysis8010(index);},80);
+    },220);
+  };
+  window.handleAction=function(el){
+    const action=el&&el.dataset&&el.dataset.action;
+    if(action==='phase-analysis-open'){openPhaseAnalysis8010(Number(el.dataset.phase||state.phaseIndex||0));return;}
+    return oldHandle(el);
+  };
+  const oldRenderPhaseIntelligence=window.renderPhaseIntelligence;
+  window.renderPhaseIntelligence=function(index,m){
+    const html=oldRenderPhaseIntelligence(index,m);
+    const g=ensurePhaseData(m.opp)[index].generatedAnalysis;
+    if(!g)return html;
+    return html.replace('</section>',`<button class="btn primary phase-analysis-open-btn" data-action="phase-analysis-open" data-phase="${index}">Vollständige Analyse öffnen</button></section>`);
+  };
+})();
 </script>
 </body>
 </html>
