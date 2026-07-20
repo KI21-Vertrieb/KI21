@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.8 · Structured Import Core Fix</title>
+<title>KI21 Core 8.1.9 · Import Runtime Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.8 · Structured Import Core Fix';
+const VERSION='KI21 Core 8.1.9 · Import Runtime Fix';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1237,7 +1237,7 @@ try{save();render()}catch(e){console.warn('8.1.7 rerender skipped',e)}
 
 <script>
 // ── 8.1.8 STRUCTURED IMPORT CORE FIX ─────────────────────────
-VERSION='KI21 Core 8.1.8 · Structured Import Core Fix';
+VERSION='KI21 Core 8.1.9 · Import Runtime Fix';
 
 function germanNumber818(value){
   const s=String(value||'').trim().replace(/\s/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
@@ -1364,6 +1364,103 @@ buildReport=completeReport818;
 
 Object.values(state.opportunities||{}).forEach(o=>{if(o){if(!o.originalRaw)o.originalRaw=o.raw;enrichParsed818(o)}});
 save();render();
+</script>
+
+
+<script>
+// ── 8.1.9 IMPORT RUNTIME FIX ─────────────────────────────────
+VERSION='KI21 Core 8.1.9 · Import Runtime Fix';
+
+function joinHonorificLines819(raw){
+  const src=String(raw||'').replace(/\r/g,'').split('\n');
+  const out=[];
+  for(let i=0;i<src.length;i++){
+    const a=src[i].trim();
+    if(/^(Dr\.|Prof\.)$/i.test(a) && i+1<src.length){out.push(a+' '+src[++i].trim());continue;}
+    out.push(a);
+  }
+  return out;
+}
+function validPerson819(s){
+  s=String(s||'').trim();
+  if(!s||s.includes(':')||s.length>80)return false;
+  if(/^(Unternehmen|Opportunity|Stakeholder|Schmerz|Budget|Pilot|Weitere Information|Bestätigt sind|Noch offen sind|Mögliche|Zentrale|Ziel des Termins)/i.test(s))return false;
+  return /^(?:(?:Dr\.|Prof\.)\s+)?[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.'-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.'-]+)+$/.test(s);
+}
+function parseStakeholders819(raw){
+  const lines=joinHonorificLines819(raw); const recs=[]; let inSec=false, cur=null;
+  const section=/^(Unternehmen|Opportunity|Stakeholder|Schmerz|Budget|Pilot|Weitere Information|Ausgangssituation|Qualifizierungsstand|Erwartete|Aktuell sinnvoller)/i;
+  for(const line0 of lines){
+    const line=String(line0||'').trim(); if(!line)continue;
+    if(/^Stakeholder$/i.test(line)){inSec=true;cur=null;continue;}
+    if(inSec && section.test(line) && !/^Stakeholder$/i.test(line)){inSec=false;cur=null;}
+    if(!inSec)continue;
+    if(validPerson819(line)){cur={name:line,functionTitle:'',role:'',status:'',attitude:'',influence:'',authority:'',openPoint:''};recs.push(cur);continue;}
+    if(!cur)continue;
+    const m=line.match(/^([^:]{2,40}):\s*(.*)$/); if(!m)continue;
+    const k=m[1].toLowerCase(),v=m[2].trim();
+    if(k==='funktion')cur.functionTitle=v;
+    else if(k==='rolle')cur.role=v;
+    else if(k==='status')cur.status=v;
+    else if(k==='haltung')cur.attitude=v;
+    else if(k==='einfluss')cur.influence=v;
+    else if(k==='entscheidungsbefugnis')cur.authority=v;
+    else if(k==='offener punkt')cur.openPoint=v;
+  }
+  return recs;
+}
+function parseGermanMoney819(raw){
+  const m=String(raw||'').match(/Budgetrahmen[^\n]{0,120}?(?:bis|von)\s*([\d.]+(?:,\d+)?)\s*(?:€|Euro)/i) || String(raw||'').match(/Budget[^\n]{0,80}?([\d.]+(?:,\d+)?)\s*(?:€|Euro)/i);
+  if(!m)return 0;
+  return Number(m[1].replace(/\./g,'').replace(',','.'))||0;
+}
+function repairOpportunity819(o){
+  if(!o)return;
+  const raw=o.originalRaw||o.raw||''; const p=o.parsed||(o.parsed={});
+  const recs=parseStakeholders819(raw); p.stakeholders=recs;
+  const buyer=recs.find(r=>/wirtschaftliche\s+entscheider(?:in)?/i.test(r.role)) || recs.find(r=>/geschäftsführ/i.test(r.functionTitle)&&/(finanz|operations)/i.test(r.functionTitle));
+  const sponsor=recs.find(r=>/fachlicher\s+sponsor|\bsponsor\b/i.test(r.role));
+  if(buyer){p.economicBuyerName=buyer.name;p.economicBuyerFunction=buyer.functionTitle;p.economicBuyerRole=buyer.role;}
+  p.economicBuyerOpen=!!(buyer && /noch nicht|nicht eingebunden|unbekannt/i.test([buyer.status,buyer.attitude,buyer.openPoint].join(' '))) || /wirtschaftliche\s+entscheider(?:in)?[^\n]{0,180}(noch nicht eingebunden|nicht eingebunden)/i.test(raw);
+  if(sponsor)p.sponsor=true;
+  const budget=parseGermanMoney819(raw); if(budget)p.budget=budget;
+  const possible=raw.match(/(?:bei\s+etwa\s+)?(\d+\s*(?:-|–|bis)\s*\d+)\s+(?:dieser\s+)?Opportunit/i); if(possible)p.possible=possible[1].replace(/\s+/g,' ');
+  p.evidence=(p.evidence||[]).filter(e=>!['budget_ceiling','economic_buyer'].includes(e.type));
+  if(p.budget)p.evidence.push(evidence('budget_ceiling',p.budget));
+  p.evidence.push(evidence('economic_buyer',p.economicBuyerOpen?'not_involved':p.economicBuyerName?'identified':'unknown',p.economicBuyerOpen?'open':p.economicBuyerName?'confirmed':'open'));
+  o.evidence=p.evidence;
+}
+
+Object.values(state.opportunities||{}).forEach(repairOpportunity819);
+
+const deriveBefore819=derive;
+derive=function(opp){repairOpportunity819(opp);const d=deriveBefore819(opp);if(opp&&opp.parsed&&opp.parsed.economicBuyerOpen)d.buyer='not_involved';if(d.approval==='open'&&d.buyer!=='identified')d.dealStatus='Qualifizierung · wirtschaftlichen Entscheidungsweg klären';return d;};
+
+const insightsBefore819=decisionInsights814;
+decisionInsights814=function(opp,ds){
+  repairOpportunity819(opp); const r=insightsBefore819(opp,ds),p=opp.parsed||{}; const n=p.economicBuyerName||'die wirtschaftliche Entscheiderin'; const N=n.charAt(0).toUpperCase()+n.slice(1);
+  if(ds.buyer==='not_involved'||p.economicBuyerOpen){
+    r.assessment=`Der operative Schmerz ist belegt, der wirtschaftliche Nutzen jedoch noch nicht. Die Opportunity besitzt damit einen realen Handlungsanlass, aber noch keinen belastbaren Investitionsgrund. Der Deal kann erst vorankommen, wenn ${n} den Aufwand persönlich bestätigt und festlegt, welche messbare Verbesserung eine Pilotfreigabe rechtfertigt.`;
+    r.decision=`Soll ${n} die wirtschaftliche Relevanz des KI21-Piloten prüfen – und anhand welcher messbaren Kriterien soll anschließend über die Freigabe entschieden werden?`;
+    r.blocker=`Der Deal wird derzeit fachlich vom Vertrieb getragen, aber wirtschaftlich noch von niemandem. Solange ${n} Problem, Wirkung und Entscheidungsmaßstab nicht bestätigt, bleibt der vorhandene Budgetrahmen theoretisch.`;
+    r.actions[0]=`${N} in einen gemeinsamen Entscheidungstermin mit Sponsor und Sales Operations holen.`;
+    r.risks=[`${N} hat Problem, Nutzen und Freigabemaßstab noch nicht persönlich bestätigt.`,...(r.risks||[]).filter(x=>!/Problem, Nutzen und Freigabemaßstab|wirtschaftliche Entscheiderin.*persönlich|Miriam Albrecht.*persönlich/i.test(x))];
+    const base=(r.five||r.facts||[]).filter(x=>!/kennt beziehungsweise bestätigt|kennt bzw\.|wirtschaftliche Ausgangslage noch nicht/i.test(x));
+    r.five=uniqueFive816([...base,`${N} kennt beziehungsweise bestätigt die wirtschaftliche Ausgangslage noch nicht persönlich.`],opp);
+  }
+  return r;
+};
+
+function fullReport819(){
+  const m=model(); if(!m)return''; const {opp,ds,out}=m,p=opp.parsed||{}; repairOpportunity819(opp);
+  const areas=processAreaData(m)||[];
+  const areaText=areas.map(a=>`\n${a.name.toUpperCase()}\nStatus: ${a.status}\nEinschätzung: ${a.analysis.assessment||'—'}\n${lines817('Bestätigte Fakten:',a.analysis.confirmed)}\n${lines817('Offene Punkte:',a.analysis.open)}\n${lines817('Risiken:',a.analysis.risks)}\nStrategie: ${a.analysis.strategy||'—'}\nZentrale Entscheidung: ${a.analysis.decision||'—'}\nNächster Schritt: ${a.analysis.next||'—'}`).join('\n');
+  const evidence=(p.evidence||opp.evidence||[]).map(x=>`${x.type||x.key||'?'} | ${x.status||x.kind||'?'} | ${safeJson817(x.value)}`);
+  return `KI21 VOLLSTÄNDIGER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${p.company} · ${p.name}\n\n=== SALES DECISION BRIEF ===\n\nEINSCHÄTZUNG\n${out.assessment}\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n${out.facts.slice(0,5).map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${out.decision}\n\nGRÖSSTER ENGPASS\n• ${out.blocker}\n\nBUSINESS CASE UND NUTZEN\n• ${out.businessCase}\n• ROI ist erst belastbar, wenn Wirkungsquote, Zeitwert, Pilotpreis und Messzeitraum bestätigt sind.\n\nOFFENE PUNKTE\n${out.risks.map(x=>'• '+x).join('\n')}\n\nNÄCHSTER SCHRITT\n${out.actions.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n=== STATE CHECK ===\n• Freigabe: ${ds.approval}\n• Wirtschaftlicher Entscheider: ${ds.buyer}\n• Erkannter Name: ${p.economicBuyerName||'NICHT ERKANNT'}\n• Funktion: ${p.economicBuyerFunction||'—'}\n• Rolle: ${p.economicBuyerRole||'—'}\n• Budget: ${p.budget||0}\n• Business Case: ${ds.businessCase}\n• Dealstatus: ${ds.dealStatus}\n• Opportunity Score: ${ds.score}%\n• Entscheidungsreife: ${ds.readiness}%\n• Forecast: ${ds.forecast}%\n\n=== ERKANNTE STAKEHOLDER ===\n${(p.stakeholders||[]).length?(p.stakeholders||[]).map(r=>`• ${r.name} | ${r.functionTitle||'—'} | ${r.role||'—'} | Status: ${r.status||'—'}`).join('\n'):'• — keine Angaben —'}\n\n=== EVIDENCE STATE ===\n${evidence.length?evidence.map(x=>'• '+x).join('\n'):'• — keine Angaben —'}\n\n=== PARSED STATE ===\n${safeJson817({company:p.company,name:p.name,phase:p.phase,hours:p.hours,lost:p.lost,possible:p.possible,budget:p.budget,approvalOpen:p.approvalOpen,approvalConfirmed:p.approvalConfirmed,economicBuyerName:p.economicBuyerName,economicBuyerFunction:p.economicBuyerFunction,economicBuyerRole:p.economicBuyerRole,economicBuyerOpen:p.economicBuyerOpen,sponsor:p.sponsor,successOpen:p.successOpen,priceOpen:p.priceOpen})}\n\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n${areaText||'Keine Bereichsanalysen verfügbar.'}\n\n=== ORIGINALIMPORT ===\n${opp.originalRaw||opp.raw||'—'}\n\n=== TECHNISCHE DIAGNOSE ===\n• Anzahl Stakeholder: ${(p.stakeholders||[]).length}\n• Vollständiger Name verwendet: ${p.economicBuyerName?'JA':'NEIN'}\n• Budget korrekt erkannt: ${p.budget>0?'JA':'NEIN'}\n• Bereichsanalysen erzeugt: ${areas.length}/7\n`;
+}
+buildReport=fullReport819;
+openReport=function(){const txt=fullReport819();openModal(`<div class="sheet-title">KI21 Qualitäts- und Entscheidungsbericht</div><div class="sheet-sub">Vollständige Diagnose für die Qualitätsprüfung.</div><div class="report" id="reportText">${esc(txt)}</div><div class="actions"><button class="btn" id="closeReport819">Schließen</button><button class="btn primary" id="copyReport819">Bericht kopieren</button></div>`);document.getElementById('closeReport819').onclick=closeModal;document.getElementById('copyReport819').onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast('Bericht kopiert.')}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Bericht kopiert.')}}};
+try{save();render()}catch(e){console.warn('8.1.9 runtime refresh skipped',e)}
 </script>
 
 </body>
