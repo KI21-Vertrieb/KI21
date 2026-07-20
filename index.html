@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.0.12 · SIMPLE PHASE WORKFLOW';
+const VERSION='KI21 Core 8.0.13 · AUTOMATIC PHASE INTELLIGENCE';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -92,7 +92,7 @@ const risks=[];if(ds.buyer==='not_involved')risks.push('Wirtschaftliche Entschei
 const actions=ds.approval==='confirmed'?['Starttermin und Kickoff verbindlich festlegen.','Baseline, Messmethode und Verantwortliche bestätigen.','Auswertungstermin und Entscheidung nach dem Pilot terminieren.']:['Gemeinsamen Entscheidungstermin mit Sponsor und wirtschaftlicher Entscheiderin vereinbaren.','Eine einseitige Entscheidungsunterlage mit Schmerz, Pilotumfang, offenen Wirkungsannahmen und Erfolgskriterien vorbereiten.','Datenverfügbarkeit und organisatorische Pilotvoraussetzungen mit Sales Operations klären.'];
 return{assessment,blocker,recommendation,facts,risks,actions,decision:ds.approval==='confirmed'?'Projektstart verbindlich absichern.':'Wirtschaftliche Validierung und Pilotentscheidung gemeinsam herbeiführen.',businessCase:p.hours?'Ein operativer Handlungsbedarf ist dokumentiert. Der Business Case ist noch nicht als belastbare Entscheidungsgrundlage bestätigt.':'Der wirtschaftliche Ausgangspunkt ist noch nicht ausreichend beziffert.',forecastUp:ds.approval==='confirmed'?'wenn Start, Messung und Verantwortlichkeiten verbindlich bestätigt werden.':'wenn die wirtschaftliche Entscheiderin Schmerz, Erfolgskriterien und Freigabeweg direkt bestätigt.',forecastDown:'wenn kein direkter Zugang zum wirtschaftlichen Entscheider entsteht oder die Nutzenhypothese nicht bestätigt wird.'};}
 function model(){const opp=current();if(!opp)return null;const ds=derive(opp);return{opp,ds,out:runEngines(opp,ds)}}
-function render(){const m=model();if(!m){renderEmpty();return}const{opp,ds}=m;const root=$('#app');root.innerHTML=`<header class="header"><div class="header-top"><div><div class="brand">KI21</div><div class="version">${esc(VERSION)}</div></div><button class="icon-btn" data-action="opportunities" aria-label="Opportunity-Verwaltung öffnen">⚙</button></div><button class="opp-name" data-action="opportunity-detail" aria-label="Opportunity-Daten und Ergebnisse öffnen">${esc(opp.parsed.company)} ›</button><div class="status-line">Dealstatus: ${esc(ds.dealStatus)}</div></header><main class="wrap"><div class="tabs"><button class="tab ${state.view==='cockpit'?'active':''}" data-action="view" data-view="cockpit">Cockpit</button><button class="tab ${state.view==='phases'||state.view==='phase'?'active':''}" data-action="view" data-view="phases">Phasen</button><button class="icon-btn accent" data-action="import">+ Import</button></div><div style="text-align:right"><button class="link-btn" data-action="report">Testbericht öffnen</button></div><div id="view"></div><div class="footer">${esc(VERSION)} · One State · Evidence First · General Rules Only</div></main>`;if(state.view==='phases')renderPhases(m);else if(state.view==='phase')renderPhasePage(m,Number(state.phaseIndex||0));else renderCockpit(m)}
+function render(){const m=model();if(!m){renderEmpty();return}const{opp,ds}=m;const root=$('#app');root.innerHTML=`<header class="header"><div class="header-top"><div><div class="brand">KI21</div><div class="version">${esc(VERSION)}</div></div><button class="icon-btn" data-action="opportunities" aria-label="Opportunity-Verwaltung öffnen">⚙</button></div><button class="opp-name" data-action="opportunity-detail" aria-label="Opportunity-Daten und Ergebnisse öffnen">${esc(opp.parsed.company)} ›</button><div class="status-line">Dealstatus: ${esc(ds.dealStatus)}</div></header><main class="wrap"><div class="tabs"><button class="tab ${state.view==='cockpit'?'active':''}" data-action="view" data-view="cockpit">Cockpit</button><button class="tab ${state.view==='phases'||state.view==='phase'?'active':''}" data-action="view" data-view="phases">Phasen</button><button class="icon-btn accent" data-action="addition">+ Ergänzung</button></div><div style="text-align:right"><button class="link-btn" data-action="report">Testbericht öffnen</button></div><div id="view"></div><div class="footer">${esc(VERSION)} · One State · Evidence First · General Rules Only</div></main>`;if(state.view==='phases')renderPhases(m);else if(state.view==='phase')renderPhasePage(m,Number(state.phaseIndex||0));else renderCockpit(m)}
 function renderEmpty(){$('#app').innerHTML=`<main class="wrap"><div class="empty"><div class="brand">KI21</div><h1 style="color:var(--text)">Clean Core 8.0</h1><p>Die neue Architektur bewertet jede Opportunity zentral und gibt denselben Deal-State an Cockpit, Phasen und Bericht weiter.</p><button class="btn primary" id="startDemo">Demo-Opportunity laden</button><button class="btn" id="startImport" style="margin-top:8px">CRM-Import einfügen</button></div></main>`;$('#startDemo').onclick=()=>{newOpportunity(DEMO);render()};$('#startImport').onclick=openImport}
 function renderCockpit({opp,ds,out}){$('#view').innerHTML=`<section class="metrics"><div class="metric"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${ds.score}%</div><div class="metric-sub">${ds.score>=70?'HOCH':ds.score>=45?'MITTEL':'NIEDRIG'}</div></div><div class="metric"><div class="metric-label">EXECUTIVE FORECAST</div><div class="metric-value">${ds.forecast}%</div><div class="metric-sub">${ds.forecast>=65?'HOCH':ds.forecast>=40?'MITTEL':'NIEDRIG'}</div></div></section><section class="card blue"><div class="kicker">Sales Summary</div><div class="summary-row"><div class="label">Status</div><div class="value">${esc(out.assessment)}</div></div><div class="summary-row"><div class="label">Größter Engpass</div><div class="value">${esc(out.blocker)}</div></div><div class="summary-row insight"><div class="label">Warum dieser Schritt?</div><div class="value">Weiterer Fortschritt entsteht durch eine bestätigte Kundenentscheidung – nicht durch eine weitere allgemeine Produktpräsentation.</div></div><div class="summary-row"><div class="label">Empfehlung</div><div class="value">${esc(out.recommendation)}</div></div></section><section class="card orange"><div class="kicker">Fehlende Kundenentscheidung</div><div class="headline">${esc(out.decision)}</div></section><section class="grid"><div class="card red"><div class="kicker">Risiken & offene Punkte</div><div class="list">${out.risks.length?out.risks.map(x=>`<div class="item">${esc(x)}</div>`).join(''):'<div class="muted">Keine kritischen offenen Punkte erkannt.</div>'}</div></div><div class="card green"><div class="kicker">Business Case</div><div class="body">${esc(out.businessCase)}</div><div class="divider"></div><span class="badge ${ds.businessCase==='problem_quantified'?'warn':'risk'}">${ds.businessCase==='problem_quantified'?'Problem beziffert · Wirkung offen':'Noch nicht beziffert'}</span></div></section><section class="card violet"><div class="kicker">Nächster Deal-Schritt</div><div class="list">${out.actions.map((x,i)=>`<div class="item ${i===0?'primary':''}">${esc(x)}</div>`).join('')}</div></section><section class="card"><div class="kicker">Executive Forecast</div><div class="headline">${ds.forecast}% · ${ds.forecast>=65?'HOCH':ds.forecast>=40?'MITTEL':'NIEDRIG'}</div><div class="divider"></div><div class="body"><b style="color:var(--green)">↑ Erhöht sich deutlich,</b> ${esc(out.forecastUp)}<br><br><b style="color:var(--red)">↓ Sinkt deutlich,</b> ${esc(out.forecastDown)}</div></section>`}
 function phaseResultSummary(index,m){
@@ -112,8 +112,9 @@ function ensurePhaseData(opp){
 }
 function phaseSourceFingerprint(opp){
   const base=normalize((opp&&opp.raw)||'');
-  const notes=ensurePhaseData(opp).map((p,i)=>i+':'+normalize(p.note||'')+'|'+JSON.stringify(p.answers||{})).join('||');
-  let h=2166136261;const str=base+'##'+notes;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return String(h>>>0);
+  const notes=ensurePhaseData(opp).map((p,i)=>i+':'+JSON.stringify(p.answers||{})).join('||');
+  const additions=(Array.isArray(opp.additions)?opp.additions:[]).map(x=>normalize(x&&x.text||'')).join('||');
+  let h=2166136261;const str=base+'##'+notes+'##'+additions;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return String(h>>>0);
 }
 function phaseAnswerEvidence(index,answers){
   const a=answers||{}, lines=[];
@@ -157,8 +158,9 @@ function phaseAnswerEvidence(index,answers){
   return lines;
 }
 function combinedEvidence(opp){
-  const phase=ensurePhaseData(opp).flatMap((x,i)=>phaseAnswerEvidence(i,x.answers).concat(x.note?[x.note]:[])).filter(Boolean).join('\n');
-  return normalize([opp.raw,phase].filter(Boolean).join('\n\n'));
+  const phase=ensurePhaseData(opp).flatMap((x,i)=>phaseAnswerEvidence(i,x.answers)).filter(Boolean).join('\n');
+  const additions=(Array.isArray(opp.additions)?opp.additions:[]).map(x=>normalize(x&&x.text||'')).filter(Boolean).join('\n');
+  return normalize([opp.raw,additions,phase].filter(Boolean).join('\n\n'));
 }
 function phaseQuestions(index,m){
   const p=m.opp.parsed, ds=m.ds;
@@ -205,7 +207,7 @@ function renderPhasePage(m,index){
   const history=(phase.history||[]).slice().reverse().slice(0,5);
   const overview=`<section class="card"><div class="kicker">Bereits bekannt und bisher erreicht</div>${results.length?`<div class="phase-result">${results.map(x=>`<div class="phase-result-text" style="margin-bottom:5px">• ${esc(x)}</div>`).join('')}</div>`:`<div class="phase-auto-note">Noch keine bestätigten Ergebnisse in dieser Phase.</div>`}${history.length?`<div class="phase-history"><div class="phase-history-title">Bisherige Prüfstände</div>${history.map(h=>`<div class="phase-history-row"><span class="phase-history-time">${new Date(h.at).toLocaleString('de-DE')}</span>${esc(h.summary||'Phase geprüft')}</div>`).join('')}</div>`:''}</section>`;
   const cta=`<section class="card phase-review-cta"><div class="phase-review-head"><div><div class="phase-review-title">${esc(actionLabel)}</div><div class="phase-review-sub">${esc(actionSub)}</div></div><span class="phase-review-badge ${st.key}">${esc(st.label)}</span></div>${known.length?`<div class="phase-known">${known.map(x=>`<span class="phase-chip">${esc(x)}</span>`).join('')}</div>`:''}<button class="btn primary full" data-action="phase-review">${esc(actionLabel)}</button></section>`;
-  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Aktuelle Prüfung</div><div class="phase-open-title">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen. Ergänze nur neue entscheidungsrelevante Informationen.</div>`}<div class="phase-optional"><div class="phase-question-label">Kurze Ergänzung zum Gespräch <span style="color:var(--muted);font-weight:600">(optional)</span></div><textarea id="phaseNote" placeholder="Nur neue, entscheidungsrelevante Information ergänzen …">${esc(phase.note||'')}</textarea></div><div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Prüfung übernehmen</button><button class="btn" data-action="phase-next" ${index===4?'disabled':''}>Nächste Phase →</button></div></section>`:'';
+  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Aktuelle Prüfung</div><div class="phase-open-title">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen.</div>`}<div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Prüfung übernehmen</button><button class="btn" data-action="phase-next" ${index===4?'disabled':''}>Nächste Phase →</button></div></section>`:'';
   $('#view').innerHTML=`<div class="phase-page-head"><button class="back-btn" data-action="view" data-view="phases" aria-label="Zurück zu den Phasen">‹</button><div><div class="phase-page-title">Phase ${index+1}: ${esc(names[index])}</div><div class="phase-page-sub">${esc(subs[index])}</div></div></div>${cta}${overview}${editor}<section class="card violet"><div class="kicker">Aktueller nächster Kundenschritt</div><div class="body">${esc(m.out.actions[0]||m.out.recommendation)}</div></section>`;
 }
 function saveCurrentPhase(){
@@ -384,7 +386,7 @@ function renderPhasePage(m,index){
   const result=renderPhaseResultCard(index,m);
   const intelligence=renderPhaseIntelligence(index,m);
   const cta=`<section class="card phase-review-cta"><div class="phase-review-head"><div><div class="phase-review-title">${esc(actionLabel)}</div><div class="phase-review-sub">${esc(actionSub)}</div></div><span class="phase-review-badge ${st.key}">${esc(st.label)}</span></div>${known.length?`<div class="phase-known">${known.map(x=>`<span class="phase-chip">${esc(x)}</span>`).join('')}</div>`:''}<button class="btn primary full" data-action="phase-review">${esc(actionLabel)}</button></section>`;
-  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Aktuelle Prüfung</div><div class="phase-open-title">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen. Ergänze nur neue entscheidungsrelevante Informationen.</div>`}<div class="phase-optional"><div class="phase-question-label">Kurze Ergänzung zum Gespräch <span style="color:var(--muted);font-weight:600">(optional)</span></div><textarea id="phaseNote" placeholder="Nur neue, entscheidungsrelevante Information ergänzen …">${esc(phase.note||'')}</textarea></div><div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Prüfung übernehmen</button><button class="btn" data-action="phase-next" ${index===4?'disabled':''}>Nächste Phase →</button></div></section>`:'';
+  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Aktuelle Prüfung</div><div class="phase-open-title">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen.</div>`}<div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Prüfung übernehmen</button><button class="btn" data-action="phase-next" ${index===4?'disabled':''}>Nächste Phase →</button></div></section>`:'';
   $('#view').innerHTML=`<div class="phase-page-head"><button class="back-btn" data-action="view" data-view="phases" aria-label="Zurück zu den Phasen">‹</button><div><div class="phase-page-title">Phase ${index+1}: ${esc(names[index])}</div><div class="phase-page-sub">${esc(subs[index])}</div></div></div>${result}${intelligence}${cta}${editor}`;
 }
 
@@ -426,7 +428,7 @@ renderPhasePage=function(m,index){
   const result=renderPhaseResultCard(index,m);
   const intelligence=renderPhaseIntelligence(index,m);
   const cta=!editing?`<section class="card phase-review-cta"><div class="phase-review-head"><div><div class="phase-review-title">Phase bearbeiten</div><div class="phase-review-sub">KI21 zeigt nur die noch offenen Punkte. Alles Weitere wird beim Speichern automatisch ausgewertet.</div></div></div>${known.length?`<div class="phase-known">${known.map(x=>`<span class="phase-chip">${esc(x)}</span>`).join('')}</div>`:''}<button class="btn primary full" data-action="phase-review">Phase bearbeiten</button></section>`:'';
-  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen. Ergänze nur neue entscheidungsrelevante Informationen.</div>`}<div class="phase-optional"><div class="phase-question-label">Kurze Ergänzung zum Gespräch <span style="color:var(--muted);font-weight:600">(optional)</span></div><textarea id="phaseNote" placeholder="Nur neue, entscheidungsrelevante Information ergänzen …">${esc(phase.note||'')}</textarea></div><div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Speichern & auswerten</button></div></section>`:'';
+  const editor=editing?`<section class="card phase-editor-shell"><div class="kicker">Nur noch zu klären</div>${qs.length?qs.map(q=>`<div class="phase-question"><div class="phase-question-label">${esc(q.label)}</div><select class="phase-answer" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="phase-complete">Aktuell sind keine Pflichtfragen offen.</div>`}<div class="phase-nav-actions"><button class="btn" data-action="phase-cancel">Abbrechen</button><button class="btn primary" data-action="phase-save">Speichern & auswerten</button></div></section>`:'';
   $('#view').innerHTML=`<div class="phase-page-head"><button class="back-btn" data-action="view" data-view="phases" aria-label="Zurück zu den Phasen">‹</button><div><div class="phase-page-title">Phase ${index+1}: ${esc(names[index])}</div><div class="phase-page-sub">${esc(subs[index])}</div></div></div>${result}${intelligence}${cta}${editor}`;
 };
 
@@ -435,8 +437,7 @@ saveCurrentPhase=function(){
   const i=Math.max(0,Math.min(4,Number(state.phaseIndex||0)));
   const data=ensurePhaseData(opp),answers={...(data[i].answers||{})};
   document.querySelectorAll('.phase-answer').forEach(el=>{answers[el.dataset.key]=el.value||''});
-  const note=$('#phaseNote'),noteValue=normalize(note?note.value:data[i].note||'');
-  data[i].answers=answers;data[i].note=noteValue;data[i].updatedAt=now();data[i].started=true;
+  data[i].answers=answers;data[i].note='';data[i].updatedAt=now();data[i].started=true;
   opp.updatedAt=now();opp.parsed=parseImport(combinedEvidence(opp));opp.evidence=opp.parsed.evidence;
   data[i].lastReviewedFingerprint=phaseSourceFingerprint(opp);
   let fresh={opp,ds:derive(opp)};fresh.out=runEngines(opp,fresh.ds);
@@ -453,6 +454,59 @@ renderPhases=function({opp,ds}){
   $('#view').innerHTML=`<section class="card"><div class="kicker">Opportunity Workflow</div>${phases.map((p,i)=>{const st=phaseStatus(i,m),r=phaseQualificationResult(i,m),g=ensurePhaseData(opp)[i].generatedAnalysis;return `<button class="phase" data-action="phase" data-phase="${i}" style="width:100%;color:inherit;text-align:left"><div class="phase-num ${g?'done':''}">${i+1}</div><div class="phase-main"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="phase-title">${esc(p[0])}</div><span class="phase-status ${g?'done':st.key}">${g?'Ausgewertet':'Offen'}</span></div><div class="phase-sub">${esc(p[1])}</div><div class="phase-list-result"><strong>${esc(r.title)}</strong><span>${esc(r.level)} · ${esc(r.gap)}</span></div></div><div class="phase-arrow">›</div></button>`}).join('')}</section><section class="card orange"><div class="kicker">Einfacher Ablauf</div><div class="body">Phase öffnen → „Phase bearbeiten“ → nur offene Punkte beantworten → „Speichern & auswerten“. KI21 aktualisiert danach automatisch Phasenergebnis, ausführliche Analyse, Cockpit, Score und Forecast.</div></section>`;
 };
 
+
+// ── 8.0.13 GLOBAL ADDITIONS & AUTOMATIC PHASE 4 ─────────────
+function ensureAdditions(opp){if(!opp.additions||!Array.isArray(opp.additions))opp.additions=[];return opp.additions}
+function openAddition(){
+  const opp=current();if(!opp)return;
+  openModal(`<div class="sheet-title">Neue Information ergänzen</div><div class="sheet-sub">Füge Gesprächsnotizen, E-Mails oder neue Kundenentscheidungen ein. KI21 ordnet die Information automatisch der Opportunity und den betroffenen Phasen zu.</div><textarea id="additionText" placeholder="Neue Information einfügen …"></textarea><div class="actions"><button class="btn" data-action="close-modal">Abbrechen</button><button class="btn primary" id="saveAddition">Speichern & auswerten</button></div>`);
+  $('#saveAddition').onclick=function(){
+    const text=normalize($('#additionText').value);if(!text){toast('Bitte neue Information einfügen.');return}
+    ensureAdditions(opp).push({id:uid(),text,at:now()});opp.updatedAt=now();
+    opp.parsed=parseImport(combinedEvidence(opp));opp.evidence=opp.parsed.evidence;
+    refreshAutomaticPhase4(opp,true);save();closeModal();state.view='cockpit';render();toast('Ergänzung gespeichert und Opportunity aktualisiert.');
+  };
+}
+function refreshAutomaticPhase4(opp,force){
+  if(!opp)return;
+  const data=ensurePhaseData(opp),phase=data[3],fp=phaseSourceFingerprint(opp);
+  if(!force&&phase.generatedAnalysis&&phase.lastReviewedFingerprint===fp)return;
+  const ds=derive(opp),m={opp,ds,out:runEngines(opp,ds)};
+  const content=phaseIntelligenceContent(3,m),generated={id:uid(),at:now(),sourceFingerprint:fp,...content};
+  if(phase.generatedAnalysis)phase.analysisHistory=(phase.analysisHistory||[]).concat([phase.generatedAnalysis]).slice(-10);
+  phase.generatedAnalysis=generated;phase.started=true;phase.updatedAt=generated.at;phase.lastReviewedFingerprint=fp;
+}
+const _handleAction8013=handleAction;
+handleAction=function(el){
+  if(el&&el.dataset&&el.dataset.action==='addition'){openAddition();return}
+  return _handleAction8013(el);
+};
+const _render8013=render;
+render=function(){const opp=current();if(opp)refreshAutomaticPhase4(opp,false);return _render8013()};
+const _saveCurrentPhase8013=saveCurrentPhase;
+saveCurrentPhase=function(){
+  const i=Math.max(0,Math.min(4,Number(state.phaseIndex||0)));
+  _saveCurrentPhase8013();
+  const opp=current();if(opp&&i!==3){refreshAutomaticPhase4(opp,true);save();render()}
+};
+const _renderPhasePage8013=renderPhasePage;
+renderPhasePage=function(m,index){
+  index=Math.max(0,Math.min(4,index));
+  if(index!==3)return _renderPhasePage8013(m,index);
+  refreshAutomaticPhase4(m.opp,false);
+  const names=['Qualifizierung','Bedarfsanalyse & Demo','Nachbereitung','Wirtschaftlicher Nutzen','Angebot & Abschluss'];
+  const subs=['Problem und Sponsor prüfen','Schmerz, Auswirkungen und Zielbild klären','Erkenntnisse und Kundenschritt sichern','Wirtschaftlichen Nutzen automatisch ableiten','Freigabe, Bedingungen und Start klären'];
+  const result=renderPhaseResultCard(index,m),intelligence=renderPhaseIntelligence(index,m);
+  $('#view').innerHTML=`<div class="phase-page-head"><button class="back-btn" data-action="view" data-view="phases" aria-label="Zurück zu den Phasen">‹</button><div><div class="phase-page-title">Phase 4: ${esc(names[3])}</div><div class="phase-page-sub">${esc(subs[3])}</div></div></div>${result}${intelligence}<section class="card green"><div class="kicker">Automatische Aktualisierung</div><div class="body">Phase 4 wird automatisch neu ausgewertet, sobald eine globale Ergänzung gespeichert oder eine andere Phase mit neuen Kundeninformationen abgeschlossen wird. Eine separate Bearbeitung oder Generierung ist nicht erforderlich.</div></section>`;
+};
+// Phase 4 has no manual edit/generation actions.
+const _renderPhaseIntelligence8013=renderPhaseIntelligence;
+renderPhaseIntelligence=function(index,m){
+  let html=_renderPhaseIntelligence8013(index,m);
+  if(Number(index)===3)html=html.replace(/<div class="phase-intel-actions">[\s\S]*?<\/div><\/section>$/,'</section>');
+  return html;
+};
+
 window.addEventListener('error',e=>{console.error('KI21 Core 8 error',e.error||e.message)});
 dedupeOpportunities();
 if(!state.activeId||!state.opportunities[state.activeId]){newOpportunity(DEMO)}
@@ -462,5 +516,76 @@ state.phaseGenerating=null;
 save();
 render();
 </script>
+
+<style>
+.process-hero{padding:18px 18px 14px}.process-hero h2{margin:0 0 6px;font-size:22px}.process-hero p{margin:0;color:var(--muted);line-height:1.45}
+.process-list{display:grid;gap:10px}.process-item{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}.process-toggle{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:16px;display:flex;gap:12px;align-items:center}.process-index{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(88,166,255,.12);color:var(--blue);font-weight:800}.process-copy{flex:1;min-width:0}.process-name{font-weight:800;font-size:16px}.process-sub{color:var(--muted);font-size:13px;margin-top:3px}.process-state{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:rgba(255,166,0,.12);color:var(--orange);white-space:nowrap}.process-chevron{font-size:22px;color:var(--muted);transition:.2s}.process-item.open .process-chevron{transform:rotate(90deg)}.process-panel{display:none;padding:0 16px 16px}.process-item.open .process-panel{display:block}.process-section{padding:12px 0;border-top:1px solid var(--line)}.process-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}.process-text{line-height:1.5}.process-listing{display:grid;gap:7px}.process-bullet{padding-left:14px;position:relative;line-height:1.45}.process-bullet:before{content:'•';position:absolute;left:0;color:var(--blue)}
+.input-grid{display:grid;gap:12px}.input-card{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px}.input-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.input-title{font-weight:800;font-size:16px}.input-desc{color:var(--muted);font-size:13px;line-height:1.45;margin-top:4px}.input-status{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:rgba(88,166,255,.12);color:var(--blue);white-space:nowrap}.input-body{margin-top:14px}.input-question{margin-top:12px}.input-question:first-child{margin-top:0}.input-question label{display:block;font-weight:700;margin-bottom:6px}.input-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.input-summary{margin-top:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);color:var(--muted);font-size:13px;line-height:1.45}.nav-3 .tab{flex:1}.input-card textarea{min-height:140px}
+@media(max-width:540px){.process-state{display:none}.tabs.nav-3{gap:6px}.tabs.nav-3 .tab{font-size:12px;padding:10px 6px}.input-head{align-items:flex-start}}
+</style>
+<script>
+// ── 8.1.0 SALES PROCESS + CENTRAL INPUTS ALPHA ─────────────
+state.processOpen = Number.isInteger(state.processOpen) ? state.processOpen : 0;
+state.inputEdit = state.inputEdit || null;
+
+function processAreaData(m){
+  const p=m.opp.parsed,ds=m.ds,out=m.out,ph=ensurePhaseData(m.opp);
+  const g=i=>ph[i]&&ph[i].generatedAnalysis;
+  const fallback=(assessment,open,strategy,next)=>({assessment,confirmed:out.facts.slice(0,4),open,risks:out.risks.slice(0,3),strategy,decision:out.decision,next});
+  return [
+    {name:'Qualifizierung',sub:'Problem, Sponsor, Entscheider und Entscheidungsweg',analysis:g(0)||fallback(out.assessment,out.risks,'Entscheider, Sponsor und verbindlichen Entscheidungsweg absichern.',out.actions[0]),status:ds.buyer==='identified'?'teilweise geklärt':'offen'},
+    {name:'Bedarfsanalyse',sub:'Situation, Problem, Auswirkungen und gewünschter Nutzen',analysis:g(1)||fallback('Der Bedarf ist aus den vorhandenen Informationen abgeleitet, aber noch nicht vollständig validiert.',out.risks,'Mit SPIN die Auswirkungen und den gewünschten Nutzen aus Kundensicht vertiefen.',out.actions[0]),status:p.hours||p.lost?'teilweise geklärt':'offen'},
+    {name:'Demo',sub:'Lösungsbild, relevante Anwendungsfälle und bestätigte Passung',analysis:g(1)||fallback('Die Demo muss sich an den bestätigten Problemen und Entscheidungskriterien orientieren.',['Bestätigte Demo-Kriterien prüfen.'],'Nur die für die Kundenentscheidung relevanten Anwendungsfälle demonstrieren.','Demo-Ziel und Erfolgskriterien mit dem Kunden bestätigen.'),status:'offen'},
+    {name:'Einwandbehandlung',sub:'Einwände, Widerstände und geeignete Argumentation',analysis:g(2)||fallback('Einwände werden aus Ergänzungen und Gesprächsergebnissen automatisch erkannt.',['Konkrete Einwände und Ursachen noch nicht vollständig dokumentiert.'],'Einwände nicht isoliert beantworten, sondern auf wirtschaftlichen Schmerz und Entscheidungslogik zurückführen.','Nächsten Einwand mit Ursache und gewünschtem Nachweis dokumentieren.'),status:g(2)?'teilweise geklärt':'offen'},
+    {name:'Wirtschaftlicher Nutzen & ROI',sub:'Nutzenhypothese, Business Case und finanzielle Wirkung',analysis:g(3)||fallback(out.businessCase,out.risks,'Problemwert, erwartete Wirkung und Messlogik sauber trennen.','Wirkungsannahme und Erfolgskriterien mit dem Kunden bestätigen.'),status:ds.businessCase==='problem_quantified'?'teilweise geklärt':'offen'},
+    {name:'Angebot',sub:'Leistungsumfang, Konditionen, Kriterien und Angebotsrisiken',analysis:g(4)||fallback('Ein Angebot ist erst stark, wenn Leistungsumfang und Entscheidungsbedingungen bestätigt sind.',['Angebotsparameter und Freigabebedingungen prüfen.'],'Angebot konsequent an bestätigte Entscheidungskriterien und Pilotziele binden.','Angebotsparameter mit dem Kunden abstimmen.'),status:ds.approval==='confirmed'?'belastbar':'offen'},
+    {name:'Abschluss',sub:'Freigabe, Einkauf, Verhandlung und verbindlicher Start',analysis:g(4)||fallback(out.assessment,out.risks,'Den Abschluss als Folge bestätigter Kundenentscheidungen führen, nicht als isolierte Preisverhandlung.',out.actions[0]),status:ds.approval==='confirmed'?'belastbar':'offen'}
+  ];
+}
+function processListHtml(arr,empty){return arr&&arr.length?`<div class="process-listing">${arr.map(x=>`<div class="process-bullet">${esc(x)}</div>`).join('')}</div>`:`<div class="muted">${esc(empty)}</div>`}
+function renderSalesProcess(m){
+  const areas=processAreaData(m);
+  $('#view').innerHTML=`<section class="card process-hero"><div class="kicker">Verkaufsprozess</div><h2>Ergebnisse entlang des Deals</h2><p>Die Bereiche führen durch den Verkaufsprozess. Neue Informationen werden zentral eingegeben und automatisch den passenden Bereichen zugeordnet.</p></section><section class="process-list">${areas.map((a,i)=>{const open=state.processOpen===i;return `<div class="process-item ${open?'open':''}"><button class="process-toggle" data-action="process-toggle" data-index="${i}"><div class="process-index">${i+1}</div><div class="process-copy"><div class="process-name">${esc(a.name)}</div><div class="process-sub">${esc(a.sub)}</div></div><span class="process-state">${esc(a.status)}</span><span class="process-chevron">›</span></button><div class="process-panel"><div class="process-section"><div class="process-label">Einschätzung</div><div class="process-text">${esc(a.analysis.assessment||'Noch keine belastbare Einschätzung.')}</div></div><div class="process-section"><div class="process-label">Bestätigte Fakten</div>${processListHtml(a.analysis.confirmed,'Noch keine bestätigten Fakten.')}</div><div class="process-section"><div class="process-label">Offene Punkte</div>${processListHtml(a.analysis.open,'Keine kritischen offenen Punkte erkannt.')}</div><div class="process-section"><div class="process-label">Empfohlene Strategie</div><div class="process-text">${esc(a.analysis.strategy||'Noch keine Strategie abgeleitet.')}</div></div><div class="process-section"><div class="process-label">Nächster Kundenschritt</div><div class="process-text">${esc(a.analysis.next||a.analysis.decision||'Nächsten verbindlichen Kundenschritt klären.')}</div></div></div></div>`}).join('')}</section>`;
+}
+function inputCard(title,desc,status,action,label,body=''){return `<section class="input-card"><div class="input-head"><div><div class="input-title">${esc(title)}</div><div class="input-desc">${esc(desc)}</div></div><span class="input-status">${esc(status)}</span></div>${body?`<div class="input-body">${body}</div>`:''}<div class="input-actions"><button class="btn primary" data-action="${action}">${esc(label)}</button></div></section>`}
+function renderInputQuestions(m,phaseIndex,type){
+  const phase=ensurePhaseData(m.opp)[phaseIndex],qs=phaseQuestions(phaseIndex,m);
+  if(state.inputEdit!==type){const answered=Object.values(phase.answers||{}).filter(Boolean).length;return `<div class="input-summary">${answered?`${answered} Antwort(en) gespeichert.`:'KI21 zeigt nur Fragen, die für die nächste Kundenentscheidung noch relevant sind.'}</div>`}
+  return `${qs.length?qs.map(q=>`<div class="input-question"><label>${esc(q.label)}</label><select class="central-answer" data-phase="${phaseIndex}" data-key="${esc(q.key)}">${q.options.map(o=>`<option value="${esc(o[0])}" ${(phase.answers&&phase.answers[q.key]===o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`).join(''):`<div class="input-summary">Aktuell sind keine Pflichtfragen offen.</div>`}<div class="input-actions"><button class="btn" data-action="input-cancel">Abbrechen</button><button class="btn primary" data-action="input-save" data-phase="${phaseIndex}">Speichern & auswerten</button></div>`;
+}
+function renderInputs(m){
+  const additions=ensureAdditions(m.opp);
+  const qBody=renderInputQuestions(m,0,'qualification');
+  const sBody=renderInputQuestions(m,1,'spin');
+  const oBody=renderInputQuestions(m,4,'offer');
+  $('#view').innerHTML=`<section class="card process-hero"><div class="kicker">Eingaben</div><h2>Alles, was KI21 noch benötigt</h2><p>CRM-Daten, gezielte Fragen und neue Gesprächsinformationen laufen an einer Stelle zusammen. KI21 aktualisiert danach automatisch Cockpit und Verkaufsprozess.</p></section><div class="input-grid">${inputCard('CRM-Import','Neue Opportunity anlegen oder vollständige CRM-Daten übernehmen.','Ausgangsdaten','import','CRM-Import öffnen',`<div class="input-summary">Aktuelle Opportunity: ${esc(m.opp.parsed.company)} · ${esc(m.opp.parsed.name)}</div>`)}${inputCard('Qualifizierungsfragen','Nur offene Fragen zu Sponsor, Entscheider, Budget und Entscheidungsweg.','Gezielte Fragen','input-edit','Fragen bearbeiten',qBody).replace('data-action="input-edit"','data-action="input-edit" data-type="qualification"')}${inputCard('SPIN-Fragen','Gezielte Situation-, Problem-, Auswirkungs- und Nutzenfragen für das nächste Gespräch.','Gesprächsführung','input-edit','SPIN-Fragen bearbeiten',sBody).replace('data-action="input-edit"','data-action="input-edit" data-type="spin"')}${inputCard('Ergänzungen','Gesprächsnotizen, E-Mails, Einwände und neue Kundenentscheidungen ergänzen.','laufend', 'addition','Neue Ergänzung',`<div class="input-summary">${additions.length?`${additions.length} Ergänzung(en) gespeichert. Letzte Aktualisierung: ${new Date(additions[additions.length-1].at).toLocaleString('de-DE')}`:'Noch keine Ergänzungen gespeichert.'}</div>`)}${inputCard('Angebotsparameter','Leistungsumfang, Konditionen, Freigaben und Abschlussbedingungen ergänzen.','späte Dealphase','input-edit','Angebotsparameter bearbeiten',oBody).replace('data-action="input-edit"','data-action="input-edit" data-type="offer"')}</div>`;
+}
+function saveCentralInputs(phaseIndex){
+  const opp=current();if(!opp)return;const data=ensurePhaseData(opp),phase=data[phaseIndex],answers={...(phase.answers||{})};
+  document.querySelectorAll(`.central-answer[data-phase="${phaseIndex}"]`).forEach(el=>answers[el.dataset.key]=el.value||'');
+  phase.answers=answers;phase.started=true;phase.updatedAt=now();opp.updatedAt=now();opp.parsed=parseImport(combinedEvidence(opp));opp.evidence=opp.parsed.evidence;
+  let fresh={opp,ds:derive(opp)};fresh.out=runEngines(opp,fresh.ds);createPhaseAnalysisNow(phaseIndex,fresh);if(phaseIndex!==3)refreshAutomaticPhase4(opp,true);
+  state.inputEdit=null;save();render();toast('Gespeichert und Verkaufsprozess aktualisiert.');
+}
+const _render810=render;
+render=function(){
+  const m=model();if(!m){renderEmpty();return}
+  const {opp,ds}=m,root=$('#app');
+  root.innerHTML=`<header class="header"><div class="header-top"><div><div class="brand">KI21</div><div class="version">${esc(VERSION)}</div></div><button class="icon-btn" data-action="opportunities" aria-label="Opportunity-Verwaltung öffnen">⚙</button></div><button class="opp-name" data-action="opportunity-detail">${esc(opp.parsed.company)} ›</button><div class="status-line">Dealstatus: ${esc(ds.dealStatus)}</div></header><main class="wrap"><div class="tabs nav-3"><button class="tab ${state.view==='cockpit'?'active':''}" data-action="view" data-view="cockpit">Cockpit</button><button class="tab ${state.view==='process'?'active':''}" data-action="view" data-view="process">Verkaufsprozess</button><button class="tab ${state.view==='inputs'?'active':''}" data-action="view" data-view="inputs">Eingaben</button></div><div style="text-align:right"><button class="link-btn" data-action="report">Testbericht öffnen</button></div><div id="view"></div><div class="footer">${esc(VERSION)} · One State · Evidence First · General Rules Only</div></main>`;
+  if(state.view==='process')renderSalesProcess(m);else if(state.view==='inputs')renderInputs(m);else renderCockpit(m);
+};
+const _handleAction810=handleAction;
+handleAction=function(el){
+  const a=el&&el.dataset?el.dataset.action:'';
+  if(a==='process-toggle'){state.processOpen=Number(el.dataset.index||0);save();render();return}
+  if(a==='input-edit'){state.inputEdit=el.dataset.type||null;save();render();return}
+  if(a==='input-cancel'){state.inputEdit=null;save();render();return}
+  if(a==='input-save'){saveCentralInputs(Number(el.dataset.phase||0));return}
+  return _handleAction810(el);
+};
+if(!['cockpit','process','inputs'].includes(state.view))state.view='cockpit';
+save();render();
+</script>
+
 </body>
 </html>
