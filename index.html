@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.1.2 · Controlled CRM Import</title>
+<title>KI21 Core 8.1.3 · Import Evidence Quality</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.app{min-height:100vh;padding-bottom:max(110px,calc(70px + env(safe-area-inset-bottom)))}
@@ -62,7 +62,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.1.2 · Controlled CRM Import';
+const VERSION='KI21 Core 8.1.3 · Import Evidence Quality';
 const STORE_KEY='ki21_core8_state_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -743,6 +743,110 @@ openImport=function(){
   document.getElementById('cancelImportFinal812').onclick=closeModal;
   document.getElementById('applyImport812').onclick=()=>{const selected=items.filter(x=>x.selected);if(!selected.length){toast('Bitte mindestens eine Information auswählen.');return;}const selectedRaw=selected.map(x=>x.line).join('\n');newOpportunity(selectedRaw);closeModal();render();toast(`${selected.length} Informationen übernommen und automatisch zugeordnet.`);};
 };
+</script>
+
+
+<style>
+.import-group{margin-top:14px}.import-group-title{font-size:10px;font-weight:950;letter-spacing:1.1px;text-transform:uppercase;color:#ff9b45;margin:0 0 7px}
+.import-item-grid{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.import-controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.import-controls label{font-size:9px;color:var(--muted);font-weight:850;letter-spacing:.7px;text-transform:uppercase}
+.import-controls select{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);color:var(--text);padding:8px;font:750 11px inherit}
+.import-insight{margin-top:10px;padding:10px 11px;border-radius:11px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.18);font-size:11px;line-height:1.45;color:var(--muted)}
+.import-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.import-summary-box{padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);text-align:center}.import-summary-box b{display:block;font-size:16px;color:var(--text)}.import-summary-box span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+@media(max-width:540px){.import-controls{grid-template-columns:1fr}.import-summary-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+<script>
+// ── 8.1.3 IMPORT EVIDENCE QUALITY ─────────────────────────
+const IMPORT_CATEGORIES_813=['Unternehmen','Opportunity','Stakeholder','Schmerz & Aufwand','Budget & Entscheidung','Pilot','Demo','Einwand','Angebot & Abschluss','Weitere Information'];
+const IMPORT_KINDS_813=['Fakt','Hypothese','Offen'];
+function splitImportStatements813(raw){
+  const headings=new Set(['crm-import','unternehmen','opportunity','stakeholder','schmerz und aufwand','budget und entscheidung','pilot','ausgangssituation','qualifizierungsstand','erwartete einwände und risiken','aktuell sinnvoller nächster kundenschritt']);
+  let section='Weitere Information',out=[];
+  String(raw||'').replace(/\r/g,'').split(/\n+/).forEach(line=>{
+    line=line.trim().replace(/^[-•]\s*/,''); if(!line||/^[-–—]+$/.test(line))return;
+    const low=line.toLowerCase();
+    if(headings.has(low)){section=line;return;}
+    // Keep explicit key/value lines intact; split prose into sentences.
+    const parts=/^[^:]{1,35}:\s*.+/.test(line)?[line]:line.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9])/);
+    parts.map(x=>x.trim()).filter(Boolean).forEach(x=>out.push({line:x,section}));
+  });
+  return out;
+}
+function classifyImportLine813(line,section){
+  const l=String(line||'').trim(), low=l.toLowerCase(), sec=String(section||'').toLowerCase();
+  let category='Weitere Information',kind='Fakt',meaning='';
+  if(/firmenname|branche|standort|mitarbeiter|umsatz|vertriebsmodell|crm-system|weitere systeme/.test(low)||/unternehmen/.test(sec))category='Unternehmen';
+  else if(/opportunity|phase|status|projekt|entscheidungszeitraum/.test(low)||/opportunity/.test(sec))category='Opportunity';
+  else if(/stakeholder|sponsor|entscheider|geschäftsführ|vertriebsleiter|sales operations|prüfer|presales/.test(low)||/stakeholder/.test(sec))category='Stakeholder';
+  else if(/stunden|aufwand|deal-review|forecast|datenaufbereitung|verloren|verschoben|schmerz/.test(low)||/schmerz/.test(sec))category='Schmerz & Aufwand';
+  else if(/budget|freigabe|entscheidungsprozess|entscheidung|erfolgskriterien|messgrößen/.test(low)||/budget/.test(sec))category='Budget & Entscheidung';
+  else if(/pilot|nutzer|enterprise-deals|laufzeit|starttermin|messung/.test(low)||/pilot/.test(sec))category='Pilot';
+  else if(/demo|anwendungsfall|lösungsbild|nachweiskriter/.test(low))category='Demo';
+  else if(/einwand|widerstand|bedenken/.test(low))category='Einwand';
+  else if(/angebot|preis|kondition|einkauf|vertrag|abschluss/.test(low))category='Angebot & Abschluss';
+
+  if(/möglicherweise|könnte|annahme|hypothese|wäre[n]? .* möglich|nicht bestätigt, dass|plausibel/.test(low))kind='Hypothese';
+  if(/\boffen\b|noch nicht|steht aus|nicht eingebunden|nicht bestätigt|nicht festgelegt|nicht geklärt|fehlt|unbekannt/.test(low))kind='Offen';
+  // Positive evidence beats generic section wording.
+  if(/vorhanden|bestätigt|identifiziert|dokumentiert|beziffert|beträgt|geplant|ist .* sponsor|ist .* entscheider/.test(low) && !/noch nicht|nicht bestätigt|offen|möglicherweise/.test(low))kind='Fakt';
+
+  if(/budgetrahmen.*vorhanden/.test(low))meaning='Budgetrahmen bestätigt – keine Freigabe abgeleitet.';
+  else if(/freigabe.*offen/.test(low))meaning='Offener Entscheidungspunkt, kein bestätigter Fakt.';
+  else if(/wirtschaftliche.*entscheider/.test(low)&&/noch nicht eingebunden/.test(low))meaning='Rolle identifiziert, persönlicher Zugang offen.';
+  else if(/stunden.*monat/.test(low))meaning='Quantifizierter operativer Ausgangswert.';
+  else if(/verloren|verschoben/.test(low))meaning='Dokumentiertes Ergebnis; Kausalität zur Lösung bleibt getrennt.';
+  else if(/möglicherweise|nicht bestätigt, dass/.test(low))meaning='Wirkungshypothese – nicht als Nutzenbeweis übernehmen.';
+  else if(/erfolgskriterien/.test(low)&&/nicht/.test(low))meaning='Kriterien intern bekannt, aber kundenseitig noch nicht bestätigt.';
+  else if(/angebotspreis|pilotpreis/.test(low)&&/offen/.test(low))meaning='Angebotsparameter offen.';
+  return {category,kind,meaning};
+}
+function scanImport813(raw){
+  const seen=new Set(),items=[];
+  splitImportStatements813(raw).forEach((entry,i)=>{
+    const key=entry.line.toLowerCase();if(seen.has(key))return;seen.add(key);
+    const c=classifyImportLine813(entry.line,entry.section);
+    items.push({id:'imp813-'+i,line:entry.line,section:entry.section,category:c.category,kind:c.kind,meaning:c.meaning,selected:true});
+  });
+  return items;
+}
+function importSummary813(items){
+  const sel=items.filter(x=>x.selected),f=sel.filter(x=>x.kind==='Fakt').length,h=sel.filter(x=>x.kind==='Hypothese').length,o=sel.filter(x=>x.kind==='Offen').length;
+  return `<div class="import-summary-grid"><div class="import-summary-box"><b>${f}</b><span>Fakten</span></div><div class="import-summary-box"><b>${h}</b><span>Hypothesen</span></div><div class="import-summary-box"><b>${o}</b><span>Offen</span></div></div>`;
+}
+function renderImportPreview813(items){
+  const box=document.getElementById('importPreview813');if(!box)return;
+  if(!items.length){box.innerHTML='<div class="muted">Keine verwertbaren Informationen erkannt.</div>';return;}
+  const groups=IMPORT_CATEGORIES_813.map(cat=>[cat,items.map((x,i)=>({...x,_i:i})).filter(x=>x.category===cat)]).filter(x=>x[1].length);
+  box.innerHTML=importSummary813(items)+groups.map(([cat,arr])=>`<div class="import-group"><div class="import-group-title">${esc(cat)}</div>${arr.map(it=>`<div class="import-item"><div class="import-item-grid"><input type="checkbox" data-import-index="${it._i}" ${it.selected?'checked':''}><div><div class="import-value">${esc(it.line)}</div>${it.meaning?`<div class="import-insight">KI21-Einordnung: ${esc(it.meaning)}</div>`:''}<div class="import-controls"><label>Zuordnung<select data-import-category="${it._i}">${IMPORT_CATEGORIES_813.map(c=>`<option ${c===it.category?'selected':''}>${esc(c)}</option>`).join('')}</select></label><label>Evidenz<select data-import-kind="${it._i}">${IMPORT_KINDS_813.map(k=>`<option ${k===it.kind?'selected':''}>${esc(k)}</option>`).join('')}</select></label></div></div></div></div>`).join('')}</div>`).join('');
+  box.querySelectorAll('[data-import-index]').forEach(cb=>cb.addEventListener('change',()=>{items[Number(cb.dataset.importIndex)].selected=cb.checked;renderImportPreview813(items)}));
+  box.querySelectorAll('[data-import-category]').forEach(s=>s.addEventListener('change',()=>{items[Number(s.dataset.importCategory)].category=s.value;renderImportPreview813(items)}));
+  box.querySelectorAll('[data-import-kind]').forEach(s=>s.addEventListener('change',()=>{items[Number(s.dataset.importKind)].kind=s.value;renderImportPreview813(items)}));
+  const count=document.getElementById('importCount813');if(count)count.textContent=`${items.filter(x=>x.selected).length} von ${items.length} Informationen ausgewählt`;
+}
+function canonicalImport813(selected){
+  const groups=IMPORT_CATEGORIES_813.map(cat=>[cat,selected.filter(x=>x.category===cat)]).filter(x=>x[1].length);
+  return groups.map(([cat,arr])=>`${cat}\n${arr.map(x=>x.line).join('\n')}`).join('\n\n');
+}
+openImport=function(){
+  let items=[];
+  openModal(`<div class="sheet-title">CRM-Import prüfen</div><div class="sheet-sub">KI21 trennt bestätigte Fakten, Hypothesen und offene Punkte. Jede Zuordnung kann vor der Übernahme korrigiert werden.</div><div id="importStep1"><textarea id="importText" placeholder="CRM-Import hier einfügen …">${current()?'':DEMO}</textarea><div class="actions"><button class="btn" id="cancelImport813">Abbrechen</button><button class="btn primary" id="scanImport813">Import analysieren</button></div></div><div id="importStep2" style="display:none"><div class="import-step">Prüfe besonders Evidenztyp und fachliche Zuordnung. KI21 leitet aus einem offenen Punkt keinen bestätigten Fakt ab.</div><div class="import-toolbar"><button class="import-mini" id="allImport813">Alle auswählen</button><button class="import-mini" id="noneImport813">Alle abwählen</button><button class="import-mini" id="backImport813">Text ändern</button></div><div id="importCount813" class="sheet-sub"></div><div id="importPreview813" class="import-preview"></div><div class="actions"><button class="btn" id="cancelImportFinal813">Abbrechen</button><button class="btn primary" id="applyImport813">Ausgewählte Daten übernehmen</button></div></div>`);
+  const step1=document.getElementById('importStep1'),step2=document.getElementById('importStep2'),ta=document.getElementById('importText');
+  document.getElementById('cancelImport813').onclick=closeModal;
+  document.getElementById('scanImport813').onclick=()=>{const raw=normalize(ta.value);if(!raw){toast('Bitte CRM-Text einfügen.');return;}items=scanImport813(raw);step1.style.display='none';step2.style.display='block';renderImportPreview813(items);};
+  document.getElementById('allImport813').onclick=()=>{items.forEach(x=>x.selected=true);renderImportPreview813(items)};
+  document.getElementById('noneImport813').onclick=()=>{items.forEach(x=>x.selected=false);renderImportPreview813(items)};
+  document.getElementById('backImport813').onclick=()=>{step2.style.display='none';step1.style.display='block'};
+  document.getElementById('cancelImportFinal813').onclick=closeModal;
+  document.getElementById('applyImport813').onclick=()=>{const selected=items.filter(x=>x.selected);if(!selected.length){toast('Bitte mindestens eine Information auswählen.');return;}const raw=canonicalImport813(selected);const id=newOpportunity(raw);const o=state.opportunities[id];o.structuredImport=selected.map(x=>({line:x.line,category:x.category,kind:x.kind,meaning:x.meaning,source:'CRM-Import'}));o.updatedAt=now();save();closeModal();render();toast(`${selected.length} Informationen evidenzbasiert übernommen.`);};
+};
+// An open approval plus missing buyer involvement is still qualification, not pilot-decision readiness.
+const _derive813=derive;
+derive=function(opp){const d=_derive813(opp),p=opp.parsed;if(d.approval==='open'&&d.buyer==='not_involved')d.dealStatus='Qualifizierung · wirtschaftlichen Entscheidungsweg klären';return d;};
+// Never show open statements as confirmed facts.
+const _areaFacts813=areaFacts811;
+areaFacts811=function(m,key){return _areaFacts813(m,key).filter(x=>!/\boffen\b|noch nicht|nicht bestätigt|nicht eingebunden/i.test(x));};
+save();render();
 </script>
 
 </body>
