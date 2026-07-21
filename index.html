@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.9.2 · Startup Persistence & Cost Stability</title>
+<title>KI21 Core 8.9.3 · Clean Start & Metric Integrity</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,136 +18,21 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.0</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.3</div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer" id="footerVersion">KI21 Core 8.9.2 · Startup Persistence & Cost Stability</div>
+<div class="footer" id="footerVersion">KI21 Core 8.9.3 · Clean Start & Metric Integrity</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.9.2 · Startup Persistence & Cost Stability';
+const VERSION='KI21 Core 8.9.3 · Clean Start & Metric Integrity';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
-const STORAGE_KEY='ki21_core_842_portfolio';
-const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
-const DEFAULT_IMPORT=`Unternehmen
-Firmenname: Novacore Systems GmbH
-Branche: B2B-Software
-Standort: Deutschland
-Mitarbeiter: ca. 420
-Umsatz: ca. 95 Mio. €
-Vertriebsmodell: Direktvertrieb mit Account Executives, Sales Operations und Presales
-CRM-System: Salesforce
-Weitere Systeme: Microsoft 365, Power BI, Excel, Teams
-
-Opportunity
-Opportunity-Name: KI21 Pilot Opportunity-Steuerung
-Opportunity-Status: Qualifizierung / frühe Discovery
-Geplante Lösung: KI21 Pilot zur Verbesserung von Opportunity-Qualifizierung, Forecast-Qualität und Deal-Steuerung
-Voraussichtlicher Pilotumfang: 8 Nutzer
-Zielgruppe im Pilot: Account Executives, Vertriebsleitung und Sales Operations
-Geplanter Einsatz: echte Enterprise-Opportunities
-Angebotspreis: noch offen
-Entscheidungszeitraum: noch nicht verbindlich festgelegt
-
-Ausgangssituation
-Die Vertriebsorganisation arbeitet mit Salesforce, Excel, Power BI und zusätzlichen manuellen Deal-Reviews.
-Opportunity-Informationen sind zwar im CRM vorhanden, werden jedoch nicht einheitlich bewertet. Insbesondere bei der Qualifizierung, der Stakeholder-Einschätzung, dem wirtschaftlichen Nutzen und der Forecast-Bewertung bestehen deutliche Unterschiede zwischen den Vertriebsmitarbeitern.
-Die Vertriebsleitung und Sales Operations führen deshalb zusätzliche Reviews, Forecast-Korrekturen und Datenaufbereitungen durch.
-
-Schmerz und Aufwand
-Der zusätzliche Aufwand beträgt nach interner Auswertung rund 110 Stunden pro Monat:
-- 55 Stunden für zusätzliche Deal-Reviews
-- 35 Stunden für Forecast-Korrekturen
-- 20 Stunden für Datenaufbereitung und Abstimmung
-Im vergangenen Jahr wurden 27 Opportunities verloren oder deutlich verschoben.
-Bei etwa 4 bis 6 dieser Opportunities hätten Risiken möglicherweise früher erkannt werden können. Es ist jedoch nicht bestätigt, dass diese Opportunities dadurch gewonnen oder Verluste sicher vermieden worden wären.
-
-Stakeholder
-Thomas Reuter
-Funktion: Vertriebsleiter
-Rolle: fachlicher Sponsor
-Haltung: unterstützt den Pilot grundsätzlich
-Einfluss: hoch im Vertrieb
-Entscheidungsbefugnis: keine alleinige Investitionsfreigabe
-
-Dr. Miriam Albrecht
-Funktion: Geschäftsführerin Finanzen & Operations
-Rolle: wirtschaftliche Entscheiderin
-Haltung: noch nicht ausreichend bekannt
-Status: noch nicht aktiv eingebunden
-Einfluss: sehr hoch
-Entscheidungsbefugnis: Investitionsfreigabe innerhalb des Budgetrahmens
-Offener Punkt: Sie kennt die Analyse über 110 Stunden monatlichen Zusatzaufwand noch nicht.
-
-Jana Wolf
-Funktion: Sales Operations
-Rolle: technische und operative Prüferin
-Haltung: grundsätzlich offen, aber kritisch hinsichtlich Datenqualität, Aufwand und Integration
-Interesse: weniger manuelle Datenaufbereitung, klare Prozesse, nachvollziehbare Bewertungen
-Einfluss: mittel bis hoch
-Entscheidungsbefugnis: keine wirtschaftliche Freigabe, aber relevanter Einfluss auf die operative Bewertung
-
-Qualifizierungsstand
-Bestätigt sind:
-- uneinheitliche Opportunity-Qualifizierung
-- zusätzlicher Aufwand für Deal-Reviews
-- hoher Aufwand für Forecast-Korrekturen
-- wiederkehrende Datenaufbereitung
-- verlorene oder verschobene Opportunities
-- Interesse der Vertriebsleitung an einem Pilot
-Noch offen sind:
-- persönliche Bestätigung des wirtschaftlichen Schmerzes durch Dr. Miriam Albrecht
-- verbindliche Erfolgskriterien
-- eindeutiger Entscheidungsprozess
-- konkreter Zeitplan
-- finale Investitionsfreigabe
-- wirtschaftliche Wirkung des Piloten
-- konkreter Angebotspreis
-
-Budget und Entscheidung
-Ein Budgetrahmen von bis zu 50.000 € ist grundsätzlich vorhanden.
-Eine konkrete Investitionsfreigabe liegt noch nicht vor.
-Die Freigabe muss durch Dr. Miriam Albrecht erfolgen.
-Erfolgskriterien wurden intern diskutiert, aber noch nicht gemeinsam mit der wirtschaftlichen Entscheiderin bestätigt.
-Der Entscheidungsprozess ist noch nicht vollständig geklärt.
-
-Pilot
-Geplant ist ein begrenzter Pilot mit:
-- 8 Nutzern
-- echten Enterprise-Opportunities
-- Beteiligung von Vertrieb, Sales Operations und gegebenenfalls Presales
-- Messung der Wirkung während des Piloten
-Mögliche Pilotziele:
-- Risiken früher erkennen
-- Opportunity-Qualifizierung vereinheitlichen
-- Forecast-Abweichungen früher sichtbar machen
-- manuelle Deal-Reviews reduzieren
-- Entscheidungsreife transparenter darstellen
-- nächste Kundenschritte besser priorisieren
-Noch nicht verbindlich festgelegt sind:
-- konkrete Erfolgskriterien
-- Messmethode
-- Starttermin
-- Laufzeit
-- konkreter Angebotspreis
-- Beteiligung der wirtschaftlichen Entscheiderin
-- Entscheidungstermin nach dem Pilot
-
-Mögliche Einwände
-- Der Business Case ist noch nicht ausreichend belastbar.
-- Es ist nicht bestätigt, dass bessere Qualifizierung verlorene Deals verhindert.
-- Der zusätzliche Pflegeaufwand für Vertrieb und Sales Operations könnte zu hoch sein.
-- KI21 könnte als weiteres System neben CRM, Excel und Power BI wahrgenommen werden.
-
-Zentrale Deal-Risiken
-- Sponsor und wirtschaftliche Entscheiderin sind nicht ausreichend verbunden.
-- Erfolgskriterien sind nicht gemeinsam bestätigt.
-- Budgetrahmen ist vorhanden, aber keine Freigabe.
-- Die Wirkungsannahme ist plausibel, aber noch nicht gemessen.
-- Ein verbindlicher Entscheidungs- und Pilotzeitplan fehlt.`;
+const STORAGE_KEY='ki21_core_893_portfolio';
+const LEGACY_KEYS=['ki21_core_842_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
+const DEFAULT_IMPORT='';
 
 const PROCESS_AREAS=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
 const QUAL_QUESTIONS=[
@@ -168,10 +53,32 @@ const SPIN_QUESTIONS=[
 function uid(){return 'opp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
 function emptyState(withSample=false){return{id:uid(),version:VERSION,activeTab:'inputs',inputTab:'crm',rawImport:'',importPreview:[],company:'',opportunity:'',phase:'',pilotUsers:0,stakeholders:[],evidence:[],objections:[],damageSignals:[],metrics:{hours:0,lost:null,possible:'',budget:0,price:0,timeValue:0,periodMonths:0,annualCost:0,totalValue:0,implementationCost:0},flags:{approvalOpen:true,economicBuyerOpen:true,successOpen:true,priceOpen:true},answers:{qual:{},spin:{}},offer:{},additions:[],openAreas:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
 function normalizeState(x){const s={...emptyState(false),...x};s.id=x.id||uid();s.version=VERSION;s.metrics={...emptyState(false).metrics,...(x.metrics||{})};s.flags={...emptyState(false).flags,...(x.flags||{})};s.answers={qual:{...((x.answers||{}).qual||{})},spin:{...((x.answers||{}).spin||{})}};s.offer={...(x.offer||{})};const raw=s.rawImport||'';const explicitOpen=/^\s*Angebotspreis\s*:\s*(?:noch\s+)?offen\s*$/im.test(raw);if(explicitOpen){s.metrics.price=0;s.flags.priceOpen=true;s.offer.price=''}else if(s.flags.priceOpen&&s.metrics.price===0){s.offer.price=''};if(Array.isArray(s.evidence)){s.evidence=s.evidence.map(e=>{if(e.category!=='Risiko')return e;const t=(e.text||'').toLowerCase();let type='ableitung';if(/\b(offen|noch nicht|nicht(?:\s+\w+){0,4}\s+bestätigt|fehlt|keine freigabe|keine konkrete investitionsfreigabe|nicht eingebunden|nicht gemessen)\b/.test(t))type='offen';else if(/\b(könnte|möglicherweise|hypothese|plausibel)\b/.test(t))type='hypothese';return{...e,type}})}return s}
+function isBundledSample(o){return /\b(noventis|novacore)\b/i.test(String((o&&o.company)||'')+' '+String((o&&o.opportunity)||'')+' '+String((o&&o.rawImport)||''))}
+function sanitizePortfolio(p){
+ if(!p||!Array.isArray(p.opportunities))return null;
+ p.opportunities=p.opportunities.map(normalizeState).filter(o=>!isBundledSample(o));
+ if(!p.opportunities.length)return null;
+ p.version=VERSION;
+ if(!p.opportunities.some(o=>o.id===p.activeId)){
+  const latest=[...p.opportunities].sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
+  p.activeId=latest.id;
+ }
+ return p;
+}
 function loadPortfolio(){
- try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(p&&Array.isArray(p.opportunities)&&p.opportunities.length){p.opportunities=p.opportunities.map(normalizeState);p.version=VERSION;if(!p.opportunities.some(x=>x.id===p.activeId))p.activeId=p.opportunities[0].id;const active=p.opportunities.find(x=>x.id===p.activeId);if(active&&/Noventis/i.test((active.company||'')+' '+(active.opportunity||''))){const real=p.opportunities.filter(x=>!/Noventis/i.test((x.company||'')+' '+(x.opportunity||''))).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));if(real.length)p.activeId=real[0].id}return p}}catch(e){}
- for(const k of LEGACY_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&old.rawImport){const migrated=normalizeState(old);return{version:VERSION,activeId:migrated.id,opportunities:[migrated]}}}catch(e){}}
- const first=emptyState(false);return{version:VERSION,activeId:first.id,opportunities:[first]}
+ const keys=[STORAGE_KEY,...LEGACY_KEYS];
+ for(const k of keys){
+  try{
+   const raw=JSON.parse(localStorage.getItem(k)||'null');
+   const p=sanitizePortfolio(raw);
+   if(p)return p;
+   if(raw&&raw.rawImport){
+    const migrated=normalizeState(raw);
+    if(!isBundledSample(migrated))return{version:VERSION,activeId:migrated.id,opportunities:[migrated]};
+   }
+  }catch(e){}
+ }
+ const first=emptyState(false);return{version:VERSION,activeId:first.id,opportunities:[first]};
 }
 let portfolio=loadPortfolio();
 syncVersionLabels();
@@ -195,6 +102,22 @@ function switchOpportunity(id){const target=portfolio.opportunities.find(x=>x.id
 function createOpportunity(){const s=emptyState(false);portfolio.opportunities.push(s);portfolio.activeId=s.id;state=s;savePortfolio();render();toast('Neue Opportunity angelegt')}
 function deleteOpportunity(id){if(portfolio.opportunities.length<=1)return toast('Mindestens eine Opportunity muss erhalten bleiben');const i=portfolio.opportunities.findIndex(x=>x.id===id);if(i<0)return;portfolio.opportunities.splice(i,1);if(portfolio.activeId===id){state=portfolio.opportunities[Math.max(0,i-1)];portfolio.activeId=state.id}savePortfolio();render();toast('Opportunity gelöscht')}
 function normalizeMoney(v){if(!v)return 0;const raw=String(v).replace(/\s/g,'').replace(/€/g,'').replace(/EUR/ig,'');if(/mio/i.test(raw)){const n=parseFloat(raw.replace(/[^0-9,]/g,'').replace(',','.'));return Math.round((n||0)*1000000)}const cleaned=raw.replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.').replace(/[^0-9.]/g,'');return Math.round(parseFloat(cleaned)||0)}
+function repairEconomicMetrics(target){
+ const raw=String((target&&target.rawImport)||'');
+ const formula=raw.match(/(\d+(?:[.,]\d+)?)\s*Stunden\s*(?:pro Monat|monatlich)[\s\S]{0,500}?(\d+(?:[.,]\d+)?)\s*€\s*(?:pro Stunde)?[\s\S]{0,500}?(?:=|beträgt damit:?)[^\d]{0,40}(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s*pro Jahr/i);
+ const monthly=(raw.match(/(?:etwa|rund)?\s*(\d+(?:[.,]\d+)?)\s*(?:zusätzliche\s*)?Stunden\s*(?:pro Monat|monatlich)/i)||[])[1];
+ const rate=(raw.match(/(?:durchschnittlicher interner Zeitwert von|interner Zeitwert|Stundenwert)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*€/i)||[])[1];
+ const explicit=(raw.match(/(?:wiederkehrender interner Zusatzaufwand beträgt|dokumentierte interne Zusatzaufwand beträgt damit|dokumentierte interne Zusatzaufwand|wiederkehrender interner Zusatzaufwand pro Jahr)[^\d]{0,60}(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€(?:\s*pro Jahr)?/i)||[])[1];
+ const h=Number(String(monthly||'').replace(',','.'))||Number(target.metrics&&target.metrics.hours)||0;
+ const tv=normalizeMoney(rate||((target.metrics||{}).timeValue)||((target.offer||{}).timeValue)||'');
+ const annual=normalizeMoney((formula&&formula[3])||explicit||'')||(h&&tv?h*12*tv:0);
+ target.metrics=target.metrics||{};
+ if(h)target.metrics.hours=h;
+ if(tv)target.metrics.timeValue=tv;
+ if(annual){target.metrics.annualCost=annual;target.metrics.recurringInternalCost=annual;}
+ return target;
+}
+
 function isSection(line){return /^(Unternehmen|Opportunity|Ausgangssituation|Schmerz(?: und| &) Aufwand|Stakeholder|Qualifizierungsstand|Budget(?: und| &) Entscheidung|Pilot|Mögliche Einwände|Zentrale Deal-Risiken)$/i.test(line)}
 function sectionCategory(section){const s=section.toLowerCase();if(s.includes('unternehmen'))return'Unternehmen';if(s==='opportunity')return'Opportunity';if(s.includes('stakeholder'))return'Stakeholder';if(s.includes('schmerz'))return'Schmerz & Aufwand';if(s.includes('budget'))return'Budget & Entscheidung';if(s.includes('pilot'))return'Pilot';if(s.includes('einwände'))return'Einwandbehandlung';if(s.includes('risiken'))return'Risiko';return'Weitere Information'}
 function inferEvidence(text,context){const t=text.toLowerCase();if(context==='open'||/\b(offen|noch nicht|nicht(?:\s+\w+){0,3}\s+bestätigt|fehlt|ungeklärt|keine freigabe|nicht eingebunden)\b/.test(t))return'offen';if(context==='hyp'||/\b(möglicherweise|könnte|hypothese|möglich)\b/.test(t))return'hypothese';if(context==='risk')return'ableitung';return'fakt'}
@@ -244,7 +167,7 @@ function parseImport(raw){
  const buyerOpen=!buyer||/noch nicht eingebunden|nicht aktiv eingebunden|noch kein persönlicher termin|kein persönlicher termin|noch nicht persönlich eingebunden/i.test((buyer.status||'')+' '+(buyer.attitude||'')+' '+(buyer.openPoint||''));
  return{company,opportunity,phase,pilotUsers,stakeholders,evidence,objections,damageSignals,metrics:{hours,lost,possible:'',budget,price,timeValue,periodMonths,annualCost,totalValue,implementationCost},flags:{approvalOpen,economicBuyerOpen:buyerOpen,successOpen,priceOpen},raw};
 }
-function applyParsed(target,p){target.rawImport=p.raw;target.company=p.company||target.company;target.opportunity=p.opportunity||target.opportunity;target.phase=p.phase||target.phase;target.pilotUsers=p.pilotUsers||0;target.stakeholders=p.stakeholders;target.evidence=p.evidence;target.objections=p.objections||[];target.damageSignals=p.damageSignals||[];target.metrics={...(p.metrics||{})};const _annual=normalizeMoney(target.metrics.annualCost||'')||((target.metrics.hours||0)*12*(target.metrics.timeValue||0));target.metrics.annualCost=_annual;target.metrics.recurringInternalCost=_annual;target.flags=p.flags;target.offer={...target.offer,price:p.metrics.price||'',timeValue:p.metrics.timeValue||'',periodMonths:p.metrics.periodMonths||''};if(p.flags.priceOpen)target.offer.price='';target.importPreview=p.evidence.map(x=>({...x}));}
+function applyParsed(target,p){target.rawImport=p.raw;target.company=p.company||target.company;target.opportunity=p.opportunity||target.opportunity;target.phase=p.phase||target.phase;target.pilotUsers=p.pilotUsers||0;target.stakeholders=p.stakeholders;target.evidence=p.evidence;target.objections=p.objections||[];target.damageSignals=p.damageSignals||[];target.metrics={...(p.metrics||{})};const _annual=normalizeMoney(target.metrics.annualCost||'')||((target.metrics.hours||0)*12*(target.metrics.timeValue||0));target.metrics.annualCost=_annual;target.metrics.recurringInternalCost=_annual;target.flags=p.flags;target.offer={...target.offer,price:p.metrics.price||'',timeValue:p.metrics.timeValue||'',periodMonths:p.metrics.periodMonths||''};if(p.flags.priceOpen)target.offer.price='';target.importPreview=p.evidence.map(x=>({...x}));repairEconomicMetrics(target);}
 function buyer(){return state.stakeholders.find(x=>/chief financial officer|^cfo$/i.test((x.function||'').trim()))||state.stakeholders.find(x=>/finale\s+wirtschaftliche\s+mitentscheider(?:in)?|wirtschaftlich(?:e|er)?\s+entscheider(?:in)?/i.test(x.role||''))||state.stakeholders.find(x=>/wirtschaftliche freigabe erforderlich|finale budgetfreigabe|finale investitionsfreigabe/i.test(x.authority||''))||null}
 function coo(){return state.stakeholders.find(x=>/chief operating officer|^coo$/i.test((x.function||'').trim()))||null}
 function decisionGroup(){return state.stakeholders.filter(x=>/mitentscheider|freigabe erforderlich|gemeinsame investitionsentscheidung/i.test((x.role||'')+' '+(x.authority||''))).slice(0,5)}
@@ -995,7 +918,7 @@ fullReport=function(){
 
 // Hard startup sanitation: sample opportunities are never persisted or restored.
 try{
-  const isSample=o=>/noventis/i.test(String((o&&o.company)||'')+' '+String((o&&o.opportunity)||'')+' '+String((o&&o.rawImport)||''));
+  const isSample=o=>/(?:noventis|novacore)/i.test(String((o&&o.company)||'')+' '+String((o&&o.opportunity)||'')+' '+String((o&&o.rawImport)||''));
   portfolio.opportunities=(portfolio.opportunities||[]).filter(o=>!isSample(o));
   if(!portfolio.opportunities.length){const blank=emptyState(false);portfolio.opportunities=[blank];portfolio.activeId=blank.id;}
   if(!portfolio.opportunities.some(o=>o.id===portfolio.activeId)){
@@ -1003,7 +926,7 @@ try{
     portfolio.activeId=latest.id;
   }
   for(const k of LEGACY_KEYS){
-    try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&/noventis/i.test(String(old.company||'')+' '+String(old.opportunity||'')+' '+String(old.rawImport||'')))localStorage.removeItem(k)}catch(e){}
+    try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&/(?:noventis|novacore)/i.test(String(old.company||'')+' '+String(old.opportunity||'')+' '+String(old.rawImport||'')))localStorage.removeItem(k)}catch(e){}
   }
 }catch(e){}
 
@@ -1013,8 +936,12 @@ portfolio.opportunities.forEach(o=>{
   const p=parseImport(o.rawImport+(o.additions&&o.additions.length?'\n\nErgänzung\n'+o.additions.map(x=>x.text).join('\n'):''));
   const manualOffer={...(o.offer||{})};
   applyParsed(o,p);
+  repairEconomicMetrics(o);
   o.offer={...manualOffer,price:manualOffer.price||p.metrics.price||'',timeValue:manualOffer.timeValue||p.metrics.timeValue||'',periodMonths:manualOffer.periodMonths||p.metrics.periodMonths||''};
 });
+portfolio.opportunities=portfolio.opportunities.filter(o=>!isBundledSample(o));
+if(!portfolio.opportunities.length){const blank=emptyState(false);portfolio.opportunities=[blank];portfolio.activeId=blank.id;}
+portfolio.opportunities.forEach(repairEconomicMetrics);
 portfolio.version=VERSION;
 savePortfolio();
 state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
