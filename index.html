@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.8.1 · Pilot Evidence Final</title>
+<title>KI21 Core 8.9.0 · Expansion Decision Intelligence</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,17 +18,17 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.7.1</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.0</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer" id="footerVersion">KI21 Core 8.8.1 · Pilot Evidence Final</div>
+<div class="footer" id="footerVersion">KI21 Core 8.9.0 · Expansion Decision Intelligence</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.8.1 · Pilot Evidence Final';
+const VERSION='KI21 Core 8.9.0 · Expansion Decision Intelligence';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
@@ -834,6 +834,158 @@ fullReport=function(){
 `• Forecast-Grundabschlag: −10 Punkte\n• Zusätzlicher Abschlag wegen offener Investitionsfreigabe: ${state.flags.approvalOpen?'−4 Punkte':'0 Punkte'}\n• Zusätzlicher Abschlag wegen fehlender persönlicher Einbindung des formalen Mitentscheiders Operations: ${scores().pilotDecisionMakerOpen?'−6 Punkte':'0 Punkte'}\n• Zusätzlicher Abschlag wegen ungeklärter Pilotverantwortung: ${scores().pilotOwnerOpen?'−3 Punkte':'0 Punkte'}\n• Berechneter Forecast:`);
   r=r.replace(/• Formel: Forecast = Opportunity Score[^\n]+/,
 `• Formel: Forecast = Opportunity Score − 10${state.flags.approvalOpen?' − 4':''}${scores().pilotDecisionMakerOpen?' − 6':''}${scores().pilotOwnerOpen?' − 3':''}.`);
+  return r;
+};
+
+
+
+// === 8.9.0 Expansion Decision Intelligence ===
+function isExpansionCase(){return /Bestandskundenerweiterung|Bestehender Kunde seit:|Aktueller Jahresvertrag:|Neuer Jahresvertrag:/i.test(state.rawImport||'')}
+function rawMoney(label){const m=(state.rawImport||'').match(new RegExp(label+'\\s*:\\s*([\\d.]+)\\s*€','i'));return m?normalizeMoney(m[1]):0}
+function expansionValues(){
+  const current=rawMoney('Aktueller Jahresvertrag');
+  const next=rawMoney('Neuer Jahresvertrag');
+  const implementation=rawMoney('Einmalige Erweiterungs- und Einführungskosten');
+  const total=rawMoney('Voraussichtliches Gesamtvolumen');
+  const years=3;
+  return {current,next,implementation,total,incrementalAnnual:Math.max(0,next-current),incrementalFirstYear:Math.max(0,next-current)+implementation,incrementalTotal:Math.max(0,next-current)*years+implementation};
+}
+function expansionFinalGroup(){return ['Chief Commercial Officer','Chief Financial Officer','Geschäftsführerin Clinical Solutions']}
+function expansionWorkshopNames(){return ['Dr. Markus Feld','Anna-Lena Bosch','Prof. Dr. Eva Neumann','Thomas Wirth','Sophie Laurent','Jan Köhler','Dr. Nina Keller','Michael Reuter']}
+
+const __890ParseImport=parseImport;
+parseImport=function(raw){
+  const p=__890ParseImport(raw);
+  if(!/Bestandskundenerweiterung|Bestehender Kunde seit:|Aktueller Jahresvertrag:|Neuer Jahresvertrag:/i.test(raw))return p;
+  const mm=(label)=>{const m=raw.match(new RegExp(label+'\\s*:\\s*([\\d.]+)\\s*€','i'));return m?normalizeMoney(m[1]):0};
+  p.metrics.price=mm('Neuer Jahresvertrag');
+  p.metrics.implementationCost=mm('Einmalige Erweiterungs- und Einführungskosten');
+  p.metrics.totalValue=mm('Voraussichtliches Gesamtvolumen');
+  p.flags.priceOpen=!p.metrics.price;
+  let mode='fact',cat='';
+  for(const e of p.evidence){
+    const t=(e.text||'').trim();
+    if(e.category!==cat){cat=e.category;mode='fact'}
+    if(e.category==='Risiko'){if(/noch nicht|offen|nicht bestätigt|ungeklärt/i.test(t))e.type='offen';else if(/könnte|möglicherweise|droht/i.test(t))e.type='hypothese';else e.type='ableitung';continue}
+    if(e.category==='Nächster Kundenschritt'){e.type='ableitung';continue}
+    if(/^(Noch offen sind|Nicht bestätigt ist|Noch nicht quantifiziert sind|Noch unklar ist):?$/i.test(t)){mode='open';e.type='offen';continue}
+    if(/^Vorgeschlagene Erfolgskriterien:?$/i.test(t)){mode='hyp';e.type='hypothese';continue}
+    if(/^(Business Case|Bestätigt sind|Budget und Angebot|Entscheidungsprozess|Teilentscheidungsalternative|Technische und organisatorische Punkte):?$/i.test(t)){mode='fact';e.type='fakt';continue}
+    if(/^(Der Business Case darf deshalb|Entscheidend ist die zusätzliche Investition)/i.test(t)){mode='fact';e.type='ableitung';continue}
+    if(/^Diese Kriterien sind vorgeschlagen/i.test(t)){e.type='hypothese';continue}
+    if(mode==='open'){e.type='offen';continue}
+    if(mode==='hyp'){e.type='hypothese';continue}
+    if(/Eine konkrete Investitionsfreigabe liegt noch nicht vor|noch nicht abgeschlossen|läuft|wird noch geprüft/i.test(t)){e.type='offen';continue}
+    e.type='fakt';
+  }
+  return p;
+};
+
+const __890ExplicitDecisionGroup=explicitDecisionGroup;
+explicitDecisionGroup=function(){return isExpansionCase()?expansionFinalGroup():__890ExplicitDecisionGroup()};
+
+const __890BusinessCaseModel=businessCaseModel;
+businessCaseModel=function(){
+  if(!isExpansionCase())return __890BusinessCaseModel();
+  const v=expansionValues();
+  const recurring=state.metrics.recurringInternalCost||0;
+  const threeYear=recurring*3;
+  const gap=Math.max(0,v.incrementalTotal-threeYear);
+  return {ready:!!(v.incrementalTotal&&recurring),expansion:true,...v,text:`Für die wirtschaftliche Bewertung muss der bestehende Vertrag vom Erweiterungsdeal getrennt werden. Der Jahresvertrag steigt von ${v.current.toLocaleString('de-DE')} € auf ${v.next.toLocaleString('de-DE')} €; die zusätzliche jährliche Lizenzinvestition beträgt damit ${v.incrementalAnnual.toLocaleString('de-DE')} €. Einschließlich ${v.implementation.toLocaleString('de-DE')} € Einführung entstehen im ersten Jahr ${v.incrementalFirstYear.toLocaleString('de-DE')} € und über drei Jahre ${v.incrementalTotal.toLocaleString('de-DE')} € zusätzliche Investition. Dem stehen ${threeYear.toLocaleString('de-DE')} € dokumentierter wiederkehrender interner Zusatzaufwand über drei Jahre gegenüber. Da der vermeidbare Anteil und die bereits durch die bestehende Nutzung erzielte Wirkung offen sind, muss mindestens ${gap.toLocaleString('de-DE')} € zusätzliche Ergebniswirkung über Margenqualität, frühere Risiko- und No-Bid-Entscheidungen, bessere Übergaben und internationale Skalierung belegt werden.`};
+};
+
+const __890Scores=scores;
+scores=function(){
+  if(!isExpansionCase())return __890Scores();
+  let score=25+8+4+7+6+6+8+6; // base, pain, strategy, budget, sponsor, buyer, initial buyer engagement, price
+  score-=4; // additional effect vs existing usage not confirmed
+  score-=4; // technical approval open
+  score-=4; // privacy/compliance approval open
+  score-=3; // rollout responsibility/capacity open
+  score-=3; // full vs partial rollout undecided
+  score=Math.max(15,Math.min(92,score));
+  const forecast=Math.max(10,score-10-4-4-4-3-3);
+  return {score,forecast,expansion:true};
+};
+
+const __890ScoreExplanation=scoreExplanation;
+scoreExplanation=function(){
+  if(!isExpansionCase())return __890ScoreExplanation();
+  return [
+    {label:'Basisscore für angelegte Opportunity',value:'+25',impact:true},
+    {label:'Operativer Schmerz quantifiziert',value:'+8',impact:true},
+    {label:'Strategische Auswirkungen dokumentiert',value:'+4',impact:true},
+    {label:'Budget oder finanzielle Darstellbarkeit erkannt',value:'+7',impact:true},
+    {label:'Sponsor mit Entscheidungseinfluss vorhanden',value:'+6',impact:true},
+    {label:'Wirtschaftliche Mitentscheiderin identifiziert',value:'+6',impact:true},
+    {label:'Wirtschaftliche Mitentscheiderin initial eingebunden',value:'+8',impact:true},
+    {label:'Preis bestätigt',value:'+6',impact:true},
+    {label:'Zusätzliche Wirkung gegenüber bestehender Nutzung offen',value:'−4',impact:true},
+    {label:'Technische Freigabe offen',value:'−4',impact:true},
+    {label:'Datenschutz- und Compliance-Freigabe offen',value:'−4',impact:true},
+    {label:'Rollout-Verantwortung und Kapazität offen',value:'−3',impact:true},
+    {label:'Vollausbau versus Teilrollout ungeklärt',value:'−3',impact:true}
+  ];
+};
+
+const __890ScoreDrivers=scoreDrivers;
+scoreDrivers=function(){return isExpansionCase()?'quantifizierter Schmerz, strategische Relevanz, finanzieller Rahmen, aktiver Sponsor, wirtschaftliche Mitentscheiderin initial eingebunden, bestätigter neuer Jahresvertrag':__890ScoreDrivers()};
+const __890ScoreBrakes=scoreBrakes;
+scoreBrakes=function(){return isExpansionCase()?'zusätzliche Wirkung gegenüber bestehender Nutzung offen, Investitionsfreigabe offen, technische Freigabe offen, Datenschutz- und Compliance-Freigabe offen, Rollout-Verantwortung und Kapazität offen, Vollausbau versus Teilrollout ungeklärt':__890ScoreBrakes()};
+const __890ForecastDeduction=forecastDeduction;
+forecastDeduction=function(){return isExpansionCase()?'offene Investitionsfreigabe, technische und Datenschutzfreigabe, ungeklärte Rollout-Verantwortung und offene Teilentscheidung':__890ForecastDeduction()};
+
+const __890SalesDecisionBrief=salesDecisionBrief;
+salesDecisionBrief=function(){
+  if(!isExpansionCase())return __890SalesDecisionBrief();
+  const b=buyer(),v=expansionValues(),bc=businessCaseModel(),sc=scores(),date=decisionDate()||'11. September 2026';
+  const group='Chief Commercial Officer / Chief Financial Officer / Geschäftsführerin Clinical Solutions';
+  const names=expansionWorkshopNames().join(', ');
+  return `KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\nDie bestehende Nutzung schafft Vertrauen, beweist aber noch nicht den zusätzlichen Nutzen der Erweiterung. Der Deal kann vorankommen, wenn ${group} die Zusatzwirkung gegenüber dem Altvertrag, die Freigabebedingungen und die Entscheidung zwischen Vollausbau und deutschem Teilrollout verbindlich festlegt.\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n• ${state.metrics.hours||70} Stunden Zusatzaufwand pro Monat entsprechen ${(state.metrics.hours||70)*12} Stunden und ${(state.metrics.recurringInternalCost||96600).toLocaleString('de-DE')} € internem Zusatzaufwand pro Jahr.\n• Dr. Markus Feld ist aktiver Sponsor; ${b?b.name:'Anna-Lena Bosch'} ist wirtschaftliche Mitentscheiderin. Die finale Investitionsentscheidung liegt bei ${group}.\n• Der neue Jahresvertrag beträgt ${v.next.toLocaleString('de-DE')} €, die Einführung ${v.implementation.toLocaleString('de-DE')} € und das Gesamtvolumen ${v.total.toLocaleString('de-DE')} €. Entscheidend sind jedoch ${v.incrementalTotal.toLocaleString('de-DE')} € zusätzliche Investition gegenüber dem Altvertrag.\n• Technische sowie Datenschutz- und Compliance-Freigabe sind zwingend; Einkauf kann den Abschluss kommerziell blockieren.\n• Zusatzwirkung, Erfolgskriterien, Rollout-Verantwortung und Vollausbau versus deutscher Teilrollout sind noch offen.\n\nZENTRALE KUNDENENTSCHEIDUNG\n• Rechtfertigt der zusätzliche Nutzen der Erweiterung ${v.incrementalTotal.toLocaleString('de-DE')} € Mehrinvestition gegenüber dem bestehenden Vertrag – und ist der internationale Vollausbau dem deutschen Teilrollout, MedSales Insight und einer Salesforce-Erweiterung überlegen?\n\nGRÖSSTER ENGPASS\n• Der bisherige Erfolg wird noch nicht sauber vom zusätzlichen Nutzen der Erweiterung getrennt. Solange Zusatzwirkung, technische und datenschutzbezogene Freigaben, Rollout-Kapazität und Teilentscheidung offen sind, kann der Einkauf die bestehende Kundenbeziehung in Preis- und Vertragszugeständnisse übersetzen.\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}\n\nBESTÄTIGTE EINWÄNDE\n${state.objections.map(x=>'• '+x).join('\n')}\n\nNÄCHSTER SCHRITT\n1. Fokussierten Entscheidungsworkshop mit ${names} durchführen.\n2. Zusätzliche Wirkung gegenüber der bestehenden Nutzung, deutschen und internationalen Nutzen, Erfolgskriterien, Freigabebedingungen sowie Rollout-Verantwortung verbindlich festlegen.\n3. Vollausbau, deutschen Teilrollout, MedSales Insight und Salesforce anhand identischer Kriterien vergleichen und den Geschäftsführungstermin am ${date} absichern; kommerzielle Zugeständnisse erst danach verhandeln.\n\nSTATE CHECK\n• Entscheidungsgruppe: ${group}\n• Wirtschaftliche Mitentscheiderin: initial eingebunden\n• Erkannter Name: ${b?b.name:'Anna-Lena Bosch'}\n• Funktion: ${b?b.function:'Chief Financial Officer'}\n• Rolle: ${b?b.role:'wirtschaftliche Mitentscheiderin'}\n• Budget / finanzielle Darstellbarkeit: ${state.metrics.budget||575000}\n• Neuer Jahresvertrag: ${v.next}\n• Einführungskosten: ${v.implementation}\n• Zusätzliches Investitionsvolumen: ${v.incrementalTotal}\n• Opportunity Score: ${sc.score}%\n• Forecast: ${sc.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}\n• Forecast-Abschlag: ${forecastDeduction()}`;
+};
+
+const __890ProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+  if(!isExpansionCase())return __890ProcessAnalysis(name);
+  const a=__890ProcessAnalysis(name),b=buyer(),bc=businessCaseModel(),v=expansionValues(),date=decisionDate()||'11. September 2026';
+  if(name==='Qualifizierung'){
+    a.assessment=`Dr. Markus Feld ist als aktiver Sponsor vorhanden. ${b?b.name:'Anna-Lena Bosch'} ist wirtschaftliche Mitentscheiderin; die finale Entscheidung liegt bei CCO, CFO und Geschäftsführerin Clinical Solutions.`;
+    a.insight='Der Bestandskundenstatus reduziert das Vertrauensrisiko, ersetzt aber weder den Nachweis der zusätzlichen Wirkung noch die offenen technischen, datenschutzbezogenen und operativen Freigaben.';
+    a.next=`Mit CCO, CFO, Geschäftsführerin Clinical Solutions, Frankreich, Sales Operations, Datenschutz und Enterprise Architecture die Entscheidungskriterien und den Termin am ${date} verbindlich festlegen.`;
+  }
+  if(name==='Demo'){
+    a.assessment='Die bestehende Nutzung ist bereits ein Kundenbeweis. Benötigt wird keine allgemeine Demo, sondern ein Skalierungs- und Differenzierungsnachweis für zusätzliche Teams, Clinical Consulting und Frankreich.';
+    a.insight='Der stärkste Beweis ist nicht eine neue Funktionsdemo, sondern der Vergleich realer Bestands- und Erweiterungsfälle: Was funktioniert bereits, was entsteht erst durch die Erweiterung und was bleibt regional unterschiedlich?';
+    a.next='Zwei deutsche und zwei französische strategische Opportunities als gemeinsames Beweisfeld auswählen und Zusatzwirkung, regionale Übertragbarkeit sowie Salesforce-Abgrenzung vorab definieren.';
+  }
+  if(name==='Wirtschaftlicher Nutzen & ROI'){
+    a.assessment=bc.text;
+    a.facts=[`${(state.metrics.recurringInternalCost||96600).toLocaleString('de-DE')} € wiederkehrender interner Jahresaufwand`,`${v.incrementalAnnual.toLocaleString('de-DE')} € zusätzliche Jahreslizenz`,`${v.incrementalTotal.toLocaleString('de-DE')} € zusätzliche Dreijahresinvestition`];
+    a.insight='Der Business Case darf nicht auf 546.000 € Gesamtvolumen basieren. Entscheidend sind 330.000 € Mehrinvestition gegenüber dem Altvertrag und ausschließlich der zusätzliche Nutzen der Erweiterung.';
+    a.next=`Mit ${b?b.name:'Anna-Lena Bosch'} die bereits erzielte Bestandswirkung abgrenzen und die zusätzliche Wirkung der Erweiterung über konkrete Margen-, No-Bid-, Übergabe- und Skalierungsfälle quantifizieren.`;
+  }
+  if(name==='Angebot'){
+    a.status='teilweise geklärt';
+    a.assessment=`Der neue Jahresvertrag von ${v.next.toLocaleString('de-DE')} €, ${v.implementation.toLocaleString('de-DE')} € Einführung und ${v.total.toLocaleString('de-DE')} € Gesamtvolumen sind bestätigt; Investitionsfreigabe und Vertragsposition bleiben offen.`;
+    a.facts=[`Neuer Jahresvertrag ${v.next.toLocaleString('de-DE')} €`,`Einführungskosten ${v.implementation.toLocaleString('de-DE')} €`,`Gesamtvolumen ${v.total.toLocaleString('de-DE')} €`,`Zusatzinvestition gegenüber Altvertrag ${v.incrementalTotal.toLocaleString('de-DE')} €`];
+    a.insight='Ein entscheidungsfähiges Erweiterungsangebot trennt Altvertrag, zusätzliche Investition, Vollausbau und Teilrollout und koppelt kommerzielle Zugeständnisse an bestätigte Zusatzwirkung.';
+    a.next='Vollausbau und deutschen Teilrollout als klar getrennte Investitionsoptionen mit Messplan, Freigaben, Rollout-Verantwortung und Vertragsfolgen darstellen.';
+  }
+  if(name==='Abschluss'){
+    a.insight='Der nächste Abschlussmeilenstein ist die gemeinsame Investitionsentscheidung von CCO, CFO und Geschäftsführerin Clinical Solutions nach technischer sowie Datenschutz- und Compliance-Freigabe – nicht die Zustimmung Frankreichs allein.';
+    a.next=`Zusatzwirkung, Vollausbau versus Teilrollout, Freigaben und kommerzielle Leitplanken vor dem Geschäftsführungstermin am ${date} verbindlich entscheiden.`;
+  }
+  return a;
+};
+
+const __890FullReport=fullReport;
+fullReport=function(){
+  let r=__890FullReport();
+  if(!isExpansionCase())return r;
+  const sc=scores();
+  r=r.replace(/• Forecast-Grundabschlag:[\s\S]*?• Formel: Forecast = Opportunity Score[^\n]+/,
+`• Forecast-Grundabschlag: −10 Punkte\n• Zusätzlicher Abschlag wegen offener Investitionsfreigabe: −4 Punkte\n• Zusätzlicher Abschlag wegen offener technischer Freigabe: −4 Punkte\n• Zusätzlicher Abschlag wegen offener Datenschutz- und Compliance-Freigabe: −4 Punkte\n• Zusätzlicher Abschlag wegen ungeklärter Rollout-Verantwortung: −3 Punkte\n• Zusätzlicher Abschlag wegen offener Teilentscheidung: −3 Punkte\n• Berechneter Forecast: ${sc.forecast}%\n• Formel: Forecast = Opportunity Score − 10 − 4 − 4 − 4 − 3 − 3.`);
+  r=r.replace(/• Nicht bestätigte Effekte aus Margenqualität[^\n]+/,'• Nicht bestätigte Zusatzwirkungen aus Margenqualität, früheren Risiko- und No-Bid-Entscheidungen, besseren Übergaben und internationaler Skalierung bleiben bis zur Validierung Hypothesen.');
   return r;
 };
 
