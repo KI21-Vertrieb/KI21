@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.9.3 · Clean Start & Metric Integrity</title>
+<title>KI21 Core 8.9.4 · Portfolio Recovery & Empty State</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,20 +18,20 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.3</div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.4</div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer" id="footerVersion">KI21 Core 8.9.3 · Clean Start & Metric Integrity</div>
+<div class="footer" id="footerVersion">KI21 Core 8.9.4 · Portfolio Recovery & Empty State</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.9.3 · Clean Start & Metric Integrity';
+const VERSION='KI21 Core 8.9.4 · Portfolio Recovery & Empty State';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
-const STORAGE_KEY='ki21_core_893_portfolio';
-const LEGACY_KEYS=['ki21_core_842_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
+const STORAGE_KEY='ki21_core_894_portfolio';
+const LEGACY_KEYS=['ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_842_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT='';
 
 const PROCESS_AREAS=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
@@ -66,17 +66,35 @@ function sanitizePortfolio(p){
  return p;
 }
 function loadPortfolio(){
- const keys=[STORAGE_KEY,...LEGACY_KEYS];
+ const discovered=[];
+ try{
+  for(let i=0;i<localStorage.length;i++){
+   const k=localStorage.key(i);
+   if(k&&/^ki21_/i.test(k)&&!discovered.includes(k))discovered.push(k);
+  }
+ }catch(e){}
+ const keys=[STORAGE_KEY,...LEGACY_KEYS,...discovered.filter(k=>k!==STORAGE_KEY&&!LEGACY_KEYS.includes(k))];
+ const recovered=[];
+ let preferredActive='';
  for(const k of keys){
   try{
    const raw=JSON.parse(localStorage.getItem(k)||'null');
    const p=sanitizePortfolio(raw);
-   if(p)return p;
-   if(raw&&raw.rawImport){
+   if(p){
+    if(!preferredActive&&p.activeId)preferredActive=p.activeId;
+    for(const o of p.opportunities){
+     if(!isBundledSample(o)&&!recovered.some(x=>(x.id&&x.id===o.id)||((x.company||'')===(o.company||'')&&(x.opportunity||'')===(o.opportunity||''))))recovered.push(o);
+    }
+   }else if(raw&&raw.rawImport){
     const migrated=normalizeState(raw);
-    if(!isBundledSample(migrated))return{version:VERSION,activeId:migrated.id,opportunities:[migrated]};
+    if(!isBundledSample(migrated)&&!recovered.some(x=>(x.company||'')===(migrated.company||'')&&(x.opportunity||'')===(migrated.opportunity||'')))recovered.push(migrated);
    }
   }catch(e){}
+ }
+ if(recovered.length){
+  const latest=[...recovered].sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
+  const active=recovered.some(o=>o.id===preferredActive)?preferredActive:latest.id;
+  return{version:VERSION,activeId:active,opportunities:recovered};
  }
  const first=emptyState(false);return{version:VERSION,activeId:first.id,opportunities:[first]};
 }
@@ -280,7 +298,17 @@ function fullReport(){const b=buyer(),sc=scores();let r=`KI21 VOLLSTÄNDIGER QUA
 • Forecast-Abschlag: ${forecastDeduction()}`;
  return r}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.activeTab));document.getElementById('oppName').textContent=`${state.company||'Neue Opportunity'} · ${state.opportunity||'CRM-Import erforderlich'}`;document.getElementById('statusLine').textContent=statusText();const v=document.getElementById('view');if(state.activeTab==='cockpit')v.innerHTML=renderCockpit();else if(state.activeTab==='process')v.innerHTML=renderProcess();else v.innerHTML=renderInputs();bindView()}
+function render(){
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.activeTab));
+ const blank=!state.company&&!state.opportunity&&!state.rawImport;
+ document.getElementById('oppName').textContent=blank?'Keine Opportunity ausgewählt':`${state.company||'Neue Opportunity'} · ${state.opportunity||'CRM-Import erforderlich'}`;
+ document.getElementById('statusLine').textContent=blank?'Opportunity auswählen oder neu importieren':statusText();
+ const v=document.getElementById('view');
+ if(blank){
+  v.innerHTML=`<div class="card orange"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" data-action="open-opportunity-manager">Gespeicherte Opportunities</button><button class="btn secondary" data-action="new-opportunity">Neue Opportunity</button></div></div>`;
+ }else if(state.activeTab==='cockpit')v.innerHTML=renderCockpit();else if(state.activeTab==='process')v.innerHTML=renderProcess();else v.innerHTML=renderInputs();
+ bindView();
+}
 function renderCockpit(){const sc=scores(),b=buyer(),sp=sponsor(),h=state.metrics.hours,annual=h*12;const strategic=strategicCase();const buyerText=b?b.name:'der wirtschaftliche Entscheider';if(strategic){return`<div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${sc.score}%</div><div class="metric-sub">Antippen für vollständige Diagnose</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${sc.forecast}%</div><div class="metric-sub">evidenzbasiert</div></div></div><div class="card orange"><div class="kicker">Aktuelles Lagebild</div><div class="headline">Strategischer Fit vorhanden – wirtschaftlicher Entscheidungsrahmen fehlt.</div><div class="divider"></div><div class="body">Die Erweiterung ist fachlich relevant und intern unterstützt. ${buyerText} ist als finaler wirtschaftlicher Entscheider identifiziert, aber noch nicht persönlich eingebunden. Die stärksten Nutzenhebel sind bekannt, ihre wirtschaftlichen Ausgangswerte jedoch noch nicht bestätigt.</div></div><div class="card violet"><div class="kicker">Nächste Kundenentscheidung</div><div class="headline">Welche zwei Nutzenhebel rechtfertigen die Investition – und welche Baseline akzeptiert ${buyerText}?</div></div><div class="card red"><div class="kicker">Größter Engpass</div><div class="body">Nicht der Produktfit, sondern der fehlende wirtschaftliche Nachweis blockiert die Entscheidung. Zusätzlich muss die Abgrenzung zur internen Alternative verbindlich geklärt werden.</div></div><div class="card blue"><div class="kicker">Nächster Schritt</div><div class="list"><div class="item">Wirtschaftlichen Discovery- und Entscheidungstermin mit ${buyerText}, ${sp?sp.name:'Sponsor'} und den relevanten Mitentscheidern vereinbaren.</div><div class="item">Einarbeitung, Personalbedarf, Eskalationen und Kundenbindung priorisieren und zwei Nutzenmodelle mit Baseline aufbauen.</div><div class="item">ServiceNow-Abgrenzung, Beweisfeld, Messlogik und Freigabeweg verbindlich festlegen.</div></div></div><div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div>`}return`<div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${sc.score}%</div><div class="metric-sub">Antippen für vollständige Diagnose</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${sc.forecast}%</div><div class="metric-sub">evidenzbasiert</div></div></div><div class="card orange"><div class="kicker">Aktuelles Lagebild</div><div class="headline">Der operative Schmerz ist belegt – die wirtschaftliche Entscheidung noch nicht.</div><div class="divider"></div><div class="body">${h} Stunden Zusatzaufwand pro Monat entsprechen ${annual.toLocaleString('de-DE')} Stunden pro Jahr. ${buyerText} ist ${state.flags.economicBuyerOpen?'noch nicht aktiv eingebunden':'aktiv eingebunden'}.</div></div><div class="card violet"><div class="kicker">Nächste Kundenentscheidung</div><div class="headline">Soll ${buyerText} die wirtschaftliche Relevanz bestätigen – und nach welchen Kriterien?</div></div><div class="card red"><div class="kicker">Größter Engpass</div><div class="body">Der Deal wird fachlich getragen, wirtschaftlich aber noch nicht verbindlich entschieden.</div></div><div class="card blue"><div class="kicker">Nächster Schritt</div><div class="list"><div class="item">Gemeinsamen Entscheidungstermin mit Sponsor und ${buyerText} vereinbaren.</div><div class="item">Erfolgskriterien, Wirkungsquote und Freigabeweg bestätigen lassen.</div><div class="item">Danach Umfang, Messlogik und Preis finalisieren.</div></div></div><div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div>`}
 function renderProcess(){return`<div class="card"><div class="kicker">Verkaufsprozess</div><div class="body muted">Bereiche öffnen oder durch erneutes Antippen wieder schließen. Die Bildschirmposition bleibt stabil.</div></div>${PROCESS_AREAS.map((name,i)=>{const a=processAnalysis(name),open=state.openAreas.includes(name);return`<div class="process-card ${open?'open':''}" data-area="${esc(name)}"><button class="process-head" data-action="toggle-area" data-area="${esc(name)}"><span class="process-num">${i+1}</span><span class="process-title">${esc(name)}</span><span class="process-status">${esc(a.status)}</span><span class="process-arrow">›</span></button><div class="process-body"><div class="analysis-block"><h4>Einschätzung</h4><p>${esc(a.assessment)}</p></div><div class="analysis-block"><h4>Bestätigte Fakten</h4><p>${a.facts.length?a.facts.map(esc).join(' · '):'Noch keine belastbaren Fakten.'}</p></div><div class="analysis-block"><h4>Offene Punkte</h4><p>${a.open.map(esc).join(' · ')}</p></div><div class="analysis-block"><h4>Aha-Erkenntnis${esc(methodTag(a.insightMethods))}</h4><p>${esc(a.insight)}</p></div><div class="analysis-block"><h4>Nächster Kundenschritt${esc(methodTag(a.nextMethods))}</h4><p>${esc(a.next)}</p></div></div></div>`}).join('')}`}
 function renderInputs(){const nav=[['crm','CRM-Import'],['qual','Qualifizierung'],['spin','SPIN'],['add','Ergänzung'],['offer','Angebot']];return`<div class="input-nav">${nav.map(([k,l])=>`<button class="${state.inputTab===k?'active':''}" data-input-tab="${k}">${l}</button>`).join('')}</div>${state.inputTab==='crm'?renderCrm():state.inputTab==='qual'?renderQuestions('qual',QUAL_QUESTIONS):state.inputTab==='spin'?renderQuestions('spin',SPIN_QUESTIONS):state.inputTab==='add'?renderAddition():renderOffer()}`}
@@ -289,7 +317,7 @@ function renderQuestions(kind,qs){const title=kind==='qual'?'Gezielte Qualifizie
 function renderAddition(){return`<div class="card green"><div class="kicker">Globale Ergänzung</div><div class="body">Neue Informationen aus Gespräch, E-Mail oder Notiz. KI21 ordnet sie automatisch dem gesamten Deal zu.</div><div class="divider"></div><textarea id="additionText" placeholder="Neue Informationen einfügen …"></textarea><div class="actions"><button class="btn primary" data-action="save-addition">Ergänzung übernehmen</button></div>${state.additions.length?`<div class="divider"></div><div class="label">Bisherige Ergänzungen</div><div class="list">${state.additions.map(x=>`<div class="item">${esc(x.text)}</div>`).join('')}</div>`:''}</div>`}
 function renderOffer(){return`<div class="card violet"><div class="kicker">Angebotsparameter</div><div class="field"><label>Angebots- oder Pilotpreis</label><input id="offerPrice" value="${esc(state.offer.price||'')}" placeholder="z. B. 35.000 €"></div><div class="field"><label>Interner Stundenwert</label><input id="offerTimeValue" value="${esc(state.offer.timeValue||'')}" placeholder="z. B. 85 €"></div><div class="field"><label>Umfang / Pilotumfang</label><input id="offerScope" value="${esc(state.offer.scope||'')}" placeholder="z. B. 8 Nutzer, 10 Enterprise-Deals"></div><div class="field"><label>Laufzeit</label><input id="offerDuration" value="${esc(state.offer.duration||'')}" placeholder="z. B. 10 Wochen"></div><div class="field"><label>Betrachtungszeitraum für Business Case (Monate)</label><input id="offerPeriodMonths" inputmode="decimal" value="${esc(state.offer.periodMonths||'')}" placeholder="z. B. 6"></div><div class="field"><label>Erfolgskriterien</label><input id="offerCriteria" value="${esc(state.offer.criteria||'')}" placeholder="z. B. 25 % weniger Review-Aufwand"></div><button class="btn primary" data-action="save-offer">Angebotsparameter speichern</button></div>`}
 function bindView(){document.querySelectorAll('[data-action="toggle-area"]').forEach(b=>b.addEventListener('click',()=>{const n=b.dataset.area;state.openAreas=state.openAreas.includes(n)?state.openAreas.filter(x=>x!==n):[...state.openAreas,n];saveState();const card=b.closest('.process-card');card.classList.toggle('open')}));document.querySelectorAll('[data-input-tab]').forEach(b=>b.addEventListener('click',()=>{state.inputTab=b.dataset.inputTab;saveState();render()}));document.querySelectorAll('[data-preview-index]').forEach(c=>c.addEventListener('change',()=>{state.importPreview[Number(c.dataset.previewIndex)].selected=c.checked;saveState()}));document.querySelectorAll('[data-action]').forEach(b=>{if(b.dataset.action==='toggle-area')return;b.addEventListener('click',()=>handleAction(b.dataset.action,b))})}
-function handleAction(action,el){if(action==='scan-import'){const raw=document.getElementById('crmText').value;const p=parseImport(raw);state.rawImport=raw;state.importPreview=p.evidence.map(x=>({...x,selected:true}));state._pendingParsed=p;saveState();render();toast(`${p.evidence.length} Aussagen und ${p.stakeholders.length} Stakeholder erkannt`)}else if(action==='reset-sample'){toast('Beispielimport ist deaktiviert')}else if(action==='select-all'||action==='select-none'){const val=action==='select-all';state.importPreview.forEach(x=>x.selected=val);saveState();render()}else if(action==='apply-import'){const p=parseImport(state.rawImport);const selected=state.importPreview.filter(x=>x.selected);if(state.company&&p.company&&((p.company!==state.company)||(p.opportunity&&p.opportunity!==state.opportunity))){const fresh=emptyState(false);fresh.rawImport=state.rawImport;portfolio.opportunities.push(fresh);portfolio.activeId=fresh.id;state=fresh}applyParsed(state,p);state.evidence=selected;state.importPreview=selected.map(x=>({...x}));saveState();render();toast('Import als eigene Opportunity übernommen')}else if(action==='save-answers'){const kind=el.dataset.kind;document.querySelectorAll(`[data-answer-kind="${kind}"]`).forEach(t=>state.answers[kind][Number(t.dataset.answerIndex)]=t.value.trim());saveState();render();toast('Antworten gespeichert und ausgewertet')}else if(action==='save-addition'){const t=document.getElementById('additionText').value.trim();if(!t)return toast('Bitte Ergänzung eingeben');state.additions.push({text:t,at:new Date().toISOString()});const p=parseImport(state.rawImport+'\n\nErgänzung\n'+state.additions.map(x=>x.text).join('\n'));state.metrics=p.metrics;state.flags=p.flags;if(p.stakeholders.length)state.stakeholders=p.stakeholders;saveState();render();toast('Ergänzung übernommen und Deal aktualisiert')}else if(action==='save-offer'){state.offer={price:document.getElementById('offerPrice').value.trim(),timeValue:document.getElementById('offerTimeValue').value.trim(),scope:document.getElementById('offerScope').value.trim(),duration:document.getElementById('offerDuration').value.trim(),periodMonths:document.getElementById('offerPeriodMonths').value.trim(),criteria:document.getElementById('offerCriteria').value.trim()};if(state.offer.price)state.flags.priceOpen=false;if(state.offer.criteria)state.flags.successOpen=false;saveState();render();toast('Angebotsparameter gespeichert')}else if(action==='report'){showReport()}}
+function handleAction(action,el){if(action==='open-opportunity-manager'){showOpportunityManager()}else if(action==='new-opportunity'){createOpportunity()}else if(action==='scan-import'){const raw=document.getElementById('crmText').value;const p=parseImport(raw);state.rawImport=raw;state.importPreview=p.evidence.map(x=>({...x,selected:true}));state._pendingParsed=p;saveState();render();toast(`${p.evidence.length} Aussagen und ${p.stakeholders.length} Stakeholder erkannt`)}else if(action==='reset-sample'){toast('Beispielimport ist deaktiviert')}else if(action==='select-all'||action==='select-none'){const val=action==='select-all';state.importPreview.forEach(x=>x.selected=val);saveState();render()}else if(action==='apply-import'){const p=parseImport(state.rawImport);const selected=state.importPreview.filter(x=>x.selected);if(state.company&&p.company&&((p.company!==state.company)||(p.opportunity&&p.opportunity!==state.opportunity))){const fresh=emptyState(false);fresh.rawImport=state.rawImport;portfolio.opportunities.push(fresh);portfolio.activeId=fresh.id;state=fresh}applyParsed(state,p);state.evidence=selected;state.importPreview=selected.map(x=>({...x}));saveState();render();toast('Import als eigene Opportunity übernommen')}else if(action==='save-answers'){const kind=el.dataset.kind;document.querySelectorAll(`[data-answer-kind="${kind}"]`).forEach(t=>state.answers[kind][Number(t.dataset.answerIndex)]=t.value.trim());saveState();render();toast('Antworten gespeichert und ausgewertet')}else if(action==='save-addition'){const t=document.getElementById('additionText').value.trim();if(!t)return toast('Bitte Ergänzung eingeben');state.additions.push({text:t,at:new Date().toISOString()});const p=parseImport(state.rawImport+'\n\nErgänzung\n'+state.additions.map(x=>x.text).join('\n'));state.metrics=p.metrics;state.flags=p.flags;if(p.stakeholders.length)state.stakeholders=p.stakeholders;saveState();render();toast('Ergänzung übernommen und Deal aktualisiert')}else if(action==='save-offer'){state.offer={price:document.getElementById('offerPrice').value.trim(),timeValue:document.getElementById('offerTimeValue').value.trim(),scope:document.getElementById('offerScope').value.trim(),duration:document.getElementById('offerDuration').value.trim(),periodMonths:document.getElementById('offerPeriodMonths').value.trim(),criteria:document.getElementById('offerCriteria').value.trim()};if(state.offer.price)state.flags.priceOpen=false;if(state.offer.criteria)state.flags.successOpen=false;saveState();render();toast('Angebotsparameter gespeichert')}else if(action==='report'){showReport()}}
 async function copyTextReliable(text){
  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true}}catch(e){}
  try{const ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);const ok=document.execCommand('copy');ta.remove();return ok}catch(e){return false}
@@ -323,7 +351,7 @@ function syncVersionLabels(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{state.activeTab=b.dataset.tab;saveState();render()}));
 
-document.getElementById('oppName').addEventListener('click',showOpportunityManager);
+document.getElementById('oppName').addEventListener('click',showOpportunityManager);document.querySelector('.header').addEventListener('click',e=>{if(e.target.closest('.opp-name'))return;showOpportunityManager()});
 
 // 8.7.1 generalized decision-group, evidence-scope, gate and business-case layer
 const __baseParseImport=parseImport;
