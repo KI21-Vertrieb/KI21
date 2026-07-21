@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.7.1 · Evidence & Gate Consistency</title>
+<title>KI21 Core 8.7.2 · Evidence Semantics Final</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -22,13 +22,13 @@
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer" id="footerVersion">KI21 Core 8.7.1 · Evidence & Gate Consistency</div>
+<div class="footer" id="footerVersion">KI21 Core 8.7.2 · Evidence Semantics Final</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.7.1 · Evidence & Gate Consistency';
+const VERSION='KI21 Core 8.7.2 · Evidence Semantics Final';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
@@ -414,14 +414,12 @@ parseImport=function(raw){
   p.metrics.recurringInternalCost=normalizeMoney(recurring?recurring[1]:'');
   p.metrics.historicExternalCost=normalizeMoney(historic?historic[1]:'');
   p.metrics.documentedLastYearCost=normalizeMoney(documented?documented[1]:'') || (p.metrics.recurringInternalCost+p.metrics.historicExternalCost);
-  // Evidence state is scoped to each section/category and cannot leak into later sections.
-  let openBlock=false, hypBlock=false, lastCategory='';
+  // Evidence semantics are scoped, reset at section boundaries and react to local headings.
+  let mode='fact', lastCategory='';
   p.evidence.forEach(e=>{
     const t=e.text.trim();
-    if(e.category!==lastCategory){openBlock=false;hypBlock=false;lastCategory=e.category;}
-    if(/^(Noch nicht quantifiziert sind|Nicht bestätigt ist|Noch nicht belastbar quantifiziert sind|Noch offen sind):?$/i.test(t)){openBlock=true;hypBlock=false;e.type='offen';return;}
-    if(/^(Vorgeschlagene Erfolgskriterien|Mögliche Pilotziele):?$/i.test(t)){hypBlock=true;openBlock=false;e.type='hypothese';return;}
-    if(/^Bestätigt sind:?$/i.test(t)){openBlock=false;hypBlock=false;e.type='fakt';return;}
+    if(e.category!==lastCategory){mode='fact';lastCategory=e.category;}
+
     if(e.category==='Einwandbehandlung'){e.type='fakt';return;}
     if(e.category==='Risiko'){
       if(/noch nicht|offen|nicht quantifiziert|nicht bestätigt|ungeklärt/i.test(t))e.type='offen';
@@ -430,10 +428,37 @@ parseImport=function(raw){
       return;
     }
     if(e.category==='Nächster Kundenschritt'){e.type='ableitung';return;}
-    if(openBlock){e.type='offen';return;}
-    if(hypBlock){e.type='hypothese';return;}
-    if(/^(Noch unklar ist|Eine weitere Alternative ist)/i.test(t)||/noch nicht abschließend geklärt|noch nicht eingebunden|keine konkrete Investitionsfreigabe|nicht bestätigt ist/i.test(t))e.type='offen';
-    else if(/könnte|möglich|realistisch/i.test(t))e.type='hypothese';
+
+    if(/^(Noch nicht quantifiziert sind|Nicht bestätigt ist|Noch nicht belastbar quantifiziert sind|Noch offen sind|Noch unklar ist):?$/i.test(t)){
+      mode='open';e.type='offen';return;
+    }
+    if(/^(Vorgeschlagene Erfolgskriterien|Mögliche Pilotziele):?$/i.test(t)){
+      mode='hyp';e.type='hypothese';return;
+    }
+    if(/^(Bestätigt sind|Business Case|Der Business Case hängt deshalb zusätzlich an|Das aktuelle Angebot umfasst|Der Einkauf fordert):?$/i.test(t)){
+      mode='fact';e.type='fakt';return;
+    }
+
+    // Confirmed portfolio/plan facts remain facts even if words such as “möglich” appear in the text.
+    if(/^(Vectura bearbeitet pro Jahr|Davon überschreiten|Möglicher späterer Ausbau:|Deutschland und Großbritannien werden als mögliche erste Rollout-Regionen diskutiert|Eine weitere Alternative ist, die Entscheidung)/i.test(t)){
+      e.type='fakt';return;
+    }
+
+    // Business-case conclusions reset an open block and are deductions, not open questions.
+    if(/^(Der dokumentierte Aufwand allein trägt|Der dokumentierte Mindestaufwand allein trägt|Der Business Case hängt deshalb zusätzlich an)/i.test(t)){
+      mode='fact';e.type='ableitung';return;
+    }
+
+    // Goal lists describe intended effects, not already proven results.
+    if(e.category==='Strategische Bedeutung' && /^(einheitlichere Opportunity-Entscheidungen ermöglichen|schwache Deals früher sichtbar machen|Verkäufer bei der Vorbereitung|wirtschaftliche Nutzenargumentation verbessern|Management-Reviews fokussieren|internationale Vertriebsmethodik vereinheitlichen|Übergaben an Professional Services absichern)/i.test(t)){
+      e.type='hypothese';return;
+    }
+
+    if(mode==='open'){e.type='offen';return;}
+    if(mode==='hyp'){e.type='hypothese';return;}
+
+    if(/noch nicht abschließend geklärt|noch nicht eingebunden|keine konkrete Investitionsfreigabe|nicht bestätigt ist/i.test(t))e.type='offen';
+    else if(/könnte|erscheinen|nur realistisch, wenn/i.test(t))e.type='hypothese';
     else e.type='fakt';
   });
   return p;
@@ -549,7 +574,7 @@ GRÖSSTER ENGPASS
 • ${bottleneck}
 
 BUSINESS CASE UND NUTZEN
-• Der belastbare Ausgangswert beträgt ${annual.toLocaleString('de-DE')} Stunden Zusatzaufwand pro Jahr beziehungsweise ${(state.metrics.recurringInternalCost||0).toLocaleString('de-DE')} € wiederkehrenden internen Aufwand.
+• Der belastbare Ausgangswert beträgt ${annual.toLocaleString('de-DE')} Stunden Zusatzaufwand pro Jahr beziehungsweise ${(state.metrics.recurringInternalCost||0).toLocaleString('de-DE')} € wiederkehrender interner Aufwand.
 • ${bc.text}
 
 BESTÄTIGTE EINWÄNDE
