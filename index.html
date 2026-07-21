@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.4.7 · Diagnostic Consistency</title>
+<title>KI21 Core 8.4.8 · Version Sync</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,17 +18,18 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version">Core 8.4.3</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.4.8</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer">KI21 Core 8.4.7 · Diagnostic Consistency</div>
+<div class="footer">KI21 Core 8.4.8 · Version Sync</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.4.7 · Diagnostic Consistency';
+const VERSION='KI21 Core 8.4.8 · Version Sync';
+const HEADER_VERSION='Core 8.4.8';
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT=`Unternehmen
@@ -172,7 +173,8 @@ function loadPortfolio(){
  for(const k of LEGACY_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&old.rawImport){const migrated=normalizeState(old);return{version:VERSION,activeId:migrated.id,opportunities:[migrated]}}}catch(e){}}
  const first=emptyState(true);applyParsed(first,parseImport(first.rawImport));return{version:VERSION,activeId:first.id,opportunities:[first]}
 }
-let portfolio=loadPortfolio();
+let portfolio=syncVersionLabels();
+loadPortfolio();
 let state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
 (function migrateDecisionAuthority(){
  let changed=false;
@@ -326,6 +328,12 @@ function showReport(){const reportText=fullReport();const overlay=document.creat
  const doCopy=async(btn)=>{const original=btn.textContent;btn.disabled=true;const ok=await copyTextReliable(reportText);btn.textContent=ok?'✓ Bericht kopiert':'Kopieren fehlgeschlagen';if(ok)toast('Vollständiger Testbericht kopiert');setTimeout(()=>{btn.disabled=false;btn.textContent=original},1800)};
  overlay.querySelector('#copyFullReport').addEventListener('click',e=>doCopy(e.currentTarget));overlay.querySelector('#copyFullReportBottom').addEventListener('click',e=>doCopy(e.currentTarget));overlay.querySelector('#closeReport').addEventListener('click',()=>overlay.remove());overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
 function showOpportunityManager(){const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
+
+function syncVersionLabels(){
+  const hv=document.getElementById('headerVersion');
+  if(hv) hv.textContent=HEADER_VERSION;
+  document.title=VERSION;
+}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{state.activeTab=b.dataset.tab;saveState();render()}));
 document.getElementById('oppName').addEventListener('click',showOpportunityManager);
