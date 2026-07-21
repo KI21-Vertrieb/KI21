@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.4.8 · Version Sync</title>
+<title>KI21 Core 8.4.9 · Startup Stability</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,18 +18,18 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.4.8</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.4.9</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer">KI21 Core 8.4.8 · Version Sync</div>
+<div class="footer">KI21 Core 8.4.9 · Startup Stability</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.4.8 · Version Sync';
-const HEADER_VERSION='Core 8.4.8';
+const VERSION='KI21 Core 8.4.9 · Startup Stability';
+const HEADER_VERSION='Core 8.4.9';
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT=`Unternehmen
@@ -173,8 +173,8 @@ function loadPortfolio(){
  for(const k of LEGACY_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&old.rawImport){const migrated=normalizeState(old);return{version:VERSION,activeId:migrated.id,opportunities:[migrated]}}}catch(e){}}
  const first=emptyState(true);applyParsed(first,parseImport(first.rawImport));return{version:VERSION,activeId:first.id,opportunities:[first]}
 }
-let portfolio=syncVersionLabels();
-loadPortfolio();
+let portfolio=loadPortfolio();
+syncVersionLabels();
 let state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
 (function migrateDecisionAuthority(){
  let changed=false;
