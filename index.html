@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.6.5 · Strategic Score & Report Consistency</title>
+<title>KI21 Core 8.7.0 · Decision Group & Gate Intelligence</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,17 +18,17 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.6.5</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.7.0</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer">KI21 Core 8.6.5 · Strategic Score & Report Consistency</div>
+<div class="footer" id="footerVersion">KI21 Core 8.7.0 · Decision Group & Gate Intelligence</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.6.6 · Report Output Stability';
+const VERSION='KI21 Core 8.7.0 · Decision Group & Gate Intelligence';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
@@ -389,11 +389,207 @@ function showOpportunityManager(){const overlay=document.createElement('div');ov
 function syncVersionLabels(){
   const hv=document.getElementById('headerVersion');
   if(hv) hv.textContent=HEADER_VERSION;
+  const fv=document.getElementById('footerVersion');
+  if(fv) fv.textContent=VERSION;
   document.title=VERSION;
 }
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{state.activeTab=b.dataset.tab;saveState();render()}));
+
 document.getElementById('oppName').addEventListener('click',showOpportunityManager);
+
+// 8.7.0 generalized decision-group, gate and business-case layer
+const __baseParseImport=parseImport;
+parseImport=function(raw){
+  const p=__baseParseImport(raw);
+  const budgetMatch=raw.match(/Transformationsbudget\s+von\s+(?:maximal\s+)?(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€[^\n.]{0,100}(?:grundsätzlich\s+bestätigt|grundsätzlich\s+vorhanden)/i)
+    || raw.match(/(?:Budget|Transformationsbudget)[^\n]{0,80}?(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€[^\n.]{0,100}(?:grundsätzlich\s+bestätigt|grundsätzlich\s+darstellbar|grundsätzlich\s+vorhanden)/i);
+  if(budgetMatch) p.metrics.budget=normalizeMoney(budgetMatch[1]);
+  const recurring=raw.match(/(?:wiederkehrende[rn]?\s+interne[rn]?\s+Zusatzaufwand(?:\s+beträgt\s+damit)?|interner Zusatzaufwand)\s*:?[\s\S]{0,80}?(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s*pro Jahr/i)
+    || raw.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s+wiederkehrender interner Zusatzaufwand pro Jahr/i);
+  const historic=raw.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s+(?:externe Unterstützung|externe Beratungskosten)[^\n.]{0,80}(?:im vergangenen Jahr|des vergangenen Jahres)/i)
+    || raw.match(/(?:rund\s+)?(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s+externe Unterstützung im vergangenen Jahr/i);
+  const documented=raw.match(/(?:dokumentierter Aufwand|dokumentierter Mindestaufwand)[^\d]{0,30}(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€/i)
+    || raw.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s+dokumentierter Aufwand im letzten Jahr/i);
+  p.metrics.recurringInternalCost=normalizeMoney(recurring?recurring[1]:'');
+  p.metrics.historicExternalCost=normalizeMoney(historic?historic[1]:'');
+  p.metrics.documentedLastYearCost=normalizeMoney(documented?documented[1]:'') || (p.metrics.recurringInternalCost+p.metrics.historicExternalCost);
+  // Correct child statements under explicit open headings.
+  let openBlock=false;
+  p.evidence.forEach(e=>{
+    const t=e.text.trim();
+    if(/^(Noch nicht quantifiziert sind|Nicht bestätigt ist|Noch nicht belastbar quantifiziert sind):?$/i.test(t)){openBlock=true;e.type='offen';return;}
+    if(/^(Strategische Bedeutung|Stakeholder|Entscheidungsprozess|Budget und Angebot|Business Case|Vorgeschlagene Erfolgskriterien|Bestätigte Kundeneinwände|Wettbewerb und Alternativen|Technische und organisatorische Punkte|Zentrale Deal-Risiken|Empfohlener nächster Kundenschritt)$/i.test(t)) openBlock=false;
+    if(openBlock) e.type='offen';
+  });
+  return p;
+};
+
+function cro(){return state.stakeholders.find(x=>/chief revenue officer|^cro$/i.test((x.function||'').trim()))||null}
+function cio(){return state.stakeholders.find(x=>/chief information officer|^cio$/i.test((x.function||'').trim()))||null}
+function privacyGate(){return state.stakeholders.find(x=>/data protection|information security|datenschutz|sicherheitsprüfer/i.test((x.function||'')+' '+(x.role||'')))||null}
+function operationalVeto(){return state.stakeholders.find(x=>/operatives vetorecht|operativ blockieren|professional services/i.test((x.authority||'')+' '+(x.function||'')+' '+(x.role||'')))||null}
+function gateOpen(person){return !!(person&&/noch kein persönlicher termin|noch nicht persönlich eingebunden|nicht eingebunden/i.test(person.status||''))}
+function explicitDecisionGroup(){
+  const raw=state.rawImport||'';
+  if(/finale Investitionsentscheidung[\s\S]{0,250}Chief Revenue Officer[\s\S]{0,100}Chief Financial Officer[\s\S]{0,100}Chief Information Officer/i.test(raw)) return ['CRO','CFO','CIO'];
+  if(/finale Entscheidung[\s\S]{0,250}Chief Sales Officer[\s\S]{0,100}Chief Financial Officer[\s\S]{0,100}Chief Operating Officer/i.test(raw)) return ['CSO','CFO','COO'];
+  return decisionGroup().map(x=>(x.function||x.role||'').replace(/^Chief /,'C')).filter(Boolean);
+}
+function decisionDate(){return ((state.rawImport||'').match(/(?:Entscheidungstermin[^:\n]*|Executive Committee):?\s*(\d{1,2}\.\s*[A-Za-zÄÖÜäöü]+\s*\d{4})/i)||[])[1]||''}
+function isRenewalCase(){return /vertragsverlängerung|renewal|wettbewerbsablösung/i.test(state.rawImport||'')}
+function isNewBusinessCase(){return /Neukundengeschäft|strategische Plattformentscheidung/i.test(state.rawImport||'')}
+
+const __baseScores=scores;
+scores=function(){
+  let r=__baseScores();
+  const pg=privacyGate();
+  const mandatory=/Datenschutz- und Sicherheitsfreigabe ist zwingend/i.test(state.rawImport||'');
+  const pgOpen=mandatory&&gateOpen(pg);
+  // Base parser missed confirmed transformation budgets in older versions.
+  if(state.metrics.budget && !/Budget oder finanzielle Darstellbarkeit/.test(scoreDrivers())) r.score=Math.min(92,r.score+7);
+  if(pgOpen) r.score=Math.max(15,r.score-8);
+  r.privacyGateOpen=pgOpen;
+  r.forecast=Math.max(10,Math.min(88,r.score-10-(state.flags.approvalOpen?4:0)-(pgOpen?6:0)));
+  return r;
+};
+const __baseScoreDrivers=scoreDrivers;
+scoreDrivers=function(){
+  const arr=__baseScoreDrivers().split(', ').filter(Boolean);
+  if(state.metrics.budget&&!arr.includes('Budget oder finanzielle Darstellbarkeit'))arr.splice(2,0,'Budget oder finanzielle Darstellbarkeit');
+  return [...new Set(arr)].join(', ');
+};
+const __baseScoreBrakes=scoreBrakes;
+scoreBrakes=function(){
+  const arr=__baseScoreBrakes().split(', ').filter(x=>x&&x!=='Budget nicht reserviert');
+  if(scores().privacyGateOpen) arr.push('zwingender Datenschutz- und Sicherheitsprüfer noch nicht persönlich eingebunden');
+  return [...new Set(arr)].join(', ');
+};
+forecastDeduction=function(){
+  const parts=[];
+  if(state.flags.economicBuyerOpen)parts.push('fehlende aktive wirtschaftliche Einbindung');
+  if(state.flags.approvalOpen)parts.push('offene Investitionsfreigabe');
+  if(scores().cooOpen)parts.push('fehlende persönliche COO-Einbindung');
+  if(scores().privacyGateOpen)parts.push('offene zwingende Datenschutz- und Sicherheitsfreigabe');
+  return parts.length?parts.join(' und '):'kein zusätzlicher Abschlag';
+};
+
+businessCaseModel=function(){
+  const monthly=state.metrics.hours||0, annualHours=monthly*12;
+  const price=normalizeMoney(state.offer.price||state.metrics.price||'');
+  const timeValue=normalizeMoney(state.offer.timeValue||state.metrics.timeValue||'');
+  const recurring=normalizeMoney(state.metrics.recurringInternalCost||'') || (annualHours&&timeValue?annualHours*timeValue:0);
+  const historic=normalizeMoney(state.metrics.historicExternalCost||'');
+  const lastYear=normalizeMoney(state.metrics.documentedLastYearCost||'') || recurring+historic;
+  const tcv=normalizeMoney(state.metrics.totalValue||'') || (price?price*3+normalizeMoney(state.metrics.implementationCost||''):0);
+  const implementation=normalizeMoney(state.metrics.implementationCost||'');
+  if(!annualHours&&!recurring)return{ready:false,text:'Kein belastbarer wirtschaftlicher Ausgangswert erkannt.'};
+  if(tcv&&recurring){
+    const firstYear=price+implementation;
+    const threeYearRecurring=recurring*3;
+    const gap=Math.max(0,tcv-threeYearRecurring);
+    const coverage=tcv?threeYearRecurring/tcv:0;
+    return{ready:true,portfolio:true,price,totalValue:tcv,recurringInternalCost:recurring,historicExternalCost:historic,documentedLastYearCost:lastYear,confirmedThreeYearRecurring:threeYearRecurring,confirmedGap:gap,text:`Bestätigt sind ${recurring.toLocaleString('de-DE')} € wiederkehrender interner Zusatzaufwand pro Jahr${historic?` sowie ${historic.toLocaleString('de-DE')} € externe Unterstützung im vergangenen Jahr`:''}. Ob die externen Kosten künftig erneut anfallen und welcher Anteil des internen Aufwands tatsächlich vermeidbar ist, bleibt offen. Im ersten Vertragsjahr stehen ${firstYear.toLocaleString('de-DE')} € aus Lizenz und Einführung einem im letzten Jahr dokumentierten Aufwand von ${lastYear.toLocaleString('de-DE')} € gegenüber. Über drei Jahre sind konservativ ${threeYearRecurring.toLocaleString('de-DE')} € wiederkehrender Aufwand bestätigt, also ${(coverage*100).toLocaleString('de-DE',{maximumFractionDigits:1})} % des Gesamtvolumens von ${tcv.toLocaleString('de-DE')} €. Mindestens ${gap.toLocaleString('de-DE')} € zusätzlicher Ergebnisnutzen müssen daher über Margenqualität, frühere No-Bid-Entscheidungen, vermiedene Fehlzusagen, weniger verspätete Projektstarts und internationale Skalierung belegt werden; die tatsächliche Lücke kann größer sein, wenn nur ein Teil des Aufwands vermeidbar ist.`};
+  }
+  return{ready:false,text:'Der wirtschaftliche Ausgangswert ist erkannt; für eine belastbare Mehrjahresrechnung fehlen Gesamtvolumen oder wiederkehrender Aufwand.'};
+};
+
+function dynamicDecisionContext(){
+  const b=buyer(), sp=sponsor(), pg=privacyGate(), ov=operationalVeto(), group=explicitDecisionGroup(), date=decisionDate();
+  return{b,sp,pg,ov,group,date,groupLabel:group.join(' / ')||'noch nicht eindeutig',pgOpen:gateOpen(pg)};
+}
+
+decisionBrief=function(){
+  const {b,sp,pg,ov,group,date,groupLabel,pgOpen}=dynamicDecisionContext();
+  const bn=b?b.name:'der wirtschaftliche Mitentscheider';
+  const h=state.metrics.hours||0, annual=h*12, price=state.metrics.price||0, budget=state.metrics.budget||0, bc=businessCaseModel(), sc=scores();
+  const obs=state.objections||[];
+  const assessment=`Der operative Schmerz und die strategische Relevanz sind belegt; die wirtschaftliche Zusatzwirkung ist jedoch noch nicht vollständig bestätigt. Der Deal kann erst vorankommen, wenn ${pgOpen&&pg?pg.name+' persönlich eingebunden ist, ':''}${ov?ov.name+' die operative Umsetzbarkeit bestätigt und ':''}die gemeinsame Entscheidungsgruppe aus ${groupLabel} Bewertungsmaßstab, Wirkung und Freigabebedingungen verbindlich festlegt.`;
+  const decision=`Welche Kombination aus messbarer wirtschaftlicher Wirkung, sicherer Dynamics-Integration, Datenschutzfreigabe, operativer Lieferfähigkeit und internationaler Adoption rechtfertigt ${state.metrics.totalValue?state.metrics.totalValue.toLocaleString('de-DE')+' € Gesamtvolumen':'die Investition'} gegenüber SalesMotion AI, Dynamics 365 und einer Verschiebung der Entscheidung?`;
+  const bottleneck=`${pgOpen&&pg?pg.name+' ist als zwingender Datenschutz- und Sicherheitsprüfer noch nicht persönlich eingebunden. ':''}${ov?ov.name+' besitzt ein faktisches operatives Vetorecht. ':''}Der dokumentierte Aufwand trägt die Investition allein nicht sicher; Erfolgskriterien, Ergebniswirkung und technische Freigabebedingungen sind noch nicht gemeinsam bestätigt.`;
+  const fifth='Erfolgskriterien, Datenschutzfreigabe, Rollout-Verantwortung und finale Investitionsfreigabe sind noch offen.';
+  return`KI21 SALES DECISION BRIEF
+Version: ${VERSION}
+Opportunity: ${state.company} · ${state.opportunity}
+
+EINSCHÄTZUNG
+${assessment}
+
+DIE 5 PUNKTE, DIE ZÄHLEN
+• ${h} Stunden Zusatzaufwand pro Monat entsprechen ${annual.toLocaleString('de-DE')} Stunden pro Jahr. Bestätigt sind ${(state.metrics.recurringInternalCost||h*12*(state.metrics.timeValue||0)).toLocaleString('de-DE')} € wiederkehrender interner Aufwand${state.metrics.historicExternalCost?` sowie ${state.metrics.historicExternalCost.toLocaleString('de-DE')} € externe Unterstützung im vergangenen Jahr`:''}.
+• ${bn} ist als wirtschaftlicher Mitentscheider identifiziert und bereits eingebunden; die finale Entscheidung liegt bei ${groupLabel}.
+• Ein Transformationsbudget von ${budget?budget.toLocaleString('de-DE')+' €':'noch unbekannter Höhe'} ist grundsätzlich bestätigt; der jährliche Angebotspreis von ${price.toLocaleString('de-DE')} € ist bekannt, die Investitionsfreigabe bleibt offen.
+• ${pgOpen&&pg?pg.name+' als zwingender Datenschutz- und Sicherheitsprüfer sowie ':''}${ov?ov.name+' mit operativem Vetorecht sind entscheidungskritisch.':'Technische und operative Freigaben sind entscheidungskritisch.'}
+• ${fifth}
+
+ZENTRALE KUNDENENTSCHEIDUNG
+• ${decision}
+
+GRÖSSTER ENGPASS
+• ${bottleneck}
+
+BUSINESS CASE UND NUTZEN
+• Der belastbare Ausgangswert beträgt ${annual.toLocaleString('de-DE')} Stunden Zusatzaufwand pro Jahr beziehungsweise ${(state.metrics.recurringInternalCost||0).toLocaleString('de-DE')} € wiederkehrenden internen Aufwand.
+• ${bc.text}
+
+BESTÄTIGTE EINWÄNDE
+${obs.length?obs.map(x=>`• ${x.speaker}: ${x.text}`).join('\n'):'• Noch keine bestätigten Kundeneinwände erkannt.'}
+
+NÄCHSTER SCHRITT
+1. ${sp?sp.name:'Sponsor'}, ${bn}${cio()?`, ${cio().name}`:''}${ov?`, ${ov.name}`:''}${pg?` und ${pg.name}`:''} in einen gemeinsamen Entscheidungsworkshop holen.
+2. Wiederkehrenden Aufwand, Margen-/No-Bid-/Übergabewirkung, Datenschutzanforderungen und operative Lieferfähigkeit getrennt bewerten; gemeinsame Kriterien und Messlogik bestätigen.
+3. KI21, SalesMotion AI, Dynamics 365 und die Verschiebungsalternative anhand identischer Kriterien vergleichen und ${date?'den Executive-Committee-Termin am '+date:'den verbindlichen Entscheidungstermin'} absichern; Einkauf danach strukturiert einbinden.
+
+STATE CHECK
+• Entscheidungsgruppe: ${groupLabel}
+• Wirtschaftlicher Mitentscheider: ${b&&!state.flags.economicBuyerOpen?'eingebunden':'nicht eingebunden'}
+• Erkannter Name: ${b?b.name:'—'}
+• Funktion: ${b?b.function:'—'}
+• Rolle: ${b?b.role:'—'}
+• Budget / finanzielle Darstellbarkeit: ${budget||'nicht erkannt'}
+• Angebotspreis: ${price||0}
+• Opportunity Score: ${sc.score}%
+• Forecast: ${sc.forecast}%
+• Score-Treiber: ${scoreDrivers()}
+• Score-Bremsen: ${scoreBrakes()}
+• Forecast-Abschlag: ${forecastDeduction()}`;
+};
+
+const __baseProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+  const a=__baseProcessAnalysis(name), ctx=dynamicDecisionContext(), b=buyer(), bc=businessCaseModel();
+  if(name==='Qualifizierung'){
+    a.assessment=`${ctx.sp?ctx.sp.name:'Die fachliche Sponsorin'} ist als fachlicher Treiber vorhanden. ${b?b.name+' ist als wirtschaftlicher Mitentscheider erkannt.':'Die wirtschaftliche Rolle ist offen.'}`;
+    a.insight=`Die finale Entscheidung liegt gemeinsam bei ${ctx.groupLabel}. ${ctx.ov?ctx.ov.name+' besitzt zusätzlich ein faktisches operatives Vetorecht. ':''}${ctx.pgOpen&&ctx.pg?ctx.pg.name+' ist als zwingender Datenschutz- und Sicherheitsprüfer noch nicht persönlich eingebunden.':''}`;
+    a.next=`Mit ${ctx.groupLabel}, Professional Services und Datenschutz Entscheidungskriterien, Messlogik, Freigabebedingungen und ${ctx.date?'den Termin am '+ctx.date:'den Entscheidungstermin'} verbindlich festlegen.`;
+  }
+  if(name==='Demo'){
+    a.next='Für den Neukunden- und Wettbewerbsfall zwei bis drei strategische Opportunities als gemeinsames Beweisfeld auswählen und fachliche, operative, technische sowie datenschutzbezogene Bewertungsmaßstäbe vorab vereinbaren.';
+  }
+  if(name==='Wirtschaftlicher Nutzen & ROI'){
+    a.assessment=bc.text;
+    a.facts=[`${(state.metrics.hours||0)*12} Stunden Jahresaufwand`,`${(state.metrics.recurringInternalCost||0).toLocaleString('de-DE')} € wiederkehrender interner Jahresaufwand`,`${(state.metrics.totalValue||0).toLocaleString('de-DE')} € Gesamtvolumen`];
+    a.next=`Mit ${b?b.name:'CFO'} den akzeptierten wirtschaftlichen Zielbeitrag bestätigen und Margen-, No-Bid-, Übergabe- und Skalierungswirkung über konkrete Entscheidungsfälle messbar machen.`;
+  }
+  if(name==='Abschluss'){
+    a.insight=`Der nächste Abschlussmeilenstein ist die gemeinsame Freigabe von ${ctx.groupLabel} mit bestätigter Datenschutz- und Sicherheitsprüfung sowie operativer Absicherung durch Professional Services.`;
+    a.next=`Die gemeinsame Zwischenentscheidung von ${ctx.groupLabel} sichern: Business Case, operative Wirkung, Datenschutzfreigabe, technische Prüfung, Rollout und ${ctx.date?'Termin am '+ctx.date:'Freigabetermin'} verbindlich festlegen.`;
+  }
+  return a;
+};
+
+// Reparse persisted opportunities with the generalized parser before first render.
+portfolio.opportunities.forEach(o=>{
+  if(!o.rawImport)return;
+  const p=parseImport(o.rawImport+(o.additions&&o.additions.length?'\n\nErgänzung\n'+o.additions.map(x=>x.text).join('\n'):''));
+  const manualOffer={...(o.offer||{})};
+  applyParsed(o,p);
+  o.offer={...manualOffer,price:manualOffer.price||p.metrics.price||'',timeValue:manualOffer.timeValue||p.metrics.timeValue||'',periodMonths:manualOffer.periodMonths||p.metrics.periodMonths||''};
+});
+portfolio.version=VERSION;
+savePortfolio();
+state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
+syncVersionLabels();
 render();
 </script>
 </body>
