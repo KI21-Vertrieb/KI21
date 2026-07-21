@@ -28,7 +28,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.5.1 · Report Button Stability';
+const VERSION='KI21 Core 8.5.2 · Report Engine Fix';
 const HEADER_VERSION='Core 8.5.1';
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
@@ -247,6 +247,36 @@ function hasBudgetEvidence(){return !!state.metrics.budget}
 function priceLabel(){const raw=state.rawImport||'';if(/Angebotspreis:\s*[^\n]+jährlich/i.test(raw))return'jährlicher Angebotspreis';if(/Pilotpreis/i.test(raw)||/zwölfwöchigen Pilot/i.test(raw))return'Pilotpreis';return'Angebotspreis'}
 function strategicCase(){return !state.metrics.hours&&(/strategisch|kundenbindung|servicequalität|einarbeitung|personalaufbau|transformation/i.test(state.rawImport||''))}
 function scores(){let s=25;if(state.metrics.hours)s+=8;else if((state.damageSignals||[]).length)s+=4;if(hasBudgetEvidence())s+=7;if(sponsor())s+=6;if(buyer())s+=6;if(buyer()&&!state.flags.economicBuyerOpen)s+=12;if(!state.flags.successOpen)s+=8;if(!state.flags.priceOpen)s+=6;if(!state.flags.approvalOpen)s+=12;const qualFilled=Object.values(state.answers.qual).filter(Boolean).length;const spinFilled=Object.values(state.answers.spin).filter(Boolean).length;s+=Math.min(8,qualFilled)+Math.min(8,spinFilled);s=Math.max(15,Math.min(92,s));const forecast=Math.max(10,Math.min(88,s-10-(state.flags.approvalOpen?4:0)));return{score:s,forecast}}
+
+function scoreDrivers(){
+  const drivers=[];
+  if(state.metrics.hours) drivers.push('quantifizierter Schmerz');
+  else if((state.damageSignals||[]).length) drivers.push('strategische Auswirkungen');
+  if(hasBudgetEvidence()) drivers.push('Budget oder finanzielle Darstellbarkeit');
+  if(sponsor()) drivers.push('fachlicher Treiber');
+  if(buyer()) drivers.push('finaler wirtschaftlicher Entscheider');
+  if(buyer()&&!state.flags.economicBuyerOpen) drivers.push('aktive Einbindung');
+  if(!state.flags.successOpen) drivers.push('bestätigte Erfolgskriterien');
+  if(!state.flags.priceOpen) drivers.push('bestätigter Preis');
+  if(!state.flags.approvalOpen) drivers.push('bestätigte Investitionsfreigabe');
+  return drivers.length?drivers.join(', '):'noch keine belastbaren Treiber';
+}
+function scoreBrakes(){
+  const brakes=[];
+  if(!state.metrics.hours) brakes.push('wirtschaftlicher Ausgangswert nicht quantifiziert');
+  if(!buyer()) brakes.push('finaler wirtschaftlicher Entscheider offen');
+  else if(state.flags.economicBuyerOpen) brakes.push('wirtschaftlicher Entscheider noch nicht persönlich eingebunden');
+  if(state.flags.successOpen) brakes.push('Erfolgskriterien und Messlogik offen');
+  if(state.flags.approvalOpen) brakes.push('Investitionsfreigabe offen');
+  if(!hasBudgetEvidence()) brakes.push('Budget nicht reserviert');
+  return brakes.length?brakes.join(', '):'keine wesentlichen Bremsen erkannt';
+}
+function forecastDeduction(){
+  const parts=[];
+  if(state.flags.economicBuyerOpen) parts.push('fehlende aktive wirtschaftliche Einbindung');
+  if(state.flags.approvalOpen) parts.push('offene Investitionsfreigabe');
+  return parts.length?parts.join(' und '):'kein zusätzlicher Abschlag';
+}
 function scoreExplanation(){const b=buyer(),sp=sponsor(),q=Object.values(state.answers.qual).filter(Boolean).length,spn=Object.values(state.answers.spin).filter(Boolean).length,d=[{label:'Basisscore für angelegte Opportunity',value:'+25',impact:true}];d.push({label:'Operativer Schmerz quantifiziert',value:state.metrics.hours?'+8':'0',impact:!!state.metrics.hours});d.push({label:'Strategische Auswirkungen dokumentiert',value:(!state.metrics.hours&&(state.damageSignals||[]).length)?'+4':'0',impact:!!(!state.metrics.hours&&(state.damageSignals||[]).length)});d.push({label:'Budget oder finanzielle Darstellbarkeit erkannt',value:hasBudgetEvidence()?'+7':'0',impact:hasBudgetEvidence()});d.push({label:'Sponsor vorhanden',value:sp?'+6':'0',impact:!!sp});d.push({label:'Wirtschaftlicher Entscheider identifiziert',value:b?'+6':'0',impact:!!b});d.push({label:'Wirtschaftlicher Entscheider aktiv eingebunden',value:b&&!state.flags.economicBuyerOpen?'+12':'0',impact:!!(b&&!state.flags.economicBuyerOpen)});d.push({label:'Erfolgskriterien bestätigt',value:!state.flags.successOpen?'+8':'0',impact:!state.flags.successOpen});d.push({label:'Preis bestätigt',value:!state.flags.priceOpen?'+6':'0',impact:!state.flags.priceOpen});d.push({label:'Investitionsfreigabe bestätigt',value:!state.flags.approvalOpen?'+12':'0',impact:!state.flags.approvalOpen});d.push({label:'Beantwortete Qualifizierungsfragen',value:'+'+Math.min(8,q),impact:q>0});d.push({label:'Beantwortete SPIN-Fragen',value:'+'+Math.min(8,spn),impact:spn>0});return d}
 function statusText(){const b=buyer();if(!b||state.flags.economicBuyerOpen)return'Qualifizierung · wirtschaftlichen Entscheidungsweg klären';if(state.flags.successOpen)return'Bedarfsanalyse · Erfolgskriterien und Wirkung validieren';if(state.flags.priceOpen||state.flags.approvalOpen)return'Pilotentscheidung vorbereiten';return'Angebot & Abschluss · Freigabe sichern'}
 function methodTag(methods){return methods&&methods.length?` (${methods.join(' · ')})`:''}
