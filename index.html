@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.9.5 · Empty State Hard Fallback</title>
+<title>KI21 Core 8.9.6 · Portfolio Deep Recovery</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,19 +18,19 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.5</div></div><div class="opp-name" id="oppName" onclick="showOpportunityManager()">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.6</div></div><div class="opp-name" id="oppName" onclick="showOpportunityManager()">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 8.9.5 · Empty State Hard Fallback</div>
+<div class="footer" id="footerVersion">KI21 Core 8.9.6 · Portfolio Deep Recovery</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.9.5 · Empty State Hard Fallback';
+const VERSION='KI21 Core 8.9.6 · Portfolio Deep Recovery';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
-const STORAGE_KEY='ki21_core_895_portfolio';
+const STORAGE_KEY='ki21_core_896_portfolio';
 const LEGACY_KEYS=['ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_842_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT='';
 
@@ -65,36 +65,49 @@ function sanitizePortfolio(p){
  }
  return p;
 }
+function extractOpportunityCandidates(value,found,seen,depth=0){
+ if(value==null||depth>7)return;
+ if(typeof value==='string'){
+  const t=value.trim();
+  if((t.startsWith('{')||t.startsWith('['))&&t.length<5000000){try{extractOpportunityCandidates(JSON.parse(t),found,seen,depth+1)}catch(e){}}
+  return;
+ }
+ if(typeof value!=='object'||seen.has(value))return;
+ seen.add(value);
+ if(Array.isArray(value)){value.forEach(v=>extractOpportunityCandidates(v,found,seen,depth+1));return;}
+ if(Array.isArray(value.opportunities))value.opportunities.forEach(v=>extractOpportunityCandidates(v,found,seen,depth+1));
+ const raw=String(value.rawImport||value.crmImport||value.originalImport||'');
+ const company=String(value.company||value.companyName||value.firma||'');
+ const opportunity=String(value.opportunity||value.opportunityName||value.oppName||'');
+ if(raw||company||opportunity){
+  const candidate=normalizeState({...value,rawImport:raw||value.rawImport||'',company:company||value.company||'',opportunity:opportunity||value.opportunity||''});
+  const signature=(candidate.company+'|'+candidate.opportunity+'|'+candidate.rawImport.slice(0,300)).toLowerCase();
+  if(!isBundledSample(candidate)&&!found.some(x=>x.__sig===signature))found.push(Object.assign(candidate,{__sig:signature}));
+ }
+ for(const [k,v] of Object.entries(value)){
+  if(['opportunities','rawImport','crmImport','originalImport'].includes(k))continue;
+  if(v&&typeof v==='object')extractOpportunityCandidates(v,found,seen,depth+1);
+ }
+}
 function loadPortfolio(){
- const discovered=[];
- try{
-  for(let i=0;i<localStorage.length;i++){
-   const k=localStorage.key(i);
-   if(k&&/^ki21_/i.test(k)&&!discovered.includes(k))discovered.push(k);
-  }
- }catch(e){}
- const keys=[STORAGE_KEY,...LEGACY_KEYS,...discovered.filter(k=>k!==STORAGE_KEY&&!LEGACY_KEYS.includes(k))];
- const recovered=[];
- let preferredActive='';
+ const recovered=[];let preferredActive='';
+ const keys=[];
+ try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!keys.includes(k))keys.push(k)}}catch(e){}
+ [STORAGE_KEY,...LEGACY_KEYS].forEach(k=>{if(!keys.includes(k))keys.unshift(k)});
  for(const k of keys){
   try{
-   const raw=JSON.parse(localStorage.getItem(k)||'null');
-   const p=sanitizePortfolio(raw);
-   if(p){
-    if(!preferredActive&&p.activeId)preferredActive=p.activeId;
-    for(const o of p.opportunities){
-     if(!isBundledSample(o)&&!recovered.some(x=>(x.id&&x.id===o.id)||((x.company||'')===(o.company||'')&&(x.opportunity||'')===(o.opportunity||''))))recovered.push(o);
-    }
-   }else if(raw&&raw.rawImport){
-    const migrated=normalizeState(raw);
-    if(!isBundledSample(migrated)&&!recovered.some(x=>(x.company||'')===(migrated.company||'')&&(x.opportunity||'')===(migrated.opportunity||'')))recovered.push(migrated);
-   }
+   const rawText=localStorage.getItem(k);if(!rawText)continue;
+   const raw=JSON.parse(rawText);
+   if(raw&&raw.activeId&&!preferredActive)preferredActive=raw.activeId;
+   extractOpportunityCandidates(raw,recovered,new WeakSet());
   }catch(e){}
  }
- if(recovered.length){
-  const latest=[...recovered].sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
-  const active=recovered.some(o=>o.id===preferredActive)?preferredActive:latest.id;
-  return{version:VERSION,activeId:active,opportunities:recovered};
+ const cleaned=recovered.map(o=>{delete o.__sig;return o}).filter(o=>!isBundledSample(o));
+ const real=cleaned.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+ if(real.length){
+  const latest=[...real].sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
+  const active=real.some(o=>o.id===preferredActive)?preferredActive:latest.id;
+  return{version:VERSION,activeId:active,opportunities:real};
  }
  const first=emptyState(false);return{version:VERSION,activeId:first.id,opportunities:[first]};
 }
@@ -339,7 +352,7 @@ function showReport(){
 }
 window.__ki21OpenReport=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}showReport()};
 document.addEventListener('click',function(ev){const target=ev.target.closest&&ev.target.closest('[data-action="report"]');if(!target)return;ev.preventDefault();ev.stopPropagation();showReport()},true);
-function showOpportunityManager(){const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
+function showOpportunityManager(){const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];savePortfolio();overlay.remove();render();toast(portfolio.opportunities.length+' Opportunity(s) gefunden')});overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
 
 function syncVersionLabels(){
   const hv=document.getElementById('headerVersion');
