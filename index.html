@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.4.2 · State Consistency</title>
+<title>KI21 Core 8.4.3 · Evidence Migration</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -22,13 +22,13 @@
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer">KI21 Core 8.4.2 · State Consistency</div>
+<div class="footer">KI21 Core 8.4.3 · Evidence Migration</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.4.2 · State Consistency';
+const VERSION='KI21 Core 8.4.3 · Evidence Migration';
 const STORAGE_KEY='ki21_core_842_portfolio';
 const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT=`Unternehmen
@@ -166,7 +166,7 @@ const SPIN_QUESTIONS=[
 
 function uid(){return 'opp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
 function emptyState(withSample=false){return{id:uid(),version:VERSION,activeTab:withSample?'cockpit':'inputs',inputTab:'crm',rawImport:withSample?DEFAULT_IMPORT:'',importPreview:[],company:'',opportunity:'',phase:'',pilotUsers:0,stakeholders:[],evidence:[],objections:[],damageSignals:[],metrics:{hours:0,lost:null,possible:'',budget:0,price:0,timeValue:0,periodMonths:0,annualCost:0},flags:{approvalOpen:true,economicBuyerOpen:true,successOpen:true,priceOpen:true},answers:{qual:{},spin:{}},offer:{},additions:[],openAreas:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
-function normalizeState(x){const s={...emptyState(false),...x};s.id=x.id||uid();s.version=VERSION;s.metrics={...emptyState(false).metrics,...(x.metrics||{})};s.flags={...emptyState(false).flags,...(x.flags||{})};s.answers={qual:{...((x.answers||{}).qual||{})},spin:{...((x.answers||{}).spin||{})}};s.offer={...(x.offer||{})};const raw=s.rawImport||'';const explicitOpen=/^\s*Angebotspreis\s*:\s*(?:noch\s+)?offen\s*$/im.test(raw);if(explicitOpen){s.metrics.price=0;s.flags.priceOpen=true;s.offer.price=''}else if(s.flags.priceOpen&&s.metrics.price===0){s.offer.price=''}return s}
+function normalizeState(x){const s={...emptyState(false),...x};s.id=x.id||uid();s.version=VERSION;s.metrics={...emptyState(false).metrics,...(x.metrics||{})};s.flags={...emptyState(false).flags,...(x.flags||{})};s.answers={qual:{...((x.answers||{}).qual||{})},spin:{...((x.answers||{}).spin||{})}};s.offer={...(x.offer||{})};const raw=s.rawImport||'';const explicitOpen=/^\s*Angebotspreis\s*:\s*(?:noch\s+)?offen\s*$/im.test(raw);if(explicitOpen){s.metrics.price=0;s.flags.priceOpen=true;s.offer.price=''}else if(s.flags.priceOpen&&s.metrics.price===0){s.offer.price=''};if(Array.isArray(s.evidence)){s.evidence=s.evidence.map(e=>{if(e.category!=='Risiko')return e;const t=(e.text||'').toLowerCase();let type='ableitung';if(/\b(offen|noch nicht|nicht(?:\s+\w+){0,4}\s+bestätigt|fehlt|keine freigabe|keine konkrete investitionsfreigabe|nicht eingebunden|nicht gemessen)\b/.test(t))type='offen';else if(/\b(könnte|möglicherweise|hypothese|plausibel)\b/.test(t))type='hypothese';return{...e,type}})}return s}
 function loadPortfolio(){
  try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(p&&Array.isArray(p.opportunities)&&p.opportunities.length){p.opportunities=p.opportunities.map(normalizeState);p.version=VERSION;if(!p.opportunities.some(x=>x.id===p.activeId))p.activeId=p.opportunities[0].id;return p}}catch(e){}
  for(const k of LEGACY_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&old.rawImport){const migrated=normalizeState(old);return{version:VERSION,activeId:migrated.id,opportunities:[migrated]}}}catch(e){}}
