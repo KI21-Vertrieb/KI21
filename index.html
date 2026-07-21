@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.4.1 · Customer Portfolio</title>
+<title>KI21 Core 8.4.2 · State Consistency</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -18,19 +18,19 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version">Core 8.4.1</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version">Core 8.4.2</div></div><div class="opp-name" id="oppName">Novacore Systems GmbH · KI21 Pilot Opportunity-Steuerung</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"></section>
-<div class="footer">KI21 Core 8.4.1 · Customer Portfolio</div>
+<div class="footer">KI21 Core 8.4.2 · State Consistency</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.4.1 · Customer Portfolio';
-const STORAGE_KEY='ki21_core_841_portfolio';
-const LEGACY_KEYS=['ki21_core_830_state'];
+const VERSION='KI21 Core 8.4.2 · State Consistency';
+const STORAGE_KEY='ki21_core_842_portfolio';
+const LEGACY_KEYS=['ki21_core_841_portfolio','ki21_core_830_state'];
 const DEFAULT_IMPORT=`Unternehmen
 Firmenname: Novacore Systems GmbH
 Branche: B2B-Software
@@ -166,7 +166,7 @@ const SPIN_QUESTIONS=[
 
 function uid(){return 'opp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
 function emptyState(withSample=false){return{id:uid(),version:VERSION,activeTab:withSample?'cockpit':'inputs',inputTab:'crm',rawImport:withSample?DEFAULT_IMPORT:'',importPreview:[],company:'',opportunity:'',phase:'',pilotUsers:0,stakeholders:[],evidence:[],objections:[],damageSignals:[],metrics:{hours:0,lost:null,possible:'',budget:0,price:0,timeValue:0,periodMonths:0,annualCost:0},flags:{approvalOpen:true,economicBuyerOpen:true,successOpen:true,priceOpen:true},answers:{qual:{},spin:{}},offer:{},additions:[],openAreas:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
-function normalizeState(x){const s={...emptyState(false),...x};s.id=x.id||uid();s.version=VERSION;s.metrics={...emptyState(false).metrics,...(x.metrics||{})};s.flags={...emptyState(false).flags,...(x.flags||{})};s.answers={qual:{...((x.answers||{}).qual||{})},spin:{...((x.answers||{}).spin||{})}};s.offer={...(x.offer||{})};if(s.flags.priceOpen&&s.metrics.price===0)s.offer.price='';return s}
+function normalizeState(x){const s={...emptyState(false),...x};s.id=x.id||uid();s.version=VERSION;s.metrics={...emptyState(false).metrics,...(x.metrics||{})};s.flags={...emptyState(false).flags,...(x.flags||{})};s.answers={qual:{...((x.answers||{}).qual||{})},spin:{...((x.answers||{}).spin||{})}};s.offer={...(x.offer||{})};const raw=s.rawImport||'';const explicitOpen=/^\s*Angebotspreis\s*:\s*(?:noch\s+)?offen\s*$/im.test(raw);if(explicitOpen){s.metrics.price=0;s.flags.priceOpen=true;s.offer.price=''}else if(s.flags.priceOpen&&s.metrics.price===0){s.offer.price=''}return s}
 function loadPortfolio(){
  try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(p&&Array.isArray(p.opportunities)&&p.opportunities.length){p.opportunities=p.opportunities.map(normalizeState);p.version=VERSION;if(!p.opportunities.some(x=>x.id===p.activeId))p.activeId=p.opportunities[0].id;return p}}catch(e){}
  for(const k of LEGACY_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old&&old.rawImport){const migrated=normalizeState(old);return{version:VERSION,activeId:migrated.id,opportunities:[migrated]}}}catch(e){}}
@@ -190,7 +190,7 @@ function parseImport(raw){
  const sectionRx=/^(Unternehmen|Opportunity|Ausgangssituation|Schmerz(?: und wirtschaftliche Auswirkungen|(?: und| &) Aufwand)|Stakeholder|Qualifizierungsstand|Budget(?: und| &) Entscheidung|Business Case|Pilot(?: und Erfolgskriterien)?|Mögliche Einwände|Bestätigte Kundeneinwände|Technische und organisatorische Punkte|Zentrale Deal-Risiken|Empfohlener nächster Kundenschritt)$/i;
  const isSec=x=>sectionRx.test(x);
  const cat=sec=>{const t=sec.toLowerCase();if(t.includes('unternehmen'))return'Unternehmen';if(t==='opportunity')return'Opportunity';if(t.includes('stakeholder'))return'Stakeholder';if(t.includes('schmerz'))return'Schmerz & Aufwand';if(t.includes('budget')||t.includes('business case'))return'Budget & Entscheidung';if(t.includes('pilot'))return'Pilot';if(t.includes('einwände'))return'Einwandbehandlung';if(t.includes('risiken'))return'Risiko';if(t.includes('technische'))return'Technik & Organisation';if(t.includes('nächster kundenschritt'))return'Nächster Kundenschritt';return'Weitere Information'};
- const infer=(text,ctx)=>{const t=text.toLowerCase();if(ctx==='hyp')return'hypothese';if(ctx==='risk'||ctx==='next')return'ableitung';if(ctx==='open'||/\b(offen|noch nicht|nicht(?:\s+\w+){0,3}\s+bestätigt|fehlt|ungeklärt|keine freigabe|nicht eingebunden|nicht gestartet)\b/.test(t))return'offen';if(/\b(möglicherweise|könnte|hypothese|möglich|realistisch)\b/.test(t))return'hypothese';return'fakt'};
+ const infer=(text,ctx)=>{const t=text.toLowerCase();if(ctx==='hyp')return'hypothese';if(ctx==='open'||/\b(offen|noch nicht|nicht(?:\s+\w+){0,3}\s+bestätigt|fehlt|ungeklärt|keine freigabe|keine konkrete investitionsfreigabe|nicht eingebunden|nicht gestartet)\b/.test(t))return'offen';if(/\b(möglicherweise|könnte|hypothese|möglich|realistisch)\b/.test(t))return'hypothese';if(ctx==='risk'||ctx==='next')return'ableitung';return'fakt'};
  const person=(line)=>!line.includes(':')&&!/^[-*•]/.test(line)&&!isSec(line)&&/^(Dr\.\s+)?[A-ZÄÖÜ][\p{L}.'-]+(?:\s+[A-ZÄÖÜ][\p{L}.'-]+){1,3}$/u.test(line)?line:null;
  for(let i=0;i<lines.length;i++){
   const line=lines[i];if(!line)continue;
@@ -215,11 +215,11 @@ function parseImport(raw){
  const full=raw.replace(/\n+/g,' '),company=(raw.match(/Firmenname:\s*([^\n]+)/i)||[])[1]||'',opportunity=(raw.match(/Opportunity-Name:\s*([^\n]+)/i)||[])[1]||'',phase=(raw.match(/Opportunity-Status:\s*([^\n]+)/i)||[])[1]||'';
  const hours=Number((full.match(/(?:rund\s*)?(\d+)\s*Stunden\s*(?:pro Monat|monatlich)/i)||[])[1]||0);
  const lostM=full.match(/(\d+)\s+(?:strategische\s+)?(?:Projekte|Opportunities)[^.]*?(?:nicht beauftragt|verloren|verschoben)/i);const lost=lostM?Number(lostM[1]):null;
- const budgetM=full.match(/Budgetrahmen[^.]*?(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€/i);const priceM=full.match(/(?:Angebotspreis|Pilotpreis|angebotene Pilotpreis)[^\d]*(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€/i);const timeM=full.match(/(?:Zeitwert|Stundenwert)[^\d]*(\d+(?:[.,]\d+)?)\s*€\s*(?:pro Stunde)?/i);const periodM=full.match(/(?:innerhalb von|Betrachtungszeitraum[^\d]*)(\d+)\s*Monaten/i);const annualM=full.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s*pro Jahr/i);const usersM=full.match(/(?:Pilotumfang|mit)\s*:?[^^.]*?(\d+)\s*Nutzer/i);
+ const budgetLine=(raw.match(/^\s*Budgetrahmen\s*:\s*([^\n]+)$/im)||[])[1]||'';const priceLine=(raw.match(/^\s*(?:Angebotspreis|Pilotpreis|Der angebotene Pilotpreis)\s*:\s*([^\n]+)$/im)||[])[1]||'';const budgetM=budgetLine.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€/i);const priceM=priceLine.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€/i);const timeM=raw.match(/(?:Zeitwert|Stundenwert)[^\n\d]*(\d+(?:[.,]\d+)?)\s*€\s*(?:pro Stunde)?/i);const periodM=full.match(/(?:innerhalb von|Betrachtungszeitraum[^\d]*)(\d+)\s*Monaten/i);const annualM=full.match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*€\s*pro Jahr/i);const usersM=full.match(/(?:Pilotumfang|mit)\s*:?[^^.]*?(\d+)\s*Nutzer/i);
  const budget=normalizeMoney(budgetM?budgetM[1]:'');const price=normalizeMoney(priceM?priceM[1]:'');const timeValue=normalizeMoney(timeM?timeM[1]:'');const periodMonths=periodM?Number(periodM[1]):0;const annualCost=normalizeMoney(annualM?annualM[1]:'');const pilotUsers=usersM?Number(usersM[1]):0;
  const approvalOpen=/finale budgetfreigabe fehlt|verbindliche freigabe.*offen|freigabe.*noch nicht|keine konkrete investitionsfreigabe/i.test(full);
  const successOpen=/noch nicht gemeinsam bestätigt[^]*?(erfolgskriterien|messmethode)|erfolgskriterien[^.]*noch nicht/i.test(full);
- const priceOpen=!price||/angebotspreis:\s*noch offen/i.test(full);
+ const priceOpen=!price||/^\s*Angebotspreis\s*:\s*(?:noch\s+)?offen\s*$/im.test(raw);
  const buyer=stakeholders.find(x=>/wirtschaftlich(?:e|er)?\s+(?:mit)?entscheider|chief financial officer|\bcfo\b/i.test((x.role||'')+' '+(x.function||'')))||null;
  const buyerOpen=!buyer||/noch nicht eingebunden|nicht aktiv eingebunden/i.test((buyer.status||'')+' '+(buyer.attitude||''));
  return{company,opportunity,phase,pilotUsers,stakeholders,evidence,objections,damageSignals,metrics:{hours,lost,possible:'',budget,price,timeValue,periodMonths,annualCost},flags:{approvalOpen,economicBuyerOpen:buyerOpen,successOpen,priceOpen},raw};
