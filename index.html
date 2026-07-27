@@ -28,7 +28,7 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.10.1 · State & Navigation Stability';
+const VERSION='KI21 Core 8.10.2 · Interaction Recovery';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -384,7 +384,7 @@ function showReport(){
   reportText=`KI21 TESTBERICHT KONNTE NICHT VOLLSTÄNDIG ERZEUGT WERDEN\n\nFehler: ${err&&err.message?err.message:String(err)}\n\nOpportunity: ${state?.company||''} · ${state?.opportunity||''}`;
  }
  const existing=document.getElementById('ki21ReportOverlay');if(existing)existing.remove();
- const overlay=document.createElement('div');overlay.id='ki21ReportOverlay';overlay.style.cssText='position:fixed;inset:0;z-index:1000;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation';
+ const overlay=document.createElement('div');overlay.id='ki21ReportOverlay';overlay.className='ki21-modal-overlay';overlay.style.cssText='position:fixed;inset:0;z-index:1000;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation';
  overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:94vh;overflow:auto;-webkit-overflow-scrolling:touch;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Vollständiger Qualitätsbericht</div><div class="body muted" style="margin:5px 0 12px">Enthält State, Stakeholder, Importaussagen, Eingaben und alle sieben Bereichsanalysen.</div><div class="actions" style="margin:0 0 12px"><button class="btn primary" id="copyFullReport">Vollständigen Bericht kopieren</button><button class="btn secondary" id="closeReportTop">Schließen</button></div><div class="report">${esc(reportText)}</div><div class="actions"><button class="btn secondary" id="copyFullReportBottom">Bericht kopieren</button><button class="btn primary" id="closeReport">Schließen</button></div></div>`;
  document.body.appendChild(overlay);
  const doCopy=async(btn)=>{const original=btn.textContent;btn.disabled=true;const ok=await copyTextReliable(reportText);btn.textContent=ok?'✓ Bericht kopiert':'Kopieren fehlgeschlagen';if(ok)toast('Vollständiger Testbericht kopiert');setTimeout(()=>{btn.disabled=false;btn.textContent=original},1800)};
@@ -394,7 +394,7 @@ function showReport(){
 }
 window.__ki21OpenReport=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}showReport()};
 document.addEventListener('click',function(ev){const target=ev.target.closest&&ev.target.closest('[data-action="report"]');if(!target)return;ev.preventDefault();ev.stopPropagation();showReport()},true);
-function showOpportunityManager(){const existing=document.getElementById('ki21OpportunityOverlay');if(existing){existing.remove();return;}const overlay=document.createElement('div');overlay.id='ki21OpportunityOverlay';overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();overlay.remove();render();toast(portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim()).length+' Opportunity(s) gefunden')});overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
+function showOpportunityManager(){const existing=document.getElementById('ki21OpportunityOverlay');if(existing){existing.remove();return;}const overlay=document.createElement('div');overlay.id='ki21OpportunityOverlay';overlay.className='ki21-modal-overlay';overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();overlay.remove();render();toast(portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim()).length+' Opportunity(s) gefunden')});overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
 
 function syncVersionLabels(){
   const hv=document.getElementById('headerVersion');
@@ -406,7 +406,7 @@ function syncVersionLabels(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{state.activeTab=b.dataset.tab;saveState();render()}));
 
-document.getElementById('oppName').addEventListener('click',showOpportunityManager);document.querySelector('.header').addEventListener('click',e=>{if(e.target.closest('.opp-name'))return;showOpportunityManager()});
+document.getElementById('oppName').addEventListener('click',showOpportunityManager);
 
 // 8.7.1 generalized decision-group, evidence-scope, gate and business-case layer
 const __baseParseImport=parseImport;
@@ -1045,6 +1045,63 @@ switchOpportunity=function(id){closeTransientOverlays();return __stableSwitchOpp
 const __stableCreateOpportunity=createOpportunity;
 createOpportunity=function(){closeTransientOverlays();return __stableCreateOpportunity()};
 
+
+
+// === 8.10.2 Interaction recovery layer ===
+// Central capture handler prevents stale or duplicated listeners from blocking navigation.
+function ki21CloseAllModals(){
+  document.querySelectorAll('#ki21ReportOverlay,#ki21OpportunityOverlay,.ki21-modal-overlay').forEach(el=>el.remove());
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+}
+
+function ki21RouteClick(ev){
+  const target=ev.target && ev.target.closest ? ev.target : null;
+  if(!target)return;
+
+  const tab=target.closest('.tab[data-tab]');
+  if(tab){
+    ev.preventDefault();
+    ev.stopPropagation();
+    if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
+    ki21CloseAllModals();
+    state.activeTab=tab.dataset.tab;
+    saveState();
+    render();
+    return;
+  }
+
+  const opp=target.closest('#oppName');
+  if(opp){
+    ev.preventDefault();
+    ev.stopPropagation();
+    if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
+    ki21CloseAllModals();
+    showOpportunityManager();
+    return;
+  }
+
+  const actionEl=target.closest('[data-action]');
+  if(actionEl && !actionEl.closest('#ki21ReportOverlay,#ki21OpportunityOverlay')){
+    const action=actionEl.dataset.action;
+    if(action){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
+      if(action!=='report')ki21CloseAllModals();
+      handleAction(action,actionEl);
+    }
+  }
+}
+
+document.addEventListener('click',ki21RouteClick,true);
+
+// iOS/Safari safety: remove any stale full-screen modal after restoring the page cache.
+window.addEventListener('pageshow',()=>{
+  ki21CloseAllModals();
+  requestAnimationFrame(()=>render());
+});
+
 // Stable startup: never delete browser storage. Only hide bundled sample opportunities from the active portfolio.
 try{
   portfolio.opportunities=(portfolio.opportunities||[]).filter(o=>!isBundledSample(o));
@@ -1071,6 +1128,7 @@ portfolio.version=VERSION;
 if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();
 state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
 syncVersionLabels();
+ki21CloseAllModals();
 window.addEventListener('pagehide',()=>{if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio()});
 render();
 </script>
