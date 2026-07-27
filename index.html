@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness</title>
+<title>KI21 Core 8.15.1 · Semantic Precision Final</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-let VERSION='KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness';
+let VERSION='KI21 Core 8.15.1 · Semantic Precision Final';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -3478,8 +3478,8 @@ render();
 
 <script>
 (()=>{
-  // === KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness ===
-  const KI215_VERSION='KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness';
+  // === KI21 Core 8.15.1 · Semantic Precision Final ===
+  const KI215_VERSION='KI21 Core 8.15.1 · Semantic Precision Final';
   const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
   const raw=()=>String(state.rawImport||'');
   const approval=()=>/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(raw());
@@ -3668,7 +3668,160 @@ render();
 
   document.title=KI215_VERSION;
   try{VERSION=KI215_VERSION}catch(e){}
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.15.0';
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.15.1';
+})();
+</script>
+
+<script>
+(()=>{
+  // === KI21 Core 8.15.1 · Semantic Precision Final ===
+  const V8151='KI21 Core 8.15.1 · Semantic Precision Final';
+  const txt=()=>String(state.rawImport||'');
+  const rx=(r)=>r.test(txt());
+  const approved=()=>rx(/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i);
+  const successful=()=>rx(/erfolgskriterien bestätigt/i);
+  const technicalOpen=()=>rx(/technische freigabe offen|datenschutzfreigabe offen|datenschutzprüfung abschließen|schnittstellenaufwand.*nicht freigegeben|auftragsverarbeitung ist offen|sso .*nicht geprüft/i);
+  const operationalOpen=()=>rx(/starttermin[^\n]*(?:offen|festlegen)|verantwortung[^\n]*offen|pilotverantwortung[^\n]*offen|rollout-verantwortung[^\n]*offen/i);
+  const engaged=()=>{const b=buyer();return !!b&&!/noch nicht|nicht persönlich|offen/i.test(String(b.status||''));};
+  const dealState=()=>{const b=buyer(),n=(state.objections||[]).length;if(!b)return 'QUALIFIZIERUNG';if(!engaged())return 'ENTSCHEIDERZUGANG';if(approved()&&successful()&&operationalOpen())return 'UMSETZUNGSÜBERGANG';if(approved()&&!successful())return 'WIRKUNGSNACHWEIS';if(n>=3)return 'KAUFBEDINGUNGEN';if(approved()&&technicalOpen())return 'STARTFREIGABEN';return 'KAUFENTSCHEIDUNG';};
+
+  function preciseOpenIssues(){
+    const st=dealState(),m=state.metrics||{},b=buyer(),o=[];
+    if(st==='QUALIFIZIERUNG'){
+      if(!b)o.push('Wirtschaftlichen Entscheider identifizieren');
+      if(!Number(m.recurringInternalCost||m.annualCost||0))o.push('Vom Kunden akzeptierte wirtschaftliche Baseline bestätigen');
+      o.push('Verbindlichen Entscheidungsweg und Ausschlusskriterien bestimmen');
+    }else if(st==='ENTSCHEIDERZUGANG'){
+      o.push(`${b.name} persönlich in die wirtschaftliche Entscheidung einbinden`);
+      if(!successful())o.push('Wirtschaftliche Wirkung, Baseline und Entscheidungsschwelle bestätigen');
+      if(!m.price)o.push('Startmodell und Investitionsrahmen festlegen');
+    }else if(st==='WIRKUNGSNACHWEIS'){
+      if(!successful())o.push('Baseline, Erfolgsschwelle und Go/No-Go-Logik bestätigen');
+      if(technicalOpen())o.push('Technische und rechtliche Startfreigaben schließen');
+    }else if(st==='UMSETZUNGSÜBERGANG'){
+      if(operationalOpen())o.push('Starttermin und operative Verantwortung festlegen');
+      if(technicalOpen())o.push('Technische, rechtliche und vertragliche Restfreigaben schließen');
+    }else if(st==='STARTFREIGABEN'){
+      if(technicalOpen())o.push('Technische und rechtliche Startfreigaben schließen');
+      if(operationalOpen())o.push('Starttermin und operative Verantwortung festlegen');
+    }else if(st==='KAUFBEDINGUNGEN'){
+      if(!successful())o.push('Erfolgskriterien, Baseline und Mindestwirkung bestätigen');
+      if(!approved())o.push('Investitionsfreigabe und Freigabeweg klären');
+      if(technicalOpen())o.push('Technische und rechtliche Freigaben schließen');
+      if((state.objections||[]).length)o.push(`${state.objections.length} bestätigte Kaufbedingungen mit Nachweisen schließen`);
+    }else{
+      if(!successful())o.push('Zielwirkung, Baseline und Entscheidungsschwelle bestätigen');
+      if(!approved())o.push('Investitionsfreigabe und Freigabeweg klären');
+      if(technicalOpen())o.push('Technische und rechtliche Freigaben schließen');
+      if(operationalOpen())o.push('Operative Startverantwortung und Termin klären');
+    }
+    return [...new Set(o)];
+  }
+
+  function preciseActions(){
+    const st=dealState(),b=buyer(),bn=b?b.name:'den wirtschaftlichen Entscheider',m=state.metrics||{};
+    const annual=Number(m.recurringInternalCost||m.annualCost||0),price=Number(m.price||0);
+    if(st==='QUALIFIZIERUNG')return [
+      'Wirtschaftlichen Entscheider und dessen persönliche Relevanz für das Problem identifizieren.',
+      'An einem realen Kundenfall eine akzeptierte wirtschaftliche Baseline bestätigen.',
+      'Entscheidungsweg, Ausschlusskriterien und nächsten Qualifizierungsmeilenstein mit Datum festlegen.'
+    ];
+    if(st==='ENTSCHEIDERZUGANG')return [
+      `${bn} persönlich in ein wirtschaftliches Entscheidungsgespräch einbinden.`,
+      'Realen Referenzfall, Bewertungsfragen und akzeptierte Mindestwirkung vorbereiten.',
+      'Startmodell, Investitionsrahmen und nächsten Entscheidungstermin festlegen.'
+    ];
+    if(st==='KAUFENTSCHEIDUNG'){
+      if(annual&&price>annual)return [
+        `Zusätzliche Ergebniswirkung über den dokumentierten Jahresaufwand von ${annual.toLocaleString('de-DE')} € hinaus quantifizieren.`,
+        `Mit ${bn} Baseline, Messlogik und akzeptierte Mindestwirkung verbindlich bestätigen.`,
+        'Freigaberollen, offene Startbedingungen und verbindlichen Entscheidungstermin im Mutual Action Plan festlegen.'
+      ];
+      return [
+        `Mit ${bn} konkrete Zielwirkung und akzeptierte Entscheidungsschwelle verbindlich bestätigen.`,
+        'Entscheidungskriterien, Freigaberollen und verbindlichen Entscheidungstermin im Mutual Action Plan festlegen.',
+        'Technische, rechtliche und operative Startvoraussetzungen mit Verantwortlichen und Fälligkeiten schließen.'
+      ];
+    }
+    if(st==='WIRKUNGSNACHWEIS')return [
+      `Mit ${bn} Baseline, Erfolgsschwelle und Go/No-Go-Logik verbindlich bestätigen.`,
+      'Den Pilot an realen Opportunities mit festgelegten Bewertenden und Messzeitpunkten ausrichten.',
+      'Technische und datenschutzrechtliche Freigaben mit Verantwortlichen und Starttermin schließen.'
+    ];
+    if(st==='KAUFBEDINGUNGEN')return [
+      'Jede Kaufbedingung einer konkreten Freigabe und einem belastbaren Nachweis zuordnen.',
+      'Für jeden Nachweis verantwortliche Kundenrolle und Fälligkeit verbindlich festlegen.',
+      'Alle Ergebnisse in einem gemeinsamen Go/No-Go-Termin zur Investitionsentscheidung zusammenführen.'
+    ];
+    if(st==='UMSETZUNGSÜBERGANG')return [
+      'Starttermin und operative Gesamtverantwortung im Umsetzungsplan verbindlich festlegen.',
+      'Ersten operativen Meilenstein, Datenbasis und Messzeitpunkt dokumentieren.',
+      'Technische, vertragliche und organisatorische Restfreigaben abschließend schließen.'
+    ];
+    return [
+      'Verbleibende Startfreigaben jeweils einem Verantwortlichen und Fälligkeitsdatum zuordnen.',
+      'Operative Übergabe, Datenbasis und ersten Meilenstein verbindlich bestätigen.',
+      'Go-live-Termin nach Abschluss aller Freigaben festlegen.'
+    ];
+  }
+
+  const baseBrief8151=decisionBrief;
+  decisionBrief=function(){
+    let s=baseBrief8151(),a=preciseActions();
+    s=s.replace(/NÄCHSTER SCHRITT\n1\. [^\n]*\n2\. [^\n]*\n3\. [^\n]*/,
+      `NÄCHSTER SCHRITT\n1. ${a[0]}\n2. ${a[1]}\n3. ${a[2]}`);
+    s=s.replace(/Version: KI21 Core[^\n]+/,`Version: ${V8151}`);
+    return s;
+  };
+
+  const originalForecastDeduction=forecastDeduction;
+  forecastDeduction=function(){
+    const st=dealState();
+    if(st==='QUALIFIZIERUNG')return 'fehlender wirtschaftlicher Entscheider, fehlende belastbare Baseline, fehlender Entscheidungsweg';
+    if(st==='ENTSCHEIDERZUGANG')return 'wirtschaftlicher Entscheider nicht aktiv eingebunden, wirtschaftliche Wirkung nicht bestätigt, Startmodell oder Investitionsrahmen offen';
+    if(st==='WIRKUNGSNACHWEIS'){
+      const x=['fehlender Wirkungsnachweis'];if(technicalOpen())x.push('offene technische oder datenschutzrechtliche Startfreigaben');return x.join(', ');
+    }
+    if(st==='UMSETZUNGSÜBERGANG')return operationalOpen()?'offener Starttermin oder offene operative Verantwortung':'kein zusätzlicher Abschlag';
+    return originalForecastDeduction();
+  };
+
+  fullReport=function(){
+    const q=ki218QualityModel(),b=buyer(),issues=preciseOpenIssues();
+    const stats={'BESTÄTIGTER FAKT':0,'KUNDENAUSSAGE':0,'ABGELEITETER WERT':0,'HYPOTHESE':0};
+    (state.evidence||[]).forEach(e=>{const t=String(e?.text||''),type=String(e?.type||'').toLowerCase();if(type==='hyp'||/\bhypothese\b|vermutet|geschätzt|könnte|möglicherweise/i.test(t))stats.HYPOTHESE++;else if(/entspricht rechnerisch|hochgerechnet|abgeleitet|berechnet/i.test(t))stats['ABGELEITETER WERT']++;else if(type==='fakt'||/bestätigt|dokumentiert|beträgt|preis:/i.test(t))stats['BESTÄTIGTER FAKT']++;else if(!/\boffen\b|noch nicht|nicht bestätigt|nicht geklärt|fehlt|ausstehend/i.test(t))stats.KUNDENAUSSAGE++;});
+    let r=`KI21 KOMPAKTER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${V8151}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${state.company} · ${state.opportunity}\n\n=== SALES DECISION BRIEF ===\n\n${decisionBrief()}\n\n=== STAKEHOLDER ===\n`;
+    r+=(state.stakeholders||[]).length?state.stakeholders.map(x=>`• ${x.name} | ${x.function||'—'} | ${x.role||'—'} | ${x.status||x.attitude||'—'}`).join('\n'):'• — keine Angaben —';
+    r+='\n\n=== VERKAUFSPROZESS ===\n';
+    for(const area of PROCESS_AREAS){const x=processAnalysis(area);r+=`\n--- ${area} ---\nStatus: ${x.status}\nAha: ${x.insight}\nNächster Kundenschritt: ${x.next}\n`;}
+    r+=`\n=== EVIDENZ-INTEGRITÄT ===\n• Bestätigte Fakten: ${stats['BESTÄTIGTER FAKT']}\n• Kundenaussagen: ${stats.KUNDENAUSSAGE}\n• Abgeleitete Werte: ${stats['ABGELEITETER WERT']}\n• Hypothesen: ${stats.HYPOTHESE}\n• Offene Punkte: ${issues.length}\n• Offene Punkte aus Deal-State: ${issues.length?issues.join('; '):'keine wesentlichen offenen Punkte'}\n• Hypothesen werden nicht als Fakten ausgegeben.\n\n=== QUALITÄTS-KURZDIAGNOSE ===\n• Stakeholder: ${(state.stakeholders||[]).length}\n• Wirtschaftlicher Entscheider: ${b?'JA':'NEIN'}\n• Bereichsanalysen: 7/7\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Forecast-Abschlag: ${forecastDeduction()}`;
+    return r;
+  };
+
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='';
+    try{testState=emptyState(false);const p=parseImport(tc.raw);applyParsed(testState,p);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();}
+    catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length,badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const actions=((report.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'').match(/^\d\.\s+(.+)$/gm)||[];
+    const n=x=>String(x||'').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim(),na=actions.map(x=>n(x.replace(/^\d\.\s+/,'')));
+    const diversity=na.length===3&&new Set(na).size===3&&!na.some((x,i)=>na.some((y,j)=>i!==j&&(x.includes(y)||y.includes(x))));
+    const stateName=(report.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'';
+    const openCount=Number((report.match(/• Offene Punkte:\s*(\d+)/)||[])[1]||0);
+    const issueLine=(report.match(/• Offene Punkte aus Deal-State:\s*([^\n]+)/)||[])[1]||'';
+    const issueCount=/keine wesentlichen/.test(issueLine)?0:issueLine.split(';').filter(Boolean).length;
+    const countIntegrity=openCount===issueCount;
+    const earlyForecast=stateName!=='QUALIFIZIERUNG'||(!/investitionsfreigabe/i.test((report.match(/Forecast-Abschlag:\s*([^\n]+)/)||[])[1]||'')&&/Entscheidungsweg/i.test(report));
+    const noPrematureStart=stateName!=='ENTSCHEIDERZUGANG'||!/Offene Punkte aus Deal-State:[^\n]*(?:Starttermin|operative Verantwortung)/i.test(report);
+    const approvalRaw=/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(tc.raw);
+    const checks=[!error,areaCount===7,badTokens===0,diversity,/DOMINANTE MANAGEMENT-HYPOTHESE\n•\s*.+/.test(report),!approvalRaw||!/Investitionsfreigabe offen/i.test(report),!/FAKT[^\n]*(?:Hypothese|vermutet|geschätzt)/i.test(report),/EVIDENZ-INTEGRITÄT/.test(report),/Deal-State:/.test(report),/Opportunity Score:\s*\d+%/.test(report),/Forecast:\s*\d+%/.test(report),report.length<12500,openCount>0||!/offen|noch nicht|fehlt|ausstehend/i.test(tc.raw),stateName!=='QUALIFIZIERUNG'||/Angebot ---\nStatus: noch nicht entscheidungskritisch/.test(report),stateName!=='UMSETZUNGSÜBERGANG'||/Einwandbehandlung ---\nStatus: nicht mehr entscheidungskritisch/.test(report),!/von dem wirtschaftlichen Entscheider/i.test(report),countIntegrity,earlyForecast,noPrematureStart];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates:diversity?0:1,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const p=state;try{state=testState;return scores()}finally{state=p}})():{score:0,forecast:0}};
+  };
+
+  try{VERSION=V8151}catch(e){}
+  document.title=V8151;
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.15.1';
 })();
 </script>
 
