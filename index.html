@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.12 · Quality Suite Signal Fix';
+const VERSION='KI21 Core 8.11.13 · Quality Suite Layer-Aware Dedupe';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -3021,6 +3021,51 @@ render();
     const nextLines=(report.match(/^Nächster Kundenschritt[^:]*:\s*(.+)$/gm)||[]).map(x=>x.replace(/^.*?:\s*/,''));
     const executiveActions=(report.match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
     const duplicates=ki2118DuplicateCount([...nextLines,...executiveActions]);
+    const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
+    const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
+    const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
+    const actionIntegrity=badTokens===0 && executiveActions.length>=3;
+    const checks=[!error,areaCount===7,hasEvidence,hasScore,hasForecast,actionIntegrity,duplicates<=2];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const prev=state;try{state=testState;return scores()}finally{state=prev}})():{score:0,forecast:0}};
+  };
+})();
+</script>
+
+<script>
+(()=>{
+  /* 8.11.13: Cross-layer traceability is intentional. A recommendation may appear
+     once in the executive brief and once in its responsible phase without being
+     treated as a duplicate. Only repetitions inside the same report layer count. */
+  ki2118DuplicateCountByLayer=function(report){
+    const phaseActions=(String(report||'').match(/^Nächster Kundenschritt[^:]*:\s*(.+)$/gm)||[])
+      .map(x=>x.replace(/^.*?:\s*/,''));
+    const executiveBlock=(String(report||'').match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'';
+    const executiveActions=(executiveBlock.match(/^\d\.\s+(.+)$/gm)||[])
+      .map(x=>x.replace(/^\d\.\s+/,''));
+    const countWithin=(lines)=>{
+      const seen=new Map();
+      for(const raw of lines){
+        const key=ki2118NormalizeLine(raw);
+        if(key.length<24)continue;
+        seen.set(key,(seen.get(key)||0)+1);
+      }
+      let n=0; for(const c of seen.values())n+=Math.max(0,c-1);
+      return n;
+    };
+    return countWithin(phaseActions)+countWithin(executiveActions);
+  };
+
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='';
+    try{
+      testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();
+    }catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+    const badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const executiveBlock=(report.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'';
+    const executiveActions=(executiveBlock.match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
+    const duplicates=ki2118DuplicateCountByLayer(report);
     const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
     const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
     const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
