@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.12 · Decision Intelligence & State Integrity';
+const VERSION='KI21 Core 8.10.13 · Output Integrity & Regression Guard';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2020,6 +2020,91 @@ ki2110ValidateCase=function(tc,testState,report){
   if(/Pilotbudget[^\n]*bestätigt/i.test(raw)&&!/Budget \/ finanzielle Darstellbarkeit: (?!nicht erkannt)/i.test(report))issues.push('bestätigtes Pilotbudget nicht ausgewiesen');
   if(/noch nicht persönlich eingebunden/i.test(raw)&&/wirtschaftliche entscheidungsrolle aktiv eingebunden/i.test(report))issues.push('nicht eingebundener Entscheider als aktiv bewertet');
   if(/Jahrespreis\s*:\s*[\d.]+/i.test(raw)&&/Preis: 0/.test(report))issues.push('Jahrespreis im State Check verloren');
+  return [...new Set(issues)];
+};
+
+
+// === 8.10.13 Output Integrity & Regression Guard ===
+function ki2113SafeNextActions(){
+  const q=ki218QualityModel(),m=state.metrics||{},b=buyer(),sp=sponsor(),co=coo();
+  const names=[b&&b.name,co&&co.name,sp&&sp.name].filter(Boolean);
+  const a=[];
+  if(!b)a.push('Den wirtschaftlichen Entscheider identifizieren und persönlich in die Opportunity einbinden.');
+  else if(q.buyerEngagement===0)a.push(`${b.name} persönlich in die wirtschaftliche Entscheidung einbinden.`);
+  if(q.decisionOpen.length)a.push(`${q.decisionOpen.map(x=>x.name).join(' und ')} persönlich in die gemeinsame Entscheidung einbinden.`);
+  if(!q.successConfirmed)a.push('Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung gemeinsam bestätigen.');
+  if(!m.price)a.push('Lösungsumfang, Preisrahmen und wirtschaftlichen Bewertungszeitraum verbindlich festlegen.');
+  if(!q.approvalConfirmed)a.push(`Freigabeweg, Verantwortliche und Entscheidungstermin mit ${names.join(', ')||'den relevanten Rollen'} verbindlich vereinbaren.`);
+  q.gates.forEach(g=>a.push(`${g.label.charAt(0).toUpperCase()+g.label.slice(1)}, zuständige Rolle und konkreten Nachweisplan verbindlich klären.`));
+  if(q.successConfirmed&&q.approvalConfirmed)a.push('Starttermin, operative Verantwortung und nächste Kundenentscheidung verbindlich dokumentieren.');
+  a.push('Den nächsten Kundenmeilenstein mit Verantwortlichem und Datum im Mutual Action Plan festhalten.');
+  a.push('Offene Nachweise priorisieren und jedem Nachweis eine zuständige Kundenrolle zuordnen.');
+  return [...new Set(a.filter(Boolean))].slice(0,3);
+}
+ki218NextActions=ki2113SafeNextActions;
+
+const __ki2113BusinessCase=businessCaseModel;
+businessCaseModel=function(){
+  const raw=ki218Raw(),m=state.metrics||{},annual=Number(m.recurringInternalCost||m.annualCost||0),price=Number(m.price||0),impl=Number(m.implementationCost||0);
+  if(/Vertragsverlängerung|Renewal/i.test(raw)){
+    const current=rawMoney('Aktueller Jahresvertrag'),next=rawMoney('Neuer Jahresvertrag'),delta=Math.max(0,next-current),three=delta*3+impl;
+    const success=ki218SuccessConfirmed();
+    return{ready:!!(current&&next),renewal:true,text:`Der Jahresvertrag steigt von ${current.toLocaleString('de-DE')} € auf ${next.toLocaleString('de-DE')} €. Die zusätzliche Investition beträgt ${delta.toLocaleString('de-DE')} € pro Jahr beziehungsweise ${three.toLocaleString('de-DE')} € über drei Jahre. Dem steht ein dokumentierter interner Aufwand von ${annual.toLocaleString('de-DE')} € pro Jahr gegenüber. ${success?'Die bestätigten Erfolgskriterien liefern bereits einen belastbaren Messrahmen; offen bleiben der realistisch vermeidbare Anteil und die zusätzliche Wirkung gegenüber der bestehenden Nutzung.':'Erfolgskriterien, vermeidbarer Anteil und zusätzliche Wirkung gegenüber der bestehenden Nutzung müssen noch bestätigt werden.'}`};
+  }
+  return __ki2113BusinessCase();
+};
+
+const __ki2113ProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+  const a=__ki2113ProcessAnalysis(name),q=ki218QualityModel(),b=buyer();
+  a.assessment=String(a.assessment||'').replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider');
+  a.insight=String(a.insight||'').replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlichen Entscheider');
+  a.next=String(a.next||'').replace(/Die wirtschaftliche Entscheidungsrolle identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren').replace(/Mit der wirtschaftlichen Entscheidungsrolle/g,'Mit dem wirtschaftlichen Entscheider');
+  a.facts=(a.facts||[]).map(x=>String(x).replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider'));
+  a.open=(a.open||[]).filter(x=>x&&x!=='Erfolgskriterien'&&x!=='Bestätigte Erfolgskriterien'&&x!=='Investitionsfreigabe');
+  if(!q.successConfirmed)a.open.push('Bestätigte Erfolgskriterien');
+  if(!q.approvalConfirmed)a.open.push('Investitionsfreigabe');
+  a.open=[...new Set(a.open)];
+  if(name==='Angebot'&&q.successConfirmed)a.open=a.open.filter(x=>!/Erfolgskriterien/i.test(x));
+  if(name==='Abschluss'&&q.approvalConfirmed){
+    a.status='weitgehend geklärt';
+    a.assessment='Die Investitionsfreigabe ist bestätigt. Jetzt sind Starttermin, operative Verantwortung und verbleibende technische beziehungsweise vertragliche Bedingungen verbindlich festzulegen.';
+    a.open=a.open.filter(x=>!/^Investitionsfreigabe$/i.test(x));
+    a.facts=[...(a.facts||[]),'Investitionsfreigabe bestätigt'];
+  }
+  if(!a.next||a.next==='undefined')a.next=ki2113SafeNextActions()[0];
+  return a;
+};
+
+const __ki2113DecisionBrief=decisionBrief;
+decisionBrief=function(){
+  let out=__ki2113DecisionBrief();
+  const b=buyer(),group=activeDecisionGroupLabel(),q=ki218QualityModel();
+  const decision=b?`Welche nachweisbare Wirkung und welche Freigabebedingungen rechtfertigen die Investition aus Sicht von ${b.name} als ${group}?`:'Welche nachweisbare Wirkung und welche Freigabebedingungen rechtfertigen die Investition aus Sicht des noch zu identifizierenden wirtschaftlichen Entscheiders?';
+  out=out.replace(/ZENTRALE KUNDENENTSCHEIDUNG\n• [^\n]*/,`ZENTRALE KUNDENENTSCHEIDUNG\n• ${decision}`);
+  out=out.replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider');
+  out=out.replace(/Die wirtschaftlicher Entscheider identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren');
+  const actions=ki2113SafeNextActions();
+  out=out.replace(/NÄCHSTER SCHRITT\n1\. [^\n]*\n2\. [^\n]*\n3\. [^\n]*/,`NÄCHSTER SCHRITT\n1. ${actions[0]}\n2. ${actions[1]}\n3. ${actions[2]}`);
+  if(q.successConfirmed&&q.approvalConfirmed)out=out.replace('Bedarf, Entscheidungsrollen, Erfolgskriterien und Freigabeweg sind belastbar bestätigt.','Bedarf, Entscheidungsrollen, Erfolgskriterien und Investitionsfreigabe sind belastbar bestätigt. Jetzt müssen Starttermin, Verantwortung und verbleibende Umsetzungsbedingungen verbindlich festgelegt werden.');
+  return out;
+};
+
+const __ki2113FullReport=fullReport;
+fullReport=function(){
+  let out=__ki2113FullReport();
+  out=out.replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider');
+  out=out.replace(/Die wirtschaftlicher Entscheider identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren');
+  return out;
+};
+
+const __ki2113ValidateCase=ki2110ValidateCase;
+ki2110ValidateCase=function(tc,testState,report){
+  const issues=__ki2113ValidateCase(tc,testState,report);
+  if(/\bundefined\b/i.test(report))issues.push('undefinierter Ausgabewert im Bericht');
+  if(/Die wirtschaftlicher Entscheider/i.test(report))issues.push('grammatikalisch fehlerhafte Entscheiderformulierung');
+  if(/Investitionsfreigabe[^\n]*bestätigt/i.test(tc.raw)&&/finale Investitionsfreigabe ist noch nicht erreicht/i.test(report))issues.push('bestätigte Investitionsfreigabe im Abschluss widersprüchlich bewertet');
+  if(/Erfolgskriterien[^\n]*bestätigt/i.test(tc.raw)&&/Offene Punkte:[^\n]*Erfolgskriterien/i.test(report))issues.push('bestätigte Erfolgskriterien weiterhin als offen ausgegeben');
   return [...new Set(issues)];
 };
 </script>
