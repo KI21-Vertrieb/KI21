@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.11.3 · Executive Aha & UI Integrity</title>
+<title>KI21 Core 8.12.0 · Generalisation & Aha Quality</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.13 · Quality Suite Layer-Aware Dedupe';
+const VERSION='KI21 Core 8.12.0 · Generalisation & Aha Quality';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2934,7 +2934,7 @@ document.addEventListener('click',function(event){
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.11';
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.12.0';
 render();
 </script>
 
@@ -3076,5 +3076,118 @@ render();
   };
 })();
 </script>
+
+<script>
+(()=>{
+  // === 8.12.0 Generalisation & Aha Quality ===
+  function ki2120Raw(){return String(state.rawImport||'');}
+  function ki2120Annual(){return Number((state.metrics||{}).annualCost||0);}
+  function ki2120Price(){return Number((state.metrics||{}).price||0);}
+  function ki2120Budget(){return Number((state.metrics||{}).budget||0);}
+  function ki2120BuyerEngaged(){
+    const b=buyer(); if(!b)return false;
+    return !/noch nicht|nicht persönlich|kein persönlicher|offen/i.test(String(b.status||''));
+  }
+  function ki2120ApprovalConfirmed(){return /investitionsfreigabe(?: für den pilot)? ist bestätigt|investitionsfreigabe bestätigt/i.test(ki2120Raw());}
+  function ki2120SuccessConfirmed(){return /erfolgskriterien bestätigt/i.test(ki2120Raw());}
+  function ki2120TechnicalOpen(){return /technische freigabe offen|datenschutzfreigabe offen|schnittstellenaufwand.*nicht freigegeben|auftragsverarbeitung ist offen/i.test(ki2120Raw());}
+  function ki2120CaseType(){
+    const r=ki2120Raw();
+    if(/renewal|vertragsverlängerung/i.test(r))return 'Renewal';
+    if(/wettbewerbsablösung|altanbieter/i.test(r))return 'Wettbewerbsablösung';
+    if(/expansion|erweiterung|rollout|vollausbau/i.test(r))return 'Expansion';
+    if(/pilot/i.test(r))return 'Pilot';
+    if(/compact/i.test(r))return 'Compact';
+    return 'Neukundengeschäft';
+  }
+  function ki2120Aha(){
+    const b=buyer(),bn=b?b.name:'der noch zu identifizierende wirtschaftliche Entscheider';
+    const price=ki2120Price(),budget=ki2120Budget(),annual=ki2120Annual(),obs=(state.objections||[]).length;
+    if(!b)return 'Die Opportunity ist noch kein belastbarer Verkaufsfall, sondern eine Qualifizierungsaufgabe: Ohne wirtschaftlichen Entscheider, bestätigte Wirkung und Entscheidungsweg wäre jede Angebots- oder Forecast-Aussage verfrüht.';
+    if(!ki2120BuyerEngaged())return `Der fachliche Bedarf kann intern Zustimmung finden und trotzdem nicht kaufbar sein: ${bn} trägt die wirtschaftliche Entscheidung, ist aber noch nicht persönlich in den Entscheidungsprozess eingebunden.`;
+    if(ki2120ApprovalConfirmed()&&!ki2120SuccessConfirmed())return `Die Finanzierung ist nicht mehr der Hauptengpass. Die eigentliche Kaufbedingung ist jetzt ein belastbarer Wirkungsnachweis mit akzeptierter Baseline, Erfolgsschwelle und Go/No-Go-Logik.`;
+    if(budget&&price&&price<=budget&&!ki2120SuccessConfirmed())return `Der Preis von ${price.toLocaleString('de-DE')} € liegt innerhalb des dokumentierten Rahmens von ${budget.toLocaleString('de-DE')} €. Der Deal hängt daher weniger am Geld als an der noch unbewiesenen Wirkung und den offenen Freigabebedingungen.`;
+    if(price&&annual&&price>annual)return `Der dokumentierte Aufwand von ${annual.toLocaleString('de-DE')} € pro Jahr trägt die Investition von ${price.toLocaleString('de-DE')} € allein nicht. Der Deal braucht deshalb zusätzlich belegte Ergebniswirkung aus vermiedenen Fehlentscheidungen, Margenschutz oder schnellerer Umsetzung.`;
+    if(obs>=4)return `${obs} bestätigte Einwände sind kein Sammelsurium, sondern ein Entscheidungsdesign: Wirtschaftlichkeit, Umsetzung, Technik und Nutzerakzeptanz müssen jeweils einem konkreten Nachweis und einer verantwortlichen Kundenrolle zugeordnet werden.`;
+    if(ki2120ApprovalConfirmed()&&ki2120TechnicalOpen())return 'Die wirtschaftliche Entscheidung ist im Kern gefallen; das Abschlussrisiko liegt jetzt in der Umsetzungssicherheit. Technische, rechtliche und operative Freigaben müssen deshalb als verbindlicher Startplan geführt werden.';
+    return `Der sichtbare Bedarf ist nur die Oberfläche. Entscheidend ist, welche konkrete Wirkung ${bn} akzeptiert und welche Freigaben daraus eine belastbare Kundenentscheidung machen.`;
+  }
+
+  const __ki2120DecisionBrief=decisionBrief;
+  decisionBrief=function(){
+    let out=String(__ki2120DecisionBrief()||'');
+    const aha=ki2120Aha();
+    if(/\nEXECUTIVE AHA\n/.test(out))out=out.replace(/\nEXECUTIVE AHA\n•[^\n]*/,`\nEXECUTIVE AHA\n• ${aha}`);
+    else out=out.replace(/(\nGRÖSSTER ENGPASS\n•[^\n]*)/,`$1\n\nEXECUTIVE AHA\n• ${aha}`);
+    return out;
+  };
+
+  const __ki2120Process=processAnalysis;
+  processAnalysis=function(name){
+    const a=__ki2120Process(name)||{}; const b=buyer(),bn=b?b.name:'dem wirtschaftlichen Entscheider';
+    const price=ki2120Price(),annual=ki2120Annual(),obs=(state.objections||[]).length;
+    if(name==='Qualifizierung'){
+      a.insight=!b
+        ?'Der aktuelle Informationsstand rechtfertigt noch keinen Forecast. Die zentrale Leistung besteht jetzt darin, wirtschaftlichen Entscheider, Entscheidungsweg und Ausschlusskriterien zu identifizieren.'
+        :(!ki2120BuyerEngaged()
+          ?`${b.name} ist nicht nur ein weiterer Stakeholder, sondern die fehlende wirtschaftliche Validierung. Ohne persönliche Einbindung bleibt fachliche Zustimmung von einer belastbaren Kaufentscheidung getrennt.`
+          :`Die Entscheidungsrolle ist erkannt und eingebunden. Der nächste Qualitätshebel ist deshalb nicht mehr Kontaktaufbau, sondern die Bestätigung der konkreten wirtschaftlichen Entscheidungskriterien.`);
+    }
+    if(name==='Bedarfsanalyse'){
+      a.insight=annual
+        ?`Der bezifferte Aufwand von ${annual.toLocaleString('de-DE')} € ist eine belastbare Ausgangsbasis, aber noch kein Nutzenversprechen. Erst vermeidbarer Anteil, Ergebniswirkung und akzeptierte Mindestwirkung machen daraus einen entscheidungsfähigen Business Case.`
+        :'Vermuteter Aufwand ist noch keine wirtschaftliche Evidenz. Die Bedarfsanalyse muss zuerst eine vom Kunden akzeptierte Baseline schaffen, bevor Nutzen oder ROI bewertet werden.';
+    }
+    if(name==='Demo'){
+      a.insight=`Eine überzeugende Demo zeigt nicht möglichst viele Funktionen, sondern beweist an einem realen Kundenfall, dass KI21 eine relevante Entscheidung früher, klarer oder belastbarer macht.`;
+    }
+    if(name==='Einwandbehandlung'&&obs){
+      a.insight=`Die ${obs} bestätigten Einwände sind unterschiedliche Kaufbedingungen. Sie dürfen nicht mit einer einzigen Produktantwort behandelt werden, sondern benötigen getrennte Nachweise für Wirtschaftlichkeit, Umsetzung, Technik und Akzeptanz.`;
+    }
+    if(name==='Wirtschaftlicher Nutzen & ROI'){
+      a.insight=(price&&annual&&price>annual)
+        ?`Der bekannte Jahresaufwand deckt den Preis nicht vollständig. Genau deshalb muss KI21 den zusätzlichen Ergebnishebel aus vermiedenen Fehlentscheidungen, Margenschutz und früherer Risikoerkennung separat beweisen.`
+        :`Der Business Case wird belastbar, wenn dokumentierter Aufwand, realistisch vermeidbarer Anteil und zusätzliche Ergebniswirkung getrennt ausgewiesen werden. Nur so bleibt die Argumentation glaubwürdig.`;
+    }
+    if(name==='Angebot'){
+      a.insight='Ein Angebot ist erst entscheidungsfähig, wenn Preis, messbare Wirkung, Nachweisplan, Verantwortliche und Freigabetermin dieselbe Kundenentscheidung unterstützen.';
+    }
+    if(name==='Abschluss'){
+      a.insight=ki2120ApprovalConfirmed()
+        ?'Die wirtschaftliche Zustimmung ist nicht mehr das Ziel, sondern die Ausgangslage. Abschlussqualität entsteht jetzt durch einen verbindlichen Starttermin, klare operative Verantwortung und geschlossene Restfreigaben.'
+        :`Der Abschluss entsteht nicht durch allgemeine Zustimmung, sondern durch eine explizite Investitionsentscheidung von ${bn} auf Basis geklärter Wirkung und Freigabebedingungen.`;
+    }
+    return a;
+  };
+
+  // Quality Suite 8.12.0: adds explicit generalisation and Aha-quality checks.
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='';
+    try{
+      testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();
+    }catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+    const badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const executiveBlock=(report.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'';
+    const executiveActions=(executiveBlock.match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
+    const duplicates=ki2118DuplicateCountByLayer(report);
+    const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
+    const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
+    const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
+    const actionIntegrity=badTokens===0&&executiveActions.length>=3;
+    const aha=(report.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'';
+    const ahaIntegrity=aha.length>=90&&!/allgemein|irgendwie|möglicherweise sinnvoll/i.test(aha);
+    const phaseAhas=(report.match(/^Aha-Erkenntnis[^:]*:\s*(.+)$/gm)||[]).map(x=>x.replace(/^.*?:\s*/,''));
+    const phaseAhaIntegrity=phaseAhas.length===7&&new Set(phaseAhas.map(ki2118NormalizeLine)).size>=6;
+    const checks=[!error,areaCount===7,hasEvidence,hasScore,hasForecast,actionIntegrity,duplicates<=2,ahaIntegrity,phaseAhaIntegrity];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const prev=state;try{state=testState;return scores()}finally{state=prev}})():{score:0,forecast:0}};
+  };
+
+  document.title=VERSION;
+  const h=document.getElementById('headerVersion');if(h)h.textContent='Core 8.12.0';
+})();
+</script>
+
 </body>
 </html>
