@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.10.9 · One-Click Regression Test Suite</title>
+<title>KI21 Core 8.11.1 · Hybrid Intelligence Integrity</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.0 · Hybrid Claude Intelligence & UI Recovery';
+const VERSION='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2201,6 +2201,119 @@ function showScoreDetails(kind){const sc=scores(),rows=scoreExplanation(),overla
 const __ki2110BindView=bindView;
 bindView=function(){__ki2110BindView();document.querySelectorAll('.metric').forEach((el,i)=>{el.style.cursor='pointer';el.onclick=e=>{e.preventDefault();e.stopPropagation();showScoreDetails(i===1?'forecast':'score')}});document.querySelectorAll('[data-action="run-ai"]').forEach(b=>b.onclick=runHybridAnalysis);document.querySelectorAll('[data-action="open-settings"]').forEach(b=>b.onclick=showSettings)}
 document.getElementById('settingsButton')?.addEventListener('click',showSettings);
+
+// === 8.11.1 Hybrid Intelligence Integrity ===
+const KI2111_VERSION='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
+const KI2111_AI_SCHEMA_VERSION='2.0';
+const KI2111_AREA_NAMES=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
+
+function ki2111StableStringify(value){
+ if(value===null||typeof value!=='object')return JSON.stringify(value);
+ if(Array.isArray(value))return '['+value.map(ki2111StableStringify).join(',')+']';
+ return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+ki2111StableStringify(value[k])).join(',')+'}';
+}
+function ki2111Hash(text){let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}return('00000000'+(h>>>0).toString(16)).slice(-8)}
+function ki2111AnalysisInput(){
+ return {schema:KI2111_AI_SCHEMA_VERSION,company:state.company||'',opportunity:state.opportunity||'',phase:state.phase||'',rawImport:state.rawImport||'',stakeholders:state.stakeholders||[],evidence:state.evidence||[],objections:state.objections||[],metrics:state.metrics||{},flags:state.flags||{},answers:state.answers||{},offer:state.offer||{},additions:state.additions||[]};
+}
+function ki2111Fingerprint(){return ki2111Hash(ki2111StableStringify(ki2111AnalysisInput()))}
+function ki2111SourceText(){return ki2111StableStringify(ki2111AnalysisInput())}
+function ki2111ClaimSupported(text){
+ const claim=String(text||'').trim();if(!claim)return false;
+ const source=ki2111SourceText().toLowerCase();
+ const nums=claim.match(/\b\d[\d.]*\b/g)||[];
+ for(const n of nums){const plain=n.replace(/\./g,'');if(plain.length>=2&&!source.includes(n.toLowerCase())&&!source.replace(/\./g,'').includes(plain))return false}
+ return true;
+}
+function ki2111Text(v,max=1800){return typeof v==='string'?v.trim().slice(0,max):''}
+function ki2111List(v,max=12){return Array.isArray(v)?v.map(x=>ki2111Text(typeof x==='object'?(x.text||x.claim||''):x,700)).filter(Boolean).slice(0,max):[]}
+function ki2111EvidenceRefs(v,max){return Array.isArray(v)?v.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<max).slice(0,12):[]}
+function ki2111NormalizeResult(raw){
+ if(!raw||typeof raw!=='object')throw new Error('Leere oder ungültige Claude-Antwort.');
+ const maxEvidence=(state.evidence||[]).length;
+ const out={executive:{},areas:{},contradictions:[],novelSignals:[],confidence:{overall:0,reason:''},quality:{warnings:[],blockedClaims:0}};
+ const ex=raw.executive||{};
+ for(const k of ['assessment','nextDecision','bottleneck','strategy','unknownPattern']){
+   const t=ki2111Text(ex[k],2200);out.executive[k]=ki2111ClaimSupported(t)?t:'';if(t&&!out.executive[k])out.quality.blockedClaims++;
+ }
+ for(const name of KI2111_AREA_NAMES){
+   const x=(raw.areas&&raw.areas[name])||{};
+   let facts=ki2111List(x.facts,10),safeFacts=[];
+   for(const f of facts){if(ki2111ClaimSupported(f))safeFacts.push(f);else out.quality.blockedClaims++}
+   out.areas[name]={status:ki2111Text(x.status,120),assessment:ki2111Text(x.assessment,1800),facts:safeFacts,open:ki2111List(x.open,10),insight:ki2111Text(x.insight,1800),next:ki2111Text(x.next,1800),evidenceRefs:ki2111EvidenceRefs(x.evidenceRefs,maxEvidence)};
+   if(!out.areas[name].assessment||!out.areas[name].next)out.quality.warnings.push(name+': unvollständige Analyse');
+ }
+ out.contradictions=ki2111List(raw.contradictions,10);
+ out.novelSignals=ki2111List(raw.novelSignals,10);
+ const confidence=raw.confidence||{};out.confidence.overall=Math.max(0,Math.min(100,Number(confidence.overall)||0));out.confidence.reason=ki2111Text(confidence.reason,900);
+ if(out.quality.blockedClaims)out.quality.warnings.push(out.quality.blockedClaims+' potenziell unbelegte Zahlenbehauptung(en) blockiert');
+ return out;
+}
+
+callClaudeJSON=async function(userPrompt,maxTokens=5000){
+ const cfg=getAISettings();if(!cfg.apiKey)throw new Error('Kein Anthropic API Key hinterlegt.');
+ const started=Date.now();
+ const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':cfg.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.model||'claude-sonnet-4-5',max_tokens:maxTokens,temperature:0.1,system:'Du bist die semantische Intelligence-Schicht von KI21 für komplexen B2B-Vertrieb. Arbeite branchenunabhängig. Trenne strikt bestätigte Fakten, Ableitungen, Hypothesen, offene Punkte und Widersprüche. Erfinde niemals Fakten, Personen, Zahlen, Freigaben oder Kundenaussagen. Score und Forecast werden ausschließlich von der lokalen KI21 Decision Engine berechnet. Antworte ausschließlich als valides JSON ohne Markdown.',messages:[{role:'user',content:userPrompt}]})});
+ if(!res.ok){let msg='HTTP '+res.status;try{const j=await res.json();msg=j.error?.message||msg}catch(e){}throw new Error(msg)}
+ const data=await res.json(),txt=(data.content||[]).map(x=>x.text||'').join('').trim();
+ const clean=txt.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');let parsed;try{parsed=JSON.parse(clean)}catch(e){throw new Error('Claude lieferte kein gültiges JSON.')}
+ return {result:parsed,usage:data.usage||{},model:data.model||cfg.model,durationMs:Date.now()-started,requestId:res.headers.get('request-id')||''};
+};
+
+buildHybridPrompt=function(){
+ const local=ki2111AnalysisInput();
+ const evidence=(state.evidence||[]).map((e,i)=>({id:i,text:typeof e==='string'?e:(e.text||e.claim||JSON.stringify(e))}));
+ return `Analysiere diese Opportunity so, als würde KI21 erstmals bei einem völlig neuen Kunden, in einer unbekannten Branche und mit einem unbekannten Produkt eingesetzt. Nutze universelle B2B-Sales-, Buying-Center-, Entscheidungs-, Risiko- und Business-Case-Logik.\n\nZIEL\nErzeuge eine hochprofessionelle, kundenspezifische Entscheidungsanalyse mit mindestens einem echten Aha-Effekt. Der Aha-Effekt muss aus den vorliegenden Informationen entstehen und darf keine erfundene Tatsache sein.\n\nVERBINDLICHE GRENZEN\n1. Score, Forecast und numerische Bewertung niemals verändern oder neu berechnen.\n2. Fakten nur aus ORIGINALIMPORT, LOKALEM STATE oder EVIDENCE LEDGER verwenden.\n3. Nicht belegte Zusammenhänge als Ableitung oder Hypothese kennzeichnen.\n4. Fehlende Informationen als offen behandeln, niemals negativ oder positiv erfinden.\n5. Jede Empfehlung auf eine konkrete nächste Kundenentscheidung ausrichten.\n6. Generische Ratschläge vermeiden. Personen, Rollen, Einwände, Beträge und Termine nur nennen, wenn sie belegt sind.\n\nPRÜFRAHMEN\n- Problem, Auswirkung, Dringlichkeit und Veränderungsdruck\n- Buying Center, Macht, Einfluss, Sponsor, Gegner und fehlende Rollen\n- Entscheidungsprozess, Kriterien, Freigaben und Beschaffung\n- wirtschaftlicher Nutzen, Investitionslogik und Wirkungsannahmen\n- technische, organisatorische und politische Umsetzbarkeit\n- Wettbewerb, Nichtstun und interne Alternativen\n- Widersprüche, Informationslücken und Forecast-Risiken\n- nächste verbindliche Kundenentscheidung\n\nORIGINALIMPORT:\n${state.rawImport||''}\n\nEVIDENCE LEDGER MIT IDs:\n${JSON.stringify(evidence)}\n\nSTRUKTURIERTER LOKALER STATE:\n${JSON.stringify(local)}\n\nLiefere exakt dieses JSON-Schema:\n{"executive":{"assessment":"","nextDecision":"","bottleneck":"","strategy":"","unknownPattern":""},"areas":{"Qualifizierung":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Bedarfsanalyse":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Demo":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Einwandbehandlung":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Wirtschaftlicher Nutzen & ROI":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Angebot":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]},"Abschluss":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":"","evidenceRefs":[]}},"contradictions":[],"novelSignals":[],"confidence":{"overall":0,"reason":""}}`;
+};
+
+runHybridAnalysis=async function(force=false){
+ const ai=ensureAIState(),cfg=getAISettings();if(!cfg.apiKey){showSettings();toast('Bitte zuerst Claude API Key hinterlegen');return}
+ const fingerprint=ki2111Fingerprint();
+ if(!force&&ai.status==='ready'&&ai.inputFingerprint===fingerprint){toast('Analyse ist aktuell – kein API-Aufruf erforderlich');return}
+ ai.status='running';ai.error='';ai.pendingFingerprint=fingerprint;saveState();render();
+ try{
+   const response=await callClaudeJSON(buildHybridPrompt(),6500),result=ki2111NormalizeResult(response.result);
+   ai.status='ready';ai.generatedAt=new Date().toISOString();ai.inputFingerprint=fingerprint;delete ai.pendingFingerprint;
+   ai.areas=result.areas;ai.executive=result.executive;ai.contradictions=result.contradictions;ai.novelSignals=result.novelSignals;ai.confidence=result.confidence;ai.quality=result.quality;
+   ai.usage={inputTokens:Number(response.usage.input_tokens)||0,outputTokens:Number(response.usage.output_tokens)||0,totalTokens:(Number(response.usage.input_tokens)||0)+(Number(response.usage.output_tokens)||0),model:response.model||cfg.model,durationMs:response.durationMs||0};
+   ai.sourceSnapshot={company:state.company,opportunity:state.opportunity,phase:state.phase,evidenceCount:(state.evidence||[]).length};
+   saveState();render();toast(result.quality.warnings.length?'Claude-Analyse abgeschlossen – Qualitätswarnungen beachten':'Claude-Analyse qualitätsgeprüft abgeschlossen');
+ }catch(e){ai.status='error';ai.error=e.message;delete ai.pendingFingerprint;saveState();render();toast('Claude-Analyse fehlgeschlagen')}
+};
+
+const __ki2111ProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+ const local=__ki2111ProcessAnalysis(name),ai=ensureAIState(),current=ai.inputFingerprint===ki2111Fingerprint(),x=current&&ai.status==='ready'&&ai.areas?ai.areas[name]:null;
+ if(!x)return local;
+ return {status:x.status||local.status,assessment:x.assessment||local.assessment,facts:Array.isArray(x.facts)&&x.facts.length?x.facts:local.facts,open:Array.isArray(x.open)&&x.open.length?x.open:local.open,insight:x.insight||local.insight,next:x.next||local.next,insightMethods:['Claude','KI21 Evidence Guard','KI21 Decision Engine'],nextMethods:['Claude','KI21 Evidence Guard','KI21 Decision Engine']};
+};
+
+const __ki2111RenderProcess=renderProcess;
+renderProcess=function(){
+ const ai=ensureAIState(),fp=ki2111Fingerprint(),current=ai.inputFingerprint===fp;
+ let status='Noch keine Claude-Analyse für diese Opportunity.';
+ if(ai.status==='running')status='Claude analysiert und KI21 prüft die Opportunity …';
+ else if(ai.status==='error')status='Claude-Fehler: '+ai.error;
+ else if(ai.status==='ready'&&current)status='Qualitätsgeprüfte Analyse vom '+new Date(ai.generatedAt).toLocaleString('de-DE');
+ else if(ai.status==='ready'&&!current)status='Opportunity wurde verändert – die gespeicherte KI-Analyse ist veraltet.';
+ const usage=ai.usage&&ai.status==='ready'?` · ${Number(ai.usage.totalTokens||0).toLocaleString('de-DE')} Token · ${(Number(ai.usage.durationMs||0)/1000).toLocaleString('de-DE',{maximumFractionDigits:1})} s`:'';
+ const warnings=(ai.quality?.warnings||[]).slice(0,3);
+ const signals=current?(ai.novelSignals||[]).slice(0,3):[];
+ const contradictions=current?(ai.contradictions||[]).slice(0,3):[];
+ const extra=`${signals.length?`<div class="divider"></div><div class="kicker">Aha-Signale</div><div class="list">${signals.map(x=>`<div class="item">💡 ${esc(x)}</div>`).join('')}</div>`:''}${contradictions.length?`<div class="divider"></div><div class="kicker">Widersprüche</div><div class="list">${contradictions.map(x=>`<div class="item">⚠ ${esc(x)}</div>`).join('')}</div>`:''}${warnings.length?`<div class="divider"></div><div class="body muted">Qualitätsprüfung: ${esc(warnings.join(' · '))}</div>`:''}`;
+ return `<div class="card ${ai.status==='ready'&&current?'green':'violet'}"><div class="kicker">Hybrid Intelligence Integrity</div><div class="headline">Claude-Generalisation mit KI21 Evidence Guard</div><div class="body muted">${esc(status+usage)}</div><div class="actions"><button class="btn primary" data-action="run-ai" ${ai.status==='running'?'disabled':''}>${ai.status==='running'?'Analyse läuft …':ai.status==='ready'&&current?'Analyse ist aktuell':'KI-Analyse erzeugen'}</button>${ai.status==='ready'&&current?'<button class="btn secondary" data-action="force-ai">Bewusst neu analysieren</button>':''}<button class="btn secondary" data-action="open-settings">Einstellungen</button></div>${extra}</div>`+__ki2110RenderProcess().replace(/^<div class="card[\s\S]*?<\/div><\/div>/,'');
+};
+
+const __ki2111BindView=bindView;
+bindView=function(){
+ __ki2111BindView();
+ document.querySelectorAll('[data-action="run-ai"]').forEach(b=>b.onclick=()=>runHybridAnalysis(false));
+ document.querySelectorAll('[data-action="force-ai"]').forEach(b=>b.onclick=()=>runHybridAnalysis(true));
+};
+
+// The local ten-case regression suite intentionally remains API-free.
+document.title='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
+const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.1';
 
 </script>
 </body>
