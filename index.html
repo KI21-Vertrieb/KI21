@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.9 · Quality Suite Open Fix';
+const VERSION='KI21 Core 8.11.10 · Quality Suite Visible Overlay Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2853,7 +2853,7 @@ function ki2118RenderHybridResult(result,usage,elapsed){
  return `<div class="quality-hybrid-summary"><div class="headline">Hybrid-Blindtest abgeschlossen</div><div class="body muted">Ein gemeinsamer Claude-Aufruf · ${elapsed} ms · Input ${usage?.input_tokens||0} / Output ${usage?.output_tokens||0} Tokens</div><div class="quality-table-wrap"><table class="quality-table"><thead><tr><th>Fall</th><th>Fakten</th><th>Aha</th><th>Individualität</th><th>Nutzen</th><th>Halluz.</th></tr></thead><tbody>${rows}</tbody></table></div><div class="quality-result-card"><strong>Generalisierung ${Number(result.crossCase?.generalisation||0)}/10</strong><div class="body">${esc(result.crossCase?.summary||'')}</div></div>${detail}</div>`;
 }
 function ki2118OpenQualitySuite(){
- closeTransientOverlays();const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki2118QualityOverlay';
+ closeTransientOverlays();const overlay=document.createElement('div');overlay.className='ki21-modal-overlay';overlay.id='ki2118QualityOverlay';overlay.style.cssText='position:fixed;inset:0;z-index:6500;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center;padding:0;';
  const cases=KI219_TEST_CASES.map((tc,i)=>`<label class="quality-case-row"><input type="checkbox" value="${ki2118EscAttr(tc.id)}" checked><span class="quality-case-no">${i+1}</span><span><strong>${esc(tc.name)}</strong><small>${esc(tc.id)}</small></span></label>`).join('');
  overlay.innerHTML=`<div class="modal quality-suite-modal"><div class="quality-suite-head"><div><div class="kicker">KI21 Quality Suite</div><div class="headline">Mehrere Opportunities gleichzeitig testen</div><div class="body muted">Lokale Qualitätsprüfung ist API-frei. Der optionale Hybrid-Blindtest bündelt bis zu drei Fälle in genau einem Claude-Aufruf.</div></div><button class="icon-btn" id="ki2118Close">×</button></div><div class="quality-toolbar"><button class="btn secondary" id="ki2118All">Alle wählen</button><button class="btn secondary" id="ki2118None">Auswahl löschen</button><button class="btn primary" id="ki2118Local">Lokalen Mehrfachtest starten</button><button class="btn secondary" id="ki2118Hybrid">3 Fälle hybrid testen · 1 API-Aufruf</button></div><div class="quality-case-grid">${cases}</div><div id="ki2118Status" class="body muted quality-status">Bereit.</div><div id="ki2118Results"></div></div>`;
  document.body.appendChild(overlay);
@@ -2865,10 +2865,22 @@ function ki2118OpenQualitySuite(){
  overlay.querySelector('#ki2118Hybrid').onclick=async()=>{const ids=selected();if(!ids.length){toast('Mindestens einen Testfall auswählen');return}const chosen=KI219_TEST_CASES.filter(x=>ids.includes(x.id)).slice(0,3);const status=overlay.querySelector('#ki2118Status'),results=overlay.querySelector('#ki2118Results');if(ids.length>3)toast('Für den Hybridtest werden die ersten drei ausgewählten Fälle verwendet');status.textContent=`${chosen.length} Opportunities werden gemeinsam durch Claude geprüft …`;results.innerHTML='<div class="quality-spinner">Hybrid-Generalisation läuft …</div>';const t0=performance.now();try{const response=await callClaudeJSON(ki2118HybridPrompt(chosen),2600);const elapsed=Math.round(performance.now()-t0);status.textContent=`Hybridtest abgeschlossen · ${chosen.length} Fälle · genau 1 API-Aufruf.`;results.innerHTML=ki2118RenderHybridResult(response.result,response.usage,elapsed)}catch(e){status.textContent='Hybridtest fehlgeschlagen.';results.innerHTML=`<div class="card red"><div class="headline">${esc(e.message||String(e))}</div><div class="body">Die lokale Quality Suite bleibt vollständig nutzbar.</div></div>`}};
 }
 ki219RunRegressionSuite=ki2118OpenQualitySuite;
+window.ki2118OpenQualitySuite=ki2118OpenQualitySuite;
+
+// 8.11.10: document-level capture binding survives every render/bindView wrapper.
+document.addEventListener('click',function(event){
+ const btn=event.target&&event.target.closest?event.target.closest('[data-action="run-regression-suite"]'):null;
+ if(!btn)return;
+ event.preventDefault();event.stopPropagation();
+ try{ki2118OpenQualitySuite()}catch(err){
+  console.error('Quality Suite open failed',err);
+  alert('Quality Suite konnte nicht geöffnet werden: '+(err&&err.message?err.message:String(err)));
+ }
+},true);
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.9';
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.10';
 render();
 </script>
 </body>
