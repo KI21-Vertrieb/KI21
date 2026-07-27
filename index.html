@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.15.2 · Expanded 25-Case Quality Suite</title>
+<title>KI21 Core 8.17.0 · Smart Quality Suite</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-let VERSION='KI21 Core 8.15.2 · Expanded 25-Case Quality Suite';
+let VERSION='KI21 Core 8.17.0 · Smart Quality Suite';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -3238,7 +3238,7 @@ function ki2118RenderHybridResult(result,usage,elapsed){
 }
 function ki2118OpenQualitySuite(){
  closeTransientOverlays();const overlay=document.createElement('div');overlay.className='ki21-modal-overlay';overlay.id='ki2118QualityOverlay';overlay.style.cssText='position:fixed;inset:0;z-index:6500;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center;padding:0;';
- const cases=KI219_TEST_CASES.map((tc,i)=>`<label class="quality-case-row"><input type="checkbox" value="${ki2118EscAttr(tc.id)}" checked><span class="quality-case-no">${i+1}</span><span><strong>${esc(tc.name)}</strong><small>${esc(tc.id)}</small></span></label>`).join('');
+ const __ki217DefaultIds=new Set(['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15']); const cases=KI219_TEST_CASES.map((tc,i)=>`<label class="quality-case-row"><input type="checkbox" value="${ki2118EscAttr(tc.id)}" ${__ki217DefaultIds.has(tc.id)?'checked':''}><span class="quality-case-no">${i+1}</span><span><strong>${esc(tc.name)}</strong><small>${esc(tc.id)}</small></span></label>`).join('');
  overlay.innerHTML=`<div class="modal quality-suite-modal"><div class="quality-suite-head"><div><div class="kicker">KI21 Quality Suite</div><div class="headline">Mehrere Opportunities gleichzeitig testen</div><div class="body muted">Lokale Qualitätsprüfung ist API-frei. Der optionale Hybrid-Blindtest bündelt bis zu drei Fälle in genau einem Claude-Aufruf.</div></div><button class="icon-btn" id="ki2118Close">×</button></div><div class="quality-toolbar"><button class="btn secondary" id="ki2118All">Alle wählen</button><button class="btn secondary" id="ki2118None">Auswahl löschen</button><button class="btn primary" id="ki2118Local">Lokalen Mehrfachtest starten</button><button class="btn secondary" id="ki2118Hybrid">3 Fälle hybrid testen · 1 API-Aufruf</button></div><div class="quality-case-grid">${cases}</div><div id="ki2118Status" class="body muted quality-status">Bereit.</div><div id="ki2118Results"></div></div>`;
  document.body.appendChild(overlay);
  const selected=()=>[...overlay.querySelectorAll('.quality-case-row input:checked')].map(x=>x.value);
@@ -4351,6 +4351,87 @@ render();
   document.title=V8161;
   const hv=document.getElementById('headerVersion');
   if(hv)hv.textContent='Core 8.16.1';
+})();
+</script>
+
+
+<script id="ki21-v8170-smart-quality-suite">
+(()=>{
+  const V8170='KI21 Core 8.17.0 · Smart Quality Suite';
+  const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15'];
+  const REVIEW_IDS=['T07','N08','N09','N13'];
+
+  function line(report,label){
+    const escRx=String(label).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const m=String(report||'').match(new RegExp('^'+escRx+'\\s*:?\\s*(.+)$','mi'));
+    return m?m[1].trim():'—';
+  }
+  function section(report,title,nextTitles){
+    const src=String(report||'').replace(/\r/g,'');
+    const next=(nextTitles||[]).map(x=>String(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    const ttl=String(title).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const rx=new RegExp('(?:^|\\n)'+ttl+'\\n([\\s\\S]*?)'+(next?'(?=\\n(?:'+next+')\\n|$)':'(?=\\n[A-ZÄÖÜ][A-ZÄÖÜ0-9 &?,:()\\-–]{3,}\\n|$)'),'i');
+    const m=src.match(rx);
+    return m?m[1].trim():'';
+  }
+  function compactOutput(report){
+    const headers=['EINSCHÄTZUNG','BUSINESS CASE UND NUTZEN','NÄCHSTER SCHRITT','STATE CHECK'];
+    const blocks=[];
+    headers.forEach((h,i)=>{
+      const b=section(report,h,headers.slice(i+1));
+      if(b)blocks.push(h+'\n'+b);
+    });
+    return blocks.length?blocks.join('\n\n'):String(report||'').trim();
+  }
+  function phaseOf(tc){
+    const n=(tc.name+' '+tc.raw).toLowerCase();
+    if(/vertrag fast fertig|procurement|verhandlung/.test(n))return 'Verhandlung / Closing';
+    if(/renewal|expansion/.test(n))return 'Expansion / Renewal';
+    if(/minimalimport/.test(n))return 'Edge Case';
+    if(/frühe|qualifizierung|champion ohne/.test(n))return 'Discovery';
+    if(/budget|schaden|wirkung|business case/.test(n))return 'Business Case';
+    if(/widersprüch/.test(n))return 'Evidence Integrity';
+    return 'Mid Sales';
+  }
+
+  ki2118BuildLocalSuite=function(ids){
+    const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS;
+    const started=performance.now();
+    const chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id));
+    const results=chosen.map(ki2118EvaluateCase);
+    const passed=results.filter(x=>x.passed).length;
+    const totalChecks=results.reduce((a,x)=>a+x.max,0);
+    const passedChecks=results.reduce((a,x)=>a+x.points,0);
+    const runtime=Math.round(performance.now()-started);
+    const avgScore=results.length?Math.round(results.reduce((a,x)=>a+x.score.score,0)/results.length):0;
+    const avgForecast=results.length?Math.round(results.reduce((a,x)=>a+x.score.forecast,0)/results.length):0;
+    const qualityIndex=totalChecks?Math.round(passedChecks/totalChecks*1000)/10:0;
+
+    const summary=results.map(x=>{
+      const icon=x.passed?'✅':'⚠️';
+      return `${icon} ${x.tc.id} · ${x.tc.name} | ${phaseOf(x.tc)} | ${x.points}/${x.max} | Score ${x.score.score}% | Forecast ${x.score.forecast}%`;
+    }).join('\n');
+
+    const failed=results.filter(x=>!x.passed);
+    const reviewIds=new Set([...REVIEW_IDS,...failed.map(x=>x.tc.id)]);
+    const reviews=results.filter(x=>reviewIds.has(x.tc.id)).map(x=>{
+      return `${'='.repeat(72)}\nOUTPUT-REVIEW · ${x.tc.id} · ${x.tc.name}\nPrüfstatus: ${x.points}/${x.max} · ${x.passed?'BESTANDEN':'AUFFÄLLIG'} · Score ${x.score.score}% · Forecast ${x.score.forecast}%\n${'='.repeat(72)}\n\n${compactOutput(x.report)}`;
+    }).join('\n\n');
+
+    const findings=failed.length?failed.map(x=>{
+      const st=line(x.report,'• Deal-State');
+      return `⚠️ ${x.tc.id} · ${x.tc.name}\n• Fehlende Prüfregeln: ${x.max-x.points}\n• Deal-State: ${st}\n• Vollständiger relevanter Output ist im Output-Review enthalten.`;
+    }).join('\n\n'):'✅ Keine fehlgeschlagenen Testfälle.';
+
+    const text=`KI21 SMART QUALITY SUITE\nVersion: ${V8170}\nErstellt: ${new Date().toLocaleString('de-DE')}\n\n=== MANAGEMENT SUMMARY ===\n• Testfälle: ${results.length}\n• Vollständig bestanden: ${passed}/${results.length}\n• Qualitätschecks: ${passedChecks}/${totalChecks}\n• Qualitätsindex: ${qualityIndex}%\n• Ø Opportunity Score: ${avgScore}%\n• Ø Forecast: ${avgForecast}%\n• Laufzeit: ${runtime} ms\n• Doppelungen: ${results.reduce((a,x)=>a+x.duplicates,0)}\n• Ungültige Tokens: ${results.reduce((a,x)=>a+x.badTokens,0)}\n\n=== TESTÜBERSICHT · ALLE AUSGEWÄHLTEN FÄLLE ===\n${summary}\n\n=== AUFFÄLLIGKEITEN ===\n${findings}\n\n=== OUTPUT-REVIEW · 4 REPRÄSENTATIVE FÄLLE + ALLE FEHLERFÄLLE ===\n${reviews}\n\n=== BEWERTUNGSRAHMEN ===\nBitte anhand der Originalausgaben insbesondere prüfen:\n• Fakten- und Evidenztreue\n• Deal-State und Forecast-Plausibilität\n• Qualität von Einschätzung, Business Case und nächsten Schritten\n• sprachliche Präzision, Redundanzen und generische Aussagen\n• Konsistenz zwischen den vier Referenzfällen und der Testübersicht`;
+    return {results,text};
+  };
+
+  try{VERSION=V8170}catch(e){}
+  document.title=V8170;
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.17.0';
+  const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8170;
+  window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 </script>
 
