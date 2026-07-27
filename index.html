@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.13 · Output Integrity & Regression Guard';
+const VERSION='KI21 Core 8.10.14 · Grammar & State Label Integrity';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2107,6 +2107,61 @@ ki2110ValidateCase=function(tc,testState,report){
   if(/Erfolgskriterien[^\n]*bestätigt/i.test(tc.raw)&&/Offene Punkte:[^\n]*Erfolgskriterien/i.test(report))issues.push('bestätigte Erfolgskriterien weiterhin als offen ausgegeben');
   return [...new Set(issues)];
 };
+
+
+// === 8.10.14 Grammar & State Label Integrity ===
+const __ki2114ProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+  const a=__ki2114ProcessAnalysis(name);
+  a.assessment=String(a.assessment||'')
+    .replace(/Die wirtschaftlicher Entscheider ist offen\.?/g,'Der wirtschaftliche Entscheider ist noch nicht identifiziert.')
+    .replace(/Die wirtschaftliche Entscheidungsrolle ist offen\.?/g,'Der wirtschaftliche Entscheider ist noch nicht identifiziert.')
+    .replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider');
+  a.insight=String(a.insight||'')
+    .replace(/durch noch nicht eindeutig bestätigt/g,'durch den noch zu identifizierenden wirtschaftlichen Entscheider')
+    .replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlichen Entscheider');
+  a.next=String(a.next||'')
+    .replace(/Die wirtschaftlicher Entscheider identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren')
+    .replace(/Die wirtschaftliche Entscheidungsrolle identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren')
+    .replace(/Mit der wirtschaftlichen Entscheidungsrolle/g,'Mit dem wirtschaftlichen Entscheider');
+  a.facts=(a.facts||[]).map(x=>String(x).replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider'));
+  a.open=(a.open||[]).map(x=>String(x)
+    .replace(/^Bestätigte Erfolgskriterien$/,'Erfolgskriterien verbindlich bestätigen')
+    .replace(/^Aktive Einbindung der wirtschaftlichen Entscheidungsrolle$/,'Wirtschaftlichen Entscheider aktiv einbinden'));
+  a.open=[...new Set(a.open.filter(Boolean))];
+  return a;
+};
+
+const __ki2114DecisionBrief=decisionBrief;
+decisionBrief=function(){
+  let out=__ki2114DecisionBrief();
+  out=out
+    .replace(/Die wirtschaftlicher Entscheider ist offen\.?/g,'Der wirtschaftliche Entscheider ist noch nicht identifiziert.')
+    .replace(/Die wirtschaftlicher Entscheider identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren')
+    .replace(/Wirtschaftliche Entscheidungsrolle:/g,'Wirtschaftlicher Entscheider:')
+    .replace(/durch noch nicht eindeutig bestätigt/g,'durch den noch zu identifizierenden wirtschaftlichen Entscheider');
+  return out;
+};
+
+const __ki2114FullReport=fullReport;
+fullReport=function(){
+  let out=__ki2114FullReport();
+  out=out
+    .replace(/Die wirtschaftlicher Entscheider ist offen\.?/g,'Der wirtschaftliche Entscheider ist noch nicht identifiziert.')
+    .replace(/Die wirtschaftlicher Entscheider identifizieren/g,'Den wirtschaftlichen Entscheider identifizieren')
+    .replace(/Wirtschaftliche Entscheidungsrolle:/g,'Wirtschaftlicher Entscheider:')
+    .replace(/durch noch nicht eindeutig bestätigt/g,'durch den noch zu identifizierenden wirtschaftlichen Entscheider');
+  return out;
+};
+
+const __ki2114ValidateCase=ki2110ValidateCase;
+ki2110ValidateCase=function(tc,testState,report){
+  const issues=__ki2114ValidateCase(tc,testState,report);
+  if(/Die wirtschaftlicher Entscheider|Die wirtschaftliche Entscheider/i.test(report))issues.push('grammatikalisch fehlerhafte Entscheiderformulierung');
+  if(/durch noch nicht eindeutig bestätigt/i.test(report))issues.push('unklare Abschlussformulierung bei unbekanntem Entscheider');
+  return [...new Set(issues)];
+};
+
 </script>
 </body>
 </html>
