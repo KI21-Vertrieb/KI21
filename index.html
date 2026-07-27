@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+const VERSION='KI21 Core 8.11.5 · Stability & Performance Hotfix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2203,7 +2203,7 @@ bindView=function(){__ki2110BindView();document.querySelectorAll('.metric').forE
 document.getElementById('settingsButton')?.addEventListener('click',showSettings);
 
 // === 8.11.1 Hybrid Intelligence Integrity ===
-const KI2111_VERSION='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+const KI2111_VERSION='KI21 Core 8.11.5 · Stability & Performance Hotfix';
 const KI2111_AI_SCHEMA_VERSION='2.0';
 const KI2111_AREA_NAMES=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
 
@@ -2338,7 +2338,7 @@ showOpportunityManager=function(){
  closeTransientOverlays();
  const real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
  const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki21OpportunityOverlay';
- const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};{const prev=state;try{state=o;sc=scores()}catch(e){}finally{state=prev}}
   return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':esc(o.phase||o.status||'Ohne Phase')}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini" data-switch-id="${esc(o.id)}" title="Öffnen" aria-label="Opportunity öffnen">↗</button><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`
  }).join('');
  const ai=ensureAIState(),current=ai.inputFingerprint===ki2111Fingerprint();
@@ -2355,7 +2355,7 @@ showOpportunityManager=function(){
 };
 
 // The local ten-case regression suite intentionally remains API-free.
-document.title='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+document.title='KI21 Core 8.11.5 · Stability & Performance Hotfix';
 const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.3';
 
 
@@ -2451,7 +2451,7 @@ showOpportunityManager=function(){
  let real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
  real=real.slice().sort((a,b)=>{if(a.id===portfolio.activeId)return-1;if(b.id===portfolio.activeId)return 1;return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))});
  const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki21OpportunityOverlay';
- const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};{const prev=state;try{state=o;sc=scores()}catch(e){}finally{state=prev}}
   const phase=esc(o.phase||o.status||'Ohne Phase');
   return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div><div class="opp-meta"><span>${phase}</span><span>Score ${sc.score}%</span><span>Forecast ${sc.forecast}%</span></div></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':phase}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini" data-switch-id="${esc(o.id)}" title="Öffnen" aria-label="Opportunity öffnen">↗</button><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`
  }).join('');
@@ -2468,7 +2468,7 @@ showOpportunityManager=function(){
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
 };
 
-document.title='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+document.title='KI21 Core 8.11.5 · Stability & Performance Hotfix';
 const ki2113xHeader=document.getElementById('headerVersion');if(ki2113xHeader)ki2113xHeader.textContent='Core 8.11.3';
 
 
@@ -2548,7 +2548,7 @@ showOpportunityManager=function(){
  let real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
  real=real.slice().sort((a,b)=>{if(a.id===portfolio.activeId)return-1;if(b.id===portfolio.activeId)return 1;return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))});
  const overlay=document.createElement('div');overlay.id='ki21OpportunityOverlay';
- const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};{const prev=state;try{state=o;sc=scores()}catch(e){}finally{state=prev}}
   return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><button class="opp-main-button" data-select-opportunity="${esc(o.id)}"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div><div class="opp-meta"><span>${esc(o.phase||o.status||'Ohne Phase')}</span><span>Score ${sc.score}%</span><span>Forecast ${sc.forecast}%</span></div></button></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':esc(o.phase||o.status||'Ohne Phase')}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`;
  }).join('');
  overlay.innerHTML=`<div class="opp-manager-shell"><div class="opp-manager-top"><div><div class="kicker">Portfolio</div><div class="headline">Kunden & Opportunities <span class="opp-count">${real.length}</span></div><div class="body muted">Zum Wechseln auf den Namen der Opportunity tippen.</div></div><button class="opp-mini" id="closeOpportunityManager" aria-label="Schließen">×</button></div><div class="opp-manager-actions"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">＋ Neue Opportunity</button></div><div class="opp-list-head"><span>Nr.</span><span>Unternehmen / Opportunity</span><span>Status / Phase</span><span>Aktion</span></div><div class="opp-list-scroll">${rows||'<div class="body muted">Noch keine gespeicherten Opportunities.</div>'}</div><div class="opp-footer-v2"><span>${real.length} ${real.length===1?'Opportunity':'Opportunities'} gesamt</span><span>Aktiv: ${state.company?esc(state.company):'keine'}</span></div></div>`;
@@ -2572,9 +2572,29 @@ renderCockpit=function(){
 const __ki2114mRender=render;
 render=function(){const r=__ki2114mRender.apply(this,arguments);requestAnimationFrame(()=>{const el=document.getElementById('oppName');if(el){el.onclick=(e)=>{e.preventDefault();e.stopPropagation();showOpportunityManager()};el.setAttribute('title','Opportunity wechseln')}});return r};
 
-VERSION='KI21 Core 8.11.4 · Market Readiness Performance & Portfolio';
 document.title=VERSION;
-const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.4';
+const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.5';
+
+// === 8.11.5 Stability & Performance Hotfix ===
+// Safari-safe hard timeout: Promise.race guarantees that the UI is released even
+// when AbortController is not honoured promptly by the browser/network stack.
+callClaudeJSON=async function(userPrompt,maxTokens=3200){
+ const cfg=getAISettings();if(!cfg.apiKey)throw new Error('Kein Anthropic API Key hinterlegt.');
+ const controller=new AbortController();
+ let timer;
+ const request=fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:controller.signal,headers:{'content-type':'application/json','x-api-key':cfg.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.model||'claude-sonnet-4-5',max_tokens:Math.min(Number(maxTokens)||3200,3400),temperature:0.1,system:'Du bist die semantische Intelligence-Schicht von KI21 für komplexen B2B-Vertrieb. Antworte ausschließlich mit kompaktem validem JSON. Erfinde niemals Fakten, Personen, Zahlen oder Freigaben. Priorisiere die drei stärksten entscheidungsrelevanten Erkenntnisse. Vermeide Wiederholungen und generische Lehrbuchsätze.',messages:[{role:'user',content:userPrompt}]})}).then(async res=>{if(!res.ok){let msg='HTTP '+res.status;try{const j=await res.json();msg=j.error?.message||msg}catch(e){}throw new Error(msg)}const data=await res.json();const txt=(data.content||[]).map(x=>x.text||'').join('').trim();const clean=txt.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');let parsed;try{parsed=JSON.parse(clean)}catch(e){throw new Error('Claude lieferte kein gültiges JSON.')}return{result:parsed,usage:data.usage||{}}});
+ const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{try{controller.abort()}catch(e){}reject(new Error('Analyse nach 30 Sekunden beendet. Die lokale KI21-Analyse bleibt vollständig verfügbar.'))},30000)});
+ try{return await Promise.race([request,timeout])}finally{clearTimeout(timer)}
+};
+
+// Never leave the interface in a running state after uncaught analysis errors.
+window.addEventListener('unhandledrejection',event=>{
+ const msg=String(event.reason?.message||event.reason||'');
+ if(/Claude|Analyse|API|fetch|JSON|timeout|Sekunden/i.test(msg)){
+  try{const ai=ensureAIState(state);ai.status='error';ai.error=msg;ai.finishedAt=new Date().toISOString();saveState();render();toast(msg)}catch(e){}
+ }
+});
+
 render();
 </script>
 </body>
