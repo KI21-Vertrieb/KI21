@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.10.8 · Decision Quality & Portfolio UX</title>
+<title>KI21 Core 8.10.9 · One-Click Regression Test Suite</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.8 · Decision Quality & Portfolio UX';
+const VERSION='KI21 Core 8.10.9 · One-Click Regression Test Suite';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -1441,6 +1441,325 @@ showOpportunityManager=function(){
   overlay.querySelectorAll('[data-switch-id]').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-delete-id]'))return;overlay.remove();switchOpportunity(el.dataset.switchId)});overlay.querySelectorAll('[data-delete-id]').forEach(el=>el.onclick=e=>{e.stopPropagation();const id=el.dataset.deleteId,o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager();}});overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
 };
 
+
+
+// === 8.10.9 One-Click Regression Test Suite ===
+const KI219_TEST_CASES=[
+{
+ id:'T01',name:'Rheinwerk · Pilot',raw:`CRM-IMPORT
+Unternehmen: Rheinwerk Digital Services GmbH
+Opportunity: KI21 Pilot strategische Cloud-Deals
+Phase: Bedarfsanalyse
+
+Ausgangslage
+• 42 Stunden monatlicher Aufwand für Deal-Reviews, Forecast-Korrekturen und Nachbereitung.
+• Interner Stundenwert: 125 €.
+• Dokumentierter wirtschaftlicher Aufwand: 63.000 € pro Jahr.
+• Pilotpreis: 32.000 €.
+• Laufzeit: 9 Wochen.
+• Pilotumfang: 7 Nutzer und 6 reale Opportunities.
+
+Stakeholder
+• Petra Lorenz | Head of Sales | Sponsor | aktiv eingebunden
+• Andreas Volk | Geschäftsführer | Wirtschaftlicher Entscheider | erstes Gespräch erfolgt
+
+Bestätigt
+• Der fachliche Bedarf ist bestätigt.
+• Ein Pilot mit sechs realen Opportunities ist grundsätzlich gewünscht.
+
+Offene Punkte
+• Drei messbare Erfolgskriterien festlegen.
+• Pilotverantwortung festlegen.
+• Salesforce-Export prüfen.
+• Datenschutzprüfung abschließen.
+• Rollout-Entscheidung und Entscheidungstermin festlegen.`
+},
+{
+ id:'T02',name:'Alpinora · Expansion',raw:`CRM-IMPORT
+Unternehmen: Alpinora MedTech Systems AG
+Opportunity: Internationale Erweiterung KI21 Enterprise
+Phase: Wirtschaftliche Bewertung
+
+Ausgangslage
+• Wiederkehrender interner Aufwand: 109.200 € pro Jahr.
+• Aktueller Jahresvertrag: 84.000 €.
+• Neuer Jahresvertrag: 198.000 €.
+• Einführungskosten: 48.000 €.
+• Gesamtvertragswert über drei Jahre: 642.000 €.
+
+Stakeholder
+• Johannes Vetter | CFO | Wirtschaftlicher Entscheider | erstes Gespräch erfolgt
+• Prof. Dr. Elena Marchand | COO | formale Mitentscheiderin | noch nicht persönlich eingebunden
+• Tobias Kern | VP Sales | Sponsor | aktiv eingebunden
+
+Bestätigt
+• Erweiterung fachlich unterstützt.
+• Internationale Nutzung grundsätzlich gewünscht.
+
+Offene Punkte
+• Zusätzliche Wirkung gegenüber bestehender Nutzung quantifizieren.
+• Technische Freigabe offen.
+• Datenschutzfreigabe offen.
+• Rollout-Verantwortung offen.
+• Vollausbau oder Teilrollout entscheiden.
+• Investitionsfreigabe offen.`
+},
+{
+ id:'T03',name:'Hanseatic · Wettbewerbsablösung',raw:`CRM-IMPORT
+Unternehmen: Hanseatic Industrial Software GmbH
+Opportunity: Ablösung Altanbieter durch KI21
+Phase: Angebot und Abschluss
+
+Ausgangslage
+• Wiederkehrender interner Aufwand: 83.520 € pro Jahr.
+• KI21 Jahrespreis: 168.000 €.
+• Einführungskosten: 74.000 €.
+• Gesamtvertragswert über drei Jahre: 578.000 €.
+• Altanbieter-Verlängerung: 149.000 € pro Jahr.
+• Optimierungsberatung Altanbieter: 35.000 €.
+
+Stakeholder
+• Martin Ahrens | CFO | Wirtschaftlicher Entscheider | aktiv eingebunden
+• Claudia Winter | COO | formale Mitentscheiderin | noch nicht persönlich eingebunden
+• Lena Vogt | Sales Director | Sponsor | aktiv eingebunden
+
+Bestätigte Einwände
+• Martin Ahrens: Migration darf das laufende Quartal nicht gefährden.
+• Claudia Winter: Parallelbetrieb muss klar begrenzt werden.
+• Lena Vogt: Nutzerakzeptanz muss vor dem Rollout belegt sein.
+• IT-Leitung: Schnittstellenaufwand ist noch nicht freigegeben.
+
+Offene Punkte
+• COO persönlich einbinden.
+• Technische Freigabe offen.
+• Migrationsplan, Parallelbetrieb und Entscheidungstermin festlegen.`
+},
+{
+ id:'T04',name:'Südstern · Plattformentscheidung',raw:`CRM-IMPORT
+Unternehmen: Südstern Business Platforms SE
+Opportunity: KI21 Plattformentscheidung DACH
+Phase: Wirtschaftlicher Nutzen
+
+Ausgangslage
+• Dokumentierter Basisaufwand: 119.700 € pro Jahr.
+• KI21 Jahrespreis: 184.000 €.
+• Einführungskosten: 96.000 €.
+• Gesamtvertragswert über drei Jahre: 648.000 €.
+• Hypothese: 280.000 € jährlicher Angebotsaufwand.
+• Hypothese: 350.000 € jährliches Margenrisiko.
+
+Stakeholder
+• Dr. Felix Berger | CFO | Wirtschaftlicher Entscheider | aktiv eingebunden
+• Nina Schuster | COO | formale Mitentscheiderin | aktiv eingebunden
+• Miriam Koch | Head of Sales | Sponsor | aktiv eingebunden
+
+Bestätigte Einwände
+• Controlling: Die Ausgangswerte müssen bestätigt werden.
+• IT: Die technische Startarchitektur ist offen.
+• Operations: Regionaler Start könnte risikoärmer sein.
+• Geschäftsführung: Der Vollrollout braucht einen belastbaren Nachweisplan.
+
+Offene Punkte
+• Controlling-Bestätigung für Angebotsaufwand und Margenrisiko.
+• Vollrollout oder regionalen Start entscheiden.
+• Technische Freigabe offen.
+• Investitionsfreigabe offen.`
+},
+{
+ id:'T05',name:'Nordlicht · Compact',raw:`CRM-IMPORT
+Unternehmen: Nordlicht SaaS Solutions GmbH
+Opportunity: KI21 Compact für Vertriebssteuerung
+Phase: Qualifizierung
+
+Ausgangslage
+• 16 Stunden monatlicher Aufwand für Excel-Auswertungen und Forecast-Nacharbeit.
+• Interner Stundenwert: 100 €.
+• Wirtschaftlicher Aufwand: 19.200 € pro Jahr.
+• Preis: offen.
+
+Stakeholder
+• Svenja Richter | Head of Sales | Sponsor | aktiv eingebunden
+• Maren Vogt | Geschäftsführerin | Wirtschaftliche Entscheiderin | noch nicht persönlich eingebunden
+
+Bestätigt
+• Pipedrive und Excel bilden den aktuellen Prozess ab.
+• Bedarf an schnellerer Deal-Steuerung ist bestätigt.
+
+Offene Punkte
+• Geschäftsführerin persönlich einbinden.
+• Compact oder Pilot entscheiden.
+• Preisrahmen offen.
+• Verantwortung und Starttermin offen.`
+},
+{
+ id:'T06',name:'Westfalen · Renewal',raw:`CRM-IMPORT
+Unternehmen: Westfalen Analytics GmbH
+Opportunity: KI21 Renewal und Ausbau
+Phase: Vertragsverlängerung
+
+Ausgangslage
+• Aktueller Jahresvertrag: 72.000 €.
+• Neuer Jahresvertrag: 96.000 €.
+• Einführungskosten: 0 €.
+• Wiederkehrender interner Aufwand: 54.000 € pro Jahr.
+
+Stakeholder
+• Anja Peters | CFO | Wirtschaftliche Entscheiderin | Entscheidungskriterien bestätigt
+• Ralf König | Vertriebsleiter | Sponsor | aktiv eingebunden
+
+Bestätigt
+• Erfolgskriterien bestätigt: 20 % weniger Forecast-Nacharbeit und 15 % frühere Risikoerkennung.
+• Investitionsfreigabe bestätigt.
+• Preis bestätigt.
+
+Offene Punkte
+• Starttermin verbindlich festlegen.`
+},
+{
+ id:'T07',name:'Mainblick · Frühe Discovery',raw:`CRM-IMPORT
+Unternehmen: Mainblick IT Services GmbH
+Opportunity: KI21 Discovery für Managed Services
+Phase: Qualifizierung / frühe Discovery
+
+Ausgangslage
+• 30 bis 45 Stunden monatliche Nacharbeit vermutet.
+• Wirtschaftliche Wirkung noch nicht bestätigt.
+• Budget unbekannt.
+• Preis offen.
+
+Stakeholder
+• Oliver Frank | Account Director | Ansprechpartner | erstes Gespräch erfolgt
+
+Hypothesen
+• Forecast-Abweichungen verursachen Eskalationen.
+• Eine strukturierte Qualifizierung könnte Verluste reduzieren.
+
+Offene Punkte
+• Sponsor identifizieren.
+• Wirtschaftlichen Entscheider identifizieren.
+• Ausgangswerte bestätigen.
+• Entscheidungskriterien und Zeitplan klären.`
+},
+{
+ id:'T08',name:'Elbtal · Budget bestätigt, Wirkung offen',raw:`CRM-IMPORT
+Unternehmen: Elbtal Cybersecurity AG
+Opportunity: KI21 Pilot Enterprise Sales
+Phase: Bedarfsanalyse und Demo
+
+Ausgangslage
+• Pilotbudget bis 45.000 € bestätigt.
+• Pilotpreis: 39.000 €.
+• Laufzeit: 10 Wochen.
+• Umfang: 8 Nutzer und 10 Opportunities.
+• Quantifizierter Nutzen noch offen.
+
+Stakeholder
+• Jana Reimers | CEO | Wirtschaftliche Entscheiderin | aktiv eingebunden
+• Patrick Seidel | VP Sales | Sponsor | aktiv eingebunden
+• Holger Brandt | CISO | formaler Mitentscheider | erstes Gespräch erfolgt
+
+Bestätigt
+• Investitionsfreigabe für den Pilot ist bestätigt.
+• Preis bestätigt.
+
+Offene Punkte
+• Erfolgskriterien offen.
+• Datenschutzfreigabe offen.
+• Technische Freigabe offen.
+• Ausgangswerte quantifizieren.`
+},
+{
+ id:'T09',name:'Isarwerk · Viele Einwände',raw:`CRM-IMPORT
+Unternehmen: Isarwerk ERP Solutions GmbH
+Opportunity: KI21 Rollout Key Account Sales
+Phase: Angebot und Abschluss
+
+Ausgangslage
+• 96 Stunden monatlicher Aufwand.
+• Interner Stundenwert: 110 €.
+• Dokumentierter Aufwand: 126.720 € pro Jahr.
+• Jahrespreis: 144.000 €.
+• Einführungskosten: 55.000 €.
+
+Stakeholder
+• Beate Lang | CFO | Wirtschaftliche Entscheiderin | aktiv eingebunden
+• Simon Haas | COO | formaler Mitentscheider | aktiv eingebunden
+• Uwe Hartmann | Sales Director | Sponsor | aktiv eingebunden
+
+Bestätigte Einwände
+• CFO: Der ROI muss innerhalb von 18 Monaten sichtbar sein.
+• COO: Der Rollout darf das Tagesgeschäft nicht stören.
+• IT: SSO und Berechtigungskonzept sind noch nicht geprüft.
+• Datenschutz: Auftragsverarbeitung ist offen.
+• Vertrieb: Zusätzliche Dokumentation wird nicht akzeptiert.
+
+Bestätigt
+• Erfolgskriterien bestätigt: 25 % weniger Review-Aufwand.
+
+Offene Punkte
+• Investitionsfreigabe offen.
+• Technische Freigabe offen.
+• Datenschutzfreigabe offen.`
+},
+{
+ id:'T10',name:'Bergstrom · Minimalimport',raw:`CRM-IMPORT
+Unternehmen: Bergstrom Software KG
+Opportunity: KI21 Erstbewertung
+Phase: Qualifizierung
+
+Notiz
+• Interesse an KI-gestützter Opportunity-Steuerung.
+• Ansprechpartner ist die Vertriebsleiterin.
+• Weitere Informationen liegen noch nicht vor.`
+}
+];
+
+function ki219BuildRegressionReport(){
+ const originalState=state;
+ const started=performance.now();
+ const parts=[];
+ let passed=0;
+ try{
+  KI219_TEST_CASES.forEach((tc,index)=>{
+   const t0=performance.now();
+   const testState=emptyState(false);
+   const parsed=parseImport(tc.raw);
+   applyParsed(testState,parsed);
+   repairEconomicMetrics(testState);
+   testState.rawImport=tc.raw;
+   state=testState;
+   let report='',error='';
+   try{report=fullReport();passed++;}catch(e){error=String(e&&e.stack||e);report='FEHLER BEI DER BERICHTSERZEUGUNG\n'+error;}
+   const elapsed=Math.round(performance.now()-t0);
+   parts.push(`${'='.repeat(78)}\nTESTFALL ${index+1}/${KI219_TEST_CASES.length} · ${tc.id} · ${tc.name}\nLaufzeit: ${elapsed} ms\nStatus: ${error?'FEHLER':'ERFOLGREICH'}\n${'='.repeat(78)}\n\n${report}`);
+  });
+ }finally{state=originalState;}
+ const total=Math.round(performance.now()-started);
+ return `KI21 REGRESSION TEST SUITE\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${KI219_TEST_CASES.length}\nErfolgreich: ${passed}/${KI219_TEST_CASES.length}\nGesamtlaufzeit: ${total} ms\n\n${parts.join('\n\n')}`;
+}
+
+async function ki219RunRegressionSuite(){
+ const text=ki219BuildRegressionReport();
+ let copied=false;
+ try{copied=await copyTextReliable(text);}catch(e){}
+ closeTransientOverlays();
+ const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki219RegressionOverlay';
+ overlay.innerHTML=`<div class="modal"><div class="kicker">Interner Entwicklungstest</div><div class="headline">${KI219_TEST_CASES.length} Testfälle erzeugt</div><div class="body muted" style="margin-top:7px">${copied?'Der vollständige Text wurde bereits in die Zwischenablage kopiert.':'Text markieren oder über den Button kopieren.'} Danach hier im Chat einfügen.</div><div class="actions"><button class="btn primary" id="ki219CopySuite">Gesamten Test kopieren</button><button class="btn secondary" id="ki219CloseSuite">Schließen</button></div><textarea id="ki219SuiteText" style="min-height:55vh;margin-top:12px">${esc(text)}</textarea></div>`;
+ document.body.appendChild(overlay);
+ const ta=overlay.querySelector('#ki219SuiteText');
+ overlay.querySelector('#ki219CopySuite').onclick=async()=>{const ok=await copyTextReliable(text);if(!ok){ta.focus();ta.select();try{document.execCommand('copy')}catch(e){}}toast('Komplette Test Suite kopiert')};
+ overlay.querySelector('#ki219CloseSuite').onclick=()=>overlay.remove();overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ toast(copied?`${KI219_TEST_CASES.length} Testberichte erzeugt und kopiert`:`${KI219_TEST_CASES.length} Testberichte erzeugt`);
+}
+
+const ki219PreviousRenderCrm=renderCrm;
+renderCrm=function(){
+ const base=ki219PreviousRenderCrm();
+ const panel=`<div class="card violet"><div class="kicker">Regression Test Suite</div><div class="headline">Alle ${KI219_TEST_CASES.length} Standardfälle mit einem Klick</div><div class="body muted" style="margin-top:7px">Erzeugt einen einzigen vollständigen Copy-and-Paste-Text für die gemeinsame Qualitätsprüfung. Die aktuellen Opportunities werden dabei nicht verändert.</div><div class="actions"><button class="btn primary" data-action="run-regression-suite">🧪 ${KI219_TEST_CASES.length} Testfälle erzeugen & kopieren</button></div></div>`;
+ return panel+base;
+};
+const ki219PreviousHandleAction=handleAction;
+handleAction=function(action,el){if(action==='run-regression-suite'){ki219RunRegressionSuite();return;}return ki219PreviousHandleAction(action,el);};
 
 // === 8.10.3 minimal interaction layer ===
 // Use the app's original listeners; do not intercept every click in capture phase.
