@@ -4300,5 +4300,59 @@ render();
 })();
 </script>
 
+
+<script>
+(()=>{
+  const V8161='KI21 Core 8.16.1 · Compact Quality Report';
+
+  function extractLine(report,label){
+    const m=String(report||'').match(new RegExp('^'+label.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'\\s*:?\\s*(.+)$','mi'));
+    return m?m[1].trim():'—';
+  }
+  function extractBullet(report,heading){
+    const rx=new RegExp(heading+'\\n•\\s*([^\\n]+)','i');
+    const m=String(report||'').match(rx);
+    return m?m[1].trim():'—';
+  }
+  function extractActions(report){
+    const block=(String(report||'').match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'';
+    return (block.match(/^\d\.\s+.+$/gm)||[]).map(x=>x.trim());
+  }
+
+  ki2118BuildLocalSuite=function(ids){
+    const started=performance.now();
+    const chosen=KI219_TEST_CASES.filter(x=>ids.includes(x.id));
+    const results=chosen.map(ki2118EvaluateCase);
+    const passed=results.filter(x=>x.passed).length;
+    const totalChecks=results.reduce((a,x)=>a+x.max,0);
+    const passedChecks=results.reduce((a,x)=>a+x.points,0);
+    const warnings=results.length-passed;
+    const runtime=Math.round(performance.now()-started);
+    const avg=results.length?Math.round(results.reduce((a,x)=>a+x.elapsed,0)/results.length):0;
+
+    const summary=results.map(x=>{
+      const icon=x.passed?'✅':'⚠️';
+      return `${icon} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms`;
+    }).join('\n');
+
+    const failed=results.filter(x=>!x.passed);
+    const details=failed.length?failed.map(x=>{
+      const st=extractLine(x.report,'• Deal-State');
+      const gap=extractBullet(x.report,'GRÖSSTER ENGPASS');
+      const actions=extractActions(x.report);
+      return `⚠️ ${x.tc.id} · ${x.tc.name}\n• Prüfstatus: ${x.points}/${x.max} Checks\n• Nicht erfüllt: ${x.max-x.points} Prüfregel(n)\n• Deal-State: ${st}\n• Engpass: ${gap}${actions.length?'\n• Nächste Schritte: '+actions.map(a=>a.replace(/^\d\.\s+/,'' )).join(' | '):''}`;
+    }).join('\n\n'):'✅ Keine Auffälligkeiten.';
+
+    const text=`KI21 MULTI-OPPORTUNITY QUALITY SUITE · KOMPAKT\nVersion: ${V8161}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${results.length} | Bestanden: ${passed}/${results.length} | Checks: ${passedChecks}/${totalChecks}\nAPI-Aufrufe: 0 | Laufzeit: ${runtime} ms | Ø ${avg} ms/Test\n\n=== TESTÜBERSICHT ===\n${summary}\n\n=== ERGEBNIS ===\n• Vollständig bestanden: ${passed}/${results.length}\n• Qualitätschecks bestanden: ${passedChecks}/${totalChecks}\n• Auffälligkeiten: ${warnings}\n• Doppelungen: ${results.reduce((a,x)=>a+x.duplicates,0)}\n• Ungültige Tokens: ${results.reduce((a,x)=>a+x.badTokens,0)}\n\n=== AUFFÄLLIGKEITEN · NUR FEHLERFÄLLE ===\n${details}`;
+    return {results,text};
+  };
+
+  try{VERSION=V8161}catch(e){}
+  document.title=V8161;
+  const hv=document.getElementById('headerVersion');
+  if(hv)hv.textContent='Core 8.16.1';
+})();
+</script>
+
 </body>
 </html>
