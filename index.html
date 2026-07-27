@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.10.4 · Close Modal Fix</title>
+<title>KI21 Core 8.10.6 · Batch Import & Storage Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -35,7 +35,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.4 · Close Modal Fix';
+const VERSION='KI21 Core 8.10.6 · Batch Import & Storage Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -390,7 +390,6 @@ function showReport(){
  const close=()=>overlay.remove();overlay.querySelector('#closeReport')?.addEventListener('click',close);overlay.querySelector('#closeReportTop')?.addEventListener('click',close);overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
 }
 window.__ki21OpenReport=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}showReport()};
-document.addEventListener('click',function(ev){const target=ev.target.closest&&ev.target.closest('[data-action="report"]');if(!target)return;ev.preventDefault();ev.stopPropagation();showReport()},true);
 function showOpportunityManager(){const existing=document.getElementById('ki21OpportunityOverlay');if(existing){existing.remove();return;}const overlay=document.createElement('div');overlay.id='ki21OpportunityOverlay';overlay.className='ki21-modal-overlay';overlay.style.cssText='position:fixed;inset:0;z-index:150;background:rgba(4,7,11,.9);display:flex;align-items:flex-end;justify-content:center';const rows=portfolio.opportunities.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(o=>`<div style="border:1px solid ${o.id===state.id?'rgba(255,122,26,.65)':'var(--line)'};border-radius:14px;padding:12px;margin-bottom:8px;background:#0d131d"><button data-switch-id="${esc(o.id)}" style="width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:0;cursor:pointer"><div style="font-size:14px;font-weight:900">${esc(o.company||'Neue Opportunity')}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.opportunity||'CRM-Import noch nicht durchgeführt')}</div><div style="font-size:9px;color:var(--muted);margin-top:5px">${o.id===state.id?'Aktuell geöffnet · ':''}${esc(o.phase||'Ohne Phase')}</div></button><div class="actions" style="margin-top:8px"><button class="btn secondary" data-switch-id="${esc(o.id)}">Öffnen</button><button class="btn danger" data-delete-id="${esc(o.id)}">Löschen</button></div></div>`).join('');overlay.innerHTML=`<div style="width:100%;max-width:720px;max-height:88vh;overflow:auto;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 14px max(28px,env(safe-area-inset-bottom))"><div class="headline">Kunden & Opportunities</div><div class="body muted" style="margin:5px 0 12px">Kunden auswählen, wechseln, neu anlegen oder löschen.</div><div class="actions" style="margin:0 0 14px"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">Neue Opportunity</button><button class="btn secondary" id="closeOpportunityManager">Schließen</button></div>${rows}</div>`;document.body.appendChild(overlay);overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();overlay.remove();render();toast(portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim()).length+' Opportunity(s) gefunden')});overlay.querySelector('#newOpportunity').addEventListener('click',()=>{overlay.remove();createOpportunity()});overlay.querySelector('#closeOpportunityManager').addEventListener('click',()=>overlay.remove());overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})}
 
 function syncVersionLabels(){
@@ -536,6 +535,7 @@ businessCaseModel=function(){
   const tcv=normalizeMoney(state.metrics.totalValue||'') || (price?price*3+normalizeMoney(state.metrics.implementationCost||''):0);
   const implementation=normalizeMoney(state.metrics.implementationCost||'');
   if(!annualHours&&!recurring)return{ready:false,text:'Kein belastbarer wirtschaftlicher Ausgangswert erkannt.'};
+  if(recurring&&!price&&!tcv)return{ready:false,text:`Ein belastbarer Ausgangswert von ${recurring.toLocaleString('de-DE')} € wiederkehrendem internem Zusatzaufwand pro Jahr ist erkannt. Für einen belastbaren ROI fehlen noch Investitionspreis, Pilotdauer beziehungsweise Betrachtungszeitraum und der realistisch vermeidbare Anteil des Aufwands.`};
   if(tcv&&recurring){
     const firstYear=price+implementation;
     const threeYearRecurring=recurring*3;
@@ -633,10 +633,10 @@ processAnalysis=function(name){
 
 
 // === 8.8.1 Pilot Evidence Final ===
-function isPilotCase(){return /Opportunity-Typ:\s*[^\n]*Pilot|Pilotpreis:|Pilotdauer:/i.test(state.rawImport||'')}
+function isPilotCase(){return /Pilotpreis:|Pilotdauer:/i.test(state.rawImport||'')||/Opportunity-Typ:\s*(?:Pilot|Pilotprojekt)\s*$/im.test(state.rawImport||'')}
 function operationsDecisionMaker(){return state.stakeholders.find(x=>/Geschäftsführer Operations/i.test(x.function||''))||null}
 function presalesGate(){return state.stakeholders.find(x=>/Head of Presales/i.test(x.function||''))||null}
-function pilotOwnerOpen(){return /Pilotverantwortung ist noch nicht festgelegt|keine freie Kapazität für zusätzliche Projektsteuerung|Pilotverantwortung/i.test(state.rawImport||'')}
+function pilotOwnerOpen(){return /Pilotverantwortung ist noch nicht festgelegt|Verantwortlicher für Pilotdurchführung|keine freie Kapazität für zusätzliche Projektsteuerung/i.test(state.rawImport||'')}
 function empoweredSponsor(){return state.stakeholders.find(x=>/Sponsor/i.test(x.role||'')&&/Freigabe|Investitionsentscheidung|Budget/i.test(x.authority||''))||null}
 
 // CRM import UX: remove legacy sample button and provide an apply action directly below scan.
@@ -1000,10 +1000,17 @@ fullReport=function(){
 // All report text below is generated exclusively from the active opportunity state.
 function activeStakeholderLabel(person,fallback){return person&&person.name?person.name:fallback}
 function activeDecisionGroupLabel(){
-  const group=decisionGroup().map(x=>x.function||x.role).filter(Boolean);
-  if(group.length)return group.join(' / ');
-  const b=buyer(), o=operationsDecisionMaker();
-  return [b&&(b.function||b.role),o&&(o.function||o.role)].filter(Boolean).join(' / ')||'noch nicht eindeutig bestätigt';
+  const b=buyer();
+  const members=[];
+  if(b)members.push(b.function||b.role||b.name);
+  state.stakeholders.forEach(x=>{
+    if(b&&x===b)return;
+    const text=((x.role||'')+' '+(x.authority||'')+' '+(x.function||'')).toLowerCase();
+    const isDecision=/mitentscheider|entscheidungsbefugnis|finale freigabe|investitionsentscheidung|kann .* freigeben|fachliche bewertung|fachlich empfehlen/.test(text);
+    const isOnlyTechnical=/technische prüfer|crm-administrator|datenschutz|information security/.test(text)&&!/mitentscheider|freigabe|investitionsentscheidung/.test(text);
+    if(isDecision&&!isOnlyTechnical)members.push(x.function||x.role||x.name);
+  });
+  return [...new Set(members.filter(Boolean))].join(' / ')||'noch nicht eindeutig bestätigt';
 }
 function activeDecisionDate(){return decisionDate()||'noch nicht verbindlich festgelegt'}
 function activePilotDuration(){return ((state.rawImport||'').match(/Pilotdauer:\s*([^\n]+)/i)||[])[1]||state.offer.duration||'noch offen'}
@@ -1029,7 +1036,7 @@ decisionBrief=function(){
   if(price)points.push(`Der dokumentierte Preis beträgt ${price.toLocaleString('de-DE')} €.`);
   if(pre)points.push(`${pre.name} ist als fachlich-technische Prüfinstanz relevant.`);
   while(points.length<5)points.push(gaps[points.length]||'Weitere Entscheidungsbedingungen müssen im nächsten Kundentermin verbindlich bestätigt werden.');
-  return `KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${assessment}\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n${points.slice(0,5).map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• Welche nachweisbare Wirkung, Verantwortlichkeit und Freigabebedingung rechtfertigt die Investition aus Sicht von ${buyerName} und ${group}?\n\nGRÖSSTER ENGPASS\n• ${gaps.length?gaps.join('; '):'Kein wesentlicher Engpass erkannt.'}\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}\n\nBESTÄTIGTE EINWÄNDE\n${obs.length?obs.map(x=>'• '+(x.speaker?x.speaker+': ':'')+(x.text||x)).join('\n'):'• Noch keine bestätigten Kundeneinwände erkannt.'}\n\nNÄCHSTER SCHRITT\n1. ${sponsorName}, ${buyerName}${op?', '+op.name:''}${pre?', '+pre.name:''} in einen gemeinsamen Entscheidungstermin holen.\n2. Wirkung, Erfolgskriterien, Verantwortliche und Freigabeweg verbindlich festlegen.\n3. Umfang ${activePilotScope()}, Laufzeit ${activePilotDuration()} und Entscheidungstermin ${date} absichern.\n\nSTATE CHECK\n• Entscheidungsgruppe: ${group}\n• Wirtschaftliche Entscheidungsrolle: ${b?buyerName:'nicht erkannt'}\n• Budget / finanzielle Darstellbarkeit: ${budget||'nicht erkannt'}\n• Preis: ${price||0}\n• Opportunity Score: ${sc.score}%\n• Forecast: ${sc.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}\n• Forecast-Abschlag: ${forecastDeduction()}`;
+  return `KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${assessment}\n\nDIE 5 PUNKTE, DIE ZÄHLEN\n${points.slice(0,5).map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• Welche nachweisbare Wirkung, Verantwortlichkeit und Freigabebedingung rechtfertigt die Investition aus Sicht von ${buyerName} und ${group}?\n\nGRÖSSTER ENGPASS\n• ${gaps.length?gaps.join('; '):'Kein wesentlicher Engpass erkannt.'}\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}\n\nBESTÄTIGTE EINWÄNDE\n${obs.length?obs.map(x=>'• '+(x.speaker?x.speaker+': ':'')+(x.text||x)).join('\n'):'• Noch keine bestätigten Kundeneinwände erkannt.'}\n\nNÄCHSTER SCHRITT\n1. ${sponsorName}, ${buyerName}${op?', '+op.name:''}${pre?', '+pre.name:''} in einen gemeinsamen Entscheidungstermin holen.\n2. Wirkung, Erfolgskriterien, Verantwortliche und Freigabeweg verbindlich festlegen.\n3. Geplanten Umfang ${activePilotScope()}, Laufzeit ${activePilotDuration()} und Entscheidungstermin ${date} verbindlich festlegen.\n\nSTATE CHECK\n• Entscheidungsgruppe: ${group}\n• Wirtschaftliche Entscheidungsrolle: ${b?buyerName:'nicht erkannt'}\n• Budget / finanzielle Darstellbarkeit: ${budget||'nicht erkannt'}\n• Preis: ${price||0}\n• Opportunity Score: ${sc.score}%\n• Forecast: ${sc.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}\n• Forecast-Abschlag: ${forecastDeduction()}`;
 };
 
 // Never leave stale full-screen overlays or scroll locks behind after navigation.
@@ -1043,6 +1050,126 @@ const __stableCreateOpportunity=createOpportunity;
 createOpportunity=function(){closeTransientOverlays();return __stableCreateOpportunity()};
 
 
+
+
+// === 8.10.6 compact storage and multi-opportunity batch import ===
+function compactOpportunityForStorage(o){
+  const c={...o};
+  delete c.importPreview;
+  delete c._pendingRawImport;
+  delete c._pendingBatch;
+  delete c._batchPreview;
+  delete c.__importStarted;
+  // These derived structures are rebuilt from rawImport on startup.
+  delete c.evidence;
+  delete c.stakeholders;
+  delete c.objections;
+  delete c.damageSignals;
+  return c;
+}
+function compactPortfolioPayload(){
+  const real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+  const opportunities=(real.length?real:portfolio.opportunities||[]).map(compactOpportunityForStorage);
+  const activeId=opportunities.some(o=>o.id===portfolio.activeId)?portfolio.activeId:(opportunities[0]&&opportunities[0].id)||portfolio.activeId;
+  return JSON.stringify({version:VERSION,activeId,opportunities});
+}
+savePortfolio=function(){
+  portfolio.version=VERSION;portfolio._ephemeral=false;
+  const real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+  if(real.length){portfolio.opportunities=real;if(!real.some(o=>o.id===portfolio.activeId))portfolio.activeId=real[0].id;}
+  portfolio.opportunities.forEach(o=>delete o._ephemeral);
+  const payload=compactPortfolioPayload();
+  let stored=false;
+  try{
+    localStorage.setItem(STORAGE_KEY,payload);
+    stored=localStorage.getItem(STORAGE_KEY)===payload;
+    if(stored){
+      try{
+        if(payload.length<1200000)localStorage.setItem(STORAGE_KEY+'_backup',payload);
+        else localStorage.removeItem(STORAGE_KEY+'_backup');
+      }catch(_){try{localStorage.removeItem(STORAGE_KEY+'_backup')}catch(__){}}
+    }
+  }catch(firstError){
+    // iOS/Safari commonly reaches quota because old full reports were stored twice.
+    try{
+      localStorage.removeItem(STORAGE_KEY+'_backup');
+      LEGACY_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(_){}});
+      localStorage.setItem(STORAGE_KEY,payload);
+      stored=localStorage.getItem(STORAGE_KEY)===payload;
+    }catch(secondError){console.error('KI21 compact localStorage write failed',secondError);}
+  }
+  if(!stored){
+    try{sessionStorage.setItem(STORAGE_KEY,payload);stored=true;}
+    catch(e){console.error('KI21 storage unavailable',e);}
+  }
+  if(!stored)toast('Speichern im Browser weiterhin nicht möglich');
+  return stored;
+};
+
+function splitCRMImports(raw){
+  const text=String(raw||'').replace(/\r/g,'').trim();
+  if(!text)return[];
+  const starts=[];
+  const rx=/^\s*CRM-IMPORT\s*$/gmi;
+  let m;while((m=rx.exec(text)))starts.push(m.index);
+  if(starts.length<=1)return[text];
+  const blocks=[];
+  for(let i=0;i<starts.length;i++){
+    const block=text.slice(starts[i],i+1<starts.length?starts[i+1]:text.length).trim();
+    if(/Firmenname\s*:/i.test(block))blocks.push(block);
+  }
+  return blocks.length?blocks:[text];
+}
+function upsertParsedOpportunity(p,raw){
+  let target=(portfolio.opportunities||[]).find(o=>
+    String(o.company||'').trim().toLowerCase()===String(p.company||'').trim().toLowerCase() &&
+    String(o.opportunity||'').trim().toLowerCase()===String(p.opportunity||'').trim().toLowerCase()
+  );
+  if(!target){
+    const blank=(portfolio.opportunities||[]).find(o=>!String(o.company||o.opportunity||o.rawImport||'').trim());
+    target=blank||emptyState(false);
+    if(!blank)portfolio.opportunities.push(target);
+  }
+  p.raw=raw;
+  applyParsed(target,p);
+  target.evidence=(p.evidence||[]).map(x=>({...x,selected:true}));
+  target.importPreview=[];
+  delete target._pendingRawImport;delete target._pendingBatch;delete target._batchPreview;
+  target.updatedAt=new Date().toISOString();
+  return target;
+}
+
+renderCrm=function(){
+  const batch=Array.isArray(state._pendingBatch)?state._pendingBatch:[];
+  const summaries=Array.isArray(state._batchPreview)?state._batchPreview:[];
+  return `<div class="card orange"><div class="kicker">CRM-Import</div><div class="body">Einen oder mehrere CRM-Importe direkt hintereinander einfügen. KI21 erkennt jeden Block ab „CRM-IMPORT“ und legt daraus getrennte Opportunities an.</div><div class="divider"></div><textarea id="crmText">${esc(batch.length?batch.join('\n\n'):state._pendingRawImport??state.rawImport)}</textarea><div class="actions"><button class="btn primary" data-action="scan-import">Import${batch.length>1?'e':''} scannen</button>${batch.length>1?`<button class="btn primary" data-action="apply-import">Alle ${batch.length} Opportunities übernehmen</button>`:state.importPreview.length?`<button class="btn primary" data-action="apply-import">Ausgewählte Daten übernehmen</button>`:''}</div>${batch.length>1?`<div class="preview"><div class="label">Erkannte Opportunities</div>${summaries.map((x,i)=>`<div class="preview-row"><span class="badge fact">${i+1}</span><span class="preview-main"><span class="preview-text"><strong>${esc(x.company||'Unternehmen nicht erkannt')}</strong><br>${esc(x.opportunity||'Opportunity nicht erkannt')} · ${x.evidenceCount} Aussagen · ${x.stakeholderCount} Stakeholder</span></span></div>`).join('')}<div class="actions"><button class="btn primary" data-action="apply-import">Alle ${batch.length} Opportunities übernehmen</button></div></div>`:state.importPreview.length?`<div class="preview"><div class="actions"><button class="btn secondary" data-action="select-all">Alle auswählen</button><button class="btn secondary" data-action="select-none">Alle abwählen</button></div>${state.importPreview.map((x,i)=>`<label class="preview-row"><input type="checkbox" data-preview-index="${i}" ${x.selected?'checked':''}><span class="preview-main"><span class="preview-top"><span class="badge ${x.type==='fakt'?'fact':x.type==='offen'?'open':x.type==='ableitung'?'der':'hyp'}">${esc(x.type)}</span><span class="badge">${esc(x.category)}</span></span><span class="preview-text">${esc(x.text)}</span></span></label>`).join('')}<div class="actions"><button class="btn primary" data-action="apply-import">Ausgewählte Daten übernehmen</button></div></div>`:''}</div>`;
+};
+
+const __8106HandleAction=handleAction;
+handleAction=function(action,el){
+  if(action==='scan-import'){
+    const raw=document.getElementById('crmText').value;
+    const blocks=splitCRMImports(raw);
+    if(blocks.length>1){
+      const parsed=blocks.map(b=>parseImport(b));
+      state._pendingBatch=blocks;
+      state._batchPreview=parsed.map(p=>({company:p.company,opportunity:p.opportunity,evidenceCount:(p.evidence||[]).length,stakeholderCount:(p.stakeholders||[]).length}));
+      state._pendingRawImport='';state.importPreview=[];
+      saveState();render();toast(`${blocks.length} Opportunities erkannt`);return;
+    }
+    delete state._pendingBatch;delete state._batchPreview;
+    const p=parseImport(raw);state._pendingRawImport=raw;state.importPreview=p.evidence.map(x=>({...x,selected:true}));saveState();render();toast(`${p.evidence.length} Aussagen und ${p.stakeholders.length} Stakeholder erkannt`);return;
+  }
+  if(action==='apply-import'&&Array.isArray(state._pendingBatch)&&state._pendingBatch.length>1){
+    const blocks=[...state._pendingBatch];
+    const imported=[];
+    for(const raw of blocks){const p=parseImport(raw);imported.push(upsertParsedOpportunity(p,raw));}
+    portfolio.opportunities=portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+    state=imported[0]||portfolio.opportunities[0];portfolio.activeId=state.id;
+    savePortfolio();render();toast(`${imported.length} Opportunities angelegt`);return;
+  }
+  return __8106HandleAction(action,el);
+};
 
 // === 8.10.3 minimal interaction layer ===
 // Use the app's original listeners; do not intercept every click in capture phase.
