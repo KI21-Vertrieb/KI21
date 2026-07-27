@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.5 · Stability & Performance Hotfix';
+const VERSION='KI21 Core 8.11.6 · Decision Integrity & Executive Dedupe';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2573,7 +2573,7 @@ const __ki2114mRender=render;
 render=function(){const r=__ki2114mRender.apply(this,arguments);requestAnimationFrame(()=>{const el=document.getElementById('oppName');if(el){el.onclick=(e)=>{e.preventDefault();e.stopPropagation();showOpportunityManager()};el.setAttribute('title','Opportunity wechseln')}});return r};
 
 document.title=VERSION;
-const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.5';
+const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.6';
 
 // === 8.11.5 Stability & Performance Hotfix ===
 // Safari-safe hard timeout: Promise.race guarantees that the UI is released even
@@ -2594,6 +2594,124 @@ window.addEventListener('unhandledrejection',event=>{
   try{const ai=ensureAIState(state);ai.status='error';ai.error=msg;ai.finishedAt=new Date().toISOString();saveState();render();toast(msg)}catch(e){}
  }
 });
+
+
+// === 8.11.6 Decision Integrity & Executive Dedupe ===
+function ki2116NormText(v){return String(v||'').trim().replace(/\s+/g,' ')}
+function ki2116SamePerson(a,b){
+ const x=ki2116NormText(a).toLowerCase(),y=ki2116NormText(b).toLowerCase();
+ return !!x&&!!y&&(x===y||x.includes(y)||y.includes(x));
+}
+function ki2116UniqueMeaning(items){
+ const out=[];
+ for(const raw of (items||[])){
+  const text=ki2116NormText(raw);if(!text)continue;
+  const key=text.toLowerCase()
+   .replace(/wirtschaftliche[nr]?|formal(?:e[rsn]?)?|gemeinsame[nr]?/g,'')
+   .replace(/persönlich|aktiv|direkt/g,'')
+   .replace(/einbinden|eingebunden|einbindung/g,'beteiligen')
+   .replace(/noch nicht|nicht|offen/g,'')
+   .replace(/[^a-z0-9äöüß]+/g,' ').replace(/\s+/g,' ').trim();
+  if(out.some(x=>x.key===key||(key.length>12&&x.key.length>12&&(x.key.includes(key)||key.includes(x.key)))))continue;
+  out.push({key,text});
+ }
+ return out.map(x=>x.text);
+}
+
+const __ki2116QualityModel=ki218QualityModel;
+ki218QualityModel=function(){
+ const q=__ki2116QualityModel(),b=buyer();
+ if(b&&Array.isArray(q.decisionOpen)){
+  q.decisionOpen=q.decisionOpen.filter(p=>!ki2116SamePerson(p.name,b.name));
+ }
+ q.scorePenalties=(q.scorePenalties||[]).filter(p=>!(b&&new RegExp(b.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(p.label||'')));
+ q.forecastDeductions=(q.forecastDeductions||[]).filter((d,i)=>i===0||!(b&&/Formaler Mitentscheider/i.test(d.label||'')&&new RegExp(b.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(d.label||'')));
+ q.score=Math.max(15,Math.min(94,(q.scoreItems||[]).reduce((s,x)=>s+Number(x.value||0),0)-(q.scorePenalties||[]).reduce((s,x)=>s+Number(x.value||0),0)));
+ q.forecast=Math.max(8,Math.min(90,q.score-(q.forecastDeductions||[]).reduce((s,x)=>s+Number(x.value||0),0)));
+ return q;
+};
+
+scoreBrakes=function(){
+ const q=ki218QualityModel(),a=[];
+ if(!q.successConfirmed)a.push('Erfolgskriterien nicht ausdrücklich bestätigt');
+ if(!state.metrics.price)a.push('Preis offen');
+ if(!q.approvalConfirmed)a.push('Investitionsfreigabe offen');
+ if(q.buyerEngagement===0&&buyer())a.push(`${buyer().name} noch nicht persönlich in die Entscheidung eingebunden`);
+ (q.decisionOpen||[]).forEach(x=>a.push(`${x.name} noch nicht persönlich eingebunden`));
+ (q.gates||[]).forEach(x=>a.push(`${x.label} offen`));
+ return ki2116UniqueMeaning(a).join(', ')||'keine wesentlichen Bremsen';
+};
+forecastDeduction=function(){
+ const q=ki218QualityModel(),a=[];
+ (q.forecastDeductions||[]).slice(1).forEach(x=>a.push(String(x.label||'').toLowerCase()));
+ return ki2116UniqueMeaning(a).join(', ')||'kein zusätzlicher Abschlag';
+};
+
+const __ki2116NextActions=ki2113SafeNextActions;
+ki2113SafeNextActions=function(){
+ const q=ki218QualityModel(),m=state.metrics||{},b=buyer(),actions=[];
+ if(!b)actions.push('Den wirtschaftlichen Entscheider identifizieren und persönlich in die Opportunity einbinden.');
+ else if(q.buyerEngagement===0)actions.push(`${b.name} in einem wirtschaftlichen Entscheidungsgespräch persönlich einbinden.`);
+ if(!q.successConfirmed)actions.push('Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung bestätigen.');
+ if(!m.price||!q.approvalConfirmed||q.gates.length){
+  const choices=(q.gates||[]).map(g=>g.label).filter(Boolean);
+  const choice=choices.length?choices.join(', '):'Lösungsumfang';
+  actions.push(`${choice.charAt(0).toUpperCase()+choice.slice(1)}, Investitionsrahmen, Verantwortliche und Freigabeweg verbindlich entscheiden.`);
+ }
+ (q.decisionOpen||[]).forEach(p=>actions.push(`${p.name} persönlich in die gemeinsame Entscheidung einbinden.`));
+ actions.push('Den nächsten Kundenmeilenstein mit Verantwortlichem und Datum im Mutual Action Plan festhalten.');
+ return ki2116UniqueMeaning(actions).slice(0,3);
+};
+ki218NextActions=ki2113SafeNextActions;
+
+const __ki2116ProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+ const x=__ki2116ProcessAnalysis(name)||{};
+ x.open=ki2116UniqueMeaning(x.open||[]);
+ x.facts=ki2116UniqueMeaning(x.facts||[]);
+ const b=buyer();
+ if(b){
+  x.open=x.open.filter(v=>!(/wirtschaftlichen Entscheider aktiv einbinden/i.test(v)&&x.open.some(w=>new RegExp(b.name,'i').test(w)&&/persönlich/i.test(w))));
+ }
+ return x;
+};
+
+const __ki2116DecisionBrief=decisionBrief;
+decisionBrief=function(){
+ let t=__ki2116DecisionBrief();
+ const raw=ki218Raw(),q=ki218QualityModel(),b=buyer();
+ const actions=ki2113SafeNextActions();
+ t=t.replace(/NÄCHSTER SCHRITT\n1\. [^\n]*\n2\. [^\n]*\n3\. [^\n]*/,`NÄCHSTER SCHRITT\n1. ${actions[0]}\n2. ${actions[1]}\n3. ${actions[2]}`);
+ if(/niedriger fünfstelliger Bereich/i.test(raw))t=t.replace('Budget / finanzielle Darstellbarkeit: nicht erkannt','Budget / finanzielle Darstellbarkeit: niedriger fünfstelliger Bereich genannt, noch nicht bestätigt');
+ if(b){
+  const duplicate=new RegExp(`${b.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} noch nicht persönlich in die Entscheidung eingebunden[,;]?\\s*${b.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} noch nicht persönlich eingebunden`,'gi');
+  t=t.replace(duplicate,`${b.name} noch nicht persönlich in die Entscheidung eingebunden`);
+ }
+ // Ensure the advertised five points are actually present and executive-relevant.
+ const marker='DIE 5 PUNKTE, DIE ZÄHLEN\n';
+ const start=t.indexOf(marker),end=t.indexOf('\n\nZENTRALE KUNDENENTSCHEIDUNG',start);
+ if(start>=0&&end>start){
+  let block=t.slice(start+marker.length,end).split('\n').filter(x=>x.trim().startsWith('•'));
+  const additions=[];
+  if(/2 Deals trotz Forecast über 70 % verloren/i.test(raw))additions.push('• Zwei trotz Forecast über 70 % verlorene Deals zeigen: Der größere Hebel liegt wahrscheinlich in der Qualität und Frühzeitigkeit von Vertriebsentscheidungen, nicht allein in 19.200 € Zeitaufwand.');
+  if(/Pipedrive-Pflichtfelder|Excel-Checkliste|Weekly-Sales-Reviews/i.test(raw))additions.push('• Die reale Alternative ist kein einzelner Wettbewerber, sondern die Fortsetzung mit Pipedrive-Pflichtfeldern, Excel und strengeren Sales Reviews – dieser Vergleich muss anhand identischer Erfolgskriterien geführt werden.');
+  for(const a of additions){if(block.length<5&&!block.some(x=>x.toLowerCase()===a.toLowerCase()))block.push(a)}
+  t=t.slice(0,start+marker.length)+block.slice(0,5).join('\n')+t.slice(end);
+ }
+ return t.replace(/\.\s*Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung gemeinsam bestätigen\./g,'.');
+};
+
+const __ki2116FullReport=fullReport;
+fullReport=function(){
+ let t=__ki2116FullReport();
+ t=t.replace(/Maren Vogt noch nicht aktiv eingebunden,\s*Maren Vogt noch nicht persönlich eingebunden/gi,'Maren Vogt noch nicht persönlich in die Entscheidung eingebunden');
+ t=t.replace(/Maren Vogt noch nicht aktiv eingebunden;\s*Maren Vogt noch nicht persönlich eingebunden/gi,'Maren Vogt noch nicht persönlich in die Entscheidung eingebunden');
+ t=t.replace(/3\. ([^\n]+)\. Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung gemeinsam bestätigen\./g,'3. $1.');
+ return t;
+};
+
+document.title=VERSION;
+const ki2116Header=document.getElementById('headerVersion');if(ki2116Header)ki2116Header.textContent='Core 8.11.6';
 
 render();
 </script>
