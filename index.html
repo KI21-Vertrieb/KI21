@@ -22,7 +22,7 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div class="version" id="headerVersion">Core 8.9.9</div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 8.9.9</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.14 · Grammar & State Label Integrity';
+const VERSION='KI21 Core 8.11.0 · Hybrid Claude Intelligence & UI Recovery';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2161,6 +2161,46 @@ ki2110ValidateCase=function(tc,testState,report){
   if(/durch noch nicht eindeutig bestätigt/i.test(report))issues.push('unklare Abschlussformulierung bei unbekanntem Entscheider');
   return [...new Set(issues)];
 };
+
+
+// === 8.11.0 Hybrid Claude Intelligence & UI Recovery ===
+const KI21_AI_SETTINGS_KEY='ki21_ai_settings_v1';
+function getAISettings(){try{return{model:'claude-sonnet-4-5',apiKey:'',...JSON.parse(localStorage.getItem(KI21_AI_SETTINGS_KEY)||'{}')}}catch(e){return{model:'claude-sonnet-4-5',apiKey:''}}}
+function saveAISettings(v){localStorage.setItem(KI21_AI_SETTINGS_KEY,JSON.stringify(v))}
+function ensureAIState(){if(!state.aiAnalysis)state.aiAnalysis={status:'idle',generatedAt:'',areas:{},executive:null,error:''};return state.aiAnalysis}
+function showSettings(){
+ const old=document.getElementById('ki21SettingsOverlay');if(old){old.remove();return}
+ const cfg=getAISettings(),overlay=document.createElement('div');overlay.id='ki21SettingsOverlay';overlay.className='ki21-modal-overlay';overlay.style.cssText='position:fixed;inset:0;z-index:1300;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center';
+ overlay.innerHTML=`<div class="modal" style="width:100%;max-width:720px;max-height:92vh;overflow:auto"><div class="kicker">Einstellungen</div><div class="headline">Claude Intelligence</div><div class="body muted" style="margin-top:7px">Die lokale Decision Engine bleibt für Score, Forecast und Evidenz zuständig. Claude analysiert unbekannte Fälle semantisch und erzeugt individuelle Bereichsanalysen.</div><div class="field"><label>Anthropic API Key</label><input id="ki21ApiKey" type="password" autocomplete="off" value="${esc(cfg.apiKey||'')}" placeholder="sk-ant-…"></div><div class="field"><label>Claude-Modell</label><input id="ki21Model" value="${esc(cfg.model||'claude-sonnet-4-5')}"></div><div class="body muted">Der Key wird ausschließlich lokal in diesem Browser gespeichert und direkt für die Anthropic-Anfrage verwendet.</div><div class="actions"><button class="btn primary" id="saveAISettings">Speichern</button><button class="btn secondary" id="testAIConnection">Verbindung testen</button><button class="btn secondary" id="closeAISettings">Schließen</button></div><div id="aiSettingsStatus" class="body muted" style="margin-top:10px"></div></div>`;
+ document.body.appendChild(overlay);
+ const close=()=>overlay.remove();overlay.querySelector('#closeAISettings').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ overlay.querySelector('#saveAISettings').onclick=()=>{saveAISettings({apiKey:overlay.querySelector('#ki21ApiKey').value.trim(),model:overlay.querySelector('#ki21Model').value.trim()||'claude-sonnet-4-5'});overlay.querySelector('#aiSettingsStatus').textContent='✓ Einstellungen gespeichert.';toast('KI-Einstellungen gespeichert')};
+ overlay.querySelector('#testAIConnection').onclick=async()=>{const b=overlay.querySelector('#testAIConnection'),st=overlay.querySelector('#aiSettingsStatus');saveAISettings({apiKey:overlay.querySelector('#ki21ApiKey').value.trim(),model:overlay.querySelector('#ki21Model').value.trim()||'claude-sonnet-4-5'});b.disabled=true;st.textContent='Verbindung wird getestet …';try{await callClaudeJSON('Antworte ausschließlich mit JSON: {"ok":true}',80);st.textContent='✓ Claude-Verbindung funktioniert.'}catch(e){st.textContent='Verbindung fehlgeschlagen: '+e.message}finally{b.disabled=false}};
+}
+async function callClaudeJSON(userPrompt,maxTokens=5000){
+ const cfg=getAISettings();if(!cfg.apiKey)throw new Error('Kein Anthropic API Key hinterlegt.');
+ const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':cfg.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.model||'claude-sonnet-4-5',max_tokens:maxTokens,temperature:0.2,system:'Du bist die semantische Intelligence-Schicht von KI21 für komplexen B2B-Vertrieb. Trenne strikt bestätigte Fakten, offene Punkte, Hypothesen und Ableitungen. Erfinde niemals Fakten, Personen, Zahlen oder Freigaben. Antworte ausschließlich als valides JSON ohne Markdown.',messages:[{role:'user',content:userPrompt}]})});
+ if(!res.ok){let msg='HTTP '+res.status;try{const j=await res.json();msg=j.error?.message||msg}catch(e){}throw new Error(msg)}
+ const data=await res.json(),txt=(data.content||[]).map(x=>x.text||'').join('').trim();
+ const clean=txt.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');try{return JSON.parse(clean)}catch(e){throw new Error('Claude lieferte kein gültiges JSON.')}
+}
+function buildHybridPrompt(){
+ const local={company:state.company,opportunity:state.opportunity,phase:state.phase,stakeholders:state.stakeholders,evidence:state.evidence,objections:state.objections,metrics:state.metrics,flags:state.flags,answers:state.answers,offer:state.offer,additions:state.additions,localScore:scores(),localBusinessCase:businessCaseModel()};
+ return `Analysiere diese neue Opportunity unabhängig von Branche, Produkt und bisherigen Testfällen. Nutze universelle B2B-Sales-Logik. Die lokale Engine bleibt Autorität für Zahlen, Score und Forecast. Deine Aufgabe ist semantisches Verstehen, unbekannte Muster, Widersprüche, Buying-Center-Dynamik, Entscheidungslogik und individuelle Handlungsempfehlungen.\n\nORIGINALIMPORT:\n${state.rawImport}\n\nSTRUKTURIERTER LOKALER STATE:\n${JSON.stringify(local)}\n\nLiefere exakt dieses JSON-Schema:\n{"executive":{"assessment":"","nextDecision":"","bottleneck":"","strategy":"","unknownPattern":""},"areas":{"Qualifizierung":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Bedarfsanalyse":{},"Demo":{},"Einwandbehandlung":{},"Wirtschaftlicher Nutzen & ROI":{},"Angebot":{},"Abschluss":{}},"contradictions":[],"novelSignals":[],"confidence":{"overall":0,"reason":""}}\nJeder Bereich muss alle sechs Felder enthalten. Fakten nur aus der Evidenz. Unbekanntes ausdrücklich als offen kennzeichnen. Empfehlungen müssen konkret, kundenspezifisch und auf die nächste Kundenentscheidung ausgerichtet sein.`;
+}
+async function runHybridAnalysis(){
+ const ai=ensureAIState(),cfg=getAISettings();if(!cfg.apiKey){showSettings();toast('Bitte zuerst Claude API Key hinterlegen');return}
+ ai.status='running';ai.error='';saveState();render();
+ try{const result=await callClaudeJSON(buildHybridPrompt(),7000);ai.status='ready';ai.generatedAt=new Date().toISOString();ai.areas=result.areas||{};ai.executive=result.executive||null;ai.contradictions=result.contradictions||[];ai.novelSignals=result.novelSignals||[];ai.confidence=result.confidence||{};saveState();render();toast('Claude-Analyse abgeschlossen')}catch(e){ai.status='error';ai.error=e.message;saveState();render();toast('Claude-Analyse fehlgeschlagen')}
+}
+const __ki2110ProcessAnalysisLocal=processAnalysis;
+processAnalysis=function(name){const local=__ki2110ProcessAnalysisLocal(name),ai=ensureAIState(),x=ai.status==='ready'&&ai.areas?ai.areas[name]:null;if(!x)return local;return{status:x.status||local.status,assessment:x.assessment||local.assessment,facts:Array.isArray(x.facts)&&x.facts.length?x.facts:local.facts,open:Array.isArray(x.open)&&x.open.length?x.open:local.open,insight:x.insight||local.insight,next:x.next||local.next,insightMethods:['Claude','KI21 Decision Engine'],nextMethods:['Claude','KI21 Decision Engine']}}
+const __ki2110RenderProcess=renderProcess;
+renderProcess=function(){const ai=ensureAIState();const status=ai.status==='ready'?`Letzte Claude-Analyse: ${new Date(ai.generatedAt).toLocaleString('de-DE')}`:ai.status==='running'?'Claude analysiert die Opportunity …':ai.status==='error'?'Claude-Fehler: '+ai.error:'Noch keine Claude-Analyse für diese Opportunity.';return`<div class="card ${ai.status==='ready'?'green':'violet'}"><div class="kicker">Hybrid Intelligence</div><div class="headline">Lokale Decision Engine + Claude-Generalisation</div><div class="body muted">${esc(status)}</div><div class="actions"><button class="btn primary" data-action="run-ai" ${ai.status==='running'?'disabled':''}>${ai.status==='running'?'Analyse läuft …':'KI-Analyse aktualisieren'}</button><button class="btn secondary" data-action="open-settings">Einstellungen</button></div></div>`+__ki2110RenderProcess()}
+function showScoreDetails(kind){const sc=scores(),rows=scoreExplanation(),overlay=document.createElement('div');overlay.id='ki21ScoreOverlay';overlay.className='ki21-modal-overlay';overlay.style.cssText='position:fixed;inset:0;z-index:1200;background:rgba(4,7,11,.94);display:flex;align-items:flex-end;justify-content:center';const title=kind==='forecast'?'Forecast Details':'Health Score Details';const value=kind==='forecast'?sc.forecast:sc.score;overlay.innerHTML=`<div class="modal" style="width:100%;max-width:720px;max-height:92vh;overflow:auto"><div class="kicker">${title}</div><div class="headline">${value}%</div><div class="divider"></div><div class="list">${rows.map(x=>`<div class="item"><strong>${esc(x.label)}</strong><br>${esc(x.impact?x.value:'nicht bestätigt')}</div>`).join('')}</div>${kind==='forecast'?`<div class="divider"></div><div class="body"><strong>Forecast-Abschlag:</strong> ${esc(forecastDeduction())}</div>`:''}<div class="actions"><button class="btn primary" id="closeScoreDetails">Schließen</button><button class="btn secondary" id="openFullReportFromDetails">Vollständige Diagnose</button></div></div>`;document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('#closeScoreDetails').onclick=close;overlay.querySelector('#openFullReportFromDetails').onclick=()=>{close();showReport()};overlay.addEventListener('click',e=>{if(e.target===overlay)close()})}
+const __ki2110BindView=bindView;
+bindView=function(){__ki2110BindView();document.querySelectorAll('.metric').forEach((el,i)=>{el.style.cursor='pointer';el.onclick=e=>{e.preventDefault();e.stopPropagation();showScoreDetails(i===1?'forecast':'score')}});document.querySelectorAll('[data-action="run-ai"]').forEach(b=>b.onclick=runHybridAnalysis);document.querySelectorAll('[data-action="open-settings"]').forEach(b=>b.onclick=showSettings)}
+document.getElementById('settingsButton')?.addEventListener('click',showSettings);
 
 </script>
 </body>
