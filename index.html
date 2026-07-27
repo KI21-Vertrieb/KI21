@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.11 · Startfix & Regression Truth';
+const VERSION='KI21 Core 8.10.12 · Decision Intelligence & State Integrity';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -1899,6 +1899,129 @@ syncVersionLabels();
 closeTransientOverlays();
 window.addEventListener('pagehide',()=>{if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio()});
 render();
+
+
+// === 8.10.12 Decision Intelligence & State Integrity ===
+function ki2112Section(name){
+  const r=ki218Raw().replace(/\r/g,'');
+  const rx=new RegExp('(?:^|\\n)'+name+'\\s*\\n([\\s\\S]*?)(?=\\n(?:Ausgangslage|Stakeholder|Bestätigt|Bestätigte Einwände|Einwände|Offene Punkte|Hypothesen|Notiz|Budget und Angebot|$))','i');
+  return (r.match(rx)||[])[1]||'';
+}
+function ki2112ConfirmedBlock(){return ki2112Section('Bestätigt');}
+function ki2112OpenBlock(){return ki2112Section('Offene Punkte');}
+ki218SuccessConfirmed=function(){
+  const c=ki2112ConfirmedBlock();
+  return /Erfolgskriterien[^\n]*(?:bestätigt|vereinbart|freigegeben)/i.test(c);
+};
+ki218ApprovalConfirmed=function(){
+  const c=ki2112ConfirmedBlock();
+  return /(?:Investitionsfreigabe|Budgetfreigabe)[^\n]*(?:bestätigt|erteilt|freigegeben)/i.test(c);
+};
+ki218Engagement=function(person){
+  if(!person)return 0;
+  const s=String(person.status||'').toLowerCase();
+  if(/noch nicht|noch kein|nicht persönlich|nicht eingebunden/.test(s))return 0;
+  if(/aktiv eingebunden|persönlich eingebunden|entscheidungskriterien bestätigt|regelmäßig eingebunden/.test(s))return 2;
+  if(/erstes gespräch erfolgt|erstgespräch|erstes kennenlernen|eingebunden/.test(s))return 1;
+  return 0;
+};
+function ki2112ConfirmedEconomicBaseline(){
+  const r=ki218Raw();
+  if(/\b(?:vermutet|geschätzt|hypothese|noch nicht bestätigt|wirtschaftliche Wirkung noch nicht bestätigt)\b/i.test(r) && !/dokumentiert(?:er|e|es)?[^\n]{0,50}(?:Aufwand|Basisaufwand|wirtschaftlicher Aufwand)/i.test(r))return false;
+  return /dokumentiert(?:er|e|es)?[^\n]{0,60}(?:Aufwand|Basisaufwand|wirtschaftlicher Aufwand)|wiederkehrender interner Aufwand|wirtschaftlicher Aufwand\s*:/i.test(r);
+}
+function ki2112RawMoney(labelRx){
+  const r=ki218Raw();
+  const m=r.match(new RegExp('(?:^|\\n)\\s*[•\\-*]?\\s*(?:'+labelRx+')\\s*:?\\s*(?:bis\\s+)?([\\d.]+(?:,\\d+)?)\\s*€','im'));
+  return m?normalizeMoney(m[1]):0;
+}
+const __ki2112ParseBase=parseImport;
+parseImport=function(raw){
+  const p=__ki2112ParseBase(raw),text=String(raw||'').replace(/\r/g,'');
+  const pick=(rx)=>(text.match(rx)||[])[1]?.trim()||'';
+  const annualPrice=pick(/^\s*[•\-*]?\s*(?:KI21\s+)?Jahrespreis\s*:\s*([\d.]+(?:,\d+)?)\s*€/im);
+  if(annualPrice)p.metrics.price=normalizeMoney(annualPrice);
+  const budget=pick(/^\s*[•\-*]?\s*(?:Pilotbudget|Budgetrahmen|Investitionsrahmen|Freigabe\s+bis)\s*(?:bis|:)\s*([\d.]+(?:,\d+)?)\s*€[^\n]*(?:bestätigt|darstellbar|freigegeben)/im);
+  if(budget)p.metrics.budget=normalizeMoney(budget);
+  const weeks=pick(/^\s*[•\-*]?\s*(?:Laufzeit|Pilotdauer)\s*:\s*(\d+(?:[.,]\d+)?)\s*Wochen/im);
+  if(weeks){p.offerDuration=String(Number(weeks.replace(',','.')))+' Wochen';p.metrics.pilotWeeks=Number(weeks.replace(',','.'));}
+  const c=(text.match(/(?:^|\n)Bestätigt\s*\n([\s\S]*?)(?=\n(?:Offene Punkte|Bestätigte Einwände|Einwände|Hypothesen|Notiz|$))/i)||[])[1]||'';
+  p.flags.successOpen=!/Erfolgskriterien[^\n]*(?:bestätigt|vereinbart|freigegeben)/i.test(c);
+  p.flags.approvalOpen=!/(?:Investitionsfreigabe|Budgetfreigabe)[^\n]*(?:bestätigt|erteilt|freigegeben)/i.test(c);
+  p.flags.priceOpen=!(p.metrics.price>0);
+  return p;
+};
+ki218QualityModel=function(){
+  const m=state.metrics||{},b=buyer(),sp=sponsor(),eng=ki218Engagement(b),success=ki218SuccessConfirmed(),approval=ki218ApprovalConfirmed(),gates=ki218OpenGates(),decisionOpen=ki218DecisionPeopleOpen();
+  const baseline=ki2112ConfirmedEconomicBaseline()&&!!(m.hours||m.annualCost||m.recurringInternalCost);
+  const budget=Number(m.budget||ki2112RawMoney('Pilotbudget|Budgetrahmen|Investitionsrahmen|Freigabe\\s+bis')||0);
+  const scoreItems=[
+    {label:'Basisscore für angelegte Opportunity',value:25,kind:'base'},
+    {label:'Wirtschaftlicher Ausgangswert quantifiziert',value:baseline?8:0},
+    {label:'Ergebnis- oder Risikosignale dokumentiert',value:((state.damageSignals||[]).length||/verschoben|verloren|Margenrisiko|Eskalationen/i.test(ki218Raw()))?4:0},
+    {label:'Finanzieller Rahmen erkannt',value:budget?7:0},
+    {label:'Fachlicher Treiber vorhanden',value:sp?6:0},
+    {label:'Wirtschaftlicher Entscheider identifiziert',value:b?6:0},
+    {label:eng===2?'Wirtschaftlicher Entscheider aktiv eingebunden':'Erstkontakt mit wirtschaftlichem Entscheider',value:eng===2?10:eng===1?4:0},
+    {label:'Erfolgskriterien ausdrücklich bestätigt',value:success?8:0},
+    {label:'Preis bestätigt',value:m.price?6:0},
+    {label:'Investitionsfreigabe ausdrücklich bestätigt',value:approval?12:0}
+  ];
+  const scorePenalties=[];decisionOpen.forEach(p=>scorePenalties.push({label:`Formaler Mitentscheider ${p.name} noch nicht persönlich eingebunden`,value:8}));
+  let score=scoreItems.reduce((s,x)=>s+x.value,0)-scorePenalties.reduce((s,x)=>s+x.value,0);score=Math.max(15,Math.min(94,score));
+  const forecastDeductions=[{label:'Forecast-Grundabschlag',value:10}];
+  if(!approval)forecastDeductions.push({label:'Offene Investitionsfreigabe',value:4});
+  if(eng===0&&b)forecastDeductions.push({label:'Wirtschaftlicher Entscheider nicht aktiv eingebunden',value:4});
+  decisionOpen.forEach(p=>forecastDeductions.push({label:`Formaler Mitentscheider ${p.name} nicht persönlich eingebunden`,value:4}));
+  gates.forEach(g=>forecastDeductions.push({label:`Offene ${g.label}`,value:g.points}));
+  const forecast=Math.max(8,Math.min(90,score-forecastDeductions.reduce((s,x)=>s+x.value,0)));
+  return{score,forecast,scoreItems,scorePenalties,forecastDeductions,buyerEngagement:eng,successConfirmed:success,approvalConfirmed:approval,gates,decisionOpen,budget,baseline};
+};
+scores=function(){const q=ki218QualityModel();return{score:q.score,forecast:q.forecast,cooOpen:q.decisionOpen.some(x=>/Operating Officer|COO/i.test(x.function||'')),quality:q};};
+scoreExplanation=function(){const q=ki218QualityModel();return[...q.scoreItems.map(x=>({label:x.label,value:x.value?`+${x.value}`:'0',impact:x.value>0})),...q.scorePenalties.map(x=>({label:x.label,value:`−${x.value}`,impact:true}))];};
+scoreDrivers=function(){return ki218QualityModel().scoreItems.filter(x=>x.value>0&&x.kind!=='base').map(x=>x.label.toLowerCase()).join(', ')||'noch keine belastbaren Treiber';};
+scoreBrakes=function(){const q=ki218QualityModel(),a=[];if(!q.successConfirmed)a.push('Erfolgskriterien nicht ausdrücklich bestätigt');if(!state.metrics.price)a.push('Preis offen');if(!q.approvalConfirmed)a.push('Investitionsfreigabe offen');if(q.buyerEngagement===0&&buyer())a.push('wirtschaftlicher Entscheider nicht aktiv eingebunden');q.decisionOpen.forEach(x=>a.push(`${x.name} noch nicht persönlich eingebunden`));q.gates.forEach(x=>a.push(`${x.label} offen`));return [...new Set(a)].join(', ')||'keine wesentlichen Bremsen';};
+forecastDeduction=function(){const d=ki218QualityModel().forecastDeductions.slice(1);return d.length?d.map(x=>x.label.toLowerCase()).join(', '):'kein zusätzlicher Abschlag';};
+const __ki2112BusinessCaseBase=businessCaseModel;
+businessCaseModel=function(){
+  const m=state.metrics||{},annual=Number(m.recurringInternalCost||m.annualCost||0),price=Number(m.price||0);
+  if(isPilotCase()){
+    const raw=ki218Raw();
+    const weeks=Number(m.pilotWeeks||(raw.match(/(?:Laufzeit|Pilotdauer)\s*:\s*(\d+(?:[.,]\d+)?)\s*Wochen/i)||[])[1]?.replace(',','.')||0);
+    const period=weeks&&annual?annual*weeks/52:0;
+    if(!price||!annual)return{ready:false,pilot:true,text:`Für den Pilot-Business-Case fehlt noch ${!price&& !annual?'der Preis und ein bestätigter wirtschaftlicher Ausgangswert':!price?'der Preis':'ein bestätigter wirtschaftlicher Ausgangswert'}.`};
+    return{ready:true,pilot:true,text:`Der Pilotpreis beträgt ${price.toLocaleString('de-DE')} €. Der dokumentierte interne Jahresaufwand beträgt ${annual.toLocaleString('de-DE')} €; während der Pilotdauer von ${weeks.toLocaleString('de-DE')} Wochen entspricht dies rechnerisch rund ${Math.round(period).toLocaleString('de-DE')} €. Dieser Vergleich ist keine Einsparungszusage. Der Pilot muss deshalb anhand messbarer Entscheidungsverbesserungen und einer vorab vereinbarten Rollout-Entscheidung bewertet werden.`};
+  }
+  return __ki2112BusinessCaseBase();
+};
+const __ki2112ProcessBase=processAnalysis;
+processAnalysis=function(name){
+  const a=__ki2112ProcessBase(name),q=ki218QualityModel();
+  if(name==='Bedarfsanalyse'&&!q.baseline){a.facts=(a.facts||[]).filter(x=>!/Stunden Zusatzaufwand|Jahresaufwand/.test(x));}
+  return a;
+};
+const __ki2112DecisionBriefBase=decisionBrief;
+decisionBrief=function(){
+  let out=__ki2112DecisionBriefBase(),b=buyer(),q=ki218QualityModel();
+  out=out.replace(/wirtschaftliche Entscheidungsrolle/g,'wirtschaftlicher Entscheider');
+  if(b){
+    out=out.replace(new RegExp(`aus Sicht von ${b.name.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')} und ${activeDecisionGroupLabel().replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}`),`aus Sicht von ${b.name} als ${b.function||'wirtschaftlichem Entscheider'}`);
+  }else{
+    out=out.replace(/aus Sicht von der wirtschaftlichen Entscheidungsrolle und noch nicht eindeutig bestätigt/g,'aus Sicht des noch zu identifizierenden wirtschaftlichen Entscheiders');
+  }
+  if(q.approvalConfirmed)out=out.replace(/Investitionsfreigabe offen(?:; |, |\.)?/gi,'');
+  if(q.successConfirmed)out=out.replace(/Erfolgskriterien nicht bestätigt(?:; |, |\.)?/gi,'');
+  return out.replace(/,\s*,/g,',').replace(/;\s*;/g,';').replace(/sind\s+\./g,'sind.');
+};
+const __ki2112ValidateBase=ki2110ValidateCase;
+ki2110ValidateCase=function(tc,testState,report){
+  const issues=__ki2112ValidateBase(tc,testState,report),raw=tc.raw;
+  if(/(?:Laufzeit|Pilotdauer)\s*:\s*\d+\s*Wochen/i.test(raw)&&/für 0 Wochen/i.test(report))issues.push('Pilotdauer im Business Case verloren');
+  if(/Pilotbudget[^\n]*bestätigt/i.test(raw)&&!/Budget \/ finanzielle Darstellbarkeit: (?!nicht erkannt)/i.test(report))issues.push('bestätigtes Pilotbudget nicht ausgewiesen');
+  if(/noch nicht persönlich eingebunden/i.test(raw)&&/wirtschaftliche entscheidungsrolle aktiv eingebunden/i.test(report))issues.push('nicht eingebundener Entscheider als aktiv bewertet');
+  if(/Jahrespreis\s*:\s*[\d.]+/i.test(raw)&&/Preis: 0/.test(report))issues.push('Jahrespreis im State Check verloren');
+  return [...new Set(issues)];
+};
 </script>
 </body>
 </html>
