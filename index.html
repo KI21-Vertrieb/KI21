@@ -19,6 +19,12 @@
 <style id="ki218PortfolioUX">
 .opportunity-compact-modal{max-width:760px;padding:16px!important}.opp-manager-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.opp-manager-tools,.opp-compact-actions{display:flex;align-items:center;gap:5px}.opp-count{font-size:.72em;opacity:.65}.opp-compact-list{display:flex;flex-direction:column;gap:4px;max-height:min(72vh,680px);overflow:auto}.opp-compact-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 7px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.025);cursor:pointer}.opp-compact-row.active{border-color:var(--orange,#f28c28);box-shadow:inset 3px 0 0 var(--orange,#f28c28);background:rgba(242,140,40,.08)}.opp-index{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:12px;background:rgba(255,255,255,.07)}.opp-company{font-weight:750;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.opp-title{font-size:12px;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}.opp-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;opacity:.62;margin-top:3px}.icon-btn{width:30px;height:30px;min-width:30px;padding:0!important;border-radius:8px!important;display:grid!important;place-items:center;font-size:18px;line-height:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:inherit}.icon-btn.strong{background:var(--orange,#f28c28);color:#111}.icon-btn.danger{font-size:20px;opacity:.72}.icon-btn.danger:hover{background:rgba(220,60,60,.18);opacity:1}@media(max-width:520px){.opportunity-compact-modal{padding:12px!important}.opp-compact-row{grid-template-columns:25px minmax(0,1fr) auto;padding:7px 5px;gap:7px}.opp-company{font-size:13px}.opp-meta{gap:6px}.icon-btn{width:27px;height:27px;min-width:27px}.opp-manager-head .headline{font-size:20px}}
 </style>
+
+<style id="ki2118QualityStyles">
+.quality-suite-modal{width:min(980px,96vw);max-height:92vh;overflow:auto}.quality-suite-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.quality-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.quality-case-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.quality-case-row{display:grid;grid-template-columns:24px 30px 1fr;gap:7px;align-items:center;padding:9px 10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.025);cursor:pointer}.quality-case-row:has(input:checked){border-color:rgba(255,154,31,.55);background:rgba(255,154,31,.08)}.quality-case-row input{width:17px;height:17px}.quality-case-row small{display:block;opacity:.55;margin-top:2px}.quality-case-no{opacity:.65}.quality-status{margin:14px 0 8px}.quality-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.quality-summary-grid>div{padding:13px;border-radius:10px;background:rgba(255,255,255,.045);text-align:center}.quality-summary-grid strong{display:block;font-size:24px}.quality-summary-grid span{font-size:12px;opacity:.65}.quality-table-wrap{overflow:auto;margin:12px 0}.quality-table{width:100%;border-collapse:collapse;font-size:13px}.quality-table th,.quality-table td{padding:8px;border-bottom:1px solid rgba(255,255,255,.09);text-align:left}.quality-result-card{margin-top:9px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}.quality-spinner{padding:18px;border-radius:10px;background:rgba(255,154,31,.08);border:1px solid rgba(255,154,31,.25)}
+@media(max-width:700px){.quality-case-grid{grid-template-columns:1fr}.quality-toolbar .btn{font-size:12px;padding:8px 10px}.quality-suite-modal{width:96vw;padding:15px}.quality-table{min-width:640px}}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -39,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.6 · Decision Integrity & Executive Dedupe';
+const VERSION='KI21 Core 8.11.8 · Multi-Opportunity Quality Suite';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -1755,7 +1761,7 @@ async function ki219RunRegressionSuite(){
 const ki219PreviousRenderCrm=renderCrm;
 renderCrm=function(){
  const base=ki219PreviousRenderCrm();
- const panel=`<div class="card violet"><div class="kicker">Regression Test Suite</div><div class="headline">Alle ${KI219_TEST_CASES.length} Standardfälle mit einem Klick</div><div class="body muted" style="margin-top:7px">Erzeugt einen einzigen vollständigen Copy-and-Paste-Text für die gemeinsame Qualitätsprüfung. Die aktuellen Opportunities werden dabei nicht verändert.</div><div class="actions"><button class="btn primary" data-action="run-regression-suite">🧪 ${KI219_TEST_CASES.length} Testfälle erzeugen & kopieren</button></div></div>`;
+ const panel=`<div class="card violet"><div class="kicker">KI21 Quality Suite</div><div class="headline">Mehrere Opportunities gleichzeitig testen</div><div class="body muted" style="margin-top:7px">Lokale Regression über bis zu ${KI219_TEST_CASES.length} Fälle ohne API-Kosten – optionaler Hybrid-Blindtest für drei ausgewählte Fälle mit nur einem Claude-Aufruf.</div><div class="actions"><button class="btn primary" data-action="run-regression-suite">🧪 Quality Suite öffnen</button></div></div>`;
  return panel+base;
 };
 const ki219PreviousHandleAction=handleAction;
@@ -2713,6 +2719,133 @@ fullReport=function(){
 document.title=VERSION;
 const ki2116Header=document.getElementById('headerVersion');if(ki2116Header)ki2116Header.textContent='Core 8.11.6';
 
+render();
+
+
+// === 8.11.7 Financial Signal & State Consistency ===
+function ki2117QualitativeBudgetSignal(){
+ const raw=ki218Raw();
+ if(/niedriger\s+fünfstelliger\s+Bereich/i.test(raw))return{recognized:true,confirmed:false,label:'niedriger fünfstelliger Bereich genannt, noch nicht bestätigt',points:3};
+ if(/mittlerer\s+fünfstelliger\s+Bereich/i.test(raw))return{recognized:true,confirmed:false,label:'mittlerer fünfstelliger Bereich genannt, noch nicht bestätigt',points:3};
+ if(/hoher\s+fünfstelliger\s+Bereich/i.test(raw))return{recognized:true,confirmed:false,label:'hoher fünfstelliger Bereich genannt, noch nicht bestätigt',points:3};
+ return{recognized:false,confirmed:false,label:'nicht erkannt',points:0};
+}
+
+const __ki2117QualityModel=ki218QualityModel;
+ki218QualityModel=function(){
+ const q=__ki2117QualityModel();
+ const signal=ki2117QualitativeBudgetSignal();
+ const financial=q.scoreItems.find(x=>x.label==='Finanzieller Rahmen erkannt');
+ if(financial && !financial.value && signal.recognized){
+   financial.label='Finanzieller Rahmen qualitativ genannt';
+   financial.value=signal.points;
+   q.score=Math.max(15,Math.min(94,q.score+signal.points));
+   q.forecast=Math.max(8,Math.min(90,q.forecast+signal.points));
+ }
+ q.qualitativeBudget=signal;
+ return q;
+};
+scores=function(){const q=ki218QualityModel();return{score:q.score,forecast:q.forecast,cooOpen:q.decisionOpen.some(x=>/Operating Officer|COO/i.test(x.function||'')),quality:q};};
+scoreExplanation=function(){const q=ki218QualityModel();return[...q.scoreItems.map(x=>({label:x.label,value:x.value?`+${x.value}`:'0',impact:x.value>0})),...q.scorePenalties.map(x=>({label:x.label,value:`−${x.value}`,impact:true}))];};
+scoreDrivers=function(){return ki218QualityModel().scoreItems.filter(x=>x.value>0&&x.kind!=='base').map(x=>x.label.toLowerCase()).join(', ')||'noch keine belastbaren Treiber';};
+
+function ki2117NormalizeExecutiveLanguage(t){
+ const b=buyer();
+ t=String(t||'');
+ t=t.replace(/die formale Entscheidungsgruppe lautet Geschäftsführerin/gi,'die finale Investitionsfreigabe liegt bei der Geschäftsführerin');
+ t=t.replace(/Entscheidungsgruppe:\s*Geschäftsführerin/gi,'Finale Freigaberolle: Geschäftsführerin');
+ t=t.replace(/• Preis:\s*0\b/g,'• Preis: nicht bestätigt');
+ if(b){
+   const n=b.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+   t=t.replace(new RegExp(`${n} noch nicht aktiv eingebunden`,'gi'),`${b.name} noch nicht persönlich in die Entscheidung eingebunden`);
+   t=t.replace(new RegExp(`wirtschaftlicher Entscheider nicht aktiv eingebunden`,'gi'),'wirtschaftlicher Entscheider noch nicht persönlich eingebunden');
+ }
+ return t.replace(/,\s*,/g,',').replace(/;\s*;/g,';');
+}
+
+const __ki2117DecisionBrief=decisionBrief;
+decisionBrief=function(){
+ let t=__ki2117DecisionBrief();
+ const q=ki218QualityModel(),sig=q.qualitativeBudget||ki2117QualitativeBudgetSignal();
+ if(sig.recognized){
+   t=t.replace(/Budget \/ finanzielle Darstellbarkeit:\s*(?:nicht erkannt|niedriger fünfstelliger Bereich genannt, noch nicht bestätigt)/i,`Budget / finanzielle Darstellbarkeit: ${sig.label}`);
+ }
+ return ki2117NormalizeExecutiveLanguage(t);
+};
+
+const __ki2117FullReport=fullReport;
+fullReport=function(){
+ let t=ki2117NormalizeExecutiveLanguage(__ki2117FullReport());
+ const q=ki218QualityModel(),sig=q.qualitativeBudget||ki2117QualitativeBudgetSignal();
+ if(sig.recognized){
+   t=t.replace(/• Budget \/ finanzielle Darstellbarkeit erkannt:\s*NEIN/g,'• Budget / finanzielle Darstellbarkeit erkannt: JA, qualitativ genannt und noch nicht bestätigt');
+   t=t.replace(/• Finanzieller Rahmen erkannt:\s*nicht erfüllt/g,'• Finanzieller Rahmen qualitativ genannt: +3');
+ }
+ t=t.replace(/• Preis erkannt:\s*NEIN/g,'• Preis erkannt: NEIN – noch nicht bestätigt');
+ return t;
+};
+
+
+
+// === 8.11.8 Multi-Opportunity Quality Suite ===
+function ki2118EscAttr(v){return esc(String(v||''))}
+function ki2118NormalizeLine(v){return String(v||'').toLowerCase().replace(/[^a-z0-9äöüß%€]+/g,' ').replace(/\s+/g,' ').trim()}
+function ki2118DuplicateCount(lines){
+ const seen=[];let duplicates=0;
+ for(const raw of lines){const key=ki2118NormalizeLine(raw);if(key.length<18)continue;if(seen.some(x=>x===key||(x.length>28&&key.length>28&&(x.includes(key)||key.includes(x)))))duplicates++;else seen.push(key)}
+ return duplicates;
+}
+function ki2118EvaluateCase(tc,index){
+ const original=state,t0=performance.now();let testState,report='',error='';
+ try{
+  testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();
+ }catch(e){error=String(e&&e.stack||e)}finally{state=original}
+ const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+ const badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+ const nextLines=(report.match(/^Nächster Kundenschritt[^:]*:\s*(.+)$/gm)||[]).map(x=>x.replace(/^.*?:\s*/,''));
+ const openLines=(report.match(/^Offene Punkte:\s*(.+)$/gm)||[]).flatMap(x=>x.replace(/^Offene Punkte:\s*/, '').split('|'));
+ const duplicates=ki2118DuplicateCount([...nextLines,...openLines]);
+ const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
+ const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
+ const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
+ const hallucinationGuard=!badTokens;
+ const checks=[!error,areaCount===7,hasEvidence,hasScore,hasForecast,hallucinationGuard,duplicates<=2];
+ const points=checks.filter(Boolean).length;
+ return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const prev=state;try{state=testState;return scores()}finally{state=prev}})():{score:0,forecast:0}};
+}
+function ki2118BuildLocalSuite(selectedIds){
+ const ids=new Set(selectedIds||KI219_TEST_CASES.map(x=>x.id));const started=performance.now();
+ const results=KI219_TEST_CASES.filter(x=>ids.has(x.id)).map((tc,i)=>ki2118EvaluateCase(tc,i));
+ const passed=results.filter(x=>x.passed).length;
+ const summary=results.map(r=>`${r.passed?'✅':'⚠️'} ${r.tc.id} · ${r.tc.name} | ${r.points}/${r.max} Checks | Score ${r.score.score}% | Forecast ${r.score.forecast}% | ${r.elapsed} ms | Doppelungen ${r.duplicates}${r.error?' | FEHLER: '+r.error.split('\n')[0]:''}`).join('\n');
+ const details=results.map((r,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${results.length} · ${r.tc.id} · ${r.tc.name}\nStatus: ${r.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${r.points}/${r.max}\nLaufzeit: ${r.elapsed} ms · Bereichsanalysen: ${r.areaCount}/7 · Doppelungen: ${r.duplicates} · ungültige Tokens: ${r.badTokens}\n${'='.repeat(78)}\n\n${r.error?'FEHLER\n'+r.error:r.report}`).join('\n\n');
+ return {results,text:`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`};
+}
+function ki2118HybridPrompt(cases){
+ return `Du prüfst als unabhängiger KI21 Quality Auditor mehrere unbekannte B2B-Opportunities gleichzeitig. Analysiere jeden Fall separat. Verwende ausschließlich die gelieferten Fakten. Keine erfundenen Personen, Zahlen, Budgets oder Freigaben. Bewerte insbesondere: Faktentreue, stärkster Executive-Aha-Effekt, größte Entscheidungsblockade, individuellster nächster Kundenschritt, Widersprüche und fehlende Informationen. Vermeide generische Lehrbuchssätze und Wiederholungen. Antworte ausschließlich als kompaktes valides JSON nach diesem Schema: {"cases":[{"id":"","factIntegrity":0,"executiveAha":0,"individuality":0,"decisionUsefulness":0,"hallucinations":[],"strongestInsight":"","bottleneck":"","nextStep":"","missingEvidence":[],"verdict":""}],"crossCase":{"generalisation":0,"repetitionRisk":0,"summary":""}}. Bewertungen 0 bis 10.\n\nFÄLLE:\n${cases.map(c=>`\n--- ${c.id} · ${c.name} ---\n${c.raw}`).join('\n')}`;
+}
+function ki2118RenderHybridResult(result,usage,elapsed){
+ const rows=(result.cases||[]).map(c=>`<tr><td>${esc(c.id||'')}</td><td>${Number(c.factIntegrity||0)}/10</td><td>${Number(c.executiveAha||0)}/10</td><td>${Number(c.individuality||0)}/10</td><td>${Number(c.decisionUsefulness||0)}/10</td><td>${(c.hallucinations||[]).length}</td></tr>`).join('');
+ const detail=(result.cases||[]).map(c=>`<div class="quality-result-card"><strong>${esc(c.id||'Fall')}</strong><div class="body"><b>Aha:</b> ${esc(c.strongestInsight||'—')}<br><b>Engpass:</b> ${esc(c.bottleneck||'—')}<br><b>Nächster Schritt:</b> ${esc(c.nextStep||'—')}<br><b>Fehlende Evidenz:</b> ${esc((c.missingEvidence||[]).join(' · ')||'—')}<br><b>Urteil:</b> ${esc(c.verdict||'—')}</div></div>`).join('');
+ return `<div class="quality-hybrid-summary"><div class="headline">Hybrid-Blindtest abgeschlossen</div><div class="body muted">Ein gemeinsamer Claude-Aufruf · ${elapsed} ms · Input ${usage?.input_tokens||0} / Output ${usage?.output_tokens||0} Tokens</div><div class="quality-table-wrap"><table class="quality-table"><thead><tr><th>Fall</th><th>Fakten</th><th>Aha</th><th>Individualität</th><th>Nutzen</th><th>Halluz.</th></tr></thead><tbody>${rows}</tbody></table></div><div class="quality-result-card"><strong>Generalisierung ${Number(result.crossCase?.generalisation||0)}/10</strong><div class="body">${esc(result.crossCase?.summary||'')}</div></div>${detail}</div>`;
+}
+function ki2118OpenQualitySuite(){
+ closeTransientOverlays();const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki2118QualityOverlay';
+ const cases=KI219_TEST_CASES.map((tc,i)=>`<label class="quality-case-row"><input type="checkbox" value="${ki2118EscAttr(tc.id)}" checked><span class="quality-case-no">${i+1}</span><span><strong>${esc(tc.name)}</strong><small>${esc(tc.id)}</small></span></label>`).join('');
+ overlay.innerHTML=`<div class="modal quality-suite-modal"><div class="quality-suite-head"><div><div class="kicker">KI21 Quality Suite</div><div class="headline">Mehrere Opportunities gleichzeitig testen</div><div class="body muted">Lokale Qualitätsprüfung ist API-frei. Der optionale Hybrid-Blindtest bündelt bis zu drei Fälle in genau einem Claude-Aufruf.</div></div><button class="icon-btn" id="ki2118Close">×</button></div><div class="quality-toolbar"><button class="btn secondary" id="ki2118All">Alle wählen</button><button class="btn secondary" id="ki2118None">Auswahl löschen</button><button class="btn primary" id="ki2118Local">Lokalen Mehrfachtest starten</button><button class="btn secondary" id="ki2118Hybrid">3 Fälle hybrid testen · 1 API-Aufruf</button></div><div class="quality-case-grid">${cases}</div><div id="ki2118Status" class="body muted quality-status">Bereit.</div><div id="ki2118Results"></div></div>`;
+ document.body.appendChild(overlay);
+ const selected=()=>[...overlay.querySelectorAll('.quality-case-row input:checked')].map(x=>x.value);
+ overlay.querySelector('#ki2118Close').onclick=()=>overlay.remove();overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ overlay.querySelector('#ki2118All').onclick=()=>overlay.querySelectorAll('.quality-case-row input').forEach(x=>x.checked=true);
+ overlay.querySelector('#ki2118None').onclick=()=>overlay.querySelectorAll('.quality-case-row input').forEach(x=>x.checked=false);
+ overlay.querySelector('#ki2118Local').onclick=async()=>{const ids=selected();if(!ids.length){toast('Mindestens einen Testfall auswählen');return}const status=overlay.querySelector('#ki2118Status'),results=overlay.querySelector('#ki2118Results');status.textContent=`${ids.length} Opportunities werden lokal geprüft …`;await new Promise(r=>setTimeout(r,30));const suite=ki2118BuildLocalSuite(ids);const ok=suite.results.filter(x=>x.passed).length;status.textContent=`Fertig: ${ok}/${suite.results.length} vollständig bestanden · 0 API-Aufrufe.`;results.innerHTML=`<div class="quality-summary-grid"><div><strong>${suite.results.length}</strong><span>Fälle</span></div><div><strong>${ok}</strong><span>bestanden</span></div><div><strong>0</strong><span>API-Aufrufe</span></div></div><div class="actions"><button class="btn primary" id="ki2118CopyLocal">Gesamtbericht kopieren</button><button class="btn secondary" id="ki2118ShowLocal">Bericht anzeigen</button></div>`;results.querySelector('#ki2118CopyLocal').onclick=async()=>{await copyTextReliable(suite.text);toast('Quality-Suite-Bericht kopiert')};results.querySelector('#ki2118ShowLocal').onclick=()=>{results.innerHTML+=`<textarea style="min-height:50vh;margin-top:12px">${esc(suite.text)}</textarea>`};};
+ overlay.querySelector('#ki2118Hybrid').onclick=async()=>{const ids=selected();if(!ids.length){toast('Mindestens einen Testfall auswählen');return}const chosen=KI219_TEST_CASES.filter(x=>ids.includes(x.id)).slice(0,3);const status=overlay.querySelector('#ki2118Status'),results=overlay.querySelector('#ki2118Results');if(ids.length>3)toast('Für den Hybridtest werden die ersten drei ausgewählten Fälle verwendet');status.textContent=`${chosen.length} Opportunities werden gemeinsam durch Claude geprüft …`;results.innerHTML='<div class="quality-spinner">Hybrid-Generalisation läuft …</div>';const t0=performance.now();try{const response=await callClaudeJSON(ki2118HybridPrompt(chosen),2600);const elapsed=Math.round(performance.now()-t0);status.textContent=`Hybridtest abgeschlossen · ${chosen.length} Fälle · genau 1 API-Aufruf.`;results.innerHTML=ki2118RenderHybridResult(response.result,response.usage,elapsed)}catch(e){status.textContent='Hybridtest fehlgeschlagen.';results.innerHTML=`<div class="card red"><div class="headline">${esc(e.message||String(e))}</div><div class="body">Die lokale Quality Suite bleibt vollständig nutzbar.</div></div>`}};
+}
+ki219RunRegressionSuite=ki2118OpenQualitySuite;
+
+
+document.title=VERSION;
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.8';
 render();
 </script>
 </body>
