@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.14.1 · Decision Integrity Runtime Fix</title>
+<title>KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -28,7 +28,7 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 8.9.9</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 8.14.2</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.14.1 · Decision Integrity Runtime Fix';
+let VERSION='KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -3310,7 +3310,7 @@ render();
 
 <script>
 (()=>{
-  // === KI21 Core 8.14.1 · Decision Integrity Runtime Fix ===
+  // === KI21 Core 8.14.2 · Version Header Sync Fix ===
   const ki214Raw=()=>String(state.rawImport||'');
   const ki214Norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
   const ki214Approval=()=>/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(ki214Raw());
@@ -3472,7 +3472,203 @@ render();
   };
 
   document.title=VERSION;
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.14.0';
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.14.2';
+})();
+</script>
+
+<script>
+(()=>{
+  // === KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness ===
+  const KI215_VERSION='KI21 Core 8.15.0 · Semantic Completion & New Opportunity Readiness';
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
+  const raw=()=>String(state.rawImport||'');
+  const approval=()=>/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(raw());
+  const success=()=>/erfolgskriterien bestätigt/i.test(raw());
+  const startOpen=()=>/starttermin[^\n]*(?:offen|festlegen)|verantwortung[^\n]*offen|pilotverantwortung[^\n]*offen|rollout-verantwortung[^\n]*offen/i.test(raw());
+  const techOpen=()=>/technische freigabe offen|datenschutzfreigabe offen|datenschutzprüfung abschließen|schnittstellenaufwand.*nicht freigegeben|auftragsverarbeitung ist offen|sso .*nicht geprüft/i.test(raw());
+  const buyerEngaged=()=>{const b=buyer();return !!b&&!/noch nicht|nicht persönlich|offen/i.test(String(b.status||''));};
+  const caseState=()=>{const b=buyer(),obs=(state.objections||[]).length;if(!b)return 'QUALIFIZIERUNG';if(!buyerEngaged())return 'ENTSCHEIDERZUGANG';if(approval()&&success()&&startOpen())return 'UMSETZUNGSÜBERGANG';if(approval()&&!success())return 'WIRKUNGSNACHWEIS';if(obs>=3)return 'KAUFBEDINGUNGEN';if(approval()&&techOpen())return 'STARTFREIGABEN';return 'KAUFENTSCHEIDUNG';};
+
+  function openIssues(){
+    const out=[],b=buyer(),st=caseState(),m=state.metrics||{};
+    if(!b) out.push('Wirtschaftlichen Entscheider identifizieren');
+    else if(!buyerEngaged()) out.push(`${b.name} persönlich in die wirtschaftliche Entscheidung einbinden`);
+    if(st!=='QUALIFIZIERUNG'&&!success()) out.push('Erfolgskriterien, Baseline und Mindestwirkung bestätigen');
+    if(st!=='QUALIFIZIERUNG'&&!approval()) out.push('Investitionsfreigabe und Freigabeweg klären');
+    if(!m.price&&st!=='QUALIFIZIERUNG') out.push('Preis beziehungsweise Investitionsrahmen bestätigen');
+    if(techOpen()) out.push('Technische und rechtliche Freigaben schließen');
+    if(startOpen()) out.push('Starttermin und operative Verantwortung festlegen');
+    if((state.objections||[]).length) out.push(`${state.objections.length} bestätigte Kaufbedingungen mit Nachweisen schließen`);
+    if(st==='QUALIFIZIERUNG'){
+      if(!Number(m.recurringInternalCost||m.annualCost||0)) out.push('Vom Kunden akzeptierte wirtschaftliche Baseline bestätigen');
+      out.push('Verbindlichen Entscheidungsweg und Ausschlusskriterien bestimmen');
+    }
+    return [...new Set(out)];
+  }
+
+  function evidenceStats(){
+    const x={'BESTÄTIGTER FAKT':0,'KUNDENAUSSAGE':0,'ABGELEITETER WERT':0,'HYPOTHESE':0,'OFFEN':0};
+    (state.evidence||[]).forEach(e=>{
+      const t=String(e?.text||''),type=String(e?.type||'').toLowerCase();
+      if(type==='open'||/\boffen\b|noch nicht|nicht bestätigt|nicht geklärt|fehlt|ausstehend/i.test(t)) x.OFFEN++;
+      else if(type==='hyp'||/\bhypothese\b|vermutet|geschätzt|könnte|möglicherweise/i.test(t)) x.HYPOTHESE++;
+      else if(/entspricht rechnerisch|hochgerechnet|abgeleitet|berechnet/i.test(t)) x['ABGELEITETER WERT']++;
+      else if(type==='fakt'||/bestätigt|dokumentiert|beträgt|preis:/i.test(t)) x['BESTÄTIGTER FAKT']++;
+      else x.KUNDENAUSSAGE++;
+    });
+    x.OFFEN=Math.max(x.OFFEN,openIssues().length);
+    return x;
+  }
+
+  const baseProcess=processAnalysis;
+  processAnalysis=function(name){
+    const a=baseProcess(name),st=caseState(),b=buyer(),bn=b?b.name:'der wirtschaftliche Entscheider',actions=actionsForState();
+
+    // Early opportunities: later phases are deliberately deferred instead of receiving pseudo-actions.
+    if(st==='QUALIFIZIERUNG'){
+      if(name==='Demo'){
+        a.status='noch nicht entscheidungskritisch';
+        a.insight='Eine Demo ist erst sinnvoll, wenn ein realer Kundenfall, ein wirtschaftlicher Entscheider und ein klarer Prüfauftrag feststehen.';
+        a.next='Zuerst wirtschaftlichen Entscheider, belastbare Baseline und konkreten Prüfauftrag qualifizieren.';
+        a.open=['Realer Kundenfall','Wirtschaftlicher Entscheider','Messbarer Prüfauftrag'];
+      }
+      if(name==='Einwandbehandlung'){
+        a.status='noch nicht entscheidungskritisch';
+        a.insight='Ohne bestätigte Kaufabsicht und konkrete Kundeneinwände wäre Einwandbehandlung reine Vorwegnahme.';
+        a.next='Zuerst belastbaren Bedarf und Entscheidungsweg bestätigen; Einwände erst danach evidenzbasiert bearbeiten.';
+        a.open=[];
+      }
+      if(name==='Wirtschaftlicher Nutzen & ROI'){
+        a.status='noch nicht belastbar';
+        a.insight='Ohne bestätigte Baseline ist jede ROI-Aussage spekulativ. Der erste wirtschaftliche Fortschritt ist ein vom Kunden akzeptierter Ausgangswert.';
+        a.next='Eine vom Kunden akzeptierte wirtschaftliche Baseline aus einem realen Problemfall bestätigen.';
+      }
+      if(name==='Angebot'||name==='Abschluss'){
+        a.status='noch nicht entscheidungskritisch';
+        a.insight=name==='Angebot'?'Ein Angebot wäre verfrüht, solange Bedarf, Entscheider und Entscheidungskriterien nicht belastbar bestätigt sind.':'Ein Abschlussplan ist erst sinnvoll, wenn ein qualifizierter Verkaufsfall und ein belastbarer Entscheidungsweg existieren.';
+        a.next='Nächsten Qualifizierungsmeilenstein mit Verantwortlichem und Datum vereinbaren.';
+        a.open=[];
+      }
+    }
+
+    // Buyer-access stage: demo must not duplicate the buyer-access action.
+    if(st==='ENTSCHEIDERZUGANG'&&name==='Demo'){
+      a.status='vorzubereiten';
+      a.insight='Die Demo darf nicht nur Interesse erzeugen. Sie muss einen realen Kundenfall so zeigen, dass '+bn+' die wirtschaftliche Relevanz selbst bewerten kann.';
+      a.next='Mit dem Sponsor einen realen Referenzfall, die zu prüfende Entscheidung und die Bewertungsfragen für '+bn+' festlegen.';
+    }
+
+    // Implementation transition: suppress all obsolete selling/discovery language.
+    if(st==='UMSETZUNGSÜBERGANG'){
+      if(name==='Bedarfsanalyse'){
+        a.status='geklärt';a.open=[];
+        a.insight='Bedarf und Erfolgskriterien sind bestätigt. Relevant ist jetzt nur noch, wie die vereinbarte Wirkung im Start- und Messplan operationalisiert wird.';
+        a.next='Baseline, Messzeitpunkte und Verantwortliche in den Umsetzungsplan übernehmen.';
+      }
+      if(name==='Demo'){
+        a.status='nicht mehr entscheidungskritisch';a.open=[];
+        a.insight='Ein weiterer Produktbeweis verändert die Kaufentscheidung nicht mehr. Entscheidend ist die operative Startfähigkeit.';
+        a.next='Kick-off-Inhalte, Datenbasis und ersten operativen Meilenstein bestätigen.';
+      }
+      if(name==='Einwandbehandlung'){
+        a.status='nicht mehr entscheidungskritisch';a.open=[];
+        a.insight='Es liegen keine kaufentscheidenden Einwände mehr vor. Restfragen sind als Umsetzungsaufgaben zu führen, nicht als Verkaufswiderstände.';
+        a.next='Verbleibende operative Restfragen im Umsetzungsplan mit Verantwortlichen und Terminen schließen.';
+      }
+      if(name==='Wirtschaftlicher Nutzen & ROI'){
+        a.status='geklärt';a.open=[];
+        a.insight='Die wirtschaftliche Entscheidung ist gefallen. Der Business Case wird jetzt nicht neu verkauft, sondern anhand der bestätigten Erfolgskriterien gemessen.';
+        a.next='Messbaseline, Zielwerte und Review-Termine verbindlich dokumentieren.';
+      }
+      if(name==='Angebot'){
+        a.status='geklärt';a.open=[];
+        a.insight='Preis und Investitionsfreigabe sind bestätigt. Angebotsarbeit ist nur noch erforderlich, soweit vertragliche Restpunkte den Start blockieren.';
+        a.next='Vertragliche Restpunkte abschließen und den verbindlichen Starttermin bestätigen.';
+      }
+    }
+
+    // Funded but effect-open: no renewed budget justification.
+    if(st==='WIRKUNGSNACHWEIS'){
+      if(name==='Einwandbehandlung'&&!(state.objections||[]).length){
+        a.status='nicht entscheidungskritisch';a.open=[];
+        a.insight='Budget und Investitionsbereitschaft sind vorhanden. Der offene Punkt ist kein Einwand, sondern ein noch nicht vereinbarter Wirkungsnachweis.';
+        a.next='Baseline, Erfolgsschwelle und Go/No-Go-Logik verbindlich festlegen.';
+      }
+      if(name==='Angebot'){
+        a.insight='Der Preisrahmen ist akzeptiert. Angebotsrelevant sind jetzt vor allem Messplan, Verantwortlichkeiten, Startbedingungen und Go/No-Go-Logik.';
+        a.next='Messplan, Verantwortliche, Startbedingungen und Go/No-Go-Logik in der finalen Vereinbarung festhalten.';
+      }
+    }
+
+    return a;
+  };
+
+  // Grammar and executive-action completion guard.
+  function actionsForState(){
+    const st=caseState(),b=buyer(),bn=b?b.name:'den wirtschaftlichen Entscheider',h=ki2130DominantHypothesis();
+    let a=[];
+    if(st==='QUALIFIZIERUNG')a=[h.action,'Eine vom Kunden akzeptierte wirtschaftliche Baseline aus einem realen Problemfall bestätigen.','Entscheidungsweg, Ausschlusskriterien und nächsten Qualifizierungsmeilenstein mit Datum festlegen.'];
+    else if(st==='ENTSCHEIDERZUGANG')a=[h.action,'Mit '+bn+' die zwei stärksten Nutzenhebel und die akzeptierte Mindestwirkung bestätigen.','Compact oder Pilot, Preisrahmen, Startverantwortung und Entscheidungstermin festlegen.'];
+    else if(st==='UMSETZUNGSÜBERGANG')a=[h.action,'Den nächsten operativen Kundenmeilenstein mit Verantwortlichem und Datum dokumentieren.','Technische, vertragliche und organisatorische Restfreigaben abschließend schließen.'];
+    else if(st==='WIRKUNGSNACHWEIS')a=[h.action,'Den Pilot an realen Opportunities mit Baseline, Bewertenden und messbarer Erfolgsschwelle ausrichten.','Technische und datenschutzrechtliche Freigaben mit Verantwortlichen und Starttermin schließen.'];
+    else if(st==='KAUFBEDINGUNGEN')a=[h.action,'Für jede Kaufbedingung einen konkreten Nachweis und eine zuständige Kundenrolle festlegen.','Alle Nachweise in einem gemeinsamen Go/No-Go-Termin zur Investitionsentscheidung zusammenführen.'];
+    else if(st==='STARTFREIGABEN')a=[h.action,'Verbleibende Freigaben jeweils einem Verantwortlichen und Fälligkeitsdatum zuordnen.','Verbindlichen Starttermin und operative Übergabe bestätigen.'];
+    else a=[h.action,'Messbare Zielwirkung, Baseline und akzeptierte Mindestwirkung mit '+bn+' bestätigen.','Freigabeweg, Verantwortliche und verbindlichen Entscheidungstermin im Mutual Action Plan festlegen.'];
+    const unique=[];for(const x of a){if(x&&!unique.some(y=>norm(y)===norm(x)||norm(y).includes(norm(x))||norm(x).includes(norm(y))))unique.push(x)}
+    a=unique;
+    const fallback=[
+      'Nächste Kundenentscheidung mit Verantwortlichem und Termin verbindlich festlegen.',
+      'Erforderlichen Nachweis, Bewertungsmaßstab und zuständige Kundenrolle dokumentieren.',
+      'Ergebnisse in einem klaren Go/No-Go-Termin zusammenführen.'
+    ];
+    for(const f of fallback){if(a.length>=3)break;if(!a.some(x=>norm(x)===norm(f)))a.push(f)}
+    return a.slice(0,3);
+  }
+
+  const oldBrief=decisionBrief;
+  decisionBrief=function(){
+    let s=oldBrief();
+    s=s.replace(/von dem wirtschaftlichen Entscheider/g,'vom wirtschaftlichen Entscheider');
+    return s;
+  };
+
+  fullReport=function(){
+    const q=ki218QualityModel(),stats=evidenceStats(),b=buyer(),issues=openIssues();
+    let r=`KI21 KOMPAKTER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${KI215_VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${state.company} · ${state.opportunity}\n\n=== SALES DECISION BRIEF ===\n\n${decisionBrief().replace(/Version: KI21 Core[^\n]+/,`Version: ${KI215_VERSION}`)}\n\n=== STAKEHOLDER ===\n`;
+    r+=(state.stakeholders||[]).length?state.stakeholders.map(x=>`• ${x.name} | ${x.function||'—'} | ${x.role||'—'} | ${x.status||x.attitude||'—'}`).join('\n'):'• — keine Angaben —';
+    r+='\n\n=== VERKAUFSPROZESS ===\n';
+    for(const area of PROCESS_AREAS){const x=processAnalysis(area);r+=`\n--- ${area} ---\nStatus: ${x.status}\nAha: ${x.insight}\nNächster Kundenschritt: ${x.next}\n`;}
+    r+=`\n=== EVIDENZ-INTEGRITÄT ===\n• Bestätigte Fakten: ${stats['BESTÄTIGTER FAKT']}\n• Kundenaussagen: ${stats['KUNDENAUSSAGE']}\n• Abgeleitete Werte: ${stats['ABGELEITETER WERT']}\n• Hypothesen: ${stats['HYPOTHESE']}\n• Offene Punkte: ${stats['OFFEN']}\n• Offene Punkte aus Deal-State: ${issues.length?issues.join('; '):'keine wesentlichen offenen Punkte'}\n• Hypothesen werden nicht als Fakten ausgegeben.\n\n=== QUALITÄTS-KURZDIAGNOSE ===\n• Stakeholder: ${(state.stakeholders||[]).length}\n• Wirtschaftlicher Entscheider: ${b?'JA':'NEIN'}\n• Bereichsanalysen: 7/7\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Forecast-Abschlag: ${forecastDeduction()}`;
+    return r;
+  };
+
+  // Stricter semantic suite: technical success is no longer sufficient.
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='';
+    try{testState=emptyState(false);const p=parseImport(tc.raw);applyParsed(testState,p);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();}
+    catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length,badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const actions=((report.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'').match(/^\d\.\s+(.+)$/gm)||[];
+    const na=actions.map(x=>norm(x.replace(/^\d\.\s+/,''))),actionDiversity=na.length===3&&new Set(na).size===3&&!na.some((x,i)=>na.some((y,j)=>i!==j&&(x.includes(y)||y.includes(x))));
+    const hypothesis=(report.match(/DOMINANTE MANAGEMENT-HYPOTHESE\n•\s*(.+)/)||[])[1]||'';
+    const approvalRaw=/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(tc.raw);
+    const stateName=(report.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'';
+    const noResolvedOpen=!approvalRaw||!/Investitionsfreigabe offen/i.test(report);
+    const noHypAsFact=!/FAKT[^\n]*(?:Hypothese|vermutet|geschätzt)/i.test(report);
+    const openCount=Number((report.match(/• Offene Punkte:\s*(\d+)/)||[])[1]||0);
+    const openIntegrity=!/offen|noch nicht|fehlt|ausstehend/i.test(tc.raw)||openCount>0;
+    const stageIntegrity=stateName!=='QUALIFIZIERUNG'||(/Angebot ---\nStatus: noch nicht entscheidungskritisch/.test(report)&&/Abschluss ---\nStatus: noch nicht entscheidungskritisch/.test(report));
+    const implementationIntegrity=stateName!=='UMSETZUNGSÜBERGANG'||(!/internen Alternativen des Kunden anhand identischer Entscheidungskriterien vergleichen/i.test(report)&&/Einwandbehandlung ---\nStatus: nicht mehr entscheidungskritisch/.test(report));
+    const grammarIntegrity=!/von dem wirtschaftlichen Entscheider/i.test(report);
+    const compact=report.length<12500;
+    const checks=[!error,areaCount===7,badTokens===0,actionDiversity,!!hypothesis,noResolvedOpen,noHypAsFact,/EVIDENZ-INTEGRITÄT/.test(report),/Deal-State:/.test(report),/Opportunity Score:\s*\d+%/.test(report),/Forecast:\s*\d+%/.test(report),compact,openIntegrity,stageIntegrity,implementationIntegrity,grammarIntegrity];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates:actionDiversity?0:1,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const p=state;try{state=testState;return scores()}finally{state=p}})():{score:0,forecast:0}};
+  };
+
+  document.title=KI215_VERSION;
+  try{VERSION=KI215_VERSION}catch(e){}
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.15.0';
 })();
 </script>
 
