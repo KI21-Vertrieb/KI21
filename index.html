@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.11.1 · Hybrid Intelligence Integrity</title>
+<title>KI21 Core 8.11.3 · Executive Aha & UI Integrity</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -39,7 +39,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
+const VERSION='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2203,7 +2203,7 @@ bindView=function(){__ki2110BindView();document.querySelectorAll('.metric').forE
 document.getElementById('settingsButton')?.addEventListener('click',showSettings);
 
 // === 8.11.1 Hybrid Intelligence Integrity ===
-const KI2111_VERSION='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
+const KI2111_VERSION='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
 const KI2111_AI_SCHEMA_VERSION='2.0';
 const KI2111_AREA_NAMES=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
 
@@ -2355,9 +2355,121 @@ showOpportunityManager=function(){
 };
 
 // The local ten-case regression suite intentionally remains API-free.
-document.title='KI21 Core 8.11.2 · AI Access & Compact Opportunity List';
-const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.2';
+document.title='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.3';
 
+
+
+// === 8.11.3 Executive Aha, visible progress and compact portfolio integrity ===
+(function(){
+ const st=document.createElement('style');
+ st.textContent=`
+ .ki21-progress{margin-top:12px;padding:10px 12px;border:1px solid rgba(255,122,26,.28);border-radius:12px;background:rgba(255,122,26,.055)}
+ .ki21-progress-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:800}.ki21-progress-track{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}.ki21-progress-bar{height:100%;width:12%;background:linear-gradient(90deg,#ff7a1a,#ffc06a);border-radius:99px;transition:width .5s ease}.ki21-progress-sub{font-size:10px;color:var(--muted);margin-top:7px}
+ .opp-manager-shell{width:min(820px,100%)}
+ @media(max-width:560px){.opp-manager-shell{border-radius:18px 18px 0 0}.opp-list-scroll{gap:4px}.opp-row-v2{min-height:54px}.opp-footer-v2{font-size:9px}}
+ `;document.head.appendChild(st);
+})();
+
+function ki2113xSemanticKey(v){
+ return String(v||'').toLowerCase().replace(/[ä]/g,'ae').replace(/[ö]/g,'oe').replace(/[ü]/g,'ue').replace(/[^a-z0-9 ]+/g,' ').replace(/\b(aktiv|persoenlich|personlich|direkt|noch|nicht|einbinden|eingebunden|einbindung|offen|geklaert|bestätigt|bestaetigt)\b/g,' ').replace(/\s+/g,' ').trim();
+}
+function ki2113xDedupe(list){
+ const out=[];const keys=[];
+ for(const raw of (Array.isArray(list)?list:[])){
+  const text=String(raw||'').trim();if(!text)continue;
+  const key=ki2113xSemanticKey(text);
+  if(keys.some(k=>k===key||(k.length>8&&key.length>8&&(k.includes(key)||key.includes(k)))))continue;
+  keys.push(key);out.push(text);
+ }
+ return out;
+}
+
+const __ki2113xProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+ const x=__ki2113xProcessAnalysis(name)||{};
+ x.facts=ki2113xDedupe(x.facts);
+ x.open=ki2113xDedupe(x.open);
+ const b=buyer&&buyer();
+ if(name==='Demo' && /Maren Vogt|wirtschaftlich/i.test(String(x.next||'')) && state.damageSignals?.length){
+   x.next='Die Demo an einem realen verschobenen oder verlorenen Deal ausrichten und gemeinsam prüfen, ob KI21 das Risiko früher und entscheidungsrelevant sichtbar gemacht hätte.';
+ }
+ if(name==='Einwandbehandlung' && !(state.objections||[]).length){
+   x.assessment='Noch liegt kein bestätigter Kundeneinwand vor. Das größere Risiko ist deshalb nicht Widerstand, sondern eine Entscheidung ohne klaren Vergleich zwischen KI21, CRM-Pflichtfeldern, Excel und strengeren Sales Reviews.';
+   x.next='Die internen Alternativen des Kunden anhand identischer Entscheidungskriterien vergleichen: zusätzlicher Aufwand, frühere Risikoerkennung, Führungsentlastung und Verbindlichkeit der nächsten Kundenentscheidung.';
+ }
+ if(name==='Wirtschaftlicher Nutzen & ROI' && state.metrics?.annualCost){
+   x.insight=`Der dokumentierte Aufwand von ${Number(state.metrics.annualCost).toLocaleString('de-DE')} € pro Jahr ist nur die Untergrenze des Business Case. Der größere, bislang unbewertete Hebel liegt in verschobenen oder verlorenen Deals und in unnötigen technischen Workshops; genau diese Wirkung muss getrennt validiert werden.`;
+ }
+ if(name==='Qualifizierung' && b && state.flags?.economicBuyerOpen){
+   x.insight=`Die Opportunity ist fachlich angestoßen, aber wirtschaftlich noch nicht qualifiziert: ${b.name} trägt die finale Investitionsentscheidung, war bislang jedoch nicht persönlich beteiligt. Damit besteht das Risiko, dass der Deal intern als interessant, aber nicht entscheidungsfähig wahrgenommen wird.`;
+ }
+ return x;
+};
+
+let ki2113xProgressTimer=null,ki2113xProgressStarted=0;
+function ki2113xProgressState(){
+ const ai=ensureAIState();const elapsed=Math.max(0,Date.now()-ki2113xProgressStarted);let pct=12,label='Opportunity wird strukturiert …';
+ if(elapsed>2500){pct=30;label='Claude interpretiert Buying Center und Entscheidungslogik …'}
+ if(elapsed>6500){pct=52;label='Wirtschaftliche Wirkung und Risiken werden analysiert …'}
+ if(elapsed>11000){pct=72;label='KI21 prüft Fakten, Evidenz und Widersprüche …'}
+ if(elapsed>17000){pct=88;label='Executive Aha-Effekte und nächste Schritte werden erstellt …'}
+ if(elapsed>26000){pct=94;label='Analyse wird qualitätsgesichert abgeschlossen …'}
+ return {pct,label,seconds:Math.round(elapsed/1000),running:ai.status==='running'};
+}
+function ki2113xStartProgress(){ki2113xProgressStarted=Date.now();clearInterval(ki2113xProgressTimer);ki2113xProgressTimer=setInterval(()=>{if(ensureAIState().status!=='running'){clearInterval(ki2113xProgressTimer);return}render()},1200)}
+
+const __ki2113xRunHybrid=runHybridAnalysis;
+runHybridAnalysis=async function(force=false){
+ const ai=ensureAIState(),fp=ki2111Fingerprint();
+ if(!force&&ai.status==='ready'&&ai.inputFingerprint===fp){toast('Analyse ist aktuell – kein API-Aufruf erforderlich');return}
+ ki2113xStartProgress();
+ try{return await __ki2113xRunHybrid(force)}finally{clearInterval(ki2113xProgressTimer)}
+};
+
+const __ki2113xRenderProcess=renderProcess;
+renderProcess=function(){
+ let html=__ki2113xRenderProcess();
+ const ai=ensureAIState();
+ if(ai.status==='running'){
+   const p=ki2113xProgressState();
+   const block=`<div class="ki21-progress"><div class="ki21-progress-head"><span>${esc(p.label)}</span><span>${p.seconds}s</span></div><div class="ki21-progress-track"><div class="ki21-progress-bar" style="width:${p.pct}%"></div></div><div class="ki21-progress-sub">Ein API-Aufruf · anschließend lokale Evidenz- und Qualitätsprüfung. Bitte die Opportunity währenddessen nicht ändern.</div></div>`;
+   html=html.replace(/(<div class="actions">[\s\S]*?<\/div>)/, '$1'+block);
+ }
+ return html;
+};
+
+// Existing header listener captured the old modal function. Intercept it in capture phase.
+(function(){
+ const el=document.getElementById('oppName');if(!el)return;
+ el.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();showOpportunityManager()},true);
+})();
+
+// Strengthened compact portfolio, sorted by last update and with active row first.
+showOpportunityManager=function(){
+ closeTransientOverlays();
+ let real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+ real=real.slice().sort((a,b)=>{if(a.id===portfolio.activeId)return-1;if(b.id===portfolio.activeId)return 1;return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))});
+ const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki21OpportunityOverlay';
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+  const phase=esc(o.phase||o.status||'Ohne Phase');
+  return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div><div class="opp-meta"><span>${phase}</span><span>Score ${sc.score}%</span><span>Forecast ${sc.forecast}%</span></div></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':phase}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini" data-switch-id="${esc(o.id)}" title="Öffnen" aria-label="Opportunity öffnen">↗</button><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`
+ }).join('');
+ const ai=ensureAIState(),current=ai.inputFingerprint===ki2111Fingerprint();
+ const aiLabel=ai.status==='running'?'KI-Analyse läuft …':ai.status==='ready'&&current?'KI-Analyse ist aktuell':'KI-Analyse erzeugen';
+ overlay.innerHTML=`<div class="opp-manager-shell"><div class="opp-manager-top"><div><div class="kicker">Portfolio</div><div class="headline">Kunden & Opportunities <span class="opp-count">${real.length}</span></div><div class="body muted">Nummerierte, kompakte Auswahl aller gespeicherten Opportunities.</div></div><button class="opp-mini" id="closeOpportunityManager" aria-label="Schließen">×</button></div><div class="opp-manager-actions"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">＋ Neue Opportunity</button></div><div class="opp-list-head"><span>Nr.</span><span>Unternehmen / Opportunity</span><span>Status / Phase</span><span>Aktionen</span></div><div class="opp-list-scroll">${rows||'<div class="body muted">Noch keine gespeicherten Opportunities.</div>'}</div><div class="opp-footer-v2"><span>${real.length} ${real.length===1?'Opportunity':'Opportunities'} gesamt</span><span>Aktiv: ${state.company?esc(state.company):'keine'}</span></div><div class="opp-ai-area"><button class="ki21-ai-launch" id="opportunityAiLaunch" ${ai.status==='running'?'disabled':''}>✦ <span>${aiLabel}<span class="ki21-ai-sub">Ein Claude-Aufruf mit anschließendem KI21 Evidence Guard</span></span></button></div></div>`;
+ document.body.appendChild(overlay);
+ overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();overlay.remove();render();toast(portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim()).length+' Opportunity(s) gefunden')});
+ overlay.querySelector('#newOpportunity')?.addEventListener('click',()=>{overlay.remove();createOpportunity()});
+ overlay.querySelector('#closeOpportunityManager')?.addEventListener('click',()=>overlay.remove());
+ overlay.querySelector('#opportunityAiLaunch')?.addEventListener('click',()=>{overlay.remove();state.activeTab='process';saveState();render();setTimeout(()=>runHybridAnalysis(false),50)});
+ overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));
+ overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+};
+
+document.title='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
+const ki2113xHeader=document.getElementById('headerVersion');if(ki2113xHeader)ki2113xHeader.textContent='Core 8.11.3';
 </script>
 </body>
 </html>
