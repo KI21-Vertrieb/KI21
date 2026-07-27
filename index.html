@@ -1761,6 +1761,106 @@ renderCrm=function(){
 const ki219PreviousHandleAction=handleAction;
 handleAction=function(action,el){if(action==='run-regression-suite'){ki219RunRegressionSuite();return;}return ki219PreviousHandleAction(action,el);};
 
+
+// === 8.10.10 Regression Truth & Compact Parser Integrity ===
+VERSION='KI21 Core 8.10.10 · Regression Truth & Compact Parser Integrity';
+
+const __ki2110ParseBase=parseImport;
+parseImport=function(raw){
+  const p=__ki2110ParseBase(raw); const text=String(raw||'').replace(/\r/g,'');
+  const pick=(rx)=>(text.match(rx)||[])[1]?.trim()||'';
+  p.company=pick(/^\s*(?:Unternehmen|Firmenname)\s*:\s*([^\n]+)/im)||p.company;
+  p.opportunity=pick(/^\s*(?:Opportunity|Opportunity-Name)\s*:\s*([^\n]+)/im)||p.opportunity;
+  p.phase=pick(/^\s*(?:Phase|Opportunity-Status)\s*:\s*([^\n]+)/im)||p.phase;
+
+  // Pipe-based compact stakeholder rows.
+  const stakeholders=[]; let section='';
+  const sectionNames=/^(Ausgangslage|Stakeholder|Bestätigt|Bestätigte Einwände|Einwände|Offene Punkte|Hypothesen|Notiz|Budget und Angebot)$/i;
+  for(const rawLine of text.split('\n')){
+    const line=rawLine.trim(); if(!line) continue;
+    if(sectionNames.test(line)){section=line;continue;}
+    if(/^[-•*]\s*/.test(line)&&/^Stakeholder$/i.test(section)){
+      const cols=line.replace(/^[-•*]\s*/,'').split('|').map(x=>x.trim()).filter(Boolean);
+      if(cols.length>=2) stakeholders.push({name:cols[0],function:cols[1]||'',role:cols[2]||'',status:cols[3]||'',attitude:'',influence:'',authority:'',interest:'',openPoint:''});
+    }
+  }
+  if(stakeholders.length)p.stakeholders=stakeholders;
+
+  const confirmedBlock=(text.match(/(?:^|\n)Bestätigt\s*\n([\s\S]*?)(?=\n(?:Offene Punkte|Bestätigte Einwände|Einwände|Hypothesen|Notiz|$))/i)||[])[1]||'';
+  const openBlock=(text.match(/(?:^|\n)Offene Punkte\s*\n([\s\S]*?)(?=\n(?:Bestätigt|Bestätigte Einwände|Einwände|Hypothesen|Notiz|$))/i)||[])[1]||'';
+  const successConfirmed=/Erfolgskriterien\s+(?:sind\s+)?bestätigt|Erfolgskriterien bestätigt/i.test(confirmedBlock);
+  const approvalConfirmed=/Investitionsfreigabe[^\n]*(?:ist\s+)?bestätigt|Investitionsfreigabe bestätigt/i.test(confirmedBlock);
+  const priceConfirmed=/Preis[^\n]*(?:ist\s+)?bestätigt|Preis bestätigt/i.test(confirmedBlock);
+  p.flags.successOpen=!successConfirmed && (/Erfolgskriterien/i.test(openBlock)||!/Erfolgskriterien/i.test(confirmedBlock));
+  p.flags.approvalOpen=!approvalConfirmed && (/Investitionsfreigabe/i.test(openBlock)||!/Investitionsfreigabe/i.test(confirmedBlock));
+
+  const money=(s)=>normalizeMoney(s||'');
+  const annualPrice=pick(/^\s*(?:KI21\s+)?Jahrespreis\s*:\s*([\d.]+(?:,\d+)?)\s*€/im);
+  if(annualPrice)p.metrics.price=money(annualPrice);
+  const budget=pick(/^\s*Pilotbudget\s+bis\s+([\d.]+(?:,\d+)?)\s*€[^\n]*bestätigt/im);
+  if(budget)p.metrics.budget=money(budget);
+  const weeks=pick(/^\s*(?:Laufzeit|Pilotdauer)\s*:\s*(\d+(?:[.,]\d+)?)\s*Wochen/im);
+  if(weeks)p.offerDuration=String(Number(weeks.replace(',','.')))+' Wochen';
+  p.flags.priceOpen=!(p.metrics.price>0) && !priceConfirmed;
+  const b=(p.stakeholders||[]).find(x=>/wirtschaftlich(?:e|er)?\s+(?:Mit)?entscheider(?:in)?/i.test(x.role||'')||/^(?:CFO|CEO|Geschäftsführer(?:in)?)$/i.test(x.function||''));
+  p.flags.economicBuyerOpen=!b||/noch nicht persönlich eingebunden|noch nicht eingebunden|kein persönliches Gespräch/i.test(b.status||'');
+
+  // Rebuild objections only from the dedicated objection section.
+  const obBlock=(text.match(/(?:^|\n)(?:Bestätigte Einwände|Einwände)\s*\n([\s\S]*?)(?=\n(?:Offene Punkte|Bestätigt|Hypothesen|Notiz|$))/i)||[])[1]||'';
+  p.objections=obBlock.split('\n').map(x=>x.trim().replace(/^[-•*]\s*/,'' )).filter(Boolean).map(x=>{const m=x.match(/^([^:]+):\s*(.+)$/);return m?{speaker:m[1],text:m[2],status:'bestätigt'}:{speaker:'Kunde',text:x,status:'bestätigt'};});
+
+  // Range/uncertainty must not become a confirmed exact economic baseline.
+  if(/\b(?:vermutet|geschätzt|noch nicht bestätigt)\b/i.test(text)&&!/dokumentiert(?:er|e|es)?\s+(?:wirtschaftlicher\s+)?(?:Aufwand|Basisaufwand)/i.test(text)){
+    p.metrics.annualCost=0;p.metrics.recurringInternalCost=0;
+    if(/\d+\s*(?:bis|–|-)\s*\d+\s*Stunden/i.test(text))p.metrics.hours=0;
+  }
+  return p;
+};
+
+function ki2110GenericNextActions(){
+  const b=buyer(),sp=sponsor(),co=coo(),q=ki218QualityModel(),m=state.metrics||{},names=[b&&b.name,co&&co.name,sp&&sp.name].filter(Boolean);
+  const a=[];
+  if(!b)a.push('Die wirtschaftliche Entscheidungsrolle identifizieren und persönlich in die Opportunity einbinden.');
+  else if(q.buyerEngagement===0)a.push(`${b.name} persönlich in die wirtschaftliche Entscheidung einbinden.`);
+  else if(q.decisionOpen.length)a.push(`${q.decisionOpen.map(x=>x.name).join(' und ')} persönlich in die gemeinsame Entscheidung einbinden.`);
+  if(!q.successConfirmed)a.push('Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung gemeinsam bestätigen.');
+  if(!m.price)a.push('Lösungsumfang, Preisrahmen und wirtschaftlichen Bewertungszeitraum verbindlich festlegen.');
+  if(!q.approvalConfirmed)a.push(`Freigabeweg, Verantwortliche und Entscheidungstermin mit ${names.join(', ')||'den relevanten Rollen'} verbindlich vereinbaren.`);
+  q.gates.slice(0,2).forEach(g=>a.push(`${g.label}, zuständige Rolle und konkreten Nachweisplan verbindlich klären.`));
+  if(a.length<3)a.push('Starttermin, Verantwortliche und nächste Kundenentscheidung verbindlich dokumentieren.');
+  return [...new Set(a)].slice(0,3);
+}
+ki218NextActions=ki2110GenericNextActions;
+
+// Avoid claiming demand is proven in sparse/minimal cases.
+const __ki2110DecisionBrief=decisionBrief;
+decisionBrief=function(){
+  let out=__ki2110DecisionBrief();
+  const hasNeed=!!((state.metrics&&((state.metrics.annualCost||state.metrics.recurringInternalCost)||state.metrics.hours))||(state.damageSignals||[]).length||/Bedarf[^\n]*(?:bestätigt|belegt)|fachliche[rn]? Bedarf[^\n]*(?:bestätigt|belegt)/i.test(state.rawImport||''));
+  if(!hasNeed)out=out.replace('Der Bedarf ist belegt, die Opportunity aber noch nicht entscheidungsreif.','Die Opportunity befindet sich noch in einer frühen Klärung; Bedarf, Wirkung und Entscheidungsweg sind nicht belastbar bestätigt.');
+  return out;
+};
+
+function ki2110ValidateCase(tc,testState,report){
+  const issues=[];
+  if(!testState.company||!testState.opportunity)issues.push('Unternehmen oder Opportunity nicht erkannt');
+  if(/Opportunity:\s*·/.test(report))issues.push('leerer Reportkopf');
+  if(/Maren Vogt|Pipedrive und Excel/.test(report)&&!/(Nordlicht|Maren Vogt|Pipedrive)/i.test(tc.raw))issues.push('fremde Fallreferenz im Bericht');
+  const rawPeople=(tc.raw.match(/^\s*[-•*]\s*[^|\n]+\|[^\n]+$/gm)||[]).length;
+  if(rawPeople&&testState.stakeholders.length===0)issues.push('Stakeholderzeilen nicht erkannt');
+  if(/Investitionsfreigabe[^\n]*bestätigt/i.test(tc.raw)&&testState.flags.approvalOpen)issues.push('bestätigte Investitionsfreigabe als offen bewertet');
+  if(/Erfolgskriterien[^\n]*bestätigt/i.test(tc.raw)&&testState.flags.successOpen)issues.push('bestätigte Erfolgskriterien als offen bewertet');
+  if(/^\s*(?:KI21\s+)?Jahrespreis\s*:\s*[\d.]+/im.test(tc.raw)&&!testState.metrics.price)issues.push('Jahrespreis nicht erkannt');
+  return issues;
+}
+
+ki219BuildRegressionReport=function(){
+ const originalState=state,started=performance.now(),parts=[];let passed=0;
+ try{KI219_TEST_CASES.forEach((tc,index)=>{const t0=performance.now();const testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;let report='',error='';try{report=fullReport();const issues=ki2110ValidateCase(tc,testState,report);if(issues.length)error=issues.join('; ');else passed++;}catch(e){error=String(e&&e.stack||e);report='FEHLER BEI DER BERICHTSERZEUGUNG\n'+error;}const elapsed=Math.round(performance.now()-t0);parts.push(`${'='.repeat(78)}\nTESTFALL ${index+1}/${KI219_TEST_CASES.length} · ${tc.id} · ${tc.name}\nLaufzeit: ${elapsed} ms\nStatus: ${error?'FEHLER':'ERFOLGREICH'}${error?'\nDiagnose: '+error:''}\n${'='.repeat(78)}\n\n${report}`);});}finally{state=originalState;}
+ const total=Math.round(performance.now()-started);return `KI21 REGRESSION TEST SUITE\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${KI219_TEST_CASES.length}\nErfolgreich: ${passed}/${KI219_TEST_CASES.length}\nGesamtlaufzeit: ${total} ms\n\n${parts.join('\n\n')}`;
+};
+
+
 // === 8.10.3 minimal interaction layer ===
 // Use the app's original listeners; do not intercept every click in capture phase.
 window.addEventListener('pageshow',()=>{
