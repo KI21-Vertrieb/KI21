@@ -2470,6 +2470,112 @@ showOpportunityManager=function(){
 
 document.title='KI21 Core 8.11.3 · Executive Aha & UI Integrity';
 const ki2113xHeader=document.getElementById('headerVersion');if(ki2113xHeader)ki2113xHeader.textContent='Core 8.11.3';
+
+
+// === 8.11.4 Market Readiness · Performance, Portfolio Selection & Executive Focus ===
+(function(){
+ const st=document.createElement('style');
+ st.textContent=`
+ #ki21OpportunityOverlay{position:fixed!important;inset:0!important;z-index:5000!important;background:rgba(4,7,11,.94)!important;display:flex!important;align-items:flex-end!important;justify-content:center!important}
+ #ki21OpportunityOverlay .opp-manager-shell{max-height:92vh!important}
+ .opp-name{cursor:pointer;position:relative;padding-right:24px}
+ .opp-name:after{content:'⌄';position:absolute;right:0;color:var(--orange);font-size:16px;top:50%;transform:translateY(-50%)}
+ .opp-company-v2,.opp-title-v2{cursor:pointer}
+ .opp-main-v2:hover .opp-company-v2,.opp-main-v2:focus-within .opp-company-v2{color:var(--orange)}
+ .opp-main-button{display:block;width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+ .ki21-progress-sub strong{color:var(--text)}
+ `;document.head.appendChild(st);
+})();
+
+function ki2114mSemanticDedupe(list){
+ const normalized=[];
+ for(const item of (Array.isArray(list)?list:[])){
+  const text=String(item||'').trim();if(!text)continue;
+  const k=text.toLowerCase().replace(/maren vogt/g,'entscheider').replace(/wirtschaftliche[nr]?/g,'').replace(/persönlich|aktiv|direkt/g,'').replace(/einbindung|einbinden|eingebunden/g,'beteiligung').replace(/noch nicht|nicht|offen/g,'').replace(/[^a-z0-9äöüß]+/g,' ').replace(/\s+/g,' ').trim();
+  if(normalized.some(x=>x.k===k || (k.length>10&&x.k.length>10&&(x.k.includes(k)||k.includes(x.k)))))continue;
+  normalized.push({k,text});
+ }
+ return normalized.map(x=>x.text);
+}
+
+const __ki2114mDecisionBrief=decisionBrief;
+decisionBrief=function(){
+ let t=__ki2114mDecisionBrief();
+ t=t.replace(/Maren Vogt noch nicht aktiv eingebunden, Maren Vogt noch nicht persönlich eingebunden/gi,'Maren Vogt noch nicht persönlich in die Entscheidung eingebunden');
+ t=t.replace(/Maren Vogt noch nicht aktiv eingebunden; Maren Vogt noch nicht persönlich eingebunden/gi,'Maren Vogt noch nicht persönlich in die Entscheidung eingebunden');
+ t=t.replace(/1\. Maren Vogt persönlich in die wirtschaftliche Entscheidung einbinden\.\n2\. Maren Vogt persönlich in die gemeinsame Entscheidung einbinden\.\n3\./,'1. Maren Vogt in einem wirtschaftlichen Entscheidungsgespräch persönlich einbinden.\n2. Messbare Erfolgskriterien, Baseline und akzeptierte Mindestwirkung bestätigen.\n3. Compact oder Pilot, Investitionsrahmen und Freigabeweg verbindlich entscheiden.');
+ return t;
+};
+
+const __ki2114mProcessAnalysis=processAnalysis;
+processAnalysis=function(name){
+ const x=__ki2114mProcessAnalysis(name)||{};
+ x.facts=ki2114mSemanticDedupe(x.facts);
+ x.open=ki2114mSemanticDedupe(x.open);
+ if(name==='Bedarfsanalyse' && /2 Deals trotz Forecast über 70 % verloren/i.test(state.rawImport||'')){
+  x.insight='Der dokumentierte Zeitaufwand bildet nur den sicheren Mindestnutzen ab. Der strategisch größere Hebel liegt in der Forecast-Qualität: Zwei trotz über 70 % prognostizierter Wahrscheinlichkeit verlorene Deals zeigen, dass nicht nur Effizienz, sondern die Qualität von Vertriebsentscheidungen verbessert werden muss.';
+  x.next='Einen der beiden verlorenen Deals rekonstruieren und mit dem Kunden festlegen, welches frühere Signal, welche Managemententscheidung und welcher messbare Effekt den Verlust hätte verhindern oder früher sichtbar machen können.';
+ }
+ if(name==='Angebot'){
+  x.next='Das Angebot erst nach Bestätigung von Zielwirkung, Startmodell Compact oder Pilot, Verantwortlichen, Messplan und Freigabetermin finalisieren.';
+ }
+ if(name==='Abschluss'){
+  x.next='Einen verbindlichen Mutual Action Plan mit Entscheidungstermin, Verantwortlichen, offenen Freigaben und klarer Go/No-Go-Entscheidung vereinbaren.';
+ }
+ return x;
+};
+
+// Faster and safer direct API request: compact output, hard timeout and visible fallback.
+callClaudeJSON=async function(userPrompt,maxTokens=3800){
+ const cfg=getAISettings();if(!cfg.apiKey)throw new Error('Kein Anthropic API Key hinterlegt.');
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),45000);
+ try{
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:controller.signal,headers:{'content-type':'application/json','x-api-key':cfg.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.model||'claude-sonnet-4-5',max_tokens:Math.min(Number(maxTokens)||3800,4200),temperature:0.1,system:'Du bist die semantische Intelligence-Schicht von KI21 für komplexen B2B-Vertrieb. Antworte ausschließlich mit kompaktem validem JSON. Erfinde niemals Fakten, Personen, Zahlen oder Freigaben. Priorisiere die drei stärksten entscheidungsrelevanten Erkenntnisse. Vermeide Wiederholungen.',messages:[{role:'user',content:userPrompt}]})});
+  if(!res.ok){let msg='HTTP '+res.status;try{const j=await res.json();msg=j.error?.message||msg}catch(e){}throw new Error(msg)}
+  const data=await res.json(),txt=(data.content||[]).map(x=>x.text||'').join('').trim();
+  const clean=txt.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');try{return {result:JSON.parse(clean),usage:data.usage||{}}}catch(e){throw new Error('Claude lieferte kein gültiges JSON.')}
+ }catch(e){if(e&&e.name==='AbortError')throw new Error('Analyse nach 45 Sekunden beendet. Die lokale KI21-Analyse bleibt vollständig verfügbar.');throw e}finally{clearTimeout(timer)}
+};
+
+buildHybridPrompt=function(){
+ const local={company:state.company,opportunity:state.opportunity,phase:state.phase,stakeholders:state.stakeholders,evidence:state.evidence,objections:state.objections,metrics:state.metrics,flags:state.flags,answers:state.answers,offer:state.offer,additions:state.additions,localScore:scores(),localBusinessCase:businessCaseModel()};
+ return `Analysiere die Opportunity unabhängig von Branche und Produkt. Liefere nur entscheidungsrelevante, kundenspezifische Aussagen. Vermeide Wiederholungen zwischen Bereichen. Hebe den stärksten unerkannten wirtschaftlichen oder politischen Zusammenhang hervor. Fakten ausschließlich aus Import und State; alles andere als Hypothese oder offen markieren. Score und Forecast nicht verändern.\n\nIMPORT:\n${state.rawImport}\n\nSTATE:\n${JSON.stringify(local)}\n\nJSON-SCHEMA:\n{"executive":{"assessment":"","nextDecision":"","bottleneck":"","strategy":"","unknownPattern":""},"areas":{"Qualifizierung":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Bedarfsanalyse":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Demo":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Einwandbehandlung":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Wirtschaftlicher Nutzen & ROI":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Angebot":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""},"Abschluss":{"status":"","assessment":"","facts":[],"open":[],"insight":"","next":""}},"contradictions":[],"novelSignals":[],"confidence":{"overall":0,"reason":""}}`;
+};
+
+// Overlay only; selection happens by clicking company/opportunity name.
+showOpportunityManager=function(){
+ closeTransientOverlays();
+ let real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+ real=real.slice().sort((a,b)=>{if(a.id===portfolio.activeId)return-1;if(b.id===portfolio.activeId)return 1;return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))});
+ const overlay=document.createElement('div');overlay.id='ki21OpportunityOverlay';
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+  return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><button class="opp-main-button" data-select-opportunity="${esc(o.id)}"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div><div class="opp-meta"><span>${esc(o.phase||o.status||'Ohne Phase')}</span><span>Score ${sc.score}%</span><span>Forecast ${sc.forecast}%</span></div></button></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':esc(o.phase||o.status||'Ohne Phase')}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`;
+ }).join('');
+ overlay.innerHTML=`<div class="opp-manager-shell"><div class="opp-manager-top"><div><div class="kicker">Portfolio</div><div class="headline">Kunden & Opportunities <span class="opp-count">${real.length}</span></div><div class="body muted">Zum Wechseln auf den Namen der Opportunity tippen.</div></div><button class="opp-mini" id="closeOpportunityManager" aria-label="Schließen">×</button></div><div class="opp-manager-actions"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">＋ Neue Opportunity</button></div><div class="opp-list-head"><span>Nr.</span><span>Unternehmen / Opportunity</span><span>Status / Phase</span><span>Aktion</span></div><div class="opp-list-scroll">${rows||'<div class="body muted">Noch keine gespeicherten Opportunities.</div>'}</div><div class="opp-footer-v2"><span>${real.length} ${real.length===1?'Opportunity':'Opportunities'} gesamt</span><span>Aktiv: ${state.company?esc(state.company):'keine'}</span></div></div>`;
+ document.body.appendChild(overlay);
+ overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];savePortfolio();overlay.remove();render();toast(real.length+' Opportunity(s) gefunden')});
+ overlay.querySelector('#newOpportunity')?.addEventListener('click',()=>{overlay.remove();createOpportunity()});
+ overlay.querySelector('#closeOpportunityManager')?.addEventListener('click',()=>overlay.remove());
+ overlay.querySelectorAll('[data-select-opportunity]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.selectOpportunity;overlay.remove();switchOpportunity(id)}));
+ overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+};
+
+// Ensure no portfolio list is ever injected into Cockpit content.
+const __ki2114mRenderCockpit=renderCockpit;
+renderCockpit=function(){
+ const html=__ki2114mRenderCockpit();
+ return String(html).replace(/<div[^>]*class="[^"]*(?:opp-manager-shell|opp-list-scroll|opp-row-v2)[^"]*"[\s\S]*$/i,'');
+};
+
+// Persistent header activation after each render.
+const __ki2114mRender=render;
+render=function(){const r=__ki2114mRender.apply(this,arguments);requestAnimationFrame(()=>{const el=document.getElementById('oppName');if(el){el.onclick=(e)=>{e.preventDefault();e.stopPropagation();showOpportunityManager()};el.setAttribute('title','Opportunity wechseln')}});return r};
+
+VERSION='KI21 Core 8.11.4 · Market Readiness Performance & Portfolio';
+document.title=VERSION;
+const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.4';
+render();
 </script>
 </body>
 </html>
