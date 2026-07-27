@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.8 · Multi-Opportunity Quality Suite';
+const VERSION='KI21 Core 8.11.9 · Quality Suite Open Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2578,6 +2578,29 @@ renderCockpit=function(){
 const __ki2114mRender=render;
 render=function(){const r=__ki2114mRender.apply(this,arguments);requestAnimationFrame(()=>{const el=document.getElementById('oppName');if(el){el.onclick=(e)=>{e.preventDefault();e.stopPropagation();showOpportunityManager()};el.setAttribute('title','Opportunity wechseln')}});return r};
 
+
+// === 8.11.9 Quality Suite Open Fix ===
+// Robust explicit binding: later bindView wrappers must not swallow the action.
+window.ki2118OpenQualitySuite=ki2118OpenQualitySuite;
+const __ki2119BindViewBase=bindView;
+bindView=function(){
+  __ki2119BindViewBase();
+  document.querySelectorAll('[data-action="run-regression-suite"]').forEach(btn=>{
+    btn.onclick=function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      ki2118OpenQualitySuite();
+      return false;
+    };
+  });
+};
+
+const __ki2119RenderCrmBase=renderCrm;
+renderCrm=function(){
+  const html=__ki2119RenderCrmBase();
+  return html.replace('🧪 Quality Suite öffnen','🧪 Quality Suite öffnen');
+};
+
 document.title=VERSION;
 const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.6';
 
@@ -2845,7 +2868,7 @@ ki219RunRegressionSuite=ki2118OpenQualitySuite;
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.8';
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.9';
 render();
 </script>
 </body>
