@@ -2311,9 +2311,52 @@ bindView=function(){
  document.querySelectorAll('[data-action="force-ai"]').forEach(b=>b.onclick=()=>runHybridAnalysis(true));
 };
 
+
+
+// === 8.11.2 AI access and compact opportunity manager ===
+(function(){
+ const style=document.createElement('style');
+ style.textContent=`
+ .ki21-ai-launch{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;border:0;border-radius:13px;background:linear-gradient(135deg,#ff7a1a,#ff9a3c);color:#111;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 10px 28px rgba(255,122,26,.22)}
+ .ki21-ai-launch:disabled{opacity:.6;cursor:wait}.ki21-ai-sub{display:block;font-size:10px;font-weight:700;opacity:.72;margin-top:2px}
+ .opp-manager-shell{width:min(760px,100%);max-height:90vh;overflow:hidden;background:#111722;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:14px 12px max(22px,env(safe-area-inset-bottom));display:flex;flex-direction:column}
+ .opp-manager-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.opp-manager-actions{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.opp-manager-actions .btn{min-height:36px;padding:7px 11px;font-size:12px}
+ .opp-list-head{display:grid;grid-template-columns:32px minmax(0,1fr) 108px 68px;gap:8px;padding:4px 6px 7px;font-size:10px;color:var(--muted)}
+ .opp-list-scroll{overflow:auto;display:flex;flex-direction:column;gap:5px;padding-right:2px}
+ .opp-row-v2{display:grid;grid-template-columns:32px minmax(0,1fr) 108px 68px;align-items:center;gap:8px;padding:8px 6px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.025)}
+ .opp-row-v2.active{border-color:rgba(255,122,26,.8);background:rgba(255,122,26,.08);box-shadow:inset 3px 0 0 #ff7a1a}
+ .opp-no{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,122,26,.7);display:grid;place-items:center;font-size:12px;font-weight:900}
+ .opp-main-v2{min-width:0}.opp-company-v2{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.opp-title-v2{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+ .opp-state-v2{font-size:10px;color:var(--muted);line-height:1.35}.opp-state-v2 strong{color:var(--text);font-size:10px}.opp-actions-v2{display:flex;gap:5px;justify-content:flex-end}.opp-mini{width:30px;height:30px;min-width:30px;padding:0;border-radius:8px;border:1px solid rgba(255,122,26,.55);background:transparent;color:#ff8a2a;font-size:16px;font-weight:900;display:grid;place-items:center}.opp-mini.danger{border-color:rgba(255,90,90,.45);color:#ff6b6b}
+ .opp-footer-v2{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px;color:var(--muted);padding:8px 3px 0}.opp-ai-area{padding-top:10px;margin-top:8px;border-top:1px solid var(--line)}
+ @media(max-width:560px){.opp-manager-shell{max-height:92vh;padding:12px 9px max(20px,env(safe-area-inset-bottom))}.opp-list-head{display:none}.opp-row-v2{grid-template-columns:28px minmax(0,1fr) 70px;padding:8px 5px}.opp-state-v2{display:none}.opp-actions-v2{gap:4px}.opp-mini{width:28px;height:28px;min-width:28px}.opp-manager-actions .btn{flex:1 1 auto}.opp-company-v2{font-size:12px}.opp-title-v2{font-size:10px}}
+ `;
+ document.head.appendChild(style);
+})();
+
+showOpportunityManager=function(){
+ closeTransientOverlays();
+ const real=(portfolio.opportunities||[]).filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
+ const overlay=document.createElement('div');overlay.className='overlay';overlay.id='ki21OpportunityOverlay';
+ const rows=real.map((o,i)=>{const active=o.id===portfolio.activeId;let sc={score:0,forecast:0};try{const prev=state;state=o;sc=scores();state=prev}catch(e){}
+  return `<div class="opp-row-v2 ${active?'active':''}"><div class="opp-no">${i+1}</div><div class="opp-main-v2"><div class="opp-company-v2">${esc(o.company||'Unternehmen nicht erkannt')}</div><div class="opp-title-v2">${esc(o.opportunity||'Opportunity nicht erkannt')}</div></div><div class="opp-state-v2"><strong>${active?'Aktuell geöffnet':esc(o.phase||o.status||'Ohne Phase')}</strong><br>Score ${sc.score}% · FC ${sc.forecast}%</div><div class="opp-actions-v2"><button class="opp-mini" data-switch-id="${esc(o.id)}" title="Öffnen" aria-label="Opportunity öffnen">↗</button><button class="opp-mini danger" data-delete-id="${esc(o.id)}" title="Löschen" aria-label="Opportunity löschen">⌫</button></div></div>`
+ }).join('');
+ const ai=ensureAIState(),current=ai.inputFingerprint===ki2111Fingerprint();
+ const aiLabel=ai.status==='running'?'KI-Analyse läuft …':ai.status==='ready'&&current?'KI-Analyse ist aktuell':'KI-Analyse erzeugen';
+ overlay.innerHTML=`<div class="opp-manager-shell"><div class="opp-manager-top"><div><div class="kicker">Portfolio</div><div class="headline">Kunden & Opportunities <span class="opp-count">${real.length}</span></div><div class="body muted">Kompakte Auswahl aller gespeicherten Opportunities.</div></div><button class="opp-mini" id="closeOpportunityManager" aria-label="Schließen">×</button></div><div class="opp-manager-actions"><button class="btn primary" id="recoverOpportunities">Gespeicherte Daten neu suchen</button><button class="btn secondary" id="newOpportunity">＋ Neue Opportunity</button></div><div class="opp-list-head"><span>Nr.</span><span>Unternehmen / Opportunity</span><span>Status / Phase</span><span>Aktionen</span></div><div class="opp-list-scroll">${rows||'<div class="body muted">Noch keine gespeicherten Opportunities.</div>'}</div><div class="opp-footer-v2"><span>${real.length} ${real.length===1?'Opportunity':'Opportunities'} gesamt</span><span>${state.company?esc(state.company):'Keine Opportunity geöffnet'}</span></div><div class="opp-ai-area"><button class="ki21-ai-launch" id="opportunityAiLaunch" ${ai.status==='running'?'disabled':''}>✦ <span>${aiLabel}<span class="ki21-ai-sub">Claude-Generalisation mit KI21 Evidence Guard</span></span></button></div></div>`;
+ document.body.appendChild(overlay);
+ overlay.querySelector('#recoverOpportunities')?.addEventListener('click',()=>{const recovered=readPortfolioKey(STORAGE_KEY)||readPortfolioKey(STORAGE_KEY+'_backup')||loadPortfolio();portfolio=recovered;state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];if(portfolio.opportunities.some(o=>String(o.company||o.opportunity||o.rawImport||'').trim()))savePortfolio();overlay.remove();render();toast(portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim()).length+' Opportunity(s) gefunden')});
+ overlay.querySelector('#newOpportunity')?.addEventListener('click',()=>{overlay.remove();createOpportunity()});
+ overlay.querySelector('#closeOpportunityManager')?.addEventListener('click',()=>overlay.remove());
+ overlay.querySelector('#opportunityAiLaunch')?.addEventListener('click',()=>{overlay.remove();state.activeTab='process';saveState();render();setTimeout(()=>runHybridAnalysis(false),50)});
+ overlay.querySelectorAll('[data-switch-id]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.switchId;overlay.remove();switchOpportunity(id)}));
+ overlay.querySelectorAll('[data-delete-id]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=b.dataset.deleteId;const o=portfolio.opportunities.find(x=>x.id===id);if(confirm(`„${o?.company||'Opportunity'}“ wirklich löschen?`)){deleteOpportunity(id);overlay.remove();showOpportunityManager()}}));
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+};
+
 // The local ten-case regression suite intentionally remains API-free.
-document.title='KI21 Core 8.11.1 · Hybrid Intelligence Integrity';
-const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.1';
+document.title='KI21 Core 8.11.2 · AI Access & Compact Opportunity List';
+const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent='Core 8.11.2';
 
 </script>
 </body>
