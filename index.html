@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.9.9 · CRM Import Entry Fix</title>
+<title>KI21 Core 8.10.3 · Startup Recovery</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -28,7 +28,14 @@
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const VERSION='KI21 Core 8.10.2 · Interaction Recovery';
+window.addEventListener('error',function(e){
+  try{
+    let box=document.getElementById('ki21StartupError');
+    if(!box){box=document.createElement('div');box.id='ki21StartupError';box.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#4b1111;color:#fff;border:1px solid #ff7b72;border-radius:12px;padding:10px;font:12px/1.35 sans-serif;white-space:pre-wrap';document.body.appendChild(box);}
+    box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
+  }catch(_){}
+});
+const VERSION='KI21 Core 8.10.3 · Startup Recovery';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -110,19 +117,9 @@ function loadPortfolio(){
 let portfolio=loadPortfolio();
 syncVersionLabels();
 let state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0];
-(function migrateDecisionAuthority(){
- let changed=false;
- portfolio.opportunities.forEach(o=>{
-  if(!o.rawImport)return;
-  const p=parseImport(o.rawImport+(o.additions&&o.additions.length?'\n\nErgänzung\n'+o.additions.map(x=>x.text).join('\n'):''));
-  const manualOffer={...(o.offer||{})};
-  o.stakeholders=p.stakeholders;o.evidence=p.evidence;o.importPreview=p.evidence.map(x=>({...x}));o.objections=p.objections;o.damageSignals=p.damageSignals;o.metrics=p.metrics;o.flags=p.flags;o.pilotUsers=p.pilotUsers||o.pilotUsers||0;
-  o.offer={...manualOffer,price:manualOffer.price||p.metrics.price||'',timeValue:manualOffer.timeValue||p.metrics.timeValue||'',periodMonths:manualOffer.periodMonths||p.metrics.periodMonths||''};
-  if(p.flags.priceOpen&&!manualOffer.price)o.offer.price='';
-  changed=true;
- });
- if(changed){portfolio.version=VERSION;localStorage.setItem(STORAGE_KEY,JSON.stringify(portfolio));state=portfolio.opportunities.find(x=>x.id===portfolio.activeId)||portfolio.opportunities[0]}
-})();
+// Startup migration is intentionally deferred to the guarded reparse block at the end.
+// This avoids an unhandled localStorage write failure that can abort all JavaScript on iOS.
+
 function savePortfolio(){
  portfolio.version=VERSION;portfolio._ephemeral=false;
  const real=portfolio.opportunities.filter(o=>String(o.company||o.opportunity||o.rawImport||'').trim());
@@ -1047,58 +1044,10 @@ createOpportunity=function(){closeTransientOverlays();return __stableCreateOppor
 
 
 
-// === 8.10.2 Interaction recovery layer ===
-// Central capture handler prevents stale or duplicated listeners from blocking navigation.
-function ki21CloseAllModals(){
-  document.querySelectorAll('#ki21ReportOverlay,#ki21OpportunityOverlay,.ki21-modal-overlay').forEach(el=>el.remove());
-  document.documentElement.style.overflow='';
-  document.body.style.overflow='';
-}
-
-function ki21RouteClick(ev){
-  const target=ev.target && ev.target.closest ? ev.target : null;
-  if(!target)return;
-
-  const tab=target.closest('.tab[data-tab]');
-  if(tab){
-    ev.preventDefault();
-    ev.stopPropagation();
-    if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
-    ki21CloseAllModals();
-    state.activeTab=tab.dataset.tab;
-    saveState();
-    render();
-    return;
-  }
-
-  const opp=target.closest('#oppName');
-  if(opp){
-    ev.preventDefault();
-    ev.stopPropagation();
-    if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
-    ki21CloseAllModals();
-    showOpportunityManager();
-    return;
-  }
-
-  const actionEl=target.closest('[data-action]');
-  if(actionEl && !actionEl.closest('#ki21ReportOverlay,#ki21OpportunityOverlay')){
-    const action=actionEl.dataset.action;
-    if(action){
-      ev.preventDefault();
-      ev.stopPropagation();
-      if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();
-      if(action!=='report')ki21CloseAllModals();
-      handleAction(action,actionEl);
-    }
-  }
-}
-
-document.addEventListener('click',ki21RouteClick,true);
-
-// iOS/Safari safety: remove any stale full-screen modal after restoring the page cache.
+// === 8.10.3 minimal interaction layer ===
+// Use the app's original listeners; do not intercept every click in capture phase.
 window.addEventListener('pageshow',()=>{
-  ki21CloseAllModals();
+  closeTransientOverlays();
   requestAnimationFrame(()=>render());
 });
 
@@ -1114,12 +1063,14 @@ try{
 
 // Reparse persisted opportunities with the generalized parser before first render.
 portfolio.opportunities.forEach(o=>{
-  if(!o.rawImport)return;
-  const p=parseImport(o.rawImport+(o.additions&&o.additions.length?'\n\nErgänzung\n'+o.additions.map(x=>x.text).join('\n'):''));
-  const manualOffer={...(o.offer||{})};
-  applyParsed(o,p);
-  repairEconomicMetrics(o);
-  o.offer={...manualOffer,price:manualOffer.price||p.metrics.price||'',timeValue:manualOffer.timeValue||p.metrics.timeValue||'',periodMonths:manualOffer.periodMonths||p.metrics.periodMonths||''};
+  try{
+    if(!o.rawImport)return;
+    const p=parseImport(o.rawImport+(o.additions&&o.additions.length?'\n\nErgänzung\n'+o.additions.map(x=>x.text).join('\n'):''));
+    const manualOffer={...(o.offer||{})};
+    applyParsed(o,p);
+    repairEconomicMetrics(o);
+    o.offer={...manualOffer,price:manualOffer.price||p.metrics.price||'',timeValue:manualOffer.timeValue||p.metrics.timeValue||'',periodMonths:manualOffer.periodMonths||p.metrics.periodMonths||''};
+  }catch(e){console.error('KI21 opportunity startup repair skipped',e);}
 });
 portfolio.opportunities=portfolio.opportunities.filter(o=>!isBundledSample(o));
 if(!portfolio.opportunities.length){const blank=emptyState(false);portfolio.opportunities=[blank];portfolio.activeId=blank.id;}
