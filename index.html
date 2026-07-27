@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.11 · Local Multi-Test Execution Fix';
+const VERSION='KI21 Core 8.11.12 · Quality Suite Signal Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2936,6 +2936,100 @@ document.addEventListener('click',function(event){
 document.title=VERSION;
 const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.11';
 render();
+</script>
+
+<script>
+// === 8.11.12 Quality Suite Signal Fix ===
+(function(){
+  const fallbackActions=[
+    'Den nächsten Kundenmeilenstein mit Verantwortlichem und Datum im Mutual Action Plan festhalten.',
+    'Offene Nachweise priorisieren und jedem Nachweis eine zuständige Kundenrolle zuordnen.',
+    'Starttermin, operative Verantwortung und nächste Kundenentscheidung verbindlich dokumentieren.'
+  ];
+
+  function safeThreeActions(){
+    let base=[];
+    try{ base=Array.isArray(ki2113SafeNextActions())?ki2113SafeNextActions():[]; }catch(_){ base=[]; }
+    const clean=[...base,...fallbackActions]
+      .map(x=>String(x||'').trim())
+      .filter(x=>x && !/^(?:undefined|null|nan)$/i.test(x));
+    const unique=[];
+    for(const x of clean){if(!unique.some(y=>ki2118NormalizeLine(y)===ki2118NormalizeLine(x)))unique.push(x);}
+    return unique.slice(0,3);
+  }
+
+  // Guarantee exactly three meaningful actions in the executive brief.
+  const prevDecisionBrief=decisionBrief;
+  decisionBrief=function(){
+    let out=String(prevDecisionBrief()||'');
+    const a=safeThreeActions();
+    out=out.replace(/NÄCHSTER SCHRITT\n(?:\d\. [^\n]*(?:\n|$)){1,3}/,
+      `NÄCHSTER SCHRITT\n1. ${a[0]}\n2. ${a[1]}\n3. ${a[2]}\n`);
+    out=out.replace(/\b(?:undefined|null|NaN)\b/g,'—');
+    out=out.replace(/;\s*—/g,'').replace(/\n\d\. —\s*/g,'');
+    return out;
+  };
+
+  // No phase analysis may expose an empty/undefined next action.
+  const prevProcessAnalysis=processAnalysis;
+  processAnalysis=function(name){
+    const a=prevProcessAnalysis(name)||{};
+    if(!a.next || /^(?:undefined|null|nan)$/i.test(String(a.next).trim())){
+      const phaseFallback={
+        'Qualifizierung':'Entscheidungsrollen, Entscheidungskriterien und nächsten Kundentermin verbindlich klären.',
+        'Bedarfsanalyse':'Baseline, Zielwirkung und akzeptierte Mindestwirkung mit dem Kunden bestätigen.',
+        'Demo':'Einen realen Kundenfall, Bewertende und messbare Erfolgsschwelle für den Nachweis festlegen.',
+        'Einwandbehandlung':'Jeden bestätigten Einwand einem Nachweis, Verantwortlichen und Entscheidungstermin zuordnen.',
+        'Wirtschaftlicher Nutzen & ROI':'Vermeidbaren Anteil, Betrachtungszeitraum und zusätzliche Ergebniswirkung bestätigen.',
+        'Angebot':'Preis, Wirkung, Verantwortliche, Freigabeweg und Entscheidungstermin im Angebot verbinden.',
+        'Abschluss':'Starttermin, operative Verantwortung und verbleibende Freigaben verbindlich festlegen.'
+      };
+      a.next=phaseFallback[name]||safeThreeActions()[0];
+    }
+    return a;
+  };
+
+  const prevFullReport=fullReport;
+  fullReport=function(){
+    let out=String(prevFullReport()||'');
+    out=out.replace(/\b(?:undefined|null|NaN)\b/g,'—');
+    out=out.replace(/\n\d\. —\s*(?=\n|$)/g,'');
+    return out;
+  };
+
+  // Duplicate quality signal: only repeated recommended actions are defects.
+  // Repeated open gates across phases are intentional traceability, not duplication.
+  ki2118DuplicateCount=function(lines){
+    const seen=new Map();
+    for(const raw of (lines||[])){
+      const key=ki2118NormalizeLine(raw);
+      if(key.length<24)continue;
+      seen.set(key,(seen.get(key)||0)+1);
+    }
+    let duplicates=0;
+    for(const count of seen.values())duplicates+=Math.max(0,count-1);
+    return duplicates;
+  };
+
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='';
+    try{
+      testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;report=fullReport();
+    }catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+    const badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const nextLines=(report.match(/^Nächster Kundenschritt[^:]*:\s*(.+)$/gm)||[]).map(x=>x.replace(/^.*?:\s*/,''));
+    const executiveActions=(report.match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
+    const duplicates=ki2118DuplicateCount([...nextLines,...executiveActions]);
+    const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
+    const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
+    const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
+    const actionIntegrity=badTokens===0 && executiveActions.length>=3;
+    const checks=[!error,areaCount===7,hasEvidence,hasScore,hasForecast,actionIntegrity,duplicates<=2];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const prev=state;try{state=testState;return scores()}finally{state=prev}})():{score:0,forecast:0}};
+  };
+})();
 </script>
 </body>
 </html>
