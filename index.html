@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.12.0 · Generalisation & Aha Quality</title>
+<title>KI21 Core 8.13.0 · Dominant Management Hypothesis</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.12.0 · Generalisation & Aha Quality';
+const VERSION='KI21 Core 8.13.0 · Dominant Management Hypothesis';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2934,7 +2934,7 @@ document.addEventListener('click',function(event){
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.12.0';
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.13.0';
 render();
 </script>
 
@@ -3079,7 +3079,7 @@ render();
 
 <script>
 (()=>{
-  // === 8.12.0 Generalisation & Aha Quality ===
+  // === 8.12.0 Generalisation & Aha Quality (retained foundation) ===
   function ki2120Raw(){return String(state.rawImport||'');}
   function ki2120Annual(){return Number((state.metrics||{}).annualCost||0);}
   function ki2120Price(){return Number((state.metrics||{}).price||0);}
@@ -3185,7 +3185,119 @@ render();
   };
 
   document.title=VERSION;
-  const h=document.getElementById('headerVersion');if(h)h.textContent='Core 8.12.0';
+  const h=document.getElementById('headerVersion');if(h)h.textContent='Core 8.13.0';
+})();
+</script>
+
+<script>
+(()=>{
+  // === 8.13.0 Dominant Management Hypothesis ===
+  function ki2130Raw(){return String(state.rawImport||'');}
+  function ki2130CaseType(){
+    const r=ki2130Raw();
+    if(/renewal|vertragsverlängerung/i.test(r))return 'renewal';
+    if(/wettbewerbsablösung|altanbieter/i.test(r))return 'replacement';
+    if(/plattformentscheidung/i.test(r))return 'platform';
+    if(/expansion|erweiterung|rollout|vollausbau/i.test(r))return 'expansion';
+    if(/pilot/i.test(r))return 'pilot';
+    if(/compact/i.test(r))return 'compact';
+    return 'new';
+  }
+  function ki2130BuyerEngaged(){
+    const b=buyer(); if(!b)return false;
+    return !/noch nicht|nicht persönlich|kein persönlicher|offen/i.test(String(b.status||''));
+  }
+  function ki2130Approval(){return /investitionsfreigabe(?: für den pilot)? ist bestätigt|investitionsfreigabe bestätigt/i.test(ki2130Raw());}
+  function ki2130Success(){return /erfolgskriterien bestätigt/i.test(ki2130Raw());}
+  function ki2130TechnicalOpen(){return /technische freigabe offen|datenschutzfreigabe offen|schnittstellenaufwand.*nicht freigegeben|auftragsverarbeitung ist offen/i.test(ki2130Raw());}
+  function ki2130DominantHypothesis(){
+    const b=buyer(), bn=b?b.name:'der noch zu identifizierende wirtschaftliche Entscheider';
+    const type=ki2130CaseType(), price=Number((state.metrics||{}).price||0), annual=Number((state.metrics||{}).annualCost||0), budget=Number((state.metrics||{}).budget||0), obs=(state.objections||[]).length;
+
+    if(!b){
+      return {code:'qualification',text:'Diese Opportunity wird aktuell nicht an Preis oder Wettbewerb scheitern, sondern daran, dass noch kein belastbarer Verkaufsfall existiert: wirtschaftlicher Entscheider, bestätigte Wirkung und Entscheidungsweg fehlen.',action:'Den wirtschaftlichen Entscheider, den bestätigten wirtschaftlichen Ausgangswert und den verbindlichen Entscheidungsweg als nächste Qualifizierungsbedingungen festlegen.'};
+    }
+    if(!ki2130BuyerEngaged()){
+      return {code:'buyer-access',text:`Diese Opportunity wird derzeit nicht am fachlichen Bedarf scheitern, sondern an der fehlenden wirtschaftlichen Validierung: ${bn} trägt die Investitionsentscheidung, ist aber noch nicht persönlich eingebunden.`,action:`${bn} in einem wirtschaftlichen Entscheidungsgespräch persönlich einbinden und dessen Entscheidungskriterien bestätigen.`};
+    }
+    if(type==='renewal'&&ki2130Approval()){
+      return {code:'execution',text:'Diese Opportunity wird nicht mehr durch die Kaufentscheidung gefährdet, sondern durch einen unverbindlichen Übergang in die Umsetzung: Starttermin, operative Verantwortung und Restfreigaben sind jetzt die einzigen relevanten Abschlussrisiken.',action:'Starttermin, operative Verantwortung und sämtliche Restfreigaben in einem verbindlichen Umsetzungsplan festlegen.'};
+    }
+    if(ki2130Approval()&&!ki2130Success()){
+      return {code:'proof',text:'Diese Opportunity wird nicht am Budget scheitern, sondern an einem fehlenden Wirkungsnachweis: Finanzierung und Investitionsbereitschaft sind vorhanden, aber Baseline, Erfolgsschwelle und Go/No-Go-Logik sind noch nicht belastbar vereinbart.',action:'Mit dem wirtschaftlichen Entscheider Baseline, messbare Erfolgsschwelle und Go/No-Go-Logik verbindlich bestätigen.'};
+    }
+    if((type==='replacement'||type==='platform')&&obs>=3&&ki2130TechnicalOpen()){
+      return {code:'joint-decision',text:`Diese Opportunity wird nicht durch einen einzelnen Einwand blockiert, sondern durch eine noch nicht zusammengeführte Kaufentscheidung: ${obs} unterschiedliche Bedingungen aus Wirtschaftlichkeit, Umsetzung, Technik und Akzeptanz benötigen einen gemeinsamen Nachweis- und Freigabeplan.`,action:'Alle bestätigten Kaufbedingungen in einem gemeinsamen Nachweis- und Freigabeplan mit Verantwortlichen und Entscheidungstermin zusammenführen.'};
+    }
+    if(obs>=4&&ki2130TechnicalOpen()){
+      return {code:'buying-conditions',text:`Diese Opportunity wird nicht an mangelndem Interesse scheitern, sondern an fragmentierten Kaufbedingungen: ${obs} bestätigte Einwände müssen als getrennte wirtschaftliche, operative, technische und organisatorische Freigaben geschlossen werden.`,action:'Jeden bestätigten Einwand einer konkreten Freigabe, einem Nachweis, einem Verantwortlichen und einem Termin zuordnen.'};
+    }
+    if(price&&annual&&price>annual){
+      return {code:'economic-gap',text:`Diese Opportunity wird nicht durch fehlenden Bedarf gefährdet, sondern durch eine wirtschaftliche Beweislücke: Der dokumentierte Jahresaufwand von ${annual.toLocaleString('de-DE')} € trägt den Preis von ${price.toLocaleString('de-DE')} € allein nicht.`,action:'Die zusätzliche Ergebniswirkung aus vermiedenen Fehlentscheidungen, Margenschutz und früherer Risikoerkennung mit dem wirtschaftlichen Entscheider quantifizieren.'};
+    }
+    if(budget&&price&&price<=budget&&!ki2130Success()){
+      return {code:'budget-not-blocker',text:`Diese Opportunity wird voraussichtlich nicht am Preis scheitern: ${price.toLocaleString('de-DE')} € liegen innerhalb des dokumentierten Rahmens von ${budget.toLocaleString('de-DE')} €. Das Risiko liegt ausschließlich in der noch unbewiesenen Wirkung und den offenen Freigabebedingungen.`,action:'Den Wirkungsnachweis, die Erfolgsschwelle und die verbleibenden Freigabebedingungen verbindlich vereinbaren.'};
+    }
+    if(ki2130Approval()&&ki2130TechnicalOpen()){
+      return {code:'implementation-security',text:'Diese Opportunity wird nicht mehr durch die wirtschaftliche Zustimmung gefährdet, sondern durch fehlende Umsetzungssicherheit: technische, rechtliche und operative Bedingungen müssen jetzt als verbindlicher Startplan geschlossen werden.',action:'Technische, rechtliche und operative Freigaben mit Verantwortlichen und verbindlichem Starttermin schließen.'};
+    }
+    return {code:'decision-criteria',text:`Diese Opportunity wird nicht am sichtbaren Bedarf scheitern, sondern an der fehlenden Übersetzung in eine belastbare Kaufentscheidung: Entscheidend ist, welche Wirkung ${bn} akzeptiert und welche Freigaben dafür erfüllt sein müssen.`,action:`Mit ${bn} akzeptierte Zielwirkung, Entscheidungskriterien und Freigabebedingungen verbindlich bestätigen.`};
+  }
+  window.ki2130DominantHypothesis=ki2130DominantHypothesis;
+
+  const prevDecisionBrief=decisionBrief;
+  decisionBrief=function(){
+    let out=String(prevDecisionBrief()||'');
+    const h=ki2130DominantHypothesis();
+    out=out.replace(/\nDOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]*/g,'');
+    if(/\nEXECUTIVE AHA\n•[^\n]*/.test(out)){
+      out=out.replace(/(\nEXECUTIVE AHA\n•[^\n]*)/,`$1\n\nDOMINANTE MANAGEMENT-HYPOTHESE\n• ${h.text}`);
+    }else{
+      out=out.replace(/(\nGRÖSSTER ENGPASS\n•[^\n]*)/,`$1\n\nDOMINANTE MANAGEMENT-HYPOTHESE\n• ${h.text}`);
+    }
+    const block=out.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/);
+    if(block){
+      const actions=(block[1].match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
+      const merged=[h.action,...actions].filter(Boolean);
+      const unique=[];
+      for(const a of merged){if(!unique.some(x=>ki2118NormalizeLine(x)===ki2118NormalizeLine(a)))unique.push(a);}
+      while(unique.length<3)unique.push(['Den nächsten Kundenmeilenstein mit Verantwortlichem und Datum im Mutual Action Plan festhalten.','Offene Nachweise priorisieren und jeder Kundenrolle verbindlich zuordnen.','Die nächste Kundenentscheidung mit Datum und Verantwortlichem dokumentieren.'][unique.length]);
+      out=out.replace(/NÄCHSTER SCHRITT\n[\s\S]*?(?=\n\nSTATE CHECK|$),?/,
+        `NÄCHSTER SCHRITT\n1. ${unique[0]}\n2. ${unique[1]}\n3. ${unique[2]}`);
+    }
+    return out;
+  };
+
+  // Quality Suite: dominant hypothesis + action alignment are now explicit quality gates.
+  ki2118EvaluateCase=function(tc,index){
+    const original=state,t0=performance.now();let testState,report='',error='',expected=null;
+    try{
+      testState=emptyState(false);const parsed=parseImport(tc.raw);applyParsed(testState,parsed);repairEconomicMetrics(testState);testState.rawImport=tc.raw;state=testState;expected=ki2130DominantHypothesis();report=fullReport();
+    }catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+    const badTokens=(report.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+    const executiveBlock=(report.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/)||[])[1]||'';
+    const executiveActions=(executiveBlock.match(/^\d\.\s+(.+)$/gm)||[]).map(x=>x.replace(/^\d\.\s+/,''));
+    const duplicates=ki2118DuplicateCountByLayer(report);
+    const hasEvidence=/=== STRUKTURIERTE IMPORTAUSSAGEN ===/.test(report);
+    const hasScore=/Berechneter Opportunity Score:\s*\d+%/.test(report);
+    const hasForecast=/Berechneter Forecast:\s*\d+%/.test(report);
+    const actionIntegrity=badTokens===0&&executiveActions.length===3;
+    const aha=(report.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'';
+    const ahaIntegrity=aha.length>=90&&!/allgemein|irgendwie|möglicherweise sinnvoll/i.test(aha);
+    const phaseAhas=(report.match(/^Aha-Erkenntnis[^:]*:\s*(.+)$/gm)||[]).map(x=>x.replace(/^.*?:\s*/,''));
+    const phaseAhaIntegrity=phaseAhas.length===7&&new Set(phaseAhas.map(ki2118NormalizeLine)).size>=6;
+    const hypotheses=(report.match(/^DOMINANTE MANAGEMENT-HYPOTHESE$/gm)||[]).length;
+    const hypothesis=(report.match(/DOMINANTE MANAGEMENT-HYPOTHESE\n•\s*(.+)/)||[])[1]||'';
+    const hypothesisIntegrity=hypotheses===1&&hypothesis.length>=120&&/nicht|sondern|ausschließlich/i.test(hypothesis);
+    const actionAlignment=!!expected&&ki2118NormalizeLine(executiveActions[0]||'')===ki2118NormalizeLine(expected.action);
+    const checks=[!error,areaCount===7,hasEvidence,hasScore,hasForecast,actionIntegrity,duplicates<=2,ahaIntegrity,phaseAhaIntegrity,hypothesisIntegrity,actionAlignment];
+    const points=checks.filter(Boolean).length;
+    return {tc,index,report,error,elapsed:Math.round(performance.now()-t0),areaCount,badTokens,duplicates,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const prev=state;try{state=testState;return scores()}finally{state=prev}})():{score:0,forecast:0}};
+  };
+
+  document.title=VERSION;
+  const h=document.getElementById('headerVersion');if(h)h.textContent='Core 8.13.0';
 })();
 </script>
 
