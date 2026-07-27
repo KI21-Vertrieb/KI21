@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.14.0 · Decision Integrity Engine</title>
+<title>KI21 Core 8.14.1 · Decision Integrity Runtime Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.14.0 · Decision Integrity Engine';
+const VERSION='KI21 Core 8.14.1 · Decision Integrity Runtime Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2955,6 +2955,12 @@ render();
       .filter(x=>x && !/^(?:undefined|null|nan)$/i.test(x));
     const unique=[];
     for(const x of clean){if(!unique.some(y=>ki2118NormalizeLine(y)===ki2118NormalizeLine(x)))unique.push(x);}
+    const fallback=[
+      'Den nächsten Kundenmeilenstein mit Verantwortlichem und Datum verbindlich festlegen.',
+      'Den entscheidungsrelevanten Nachweis mit einer zuständigen Kundenrolle bestätigen.',
+      'Freigabeweg und verbindlichen Entscheidungstermin im Mutual Action Plan dokumentieren.'
+    ];
+    for(const a of fallback){if(unique.length>=3)break;const n=ki214Norm(a);if(!unique.some(x=>ki214Norm(x)===n||ki214Norm(x).includes(n)||n.includes(ki214Norm(x))))unique.push(a);}
     return unique.slice(0,3);
   }
 
@@ -3304,7 +3310,7 @@ render();
 
 <script>
 (()=>{
-  // === KI21 Core 8.14.0 · Decision Integrity Engine ===
+  // === KI21 Core 8.14.1 · Decision Integrity Runtime Fix ===
   const ki214Raw=()=>String(state.rawImport||'');
   const ki214Norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
   const ki214Approval=()=>/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(ki214Raw());
@@ -3395,6 +3401,19 @@ render();
     return a;
   };
 
+  function ki214ExecutiveAha(){
+    const st=ki214CaseState(),b=buyer(),bn=b?b.name:'der wirtschaftliche Entscheider',m=state.metrics||{};
+    const annual=Number(m.recurringInternalCost||m.annualCost||0),price=Number(m.price||0);
+    if(st==='QUALIFIZIERUNG')return 'Die Opportunity ist noch kein belastbarer Verkaufsfall. Der nächste Fortschritt entsteht nicht durch ein Angebot, sondern durch bestätigten Bedarf, wirtschaftlichen Entscheider und Entscheidungsweg.';
+    if(st==='ENTSCHEIDERZUGANG')return `Der fachliche Bedarf reicht nicht für eine Kaufentscheidung: ${bn} muss die wirtschaftliche Wirkung persönlich akzeptieren.`;
+    if(st==='UMSETZUNGSÜBERGANG')return 'Die Kaufentscheidung ist erreicht. Das verbleibende Risiko liegt ausschließlich darin, dass Starttermin, operative Verantwortung und Restfreigaben unverbindlich bleiben.';
+    if(st==='WIRKUNGSNACHWEIS')return 'Budget und Investitionsbereitschaft sind vorhanden. Der Deal entscheidet sich jetzt daran, ob Baseline, Erfolgsschwelle und Go/No-Go-Logik vor dem Start verbindlich vereinbart werden.';
+    if(st==='KAUFBEDINGUNGEN')return 'Die einzelnen Einwände sind keine isolierten Widerstände, sondern voneinander abhängige Kaufbedingungen, die in einem gemeinsamen Entscheidungsplan geschlossen werden müssen.';
+    if(st==='STARTFREIGABEN')return 'Die wirtschaftliche Zustimmung ist nicht mehr der Engpass. Entscheidend ist jetzt, technische, rechtliche und operative Startbedingungen in einen verbindlichen Umsetzungsplan zu übersetzen.';
+    if(annual&&price&&price>annual)return `Der dokumentierte Aufwand von ${annual.toLocaleString('de-DE')} € pro Jahr trägt die Investition von ${price.toLocaleString('de-DE')} € allein nicht. Zusätzliche Ergebniswirkung muss separat belegt werden.`;
+    return 'Der sichtbare Bedarf ist nur die Ausgangslage. Entscheidend ist, welche konkrete Wirkung der wirtschaftliche Entscheider akzeptiert und welche Freigaben daraus eine belastbare Kundenentscheidung machen.';
+  }
+
   decisionBrief=function(){
     const q=ki218QualityModel(),b=buyer(),m=state.metrics||{},bc=businessCaseModel(),h=ki2130DominantHypothesis(),actions=ki214Actions(),gap=ki214GapReasoning(),st=ki214CaseState();
     const blockers=[];
@@ -3411,7 +3430,7 @@ render();
     if(m.budget)points.push(`Finanzieller Rahmen: ${Number(m.budget).toLocaleString('de-DE')} €.`);
     if(m.price)points.push(`Preis: ${Number(m.price).toLocaleString('de-DE')} €${m.implementationCost?` plus ${Number(m.implementationCost).toLocaleString('de-DE')} € Einführung`:''}.`);
     if((state.objections||[]).length)points.push(`${state.objections.length} bestätigte Kaufbedingungen sind im Entscheidungsplan zu schließen.`);
-    return `KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${ki214Assessment()}\n\nDIE PUNKTE, DIE ZÄHLEN\n${points.slice(0,5).map(x=>'• '+x).join('\n')||'• Noch keine belastbaren wirtschaftlichen Fakten bestätigt.'}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${ki214CentralDecision()}\n\nGRÖSSTER ENGPASS\n• ${blockers.length?blockers.slice(0,3).join('; '):(st==='UMSETZUNGSÜBERGANG'?'Verbindlicher Übergang in die Umsetzung.':'Kein wesentlicher Engpass erkannt.')}\n\nEXECUTIVE AHA\n• ${executiveAha()}\n\nDOMINANTE MANAGEMENT-HYPOTHESE\n• ${h.text}\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}${gap?'\n• '+gap:''}\n\nNÄCHSTER SCHRITT\n1. ${actions[0]}\n2. ${actions[1]}\n3. ${actions[2]}\n\nSTATE CHECK\n• Deal-State: ${st}\n• Wirtschaftlicher Entscheider: ${b?b.name:'nicht erkannt'}\n• Budget: ${m.budget?Number(m.budget).toLocaleString('de-DE')+' €':'nicht erkannt'}\n• Preis: ${m.price?Number(m.price).toLocaleString('de-DE')+' €':'nicht bestätigt'}\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}`;
+    return `KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${ki214Assessment()}\n\nDIE PUNKTE, DIE ZÄHLEN\n${points.slice(0,5).map(x=>'• '+x).join('\n')||'• Noch keine belastbaren wirtschaftlichen Fakten bestätigt.'}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${ki214CentralDecision()}\n\nGRÖSSTER ENGPASS\n• ${blockers.length?blockers.slice(0,3).join('; '):(st==='UMSETZUNGSÜBERGANG'?'Verbindlicher Übergang in die Umsetzung.':'Kein wesentlicher Engpass erkannt.')}\n\nEXECUTIVE AHA\n• ${ki214ExecutiveAha()}\n\nDOMINANTE MANAGEMENT-HYPOTHESE\n• ${h.text}\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}${gap?'\n• '+gap:''}\n\nNÄCHSTER SCHRITT\n1. ${actions[0]}\n2. ${actions[1]}\n3. ${actions[2]}\n\nSTATE CHECK\n• Deal-State: ${st}\n• Wirtschaftlicher Entscheider: ${b?b.name:'nicht erkannt'}\n• Budget: ${m.budget?Number(m.budget).toLocaleString('de-DE')+' €':'nicht erkannt'}\n• Preis: ${m.price?Number(m.price).toLocaleString('de-DE')+' €':'nicht bestätigt'}\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}`;
   };
 
   // Keep a developer-only diagnostic report, but make the standard report compact.
