@@ -45,7 +45,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.11.10 · Quality Suite Visible Overlay Fix';
+const VERSION='KI21 Core 8.11.11 · Local Multi-Test Execution Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -2601,6 +2601,60 @@ renderCrm=function(){
   return html.replace('🧪 Quality Suite öffnen','🧪 Quality Suite öffnen');
 };
 
+// === 8.11.11 Local Multi-Test Execution Fix ===
+// Run each selected case in a separate browser frame so iPhone/Safari can repaint,
+// show progress immediately and never appear unresponsive.
+async function ki21111RunLocalSuiteChunked(overlay, ids){
+ const status=overlay.querySelector('#ki2118Status');
+ const resultsBox=overlay.querySelector('#ki2118Results');
+ const button=overlay.querySelector('#ki2118Local');
+ if(!ids.length){toast('Mindestens einen Testfall auswählen');return}
+ if(button){button.disabled=true;button.textContent='Mehrfachtest läuft …'}
+ status.textContent=`Test wird vorbereitet · 0/${ids.length} Opportunities …`;
+ resultsBox.innerHTML='<div class="quality-spinner">Lokale Regression startet …</div>';
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const selectedCases=KI219_TEST_CASES.filter(tc=>ids.includes(tc.id));
+ const started=performance.now();
+ const evaluated=[];
+ try{
+  for(let i=0;i<selectedCases.length;i++){
+   if(!document.body.contains(overlay))return;
+   status.textContent=`Opportunity ${i+1}/${selectedCases.length} wird lokal geprüft …`;
+   resultsBox.innerHTML=`<div class="quality-spinner">${esc(selectedCases[i].name)} · Test ${i+1} von ${selectedCases.length}</div>`;
+   await new Promise(resolve=>setTimeout(resolve,20));
+   try{evaluated.push(ki2118EvaluateCase(selectedCases[i],i))}
+   catch(err){evaluated.push({tc:selectedCases[i],index:i,report:'',error:String(err&&err.stack||err),elapsed:0,areaCount:0,badTokens:0,duplicates:0,points:0,max:7,passed:false,score:{score:0,forecast:0}})}
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+  }
+  const passed=evaluated.filter(x=>x.passed).length;
+  const summary=evaluated.map(r=>`${r.passed?'✅':'⚠️'} ${r.tc.id} · ${r.tc.name} | ${r.points}/${r.max} Checks | Score ${r.score.score}% | Forecast ${r.score.forecast}% | ${r.elapsed} ms | Doppelungen ${r.duplicates}${r.error?' | FEHLER: '+r.error.split('\n')[0]:''}`).join('\n');
+  const details=evaluated.map((r,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${evaluated.length} · ${r.tc.id} · ${r.tc.name}\nStatus: ${r.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${r.points}/${r.max}\nLaufzeit: ${r.elapsed} ms · Bereichsanalysen: ${r.areaCount}/7 · Doppelungen: ${r.duplicates} · ungültige Tokens: ${r.badTokens}\n${'='.repeat(78)}\n\n${r.error?'FEHLER\n'+r.error:r.report}`).join('\n\n');
+  const text=`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${VERSION}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${evaluated.length}\nVollständig bestanden: ${passed}/${evaluated.length}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`;
+  status.textContent=`Fertig: ${passed}/${evaluated.length} vollständig bestanden · 0 API-Aufrufe.`;
+  resultsBox.innerHTML=`<div class="quality-summary-grid"><div><strong>${evaluated.length}</strong><span>Fälle</span></div><div><strong>${passed}</strong><span>bestanden</span></div><div><strong>0</strong><span>API-Aufrufe</span></div></div><div class="actions"><button class="btn primary" id="ki21111CopyLocal">Gesamtbericht kopieren</button><button class="btn secondary" id="ki21111ShowLocal">Bericht anzeigen</button></div>`;
+  resultsBox.querySelector('#ki21111CopyLocal').addEventListener('click',async()=>{try{await copyTextReliable(text);toast('Quality-Suite-Bericht kopiert')}catch(e){alert('Kopieren fehlgeschlagen: '+(e.message||e))}});
+  resultsBox.querySelector('#ki21111ShowLocal').addEventListener('click',()=>{let ta=resultsBox.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:50vh;margin-top:12px';ta.value=text;resultsBox.appendChild(ta)}ta.scrollIntoView({behavior:'smooth',block:'start'})});
+ }catch(err){
+  console.error('Local multi-test failed',err);
+  status.textContent='Lokaler Mehrfachtest fehlgeschlagen.';
+  resultsBox.innerHTML=`<div class="card red"><div class="headline">Testfehler</div><div class="body">${esc(err&&err.message?err.message:String(err))}</div></div>`;
+ }finally{
+  if(button){button.disabled=false;button.textContent='Lokalen Mehrfachtest starten'}
+ }
+}
+
+document.addEventListener('click',function(event){
+ const button=event.target&&event.target.closest?event.target.closest('#ki2118Local'):null;
+ if(!button)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ const overlay=button.closest('#ki2118QualityOverlay');
+ if(!overlay)return;
+ const ids=[...overlay.querySelectorAll('.quality-case-row input:checked')].map(x=>x.value);
+ ki21111RunLocalSuiteChunked(overlay,ids);
+},true);
+
+
 document.title=VERSION;
 const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent='Core 8.11.6';
 
@@ -2880,7 +2934,7 @@ document.addEventListener('click',function(event){
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.10';
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent='Core 8.11.11';
 render();
 </script>
 </body>
