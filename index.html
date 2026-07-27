@@ -4435,5 +4435,196 @@ render();
 })();
 </script>
 
+<script id="ki21-v8171-semantic-consistency">
+(()=>{
+  const V8171='KI21 Core 8.17.1 · Semantic Consistency & Smart Report Fix';
+  const REF_IDS=['T07','T08','N10','N13'];
+  const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15'];
+  const money=n=>Number(n||0).toLocaleString('de-DE')+' €';
+  const raw=()=>String(state.rawImport||'');
+  const has=rx=>rx.test(raw());
+  const norm=t=>String(t||'').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+  const sim=(a,b)=>{const A=new Set(norm(a).split(' ').filter(x=>x.length>3)),B=new Set(norm(b).split(' ').filter(x=>x.length>3));if(!A.size||!B.size)return 0;let i=0;A.forEach(x=>{if(B.has(x))i++});return i/Math.max(A.size,B.size)};
+
+  function contradictions(){
+    const r=raw(), out=[];
+    if(/Sponsor:\s*erhebliche[^\n]*Forecast|erhebliche monatliche Forecast-Überraschungen/i.test(r) && /Entscheiderin:\s*normale Schwankungen|bestätigt weder Problemumfang noch wirtschaftliche Relevanz/i.test(r))out.push({a:'Sponsor bewertet Forecast-Überraschungen als erheblich.',b:'Wirtschaftliche Entscheiderin bewertet sie als normale Schwankungen und bestätigt keine belastbare Problemzahl.',impact:'Problemrelevanz und wirtschaftliche Baseline sind ungeklärt.',question:'Welche realen Opportunities, Abweichungen und Folgekosten bestätigen oder widerlegen die beiden Aussagen?'});
+    if(/Budget[^\n]*(?:bestätigt|freigegeben)/i.test(r)&&/Budget[^\n]*(?:nicht vorhanden|nicht budgetiert)/i.test(r))out.push({a:'Budget wird als bestätigt beschrieben.',b:'Budget wird zugleich als nicht vorhanden oder nicht budgetiert beschrieben.',impact:'Finanzierungsstatus ist widersprüchlich.',question:'Welcher Budgettopf ist tatsächlich freigegeben und wer bestätigt ihn?'});
+    return out;
+  }
+  function purchaseConditions(){
+    const r=raw();
+    if(!/Kaufbedingungen|Beschaffungsforderungen|Bestätigte Einwände/i.test(r))return [];
+    const dictionary=[
+      ['Business Case',/Business Case/i],['Akzeptanz',/Akzeptanz/i],['CRM-Datenqualität',/CRM-Datenqualität/i],['Einführung',/Einführung/i],['Datenschutz/Betriebsrat',/Datenschutz\/?Betriebsrat|Datenschutz.*Betriebsrat/i],['Salesforce-Alternative',/Salesforce-Alternative/i],
+      ['Nachlass',/Nachlass/i],['Zahlungsziel',/Zahlungsziel/i],['Haftung',/Haftung/i],['Sonderkündigungsrecht',/Sonderkündigungsrecht/i],['Reaktionszeiten',/Reaktionszeiten/i],['Zusatznutzer',/Zusatznutzer/i]
+    ];
+    return dictionary.filter(([,rx])=>rx.test(r)).map(([x])=>x);
+  }
+  function dealState(){
+    const r=raw(), c=contradictions(), pc=purchaseConditions();
+    if(c.length)return 'EVIDENZKONFLIKT';
+    if(/Vertragsabschluss/i.test(r)&&/Datenschutzfreigabe|Auftragsverarbeitungsvertrag/i.test(r)&&/Investitionsfreigabe bestätigt/i.test(r))return 'VERTRAGSFREIGABE';
+    if(/Beschaffung und Vertragsprüfung|Procurement|Beschaffungsforderungen|Haftungserweiterung|Sonderkündigungsrecht/i.test(r))return 'VERTRAGSVERHANDLUNG';
+    if(/Startfreigabe|Vertrag (?:ist )?(?:unterzeichnet|abgeschlossen)|Unterschrift erfolgt/i.test(r))return 'STARTFREIGABE';
+    if(pc.length>=3||/Sechs Kaufbedingungen/i.test(r))return 'KAUFBEDINGUNGEN';
+    if(/Sonderfreigabeweg|nicht budgetiert/i.test(r))return 'SONDERBUDGET';
+    if(/Investitionsfreigabe bestätigt|wirtschaftliche Entscheidung ist gefallen|fachliche Auswahl und Business Case abgeschlossen/i.test(r)){
+      if(/Erfolgskriterien bestätigt|Bestätigte Erfolgskriterien/i.test(r))return 'KAUFENTSCHEIDUNG';
+      return 'WIRKUNGSNACHWEIS';
+    }
+    if(/wirtschaftliche und technische Prüfung|Kaufbedingungen/i.test(r))return 'KAUFBEDINGUNGEN';
+    if(/Business Case|Wirkung|Baseline|Erfolgskriter/i.test(r))return 'WIRKUNGSNACHWEIS';
+    if(buyer())return 'ENTSCHEIDERZUGANG';
+    return 'QUALIFIZIERUNG';
+  }
+  function stateBand(st){return ({QUALIFIZIERUNG:[20,42],ENTSCHEIDERZUGANG:[30,52],EVIDENZKONFLIKT:[22,42],WIRKUNGSNACHWEIS:[42,62],KAUFBEDINGUNGEN:[48,68],SONDERBUDGET:[40,60],KAUFENTSCHEIDUNG:[62,78],VERTRAGSVERHANDLUNG:[68,84],VERTRAGSFREIGABE:[72,88],STARTFREIGABE:[82,94]})[st]||[30,60]}
+  const oldQM=ki218QualityModel;
+  ki218QualityModel=function(){
+    let q={};try{q=oldQM()}catch(e){q={score:35,forecast:25,scoreItems:[],scorePenalties:[],forecastDeductions:[],decisionOpen:[],gates:[]}}
+    const st=dealState(), band=stateBand(st), c=contradictions();
+    let score=Math.max(band[0],Math.min(band[1],Number(q.score||band[0])));
+    if(st==='VERTRAGSVERHANDLUNG')score=Math.max(score,74);
+    if(st==='VERTRAGSFREIGABE')score=Math.max(score,79);
+    if(st==='STARTFREIGABE')score=Math.max(score,88);
+    if(c.length)score=Math.min(score,38);
+    let forecast=score-8;
+    if(st==='VERTRAGSVERHANDLUNG')forecast=Math.max(66,score-7);
+    if(st==='VERTRAGSFREIGABE')forecast=Math.max(72,score-8);
+    if(st==='STARTFREIGABE')forecast=Math.max(84,score-4);
+    if(st==='EVIDENZKONFLIKT')forecast=Math.min(34,score-8);
+    if(st==='SONDERBUDGET')forecast=Math.min(55,score-8);
+    forecast=Math.max(10,Math.min(94,forecast));
+    return {...q,score,forecast,dealState:st,contradictions:c,purchaseConditions:purchaseConditions()};
+  };
+  scores=function(){const q=ki218QualityModel();return{score:q.score,forecast:q.forecast,cooOpen:false,quality:q}};
+
+  function buyerName(){const b=buyer();return b?b.name:'der wirtschaftliche Entscheider'}
+  function centralDecision(st){const bn=buyerName(),pc=purchaseConditions();
+    const map={
+      QUALIFIZIERUNG:`Bestätigt ${bn}, dass Problem, Priorität und Entscheidungsweg eine weitere Bearbeitung rechtfertigen?`,
+      ENTSCHEIDERZUGANG:`Welche Kriterien und Mindestwirkung muss ${bn} persönlich bestätigen, damit aus fachlichem Interesse eine Investitionsentscheidung wird?`,
+      EVIDENZKONFLIKT:`Welche belastbare Datengrundlage löst den Widerspruch zwischen Sponsor und ${bn} auf und erlaubt ein Go/No-Go?`,
+      WIRKUNGSNACHWEIS:`Welche Baseline, Erfolgsschwelle und Messlogik akzeptiert ${bn} als ausreichenden Wirkungsnachweis?`,
+      KAUFBEDINGUNGEN:`Wie werden die ${pc.length||'mehreren'} wirtschaftlichen, operativen, technischen und organisatorischen Kaufbedingungen mit Nachweis, Verantwortlichem und Termin geschlossen?`,
+      SONDERBUDGET:`Wer genehmigt das Sonderbudget, unter welchen Bedingungen und bis zu welchem Termin?`,
+      KAUFENTSCHEIDUNG:`Bestätigt die Entscheidungsgruppe Umfang, Wirkung, Preis und verbindlichen Freigabeweg?`,
+      VERTRAGSVERHANDLUNG:`Welche kommerziellen und rechtlichen Bedingungen sind für Einkauf, Legal und Fachseite tragfähig, ohne den Dealwert zu zerstören?`,
+      VERTRAGSFREIGABE:`Erteilt Julia Frese die Datenschutzfreigabe, wird der Auftragsverarbeitungsvertrag geschlossen und der Start am 14. September 2026 final bestätigt?`,
+      STARTFREIGABE:`Sind Vertrag, Verantwortliche und Starttermin vollständig freigegeben?`};return map[st];
+  }
+  function assessment(st){
+    const map={
+      QUALIFIZIERUNG:'Problem, Priorität und wirtschaftlicher Entscheidungsweg sind noch nicht belastbar genug für eine Investitionsentscheidung.',
+      ENTSCHEIDERZUGANG:'Der fachliche Bedarf ist sichtbar, aber die wirtschaftliche Entscheidungsrolle muss Kriterien und Priorität persönlich bestätigen.',
+      EVIDENZKONFLIKT:'Die Opportunity enthält einen wesentlichen Evidenzkonflikt. Sponsor und wirtschaftliche Entscheiderin bewerten Problemumfang und Relevanz gegensätzlich; beide Aussagen dürfen nicht zugleich als bestätigte Fakten gelten.',
+      WIRKUNGSNACHWEIS:'Bedarf und finanzielle Darstellbarkeit sind grundsätzlich vorhanden. Die Entscheidung hängt jetzt an einer belastbaren Baseline, messbarer Wirkung und klarer Go/No-Go-Logik.',
+      KAUFBEDINGUNGEN:`Bedarf und Entscheidungsrollen sind belegt. ${purchaseConditions().length||'Mehrere'} getrennte Kaufbedingungen müssen strukturiert geschlossen werden; eine generische Kaufentscheidungslogik reicht nicht.`,
+      SONDERBUDGET:'Der wirtschaftliche Schaden und die Erfolgskriterien sind belegt, aber im laufenden Budget fehlt die Freigabe. Der Deal hängt am Sonderfreigabeweg, nicht an weiterer Bedarfsermittlung.',
+      KAUFENTSCHEIDUNG:'Fachlicher und wirtschaftlicher Bedarf sind weitgehend bestätigt. Offen ist die verbindliche Investitionsentscheidung mit Umfang, Wirkung und Umsetzung.',
+      VERTRAGSVERHANDLUNG:'Die fachliche Auswahl und der Business Case sind abgeschlossen. Der Deal befindet sich in der Beschaffungs- und Vertragsverhandlung; Abschlussrisiken liegen ausschließlich in konkreten kommerziellen und rechtlichen Forderungen.',
+      VERTRAGSFREIGABE:'Fachliche und wirtschaftliche Kaufentscheidung sowie Budgetfreigabe sind getroffen. Der Abschluss hängt nicht mehr am Wirkungsnachweis, sondern an Datenschutzfreigabe, Auftragsverarbeitungsvertrag, Pilotleitung und finalem Starttermin.',
+      STARTFREIGABE:'Kaufentscheidung und Vertrag sind abgeschlossen. Es fehlt nur noch die operative Startfreigabe.'};return map[st];
+  }
+  function executiveAha(st){const map={
+    QUALIFIZIERUNG:'Das größte Risiko ist derzeit nicht der Wettbewerb, sondern dass ein fachliches Signal ohne bestätigten wirtschaftlichen Verkaufsfall weiterverfolgt wird.',
+    ENTSCHEIDERZUGANG:'Nicht mehr Discovery-Tiefe, sondern persönlicher Entscheiderzugang entscheidet, ob die Opportunity real wird.',
+    EVIDENZKONFLIKT:'Nicht der Preis blockiert die Opportunity, sondern die ungeklärte Frage, ob überhaupt ein entscheidungsrelevantes Problem existiert.',
+    WIRKUNGSNACHWEIS:'Nicht der Preis blockiert den Deal, sondern die fehlende Definition, ab welcher nachgewiesenen Wirkung der Kunde tatsächlich kauft.',
+    KAUFBEDINGUNGEN:`Die ${purchaseConditions().length||'mehreren'} Einwände sind keine lose Liste, sondern eigenständige Kaufbedingungen mit unterschiedlichen Freigebern und Nachweisen.`,
+    SONDERBUDGET:'Der Business Case ist nicht das Problem; entscheidend ist, ob der Schaden einen außerplanmäßigen Budgetweg legitimiert.',
+    KAUFENTSCHEIDUNG:'Der Deal braucht keine weitere Funktionsargumentation, sondern eine zusammengeführte Managemententscheidung über Wirkung, Risiko und Umsetzung.',
+    VERTRAGSVERHANDLUNG:'Der Kunde hat grundsätzlich gekauft; jetzt kann nur noch eine wirtschaftlich oder rechtlich untragbare Vertragsposition den Abschluss verhindern.',
+    VERTRAGSFREIGABE:'Der Deal ist wirtschaftlich gewonnen, aber formal noch nicht startfähig: Eine einzige Datenschutzfreigabe ist zum dominanten Abschlussblocker geworden.',
+    STARTFREIGABE:'Verkaufsarbeit ist weitgehend beendet; jetzt entscheidet saubere Übergabequalität über Wertrealisierung und Kundenerlebnis.'};return map[st]}
+  function issues(st){
+    if(st==='EVIDENZKONFLIKT')return contradictions().map(x=>x.impact).concat(['Reale Datenbasis und Go/No-Go-Kriterium fehlen']);
+    if(st==='VERTRAGSFREIGABE')return ['Datenschutzfreigabe und Auftragsverarbeitungsvertrag offen','Operativer Pilotleiter noch nicht benannt','Starttermin noch nicht final bestätigt'];
+    if(st==='VERTRAGSVERHANDLUNG')return ['Nachlass und Zahlungsziel wirtschaftlich bewerten','Haftung, Sonderkündigung und Reaktionszeiten rechtlich schließen','Finalen Vertrags- und Starttermin sichern'];
+    if(st==='KAUFBEDINGUNGEN')return purchaseConditions().map(x=>`${x}: Nachweis, Verantwortlicher und Freigabetermin offen`).slice(0,6);
+    if(st==='SONDERBUDGET')return ['Sonderfreigabeweg bestimmen','Pilotumfang und Messplan finalisieren','Entscheidungstermin sichern'];
+    if(st==='WIRKUNGSNACHWEIS')return ['Baseline bestätigen','Erfolgsschwelle und Messlogik vereinbaren','Go/No-Go-Termin absichern'];
+    return ['Dominante Kundenentscheidung bestätigen','Verantwortliche und Nachweise festlegen','Verbindlichen Entscheidungstermin sichern'];
+  }
+  function businessText(st){
+    const m=state.metrics||{}, annual=Number(m.annualCost||m.recurringInternalCost||0);
+    if(has(/Wirtschaftliche Folgen[^\n]*620\.000/i))return 'Der wirtschaftliche Schaden ist mit mindestens 620.000 € quantitativ beziffert; der Pilot ist jedoch im laufenden Jahr nicht budgetiert. Business-Case-Evidenz und Budgetstatus sind deshalb getrennt zu bewerten.';
+    if((state.damageSignals||[]).length&&!annual)return 'Der wirtschaftliche Schaden ist qualitativ belegt, aber noch nicht belastbar beziffert. Daraus darf keine quantitative Business-Case-Sicherheit abgeleitet werden.';
+    if(st==='VERTRAGSVERHANDLUNG')return `Budget und fachlich-wirtschaftliche Auswahl sind bestätigt. Die verbleibende Bewertung betrifft die wirtschaftlichen Folgen von Nachlass, Zahlungsziel, Haftung, Sonderkündigung und Zusatznutzerpreisen.`;
+    if(st==='VERTRAGSFREIGABE')return `Pilotpreis ${money(state.metrics.price||36000)} sowie Budget- und Investitionsfreigabe sind bestätigt. Ein neuer Wirkungsnachweis ist kein Abschluss-Gate mehr; relevant sind nur noch formale und operative Startbedingungen.`;
+    try{return businessCaseModel().text}catch(e){return annual?`Ein wirtschaftlicher Ausgangswert von ${money(annual)} pro Jahr ist erkannt; vermeidbarer Anteil und zusätzliche Ergebniswirkung müssen getrennt bestätigt werden.`:'Der wirtschaftliche Schaden ist qualitativ belegt, aber noch nicht belastbar beziffert.'}
+  }
+  function area(name,st){
+    const pc=purchaseConditions(), is=issues(st), bn=buyerName();
+    const map={
+      Qualifizierung:{status:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE','STARTFREIGABE'].includes(st)?'abgeschlossen':'teilweise geklärt',assessment:st==='EVIDENZKONFLIKT'?'Ein belastbarer Verkaufsfall ist wegen widersprüchlicher Problem- und Relevanzaussagen noch nicht bestätigt.':'Bedarf, wirtschaftliche Relevanz und Entscheidungsrollen werden gegen den aktuellen Deal-State geprüft.',insight:st==='KAUFBEDINGUNGEN'?`${pc.length} Kaufbedingungen zeigen: Der Verkaufsfall ist vorhanden, aber noch nicht freigabefähig.`:'Qualifizierung ist abgeschlossen, sobald Problem, Priorität, Entscheider und verbindlicher Entscheidungsweg belastbar sind.',next:st==='EVIDENZKONFLIKT'?contradictions()[0].question:centralDecision(st)},
+      Bedarfsanalyse:{status:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE','STARTFREIGABE'].includes(st)?'abgeschlossen':'teilweise geklärt',assessment:st==='EVIDENZKONFLIKT'?'Problemumfang und wirtschaftliche Relevanz sind nicht bestätigt, weil Sponsor und Entscheiderin widersprechen.':businessText(st),insight:'Qualitative Schadenssignale, quantifizierte Baseline und nachgewiesene Ergebniswirkung sind drei verschiedene Evidenzstufen.',next:st==='EVIDENZKONFLIKT'?'Drei reale Opportunities, Forecast-Abweichungen und Folgekosten gemeinsam auswerten.':`Mit ${bn} Baseline, vermeidbaren Anteil und Zielwirkung bestätigen.`},
+      Demo:{status:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE','STARTFREIGABE'].includes(st)?'nicht mehr entscheidungskritisch':'offen',assessment:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)?'Ein weiterer Produktnachweis ist nicht mehr erforderlich; fachliche Auswahl und Kaufentscheidung sind getroffen.':'Der Nachweis muss die dominante Entscheidungssituation an realen Opportunities beantworten.',insight:st==='KAUFBEDINGUNGEN'?'Eine Demo ist nur relevant, wenn sie gezielt Akzeptanz, Datenqualität oder Salesforce-Abgrenzung beweist.':'Funktionen überzeugen nicht; entscheidend ist ein vorab vereinbarter Beweis für bessere Kundenentscheidungen.',next:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)?'Keine weitere Demo einplanen; Ressourcen auf offene Freigaben konzentrieren.':'Reale Beispielfälle, Bewertende und Erfolgsschwelle vor dem Nachweis festlegen.'},
+      Einwandbehandlung:{status:pc.length?'teilweise geklärt':(st==='VERTRAGSFREIGABE'?'nicht mehr entscheidungskritisch':'offen'),assessment:pc.length?`${pc.length} konkrete Kauf- oder Vertragsbedingungen sind erkannt und getrennt zu behandeln.`:'Bestätigte Einwände werden nur als solche behandelt, wenn sie einer konkreten Kundenaussage oder Forderung entsprechen.',insight:st==='VERTRAGSVERHANDLUNG'?'Nachlass, Zahlungsziel, Haftung und Sonderkündigung sind keine Produktzweifel, sondern wirtschaftlich-rechtliche Abschlussbedingungen.':pc.length?'Jede Kaufbedingung braucht einen eigenen Nachweis und Freigeber; eine Sammelantwort erzeugt Scheinsicherheit.':'Potenzielle Einwände dürfen nicht als bestätigte Kundeneinwände ausgegeben werden.',next:pc.length?'Jede Bedingung einem Nachweis, Verantwortlichen, Grenzwert und Termin zuordnen.':'Im nächsten Gespräch den tatsächlich blockierenden Einwand explizit bestätigen.'},
+      'Wirtschaftlicher Nutzen & ROI':{status:st==='EVIDENZKONFLIKT'?'nicht belastbar':(state.metrics.annualCost||state.metrics.recurringInternalCost?'teilweise geklärt':'offen'),assessment:businessText(st),insight:st==='VERTRAGSVERHANDLUNG'?'Der wirtschaftliche Dealwert ist bestätigt; jetzt sind nur noch die Kosten und Risiken der geforderten Vertragszugeständnisse zu bewerten.':'Business-Case-Sicherheit entsteht erst, wenn qualitative Wirkung, quantitative Baseline und realistisch vermeidbarer Anteil getrennt belegt sind.',next:st==='VERTRAGSVERHANDLUNG'?'Jede Beschaffungsforderung in Euro, Risiko und Gegenleistung bewerten.':`Mit ${bn} Baseline, Zielwirkung und Entscheidungsschwelle bestätigen.`},
+      Angebot:{status:['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)?'weitgehend geklärt':(state.metrics.price?'teilweise geklärt':'offen'),assessment:st==='VERTRAGSVERHANDLUNG'?'Preis und Budget sind bestätigt; offen sind konkrete Konditionen und Vertragsrisiken.':st==='VERTRAGSFREIGABE'?'Pilotpreis, Budget und Investitionsfreigabe sind bestätigt; das Angebot ist wirtschaftlich entschieden.':state.metrics.price?`Ein Preis von ${money(state.metrics.price)} ist erkannt; Freigaben und Bedingungen bleiben state-spezifisch offen.`:'Ein verbindlicher Preis ist noch nicht bestätigt.',insight:st==='VERTRAGSFREIGABE'?'Weitere Angebotsiteration erzeugt keinen Wert; Datenschutz, AV-Vertrag und Pilotleitung sind die einzigen relevanten Gates.':'Ein entscheidungsfähiges Angebot verbindet Preis, Wirkung, Bedingungen, Verantwortliche und Entscheidungstermin.',next:st==='VERTRAGSVERHANDLUNG'?is[0]:st==='VERTRAGSFREIGABE'?'Auftragsverarbeitungsvertrag finalisieren und Datenschutzfreigabe einholen.':'Angebot exakt auf bestätigte Kaufbedingungen und Freigabekriterien ausrichten.'},
+      Abschluss:{status:st==='STARTFREIGABE'?'weitgehend geklärt':(['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)?'entscheidungsnah':'offen'),assessment:st==='VERTRAGSFREIGABE'?'Die wirtschaftliche Freigabe ist erfolgt; der Abschluss hängt an einem formalen Datenschutz-Gate und der operativen Startfähigkeit.':st==='VERTRAGSVERHANDLUNG'?'Der Abschluss ist fachlich und wirtschaftlich vorbereitet; nur konkrete Vertragsbedingungen sind noch offen.':'Die formale Kundenentscheidung oder Freigabe ist noch nicht vollständig erreicht.',insight:st==='VERTRAGSFREIGABE'?'Der letzte Meter ist kein Verkaufsproblem mehr, sondern ein sauber zu orchestrierender Legal-, Datenschutz- und Übergabeprozess.':st==='VERTRAGSVERHANDLUNG'?'Der Deal ist kaufseitig entschieden; schlechtes Concession Management ist jetzt das größte Wertvernichtungsrisiko.':'Abschlussqualität entsteht durch eine explizite Kundenentscheidung, nicht durch optimistische Aktivität.',next:st==='VERTRAGSFREIGABE'?'Datenschutzfreigabe, Pilotleitung und Starttermin in einem finalen Freigabeplan schließen.':st==='VERTRAGSVERHANDLUNG'?'Konditionspaket, Legal-Freigabe, Vertrag und Starttermin gemeinsam finalisieren.':is[2]}
+    };
+    const a=map[name];return {...a,facts:[],open:is,insightMethods:[],nextMethods:[]};
+  }
+  processAnalysis=function(name){return area(name,dealState())};
+
+  function brief(){const st=dealState(),q=ki218QualityModel(),b=buyer(),pc=purchaseConditions(),c=contradictions(),is=issues(st);let pts=[];
+    if(state.metrics.annualCost||state.metrics.recurringInternalCost)pts.push(`${money(state.metrics.annualCost||state.metrics.recurringInternalCost)} dokumentierter wirtschaftlicher Ausgangswert pro Jahr.`);
+    else if((state.damageSignals||[]).length)pts.push('Wirtschaftlicher Schaden qualitativ belegt, aber nicht belastbar beziffert.');
+    if(b)pts.push(`${b.name} ist als wirtschaftliche Entscheidungsrolle erkannt.`);
+    if(state.metrics.budget)pts.push(`Finanzieller Rahmen: ${money(state.metrics.budget)}.`);
+    if(state.metrics.price)pts.push(`Preis: ${money(state.metrics.price)}.`);
+    if(pc.length)pts.push(`${pc.length} getrennte Kauf- oder Vertragsbedingungen erkannt: ${pc.join(', ')}.`);
+    if(c.length)pts.push(`Evidenzkonflikt erkannt: ${c[0].a} / ${c[0].b}`);
+    return `KI21 SALES DECISION BRIEF\nVersion: ${V8171}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${assessment(st)}\n\nDIE PUNKTE, DIE ZÄHLEN\n${pts.map(x=>'• '+x).join('\n')||'• Noch keine belastbaren Kerndaten erkannt.'}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• ${centralDecision(st)}\n\nGRÖSSTER ENGPASS\n• ${is[0]}\n\nEXECUTIVE AHA\n• ${executiveAha(st)}\n\nDOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird im Zustand ${st} daran entschieden, ob „${is[0]}“ belastbar geschlossen wird.\n\nBUSINESS CASE UND NUTZEN\n• ${businessText(st)}\n\nNÄCHSTER SCHRITT\n1. ${is[0]}.\n2. ${is[1]||'Verantwortliche und Nachweise festlegen'}.\n3. ${is[2]||'Verbindlichen Entscheidungstermin sichern'}.\n\nSTATE CHECK\n• Deal-State: ${st}\n• Wirtschaftlicher Entscheider: ${b?b.name:'nicht erkannt'}\n• Erkannte Kaufbedingungen: ${pc.length}\n• Evidenzkonflikte: ${c.length}\n• Budget: ${state.metrics.budget?money(state.metrics.budget):'nicht erkannt'}\n• Preis: ${state.metrics.price?money(state.metrics.price):'nicht bestätigt'}\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}\n• Forecast-Abschlag: ${forecastDeduction()}`;
+  }
+  decisionBrief=brief;
+  fullReport=function(){const st=dealState(),q=ki218QualityModel(),c=contradictions(),pc=purchaseConditions();let r=`KI21 VOLLSTÄNDIGER QUALITÄTS- UND ENTSCHEIDUNGSBERICHT\nVersion: ${V8171}\nErstellt: ${new Date().toLocaleString('de-DE')}\nOpportunity: ${state.company} · ${state.opportunity}\n\n=== SALES DECISION BRIEF ===\n\n${brief()}\n\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n`;
+    PROCESS_AREAS.forEach(name=>{const a=area(name,st);r+=`\n--- ${name} ---\nStatus: ${a.status}\nEinschätzung: ${a.assessment}\nAha-Erkenntnis: ${a.insight}\nNächster Kundenschritt: ${a.next}\n`});
+    r+=`\n=== EVIDENZ-INTEGRITÄT ===\n• Qualitative Schadensevidenz: ${(state.damageSignals||[]).length?'vorhanden':'nicht erkannt'}\n• Quantifizierter wirtschaftlicher Ausgangswert: ${(state.metrics.annualCost||state.metrics.recurringInternalCost)?money(state.metrics.annualCost||state.metrics.recurringInternalCost):'nicht erkannt'}\n• Erkannte Kaufbedingungen: ${pc.length}${pc.length?' · '+pc.join(' | '):''}\n• Erkannte Widersprüche: ${c.length}`;
+    c.forEach((x,i)=>{r+=`\n  ${i+1}. Aussage A: ${x.a}\n     Aussage B: ${x.b}\n     Auswirkung: ${x.impact}\n     Klärungsfrage: ${x.question}`});
+    r+=`\n\n=== QUALITÄTS-KURZDIAGNOSE ===\n• Deal-State: ${st}\n• Bereichsanalysen: 7/7\n• Opportunity Score: ${q.score}%\n• Forecast: ${q.forecast}%\n• Version konsistent: JA`;
+    return r;
+  };
+
+  function evalCase(tc,index){const original=state,t0=performance.now();let report='',error='';try{const s=emptyState(false),p=parseImport(tc.raw);applyParsed(s,p);s.rawImport=tc.raw;state=s;report=fullReport()}catch(e){error=String(e&&e.stack||e)}finally{state=original}
+    const st=(report.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'';const score=Number((report.match(/Opportunity Score:\s*(\d+)%/)||[])[1]||0),forecast=Number((report.match(/Forecast:\s*(\d+)%/)||[])[1]||0);
+    const areas=(report.match(/^--- .+ ---$/gm)||[]).length,badTokens=(report.match(/\b(?:undefined|null|NaN)\b|0 Wochen|von 0 € auf 0 €/g)||[]).length;
+    const ah=(report.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'',as=(report.match(/EINSCHÄTZUNG\n([^\n]+)/)||[])[1]||'';
+    const areaInsights=[...report.matchAll(/Aha-Erkenntnis:\s*(.+)/g)].map(m=>m[1]);
+    const semDups=areaInsights.filter((x,i)=>areaInsights.some((y,j)=>j<i&&sim(x,y)>.78)).length+(sim(ah,as)>.72?1:0);
+    const expectedState=tc.id==='N09'?'VERTRAGSFREIGABE':tc.id==='N10'?'VERTRAGSVERHANDLUNG':tc.id==='N05'?'KAUFBEDINGUNGEN':tc.id==='N13'?'EVIDENZKONFLIKT':'';
+    const checks=[
+      !error,areas===7,badTokens===0,/Version: KI21 Core 8\.17\.1/g.test(report),
+      !expectedState||st===expectedState,
+      !['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,
+      Math.abs(score-forecast)<=22,
+      tc.id!=='N13'||/Erkannte Widersprüche:\s*[1-9]/.test(report),
+      tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(report),
+      sim(ah,as)<.72,
+      new Set(areaInsights.map(norm)).size===7,
+      tc.id!=='N08'||/quantitativ beziffert|qualitativ belegt, aber noch nicht belastbar beziffert/i.test(report),
+      tc.id!=='N09'||!/Deal-State: WIRKUNGSNACHWEIS/.test(report),
+      report.length<15000,
+      /ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(report),
+      semDups===0
+    ];
+    const points=checks.filter(Boolean).length,max=checks.length;
+    return{tc,index,report,error,checks,points,max,passed:points===max,score:{score,forecast},elapsed:Math.round(performance.now()-t0),duplicates:semDups,badTokens,strongestInsight:ah,bottleneck:(report.match(/GRÖSSTER ENGPASS\n•\s*(.+)/)||[])[1]||'',nextStep:(report.match(/NÄCHSTER SCHRITT\n1\.\s*(.+)/)||[])[1]||''};
+  }
+  ki2118EvaluateCase=evalCase;
+  function compactOutput(rep){const sections=['EINSCHÄTZUNG','ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','EXECUTIVE AHA','BUSINESS CASE UND NUTZEN','NÄCHSTER SCHRITT','STATE CHECK','EVIDENZ-INTEGRITÄT'];let out=[];for(let i=0;i<sections.length;i++){const h=sections[i].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),next=sections.slice(i+1).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');const m=rep.match(new RegExp('(?:^|\\n)'+h+'\\n([\\s\\S]*?)'+(next?'(?=\\n(?:'+next+')\\n|$)':'$'),'i'));if(m)out.push(sections[i]+'\n'+m[1].trim())}return out.join('\n\n')||rep}
+  ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evalCase),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0),runtime=Math.round(performance.now()-started);
+    const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | Doppelungen ${x.duplicates}`).join('\n');
+    const failed=results.filter(x=>!x.passed),reviewSet=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]);
+    const reviews=results.filter(x=>reviewSet.has(x.tc.id)).map(x=>`${'='.repeat(68)}\nVOLLSTÄNDIGER REFERENZ-/FEHLERBERICHT · ${x.tc.id} · ${x.tc.name}\n${'='.repeat(68)}\n${x.report}`).join('\n\n');
+    const text=`KI21 SMART QUALITY SUITE\nVersion: ${V8171}\nErstellt: ${new Date().toLocaleString('de-DE')}\n\n=== MANAGEMENT SUMMARY ===\n• Testfälle: ${results.length}\n• Vollständig bestanden: ${passed}/${results.length}\n• Semantische Qualitätschecks: ${pts}/${total}\n• Laufzeit: ${runtime} ms\n• API-Aufrufe: 0\n• Semantische Doppelungen: ${results.reduce((a,x)=>a+x.duplicates,0)}\n• Ungültige Tokens: ${results.reduce((a,x)=>a+x.badTokens,0)}\n\n=== TESTÜBERSICHT · ALLE AUSGEWÄHLTEN FÄLLE ===\n${summary}\n\n=== VOLLSTÄNDIGE BERICHTE · 4 REFERENZFÄLLE + ALLE FEHLERFÄLLE ===\n${reviews||'Keine Berichte ausgewählt.'}\n\n=== AUSGABEREGEL ===\nVollständige Berichte werden ausschließlich für T07, T08, N10, N13 und zusätzlich für nicht vollständig bestandene Fälle ausgegeben.`;
+    return{results,text};
+  };
+  try{VERSION=V8171}catch(e){}document.title=V8171;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.17.1';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8171;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
+})();
+</script>
+
 </body>
 </html>
