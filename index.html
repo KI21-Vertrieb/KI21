@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
-<title>KI21 Core 8.10.6 · Batch Import & Storage Fix</title>
+<title>KI21 Core 8.10.7 · Compact Import Engine Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -35,7 +35,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-const VERSION='KI21 Core 8.10.6 · Batch Import & Storage Fix';
+const VERSION='KI21 Core 8.10.7 · Compact Import Engine Fix';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -1170,6 +1170,168 @@ handleAction=function(action,el){
   }
   return __8106HandleAction(action,el);
 };
+
+
+// === 8.10.7 canonical compact-import engine ===
+// Final analysis layer: compact headings and values are parsed consistently and no legacy case text is reused.
+const __8107ParseImport=parseImport;
+parseImport=function(raw){
+  const p=__8107ParseImport(raw);
+  const text=String(raw||'').replace(/\r/g,'');
+  const full=text.replace(/\n+/g,' ');
+  const money=(rx)=>{const m=text.match(rx);return normalizeMoney(m&&m[1]||'')};
+  const num=(rx)=>{const m=text.match(rx);return m?Number(String(m[1]).replace(',','.'))||0:0};
+
+  const hours=num(/(?:^|\n)\s*[-•*]?\s*(\d+(?:[.,]\d+)?)\s*Stunden\s+Zusatzaufwand\s+pro\s+Monat/im)
+    ||num(/(?:^|\n)\s*[-•*]?\s*(\d+(?:[.,]\d+)?)\s*Stunden\s*(?:pro Monat|monatlich)/im);
+  const rate=money(/(?:interner Zeitwert|durchschnittlicher interner Zeitwert|Stundenwert)\s*:\s*([\d.,]+)\s*€/i)
+    ||money(/(?:interner Zeitwert|Stundenwert)[^\d\n]{0,30}([\d.,]+)\s*€/i);
+  const explicitAnnual=money(/(?:dokumentierter Jahresaufwand|wiederkehrender Jahresaufwand|wiederkehrender interner Zusatzaufwand(?: pro Jahr)?)\s*:\s*([\d.]+(?:,\d+)?)\s*€/i);
+  const annual=explicitAnnual||(hours&&rate?Math.round(hours*12*rate):0);
+  p.metrics.hours=hours||p.metrics.hours||0;
+  p.metrics.timeValue=rate||p.metrics.timeValue||0;
+  p.metrics.annualCost=annual||p.metrics.annualCost||0;
+  p.metrics.recurringInternalCost=annual||p.metrics.recurringInternalCost||0;
+
+  const pilotPrice=money(/Pilotpreis\s*:\s*([\d.]+(?:,\d+)?)\s*€/i);
+  const yearlyPrice=money(/(?:KI21\s+Jahrespreis|Jährlicher Angebotspreis|Neuer Jahresvertrag)\s*:\s*([\d.]+(?:,\d+)?)\s*€/i);
+  const genericPrice=money(/(?:^|\n)\s*Preis\s*:\s*([\d.]+(?:,\d+)?)\s*€/im);
+  p.metrics.price=pilotPrice||yearlyPrice||genericPrice||p.metrics.price||0;
+  p.metrics.implementationCost=money(/(?:Einmalige\s+)?(?:Erweiterungs- und )?Einführungskosten\s*:\s*([\d.]+(?:,\d+)?)\s*€/i)||p.metrics.implementationCost||0;
+  p.metrics.totalValue=money(/(?:Voraussichtliches\s+)?Gesamtvolumen(?:\s+KI21|\s+über\s+drei\s+Jahre)?\s*:\s*([\d.]+(?:,\d+)?)\s*€/i)||p.metrics.totalValue||0;
+  p.metrics.budget=money(/(?:Budgetrahmen|Transformationsbudget)\s*:\s*(?:bis\s+)?([\d.]+(?:,\d+)?)\s*€/i)||p.metrics.budget||0;
+
+  const pilotWeeks=num(/Pilotdauer\s*:\s*(\d+(?:[.,]\d+)?)\s*Wochen/i);
+  if(pilotWeeks)p.offerDuration=pilotWeeks+' Wochen';
+  const users=num(/Pilotumfang\s*:\s*(\d+)\s*Nutzer/i)||num(/Potenzial\s*:\s*(?:zunächst\s*)?(\d+)\s*Nutzer/i);
+  if(users)p.pilotUsers=users;
+
+  p.flags.approvalOpen=/Investitionsfreigabe\s*:\s*offen|Investitionsfreigabe\s+liegt\s+(?:noch\s+)?nicht\s+vor|keine\s+Investitionsfreigabe/i.test(text);
+  p.flags.priceOpen=!p.metrics.price||/(?:Preis|Pilotpreis)\s*:\s*(?:noch\s+)?offen/i.test(text);
+  p.flags.successOpen=/Offene Punkte[\s\S]*?Erfolgskriterien|Erfolgskriterien[^\n]*(?:offen|noch nicht|festlegen|bestätigen)|drei verbindliche Erfolgskriterien/i.test(text);
+  const btmp=(p.stakeholders||[]).find(x=>/wirtschaftlich(?:e|er)?\s+(?:Mit)?entscheider/i.test(x.role||'')||/finale Investitionsfreigabe/i.test(x.authority||''));
+  p.flags.economicBuyerOpen=!btmp||/noch nicht persönlich eingebunden|noch kein direktes Gespräch|noch kein persönlicher Termin/i.test((btmp.status||'')+' '+(btmp.openPoint||''));
+
+  // Compact section aliases and evidence semantics.
+  const aliases={
+    'Wirtschaftlicher Schmerz':'Schmerz & Aufwand','Offene Punkte':'Offene Punkte','Wettbewerb':'Wettbewerb & Alternativen',
+    'Bestätigte Einwände':'Einwandbehandlung','Nächster Kundenschritt':'Nächster Kundenschritt'
+  };
+  const lines=text.split('\n').map(x=>x.trim());
+  let sec='Weitere Information',mode='fact';
+  const evidence=[];const objections=[];
+  for(const line0 of lines){
+    const line=line0.trim();if(!line)continue;
+    if(aliases[line]){sec=aliases[line];mode=sec==='Offene Punkte'?'open':'fact';continue;}
+    if(/^(Unternehmen|Opportunity|Stakeholder|Budget und Angebot)$/i.test(line)){sec=line==='Budget und Angebot'?'Budget & Entscheidung':line;mode='fact';continue;}
+    if(/^[-•*]\s*/.test(line)||/:/.test(line)||/^CRM-IMPORT$/i.test(line)){
+      const clean=line.replace(/^[-•*]\s*/,'').trim();
+      let type=mode==='open'?'offen':'fakt';
+      if(sec==='Nächster Kundenschritt')type='ableitung';
+      if(sec==='Einwandbehandlung'){
+        type='fakt';const om=clean.match(/^([^:]{2,50}):\s*(.+)$/);if(om)objections.push({speaker:om[1],text:om[2],status:'bestätigt'});
+      }
+      evidence.push({id:'e'+evidence.length,text:clean,category:sec,type,context:mode,selected:true});
+    }
+  }
+  if(evidence.length)p.evidence=evidence;
+  if(objections.length)p.objections=objections;
+  return p;
+};
+
+function canonicalDecisionPeople(){
+  return (state.stakeholders||[]).filter(x=>/finale Investitionsfreigabe|gemeinsame Investitionsentscheidung|gemeinsame Investitionsfreigabe/i.test(x.authority||''));
+}
+activeDecisionGroupLabel=function(){
+  const people=canonicalDecisionPeople();
+  if(people.length)return people.map(x=>x.function||x.role||x.name).filter(Boolean).join(' / ');
+  const b=buyer();return b?(b.function||b.role||b.name):'noch nicht eindeutig bestätigt';
+};
+activeDecisionDate=function(){
+  const raw=state.rawImport||'';
+  return ((raw.match(/Entscheidung\s+bis\s*:\s*([^\n]+)/i)||raw.match(/Entscheidungstermin\s*:\s*([^\n]+)/i)||[])[1]||'noch nicht verbindlich festgelegt').trim();
+};
+activePilotDuration=function(){return ((state.rawImport||'').match(/Pilotdauer\s*:\s*([^\n]+)/i)||[])[1]||state.offer.duration||'noch offen'};
+activePilotScope=function(){return ((state.rawImport||'').match(/Pilotumfang\s*:\s*([^\n]+)/i)||[])[1]||((state.rawImport||'').match(/Potenzial\s*:\s*([^\n]+)/i)||[])[1]||state.offer.scope||'noch offen'};
+
+businessCaseModel=function(){
+  const m=state.metrics||{}, hours=Number(m.hours||0), rate=Number(m.timeValue||0);
+  const annual=Number(m.recurringInternalCost||m.annualCost||(hours&&rate?hours*12*rate:0));
+  const price=normalizeMoney(state.offer.price||m.price||'');
+  const implementation=normalizeMoney(m.implementationCost||'');
+  const total=normalizeMoney(m.totalValue||'');
+  if(isExpansionCase()){
+    const current=rawMoney('Aktueller Jahresvertrag'),next=rawMoney('Neuer Jahresvertrag');
+    const incrementalAnnual=Math.max(0,next-current),incrementalTotal=incrementalAnnual*3+implementation;
+    const three=annual*3,gap=Math.max(0,incrementalTotal-three);
+    return{ready:!!(next&&annual),expansion:true,text:`Der Jahresvertrag steigt von ${current.toLocaleString('de-DE')} € auf ${next.toLocaleString('de-DE')} €. Zusammen mit ${implementation.toLocaleString('de-DE')} € Einführung beträgt die zusätzliche Investition über drei Jahre ${incrementalTotal.toLocaleString('de-DE')} €. Dem stehen ${three.toLocaleString('de-DE')} € dokumentierter interner Aufwand gegenüber. Da nur der tatsächlich vermeidbare Anteil und ausschließlich die Zusatzwirkung der Erweiterung zählen, müssen mindestens ${gap.toLocaleString('de-DE')} € weitere Ergebniswirkung belastbar nachgewiesen werden.`};
+  }
+  if(isPilotCase()){
+    const weeks=Number(((state.rawImport||'').match(/Pilotdauer\s*:\s*(\d+)/i)||[])[1]||0);
+    if(!annual||!price)return{ready:false,pilot:true,text:`${!annual?'Ein belastbarer wirtschaftlicher Ausgangswert':'Der Pilotpreis'} ist noch nicht vollständig erkannt.`};
+    const periodCost=weeks?annual*weeks/52:0;
+    return{ready:true,pilot:true,text:`Der Pilotpreis beträgt ${price.toLocaleString('de-DE')} €. Der dokumentierte interne Jahresaufwand beträgt ${annual.toLocaleString('de-DE')} €. Für ${weeks||'die geplante'} Wochen entspricht der reine Vergleichsaufwand${weeks?' rund '+Math.round(periodCost).toLocaleString('de-DE')+' €':' nur einem Teil des Jahreswerts'}. Der Pilot muss deshalb über vorab definierte Erfolgsnachweise und eine klare Rollout-Entscheidung gerechtfertigt werden, nicht über eine vollständige Jahresersparnis.`};
+  }
+  if(!annual)return{ready:false,text:'Kein belastbarer wirtschaftlicher Ausgangswert erkannt.'};
+  if(!price)return{ready:false,text:`Ein belastbarer wirtschaftlicher Ausgangswert von ${annual.toLocaleString('de-DE')} € pro Jahr ist erkannt. Für eine ROI-Rechnung fehlen noch Investitionspreis, Betrachtungszeitraum und realistisch vermeidbarer Anteil.`};
+  return{ready:true,text:`Dem dokumentierten internen Jahresaufwand von ${annual.toLocaleString('de-DE')} € stehen ${price.toLocaleString('de-DE')} € wiederkehrender Preis${implementation?` und ${implementation.toLocaleString('de-DE')} € Einführung`:''} gegenüber. Für eine belastbare Entscheidung müssen vermeidbarer Anteil, zusätzliche Ergebniswirkung und Betrachtungszeitraum gemeinsam bestätigt werden.`};
+};
+
+scores=function(){
+  const m=state.metrics||{}, b=buyer(), sp=sponsor();let score=25;
+  if(m.hours||m.annualCost||m.recurringInternalCost)score+=8;
+  if((state.damageSignals||[]).length||/verschoben|verloren|Margenrisiko|negativem Ergebnisbeitrag/i.test(state.rawImport||''))score+=4;
+  if(m.budget)score+=7;if(sp)score+=6;if(b)score+=6;if(b&&!state.flags.economicBuyerOpen)score+=10;
+  if(!state.flags.successOpen)score+=6;if(!state.flags.priceOpen)score+=6;if(!state.flags.approvalOpen)score+=10;
+  const co=coo(),coOpen=!!(co&&/noch kein persönlicher Termin|noch nicht persönlich eingebunden/i.test(co.status||''));if(coOpen)score-=8;
+  score=Math.max(15,Math.min(92,score));
+  const forecast=Math.max(10,Math.min(88,score-10-(state.flags.approvalOpen?4:0)-(state.flags.economicBuyerOpen?4:0)-(coOpen?4:0)));
+  return{score,forecast,cooOpen:coOpen};
+};
+scoreDrivers=function(){const a=[];const m=state.metrics||{},b=buyer();if(m.hours||m.annualCost||m.recurringInternalCost)a.push('quantifizierter wirtschaftlicher Ausgangswert');if((state.damageSignals||[]).length||/verschoben|verloren|Margenrisiko/i.test(state.rawImport||''))a.push('dokumentierte Ergebnis- und Risikosignale');if(m.budget)a.push('finanzieller Rahmen');if(sponsor())a.push('fachlicher Treiber');if(b)a.push('wirtschaftliche Entscheidungsrolle');if(b&&!state.flags.economicBuyerOpen)a.push('aktive Entscheidereinbindung');if(!state.flags.priceOpen)a.push('bestätigter Preis');return a.join(', ')||'noch keine belastbaren Treiber';};
+scoreBrakes=function(){const a=[];if(!state.metrics.hours&&!state.metrics.annualCost&&!state.metrics.recurringInternalCost)a.push('wirtschaftlicher Ausgangswert fehlt');if(state.flags.economicBuyerOpen)a.push('wirtschaftlicher Entscheider nicht aktiv eingebunden');if(state.flags.successOpen)a.push('Erfolgskriterien offen');if(state.flags.priceOpen)a.push('Preis offen');if(state.flags.approvalOpen)a.push('Investitionsfreigabe offen');if(scores().cooOpen)a.push('COO noch nicht persönlich eingebunden');return a.join(', ')||'keine wesentlichen Bremsen erkannt';};
+forecastDeduction=function(){const a=[];if(state.flags.economicBuyerOpen)a.push('fehlende aktive Entscheidereinbindung');if(state.flags.approvalOpen)a.push('offene Investitionsfreigabe');if(scores().cooOpen)a.push('fehlende persönliche COO-Einbindung');return a.join(' und ')||'kein zusätzlicher Abschlag';};
+scoreExplanation=function(){const sc=scores(),m=state.metrics||{},b=buyer();return[
+ {label:'Basisscore für angelegte Opportunity',value:'+25',impact:true},
+ {label:'Wirtschaftlicher Ausgangswert quantifiziert',value:(m.hours||m.annualCost||m.recurringInternalCost)?'+8':'0',impact:!!(m.hours||m.annualCost||m.recurringInternalCost)},
+ {label:'Ergebnis- oder Risikosignale dokumentiert',value:/verschoben|verloren|Margenrisiko|negativem Ergebnisbeitrag/i.test(state.rawImport||'')?'+4':'0',impact:/verschoben|verloren|Margenrisiko|negativem Ergebnisbeitrag/i.test(state.rawImport||'')},
+ {label:'Finanzieller Rahmen erkannt',value:m.budget?'+7':'0',impact:!!m.budget},
+ {label:'Fachlicher Treiber vorhanden',value:sponsor()?'+6':'0',impact:!!sponsor()},
+ {label:'Wirtschaftliche Entscheidungsrolle erkannt',value:b?'+6':'0',impact:!!b},
+ {label:'Wirtschaftliche Entscheidungsrolle aktiv eingebunden',value:b&&!state.flags.economicBuyerOpen?'+10':'0',impact:!!(b&&!state.flags.economicBuyerOpen)},
+ {label:'Erfolgskriterien bestätigt',value:!state.flags.successOpen?'+6':'0',impact:!state.flags.successOpen},
+ {label:'Preis bestätigt',value:!state.flags.priceOpen?'+6':'0',impact:!state.flags.priceOpen},
+ {label:'Investitionsfreigabe bestätigt',value:!state.flags.approvalOpen?'+10':'0',impact:!state.flags.approvalOpen},
+ ...(sc.cooOpen?[{label:'COO noch nicht persönlich eingebunden',value:'−8',impact:true}]:[])
+ ];};
+
+processAnalysis=function(name){
+  const b=buyer(),sp=sponsor(),co=coo(),m=state.metrics||{},bc=businessCaseModel();
+  const group=activeDecisionGroupLabel(),date=activeDecisionDate(),annual=Number(m.recurringInternalCost||m.annualCost||0);
+  const common={status:'offen',assessment:'',facts:[],open:[],insight:'',insightMethods:[],next:'',nextMethods:[]};
+  if(name==='Qualifizierung')return{...common,status:b?'teilweise geklärt':'kritisch',assessment:`${sp?sp.name:'Ein fachlicher Treiber'} ist vorhanden. ${b?b.name+' ist als wirtschaftliche Entscheidungsrolle erkannt.':'Die wirtschaftliche Entscheidungsrolle ist noch offen.'}`,facts:[b?`${b.name} · ${b.function}`:'',m.budget?`Finanzieller Rahmen ${m.budget.toLocaleString('de-DE')} €`:''].filter(Boolean),open:[state.flags.economicBuyerOpen?'Aktive Einbindung der wirtschaftlichen Entscheidungsrolle':'',state.flags.approvalOpen?'Investitionsfreigabe':'',state.flags.successOpen?'Erfolgskriterien':''].filter(Boolean),insight:`Die formale Entscheidungsgruppe lautet ${group}. Fachliche, technische und operative Rollen dürfen nicht automatisch als wirtschaftliche Freigeber behandelt werden.`,insightMethods:['MEDDICC','Miller Heiman Strategic Selling'],next:`Mit ${[sp&&sp.name,b&&b.name,co&&co.name].filter(Boolean).join(', ')||'den relevanten Entscheidern'} Entscheidungsrollen, Kriterien, Freigabeweg und Termin ${date} verbindlich klären.`,nextMethods:['MEDDICC','Mutual Action Plan']};
+  if(name==='Bedarfsanalyse')return{...common,status:annual?'teilweise geklärt':'offen',assessment:annual?`Der dokumentierte wirtschaftliche Ausgangswert beträgt ${annual.toLocaleString('de-DE')} € pro Jahr. Zusätzliche Ergebniswirkungen sind teilweise noch offen.`:'Der wirtschaftliche Ausgangswert ist noch nicht belastbar erkannt.',facts:[m.hours?`${m.hours} Stunden Zusatzaufwand pro Monat`:'',annual?`${annual.toLocaleString('de-DE')} € pro Jahr`:''].filter(Boolean),open:['Realistisch vermeidbarer Anteil','Ergebniswirkung verschobener oder verlorener Deals','Vom Entscheider akzeptierte Mindestwirkung'],insight:'Zeitaufwand, Margenwirkung, vermiedene Fehlentscheidungen und bessere Übergaben müssen getrennt bewertet werden.',insightMethods:['SPIN','Value Selling'],next:`Mit ${b?b.name:'der wirtschaftlichen Entscheidungsrolle'} die zwei stärksten Nutzenhebel, Baseline und Zielwirkung bestätigen.`,nextMethods:['SPIN','Value Selling']};
+  if(name==='Demo')return{...common,assessment:'Die Demo beziehungsweise der Pilot muss einen überprüfbaren Kundenbeweis liefern und darf nicht bei Funktionen stehen bleiben.',facts:[state.pilotUsers?`${state.pilotUsers} Nutzer vorgesehen`:''].filter(Boolean),open:['Reale Beispielfälle','Bewertende Personen','Erfolgsschwelle'],insight:'Der stärkste Beweis ist eine sichtbar bessere Kundenentscheidung an realen Opportunities.',insightMethods:['Challenger Sale','CustomerCentric Selling'],next:'Reale Opportunities auswählen und vorab festlegen, welche Verbesserung als Erfolg gilt.',nextMethods:['CustomerCentric Selling']};
+  if(name==='Einwandbehandlung')return{...common,status:(state.objections||[]).length?'teilweise geklärt':'offen',assessment:(state.objections||[]).length?`${state.objections.length} bestätigte Einwände sind dokumentiert.`:'Noch keine bestätigten Kundeneinwände erkannt.',facts:(state.objections||[]).map(x=>`${x.speaker}: ${x.text}`),open:['Systemabgrenzung','Zusätzlicher Aufwand','Wirtschaftlicher Nachweis'],insight:'Bestätigte Einwände müssen einem konkreten Nachweis, Messwert und Verantwortlichen zugeordnet werden.',insightMethods:['Sandler Selling','JOLT Effect'],next:'Einwände in den Entscheidungs- und Beweisplan aufnehmen und vor Preisverhandlungen fachlich beantworten.',nextMethods:['JOLT Effect']};
+  if(name==='Wirtschaftlicher Nutzen & ROI')return{...common,status:bc.ready?'teilweise geklärt':'offen',assessment:bc.text,facts:[m.hours?`${m.hours*12} Stunden Jahresaufwand`:'',annual?`${annual.toLocaleString('de-DE')} € dokumentierter Jahresaufwand`:'',m.price?`${m.price.toLocaleString('de-DE')} € Preis`:'',m.totalValue?`${m.totalValue.toLocaleString('de-DE')} € Gesamtvolumen`:''].filter(Boolean),open:['Vermeidbarer Anteil','Betrachtungszeitraum','Zusätzliche Ergebniswirkung'],insight:'Der Business Case darf nur bestätigte Werte verwenden und muss Aufwand, Preis und zusätzliche Ergebniswirkung sauber trennen.',insightMethods:['Value Selling','SPIN'],next:`Mit ${b?b.name:'der wirtschaftlichen Entscheidungsrolle'} Baseline, Zielwirkung und Entscheidungsschwelle bestätigen.`,nextMethods:['Value Selling','MEDDICC']};
+  if(name==='Angebot')return{...common,status:m.price?'teilweise geklärt':'offen',assessment:m.price?`Der Preis von ${m.price.toLocaleString('de-DE')} € ist erkannt; Freigabe, Messlogik und Vertragsbedingungen sind noch zu klären.`:'Ein konkreter Preis ist noch nicht bestätigt.',facts:[m.price?`${m.price.toLocaleString('de-DE')} € Preis`:'',m.implementationCost?`${m.implementationCost.toLocaleString('de-DE')} € Einführung`:'',m.totalValue?`${m.totalValue.toLocaleString('de-DE')} € Gesamtvolumen`:''].filter(Boolean),open:['Erfolgskriterien','Freigabeweg','Verantwortung','Vertragsbedingungen'],insight:'Ein entscheidungsfähiges Angebot verbindet Preis, Wirkung, Messplan, Verantwortliche und Entscheidungstermin.',insightMethods:['Command of the Message','MEDDICC'],next:'Angebot und Entscheidungsplan auf dieselben bestätigten Kriterien ausrichten.',nextMethods:['Mutual Action Plan']};
+  return{...common,status:'offen',assessment:'Die finale Investitionsfreigabe ist noch nicht erreicht.',facts:[b?`${b.name} ist als wirtschaftliche Entscheidungsrolle erkannt`:'',m.price?`${m.price.toLocaleString('de-DE')} € Preis`:''].filter(Boolean),open:[state.flags.approvalOpen?'Investitionsfreigabe':'',state.flags.successOpen?'Erfolgskriterien':'','Technische und vertragliche Freigaben'].filter(Boolean),insight:`Der nächste Abschlussmeilenstein ist die belastbare Freigabe durch ${group}, nicht eine allgemeine Produktzustimmung.`,insightMethods:['Sandler Selling','Mutual Action Plan'],next:`Wirkung, Verantwortliche, offene Freigaben und Termin ${date} verbindlich machen.`,nextMethods:['Mutual Action Plan']};
+};
+
+decisionBrief=function(){
+  const b=buyer(),sp=sponsor(),sc=scores(),bc=businessCaseModel(),m=state.metrics||{},group=activeDecisionGroupLabel(),date=activeDecisionDate();
+  const annual=Number(m.recurringInternalCost||m.annualCost||0),price=Number(m.price||0),budget=Number(m.budget||0);
+  const gaps=[];if(state.flags.economicBuyerOpen)gaps.push(`${b?b.name:'wirtschaftliche Entscheidungsrolle'} noch nicht aktiv eingebunden`);if(state.flags.successOpen)gaps.push('Erfolgskriterien offen');if(state.flags.priceOpen)gaps.push('Preis offen');if(state.flags.approvalOpen)gaps.push('Investitionsfreigabe offen');if(scores().cooOpen)gaps.push(`${coo().name} noch nicht persönlich eingebunden`);
+  const points=[];
+  if(annual)points.push(`${annual.toLocaleString('de-DE')} € dokumentierter interner Aufwand pro Jahr${m.hours?` bei ${m.hours} Stunden Zusatzaufwand pro Monat`:''}.`);
+  if(b)points.push(`${b.name} ist als wirtschaftliche Entscheidungsrolle erkannt; die formale Entscheidungsgruppe lautet ${group}.`);
+  if(budget)points.push(`Ein finanzieller Rahmen von ${budget.toLocaleString('de-DE')} € ist dokumentiert.`);
+  if(price)points.push(`Der dokumentierte Preis beträgt ${price.toLocaleString('de-DE')} €${m.implementationCost?`; hinzu kommen ${m.implementationCost.toLocaleString('de-DE')} € Einführung`:''}.`);
+  if((state.objections||[]).length)points.push(`${state.objections.length} bestätigte Kundeneinwände müssen im Entscheidungsplan beantwortet werden.`);
+  if(gaps.length)points.push(`Offen: ${gaps.join(', ')}.`);
+  return`KI21 SALES DECISION BRIEF\nVersion: ${VERSION}\nOpportunity: ${state.company} · ${state.opportunity}\n\nEINSCHÄTZUNG\n${gaps.length?'Der Bedarf ist belegt, die Opportunity aber noch nicht entscheidungsreif. Entscheidend sind jetzt '+gaps.join(', ')+'.':'Bedarf, Entscheidungsrollen und Freigabeweg sind weitgehend bestätigt.'}\n\nDIE PUNKTE, DIE ZÄHLEN\n${points.map(x=>'• '+x).join('\n')}\n\nZENTRALE KUNDENENTSCHEIDUNG\n• Welche nachweisbare Wirkung und welche Freigabebedingungen rechtfertigen die Investition aus Sicht von ${b?b.name:'der wirtschaftlichen Entscheidungsrolle'} und ${group}?\n\nGRÖSSTER ENGPASS\n• ${gaps.length?gaps.join('; '):'Kein wesentlicher Engpass erkannt.'}\n\nBUSINESS CASE UND NUTZEN\n• ${bc.text}\n\nBESTÄTIGTE EINWÄNDE\n${(state.objections||[]).length?state.objections.map(x=>'• '+x.speaker+': '+x.text).join('\n'):'• Noch keine bestätigten Kundeneinwände erkannt.'}\n\nNÄCHSTER SCHRITT\n1. ${[sp&&sp.name,b&&b.name,coo()&&coo().name].filter(Boolean).join(', ')||'die relevanten Entscheider'} in einen gemeinsamen Entscheidungstermin holen.\n2. Wirkung, Erfolgskriterien, Verantwortliche und Freigabeweg verbindlich festlegen.\n3. Umfang ${activePilotScope()}, Laufzeit ${activePilotDuration()} und Entscheidungstermin ${date} absichern.\n\nSTATE CHECK\n• Entscheidungsgruppe: ${group}\n• Wirtschaftliche Entscheidungsrolle: ${b?b.name:'nicht erkannt'}\n• Budget / finanzielle Darstellbarkeit: ${budget||'nicht erkannt'}\n• Preis: ${price||0}\n• Opportunity Score: ${sc.score}%\n• Forecast: ${sc.forecast}%\n• Score-Treiber: ${scoreDrivers()}\n• Score-Bremsen: ${scoreBrakes()}\n• Forecast-Abschlag: ${forecastDeduction()}`;
+};
+
 
 // === 8.10.3 minimal interaction layer ===
 // Use the app's original listeners; do not intercept every click in capture phase.
