@@ -5022,7 +5022,7 @@ render();
 <script id="ki21-v8190-complex-decision-patterns">
 (()=>{
 'use strict';
-const V='KI21 Core 8.19.2 · Quality Version Check Fix';
+const V='KI21 Core 8.20.0 · Perspective Cockpit Foundation';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5134,210 +5134,79 @@ processAnalysis=function(name){const st=specialState();if(st)return areaFor(name
 function evaluate(tc,index){const original=state,t0=performance.now();let rep='',error='';try{const s=emptyState(false),p=parseImport(tc.raw);applyParsed(s,p);s.rawImport=tc.raw;state=s;rep=fullReport()}catch(e){error=String(e&&e.stack||e)}finally{state=original}
  const st=(rep.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'',score=Number((rep.match(/Opportunity Score:\s*(\d+)%/)||[])[1]||0),forecast=Number((rep.match(/Forecast:\s*(\d+)%/)||[])[1]||0),areaCount=(rep.match(/^--- .+ ---$/gm)||[]).length,badTokens=(rep.match(/\b(?:undefined|null|NaN)\b|0 Wochen|Mit der wirtschaftliche|\.\./g)||[]).length,ins=[...rep.matchAll(/Aha-Erkenntnis:\s*(.+)/g)].map(m=>m[1]),ah=(rep.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'',as=(rep.match(/EINSCHÄTZUNG\n([^\n]+)/)||[])[1]||'',dups=ins.filter((x,i)=>ins.some((y,j)=>j<i&&sim(x,y)>.82)).length+(sim(ah,as)>.75?1:0);
  const expected={T07:'QUALIFIZIERUNG',T10:'QUALIFIZIERUNG',N02:'ENTSCHEIDERZUGANG',N05:'KAUFBEDINGUNGEN',N08:'SONDERBUDGET',N09:'VERTRAGSFREIGABE',N10:'VERTRAGSVERHANDLUNG',N13:'EVIDENZKONFLIKT',N15:'QUALIFIZIERUNG',N16:'ENTSCHEIDUNGSKRITERIENKONFLIKT',N17:'PREIS_BUDGET_LÜCKE',N18:'REQUALIFIZIERUNG',N19:'ENTSCHEIDUNG_VERTAGT',N20:'WETTBEWERBSENTSCHEIDUNG'}[tc.id];
- const checks=[!error,areaCount===7,badTokens===0,rep.includes('Version: '+V),!expected||st===expected,!['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,Math.abs(score-forecast)<=18,tc.id!=='N13'||/Erkannte Widersprüche:\s*1/.test(rep),tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(rep),tc.id!=='N08'||/620\.000 €/.test(rep),tc.id!=='N02'||/Entscheider aktiv eingebunden:\s*NEIN/.test(rep),tc.id!=='N09'||!/Preis: nicht bestätigt|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),tc.id!=='N10'||!/fehlender Wirkungsnachweis|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),sim(ah,as)<.75,new Set(ins.map(norm)).size===7,/Nächster Kundenschritt:\s*(?!undefined).+/.test(rep),!/0 Wochen|rund 0 €/.test(rep),rep.length<60000,/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),dups===0,tc.id!=='N16'||/gemeinsame.*Gewichtung|Priorisierung|Zielkonflikt/i.test(rep),tc.id!=='N17'||/29\.000 €[\s\S]*85\.000 €[\s\S]*114\.000 €|114\.000 €[\s\S]*85\.000 €[\s\S]*29\.000 €/i.test(rep),tc.id!=='N18'||/neuen.*Champion|Requalifiz|nicht mehr im Unternehmen/i.test(rep),tc.id!=='N19'||/Überbrück|Wiederaufnahme|vertagt|Investitionssperre/i.test(rep),tc.id!=='N20'||/gewichtete.*Kriterien|Bewertungslogik|Wettbewerbsentscheidung/i.test(rep)];
- const checkNames=['Bericht erzeugt','7 Bereichsanalysen','keine ungültigen Tokens','Version konsistent','Deal-State korrekt','Forecast reifer Abschlusszustände','Score-Forecast-Abstand','Widerspruchszahl','Kaufbedingungen','Sonderbudget-Betrag','Entscheiderstatus','Vertragsfreigabe ohne Altblocker','Vertragsverhandlung ohne Altblocker','Aha von Einschätzung verschieden','7 unterschiedliche Bereichs-Ahas','nächster Kundenschritt vorhanden','keine Nullwerte','Berichtslänge','zentrale Kundenentscheidung','keine Doppelungen','N16 Kriterienkonflikt','N17 Budgetlücke','N18 Requalifizierung','N19 Vertagung','N20 Wettbewerb'];const failedChecks=checks.map((ok,i)=>ok?'':checkNames[i]).filter(Boolean);const points=checks.filter(Boolean).length;return{tc,index,report:rep,error,checks,failedChecks,points,max:checks.length,passed:points===checks.length,score:{score,forecast},elapsed:Math.round(performance.now()-t0),areaCount,duplicates:dups,badTokens,strongestInsight:ah,bottleneck:(rep.match(/GRÖSSTER ENGPASS\n•\s*(.+)/)||[])[1]||'',nextStep:(rep.match(/NÄCHSTER SCHRITT\n1\.\s*(.+)/)||[])[1]||''};
+ const checks=[!error,areaCount===7,badTokens===0,rep.includes('Version: '+V),!expected||st===expected,!['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,Math.abs(score-forecast)<=18,tc.id!=='N13'||/Erkannte Widersprüche:\s*1/.test(rep),tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(rep),tc.id!=='N08'||/620\.000 €/.test(rep),tc.id!=='N02'||/Entscheider aktiv eingebunden:\s*NEIN/.test(rep),tc.id!=='N09'||!/Preis: nicht bestätigt|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),tc.id!=='N10'||!/fehlender Wirkungsnachweis|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),sim(ah,as)<.75,new Set(ins.map(norm)).size===7,/Nächster Kundenschritt:\s*(?!undefined).+/.test(rep),!/0 Wochen|rund 0 €/.test(rep),rep.length<17000,/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),dups===0,tc.id!=='N16'||/gemeinsame.*Gewichtung|Priorisierung|Zielkonflikt/i.test(rep),tc.id!=='N17'||/29\.000 €[\s\S]*85\.000 €[\s\S]*114\.000 €|114\.000 €[\s\S]*85\.000 €[\s\S]*29\.000 €/i.test(rep),tc.id!=='N18'||/neuen.*Champion|Requalifiz|nicht mehr im Unternehmen/i.test(rep),tc.id!=='N19'||/Überbrück|Wiederaufnahme|vertagt|Investitionssperre/i.test(rep),tc.id!=='N20'||/gewichtete.*Kriterien|Bewertungslogik|Wettbewerbsentscheidung/i.test(rep)];
+ const points=checks.filter(Boolean).length;return{tc,index,report:rep,error,checks,points,max:checks.length,passed:points===checks.length,score:{score,forecast},elapsed:Math.round(performance.now()-t0),areaCount,duplicates:dups,badTokens,strongestInsight:ah,bottleneck:(rep.match(/GRÖSSTER ENGPASS\n•\s*(.+)/)||[])[1]||'',nextStep:(rep.match(/NÄCHSTER SCHRITT\n1\.\s*(.+)/)||[])[1]||''};
 }
 window.ki2118EvaluateCase=evaluate;
-window.ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evaluate),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0),runtime=Math.round(performance.now()-started);const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}${x.failedChecks&&x.failedChecks.length?' | Fehlchecks: '+x.failedChecks.join(', '):''}`).join('\n');const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');return{results,text:`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`}};
+window.ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evaluate),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0),runtime=Math.round(performance.now()-started);const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');return{results,text:`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`}};
 try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.19.2';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
-</script>
 
 
-
-<script id="ki21-v900-strategic-opportunity-intelligence">
-(()=>{
-'use strict';
-const V='KI21 Core 9.0.3 · Quality Gate Integrity Fix';
-const priorFullReport=fullReport;
-const priorProcessAnalysis=processAnalysis;
-const priorRenderCockpit=renderCockpit;
-const priorRenderInputs=renderInputs;
-const raw=()=>String(state&&state.rawImport||'');
-const clean=t=>String(t||'').replace(/\s+/g,' ').trim();
-const esc9=t=>typeof esc==='function'?esc(String(t||'')):String(t||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const has=(...rxs)=>rxs.some(rx=>rx.test(raw()));
-const first=(rx,fallback='')=>{const m=raw().match(rx);return m?clean(m[1]||m[0]):fallback};
-const person=(rx,fallback)=>first(rx,fallback);
-const dmName=()=>{try{const x=buyer();return x&&x.name?x.name:'wirtschaftliche Entscheidungsrolle'}catch(e){return'wirtschaftliche Entscheidungsrolle'}};
-const spName=()=>{try{const x=sponsor();return x&&x.name?x.name:'fachlicher Sponsor'}catch(e){return'fachlicher Sponsor'}};
-const money9=n=>Number(n||0).toLocaleString('de-DE')+' €';
-
-const PERSPECTIVES={
-  economic:{label:'Wirtschaftlichkeit',icon:'€'},
-  functional:{label:'Fachlicher Fit',icon:'◎'},
-  technical:{label:'Technik & Architektur',icon:'⌘'},
-  security:{label:'Security & Datenschutz',icon:'◈'},
-  buying:{label:'Buying Center',icon:'👥'},
-  political:{label:'Interne Politik',icon:'♟'},
-  competition:{label:'Wettbewerb',icon:'⚔'},
-  commercial:{label:'Preis & Verhandlung',icon:'⇄'},
-  resources:{label:'Ressourcen & Umsetzung',icon:'⏱'},
-  change:{label:'Change & Adoption',icon:'↗'},
-  legal:{label:'Vertrag & Compliance',icon:'§'},
-  process:{label:'Entscheidungsprozess',icon:'◇'},
-  corporate:{label:'Unternehmenskontext',icon:'🏢'},
-  timing:{label:'Timing & Momentum',icon:'◷'}
-};
-
-const SIGNALS=[
- {id:'new_competitor',p:'competition',sev:4,rx:/neue[rn]?\s+(?:anbieter|mitbewerber|wettbewerber)|zusätzliche[rn]?\s+(?:anbieter|mitbewerber)|kurzfristig.*(?:shortlist|auswahl)/i,title:'Neuer Wettbewerber',effect:'Die bisherige Bewertung ist nicht mehr vollständig. Kaufkriterien, Initiator und Entscheidungszeitplan müssen neu bestätigt werden.',action:'Innerhalb von fünf Arbeitstagen klären, wer den Anbieter eingebracht hat, welches neue Kriterium er adressiert und wie sich die Auswahl verändert.',mode:'Competitive Selling'},
- {id:'incumbent',p:'competition',sev:5,rx:/bereits im haus|bestandsanbieter|bestehende lösung|installierte basis|konzernstandard|ablösung|replacement|incumbent/i,title:'Wettbewerbsprodukt bereits im Haus',effect:'Der Status quo besitzt Vertrags-, Integrations- und Beziehungsvorteile. Ein guter Produktfit allein reicht nicht als Wechselgrund.',action:'Wechselkosten, Vertragsende, Datenbindung und konkrete Unzufriedenheit belegen; Ergänzung und Ablösung getrennt bewerten.',mode:'Displacement Strategy'},
- {id:'price_cut',p:'commercial',sev:4,rx:/wettbewerber.{0,80}(?:preis|nachlass|rabatt).{0,40}(?:gesenkt|reduziert|unterboten)|(?:massiv|deutlich|aggressiv).{0,30}(?:preis|nachlass)/i,title:'Aggressive Preissenkung des Wettbewerbs',effect:'Das Margenrisiko steigt; die Abschlusschance sinkt nur dann zwingend, wenn Preis tatsächlich kaufentscheidend ist.',action:'Nicht reflexartig nachziehen. Entscheidungslogik auf TCO, Einführungsrisiko und Wirkung verlagern; Zugeständnisse nur gegen Gegenleistung.',mode:'Commercial Negotiation'},
- {id:'multi_comp',p:'competition',sev:4,rx:/(?:zwei|drei|mehrere|2|3)\s+(?:weitere\s+)?(?:anbieter|mitbewerber|wettbewerber)|shortlist.{0,40}(?:drei|3|vier|4)/i,title:'Mehranbieter-Wettbewerb',effect:'Die Opportunity braucht eine explizite Win-Strategie statt allgemeiner Produktargumentation.',action:'Für jeden Anbieter Win-Themes, Verlustgründe, Sponsor, Preisposition und Differenzierungsnachweis dokumentieren.',mode:'Competitive Selling'},
- {id:'blocker',p:'political',sev:5,rx:/(?:blockiert|bremst|verhindert|stellt sich gegen|lehnt ab|kritischer gegner|detractor|gegner)/i,title:'Aktiver interner Blocker',effect:'Ein Sachargument kann wirkungslos bleiben, wenn Motivation, Macht und persönlicher Nachteil des Blockers ungeklärt sind.',action:'Vetorecht, Motivation, persönliche Konsequenz und bevorzugte Alternative klären; passende Neutralisierungs- oder Einbindungsstrategie wählen.',mode:'Political Selling'},
- {id:'champion_weak',p:'buying',sev:4,rx:/champion.{0,40}(?:schwach|verliert|ohne einfluss|nicht belastbar)|sponsor.{0,40}(?:schwach|kein zugang|wenig einfluss)/i,title:'Schwacher Champion',effect:'Interne Unterstützung ist vorhanden, kann aber den Entscheidungsprozess nicht wirksam bewegen.',action:'Champion coachen, Machtzugang erweitern und einen zweiten belastbaren Sponsor aufbauen.',mode:'Champion Development'},
- {id:'new_decider',p:'corporate',sev:5,rx:/neue[rn]?\s+(?:geschäftsführer|cfo|cio|cto|entscheider|leitung|vorstand)|(?:geschäftsführer|cfo|cio|cto|entscheider).{0,60}(?:neu im unternehmen|neu gestartet|kommt neu)/i,title:'Neuer Entscheider',effect:'Personenbezogene Zusagen, Kriterien und Prioritäten sind vorläufig nicht mehr entscheidungsfest.',action:'Deal requalifizieren: 90-Tage-Prioritäten, frühere Anbietererfahrungen, Kostenagenda und gültige Freigaben neu bestätigen.',mode:'Executive Requalification'},
- {id:'champion_left',p:'political',sev:5,rx:/(?:champion|sponsor|ansprechpartner).{0,50}(?:verlässt|verlassen|nicht mehr im unternehmen|ausgeschieden|gekündigt)/i,title:'Champion oder Sponsor ausgeschieden',effect:'Beziehungs- und Evidenzträger fallen weg; frühere Zustimmung bleibt historische, aber keine aktuelle Freigabe.',action:'Neue interne Trägerschaft, Machtkarte und Gültigkeit aller bisherigen Zusagen strukturiert neu aufbauen.',mode:'Political Requalification'},
- {id:'hq',p:'corporate',sev:5,rx:/(?:headquarter|hq|konzernzentrale|usa|us-zentrale|global it|globaler einkauf).{0,100}(?:entscheidet|beeinflusst|freigibt|vorgabe|prüft)|(?:entscheidung|freigabe).{0,100}(?:headquarter|usa|konzernzentrale)/i,title:'Headquarter greift in die Entscheidung ein',effect:'Die lokale Opportunity wird größer, aber weniger reif. Neue Architektur-, Vendor- und Budget-Gates entstehen.',action:'Lokalen Sponsor erhalten und parallel globale Entscheidungsmacht, Vendor-Prozess, Security-Gates und Rollout-Potenzial kartieren.',mode:'Global Stakeholder Alignment'},
- {id:'sale_company',p:'corporate',sev:5,rx:/(?:unternehmen|firma|gesellschaft).{0,60}(?:verkauft|übernommen|zum verkauf|m&a|akquisition)|(?:verkauf|übernahme|due diligence).{0,60}(?:unternehmen|gesellschaft)/i,title:'Unternehmensverkauf oder Übernahme',effect:'Die Investitionslogik kann sich abrupt zu EBITDA, Integrationsrisiko, Investitionsstopp oder beschleunigtem Abschluss verschieben.',action:'Transaktionsphase, Investitionsmoratorium, Käuferlogik und Systemharmonisierung klären; Forecast bis dahin als instabil behandeln.',mode:'Corporate Event Navigation'},
- {id:'reorg',p:'corporate',sev:4,rx:/reorganisation|restrukturierung|neue organisation|bereich wird zusammengelegt|stellenabbau|kostenprogramm/i,title:'Reorganisation',effect:'Rollen, Budgets und Prioritäten können sich verändern, auch wenn der fachliche Bedarf bestehen bleibt.',action:'Neue Verantwortungen, Budgetinhaber und Gewinner beziehungsweise Verlierer der Veränderung identifizieren.',mode:'Political Requalification'},
- {id:'no_capacity',p:'resources',sev:5,rx:/(?:team|projektteam|it|fachbereich).{0,80}(?:keine zeit|keine kapazität|ausgelastet|überlastet|ressourcen fehlen)|(?:kapazität|ressourcen).{0,60}(?:fehlen|nicht verfügbar|engpass)/i,title:'Umsetzungsteam ohne Kapazität',effect:'Die Opportunity kann kaufbereit, aber nicht umsetzungsbereit sein. Abschlusschance und Startwahrscheinlichkeit müssen getrennt werden.',action:'Scope reduzieren, Start staffeln, externe Unterstützung oder verbindliche Ressourcenreservierung vereinbaren.',mode:'Delivery Readiness'},
- {id:'implementation_risk',p:'resources',sev:4,rx:/implementierungsrisiko|einführungsrisiko|migration.{0,40}(?:riskant|unklar|aufwendig)|rollout.{0,40}(?:unklar|gefährdet|offen)/i,title:'Einführungs- oder Migrationsrisiko',effect:'Der erwartete Nutzen wird durch wahrgenommenes Umsetzungsrisiko entwertet.',action:'Risiko in Arbeitspakete, Verantwortliche, Abhängigkeiten und Exit-Kriterien zerlegen; Proof-of-Implementation anbieten.',mode:'Delivery Readiness'},
- {id:'technical_gap',p:'technical',sev:4,rx:/(?:funktion|schnittstelle|integration|api|architektur).{0,70}(?:fehlt|nicht erfüllt|unklar|kritisch|lücke)|must-have.{0,50}(?:nicht erfüllt|offen)/i,title:'Fachlich-technische Lücke',effect:'Ein konkretes Muss-Kriterium kann die Opportunity unabhängig von Business Case und Entscheiderzugang stoppen.',action:'Muss versus Wunsch trennen, belastbaren Lösungsnachweis liefern und akzeptable Alternative oder Roadmap verbindlich bestätigen.',mode:'Solution Validation'},
- {id:'security_gate',p:'security',sev:4,rx:/security review|datenschutzfreigabe|dsgvo|informationssicherheit|iso 27001|pentest|avv|auftragsverarbeitungsvertrag/i,title:'Security- oder Datenschutz-Gate',effect:'Die fachliche Kaufentscheidung ist ohne formale Freigabe nicht startfähig.',action:'Prüfkatalog, Eigentümer, fehlende Nachweise und verbindlichen Freigabetermin festlegen.',mode:'Risk Clearance'},
- {id:'legal',p:'legal',sev:4,rx:/haftung|sonderkündigungsrecht|vertragsstrafe|sla|gewährleistung|rechtliche prüfung|legal review/i,title:'Rechtliches Vertragsrisiko',effect:'Der Kunde kann grundsätzlich gekauft haben, während einzelne Klauseln Dealwert oder Abschluss noch gefährden.',action:'Klauseln nach wirtschaftlicher Tragweite priorisieren, rote Linien definieren und jedes Zugeständnis an Gegenleistungen koppeln.',mode:'Contract Negotiation'},
- {id:'budget_cut',p:'economic',sev:5,rx:/budget.{0,50}(?:gekürzt|gestrichen|eingefroren|reduziert|stopp)|investitionsstopp|ausgabensperre/i,title:'Budgetkürzung oder Investitionsstopp',effect:'Ein bestätigter Bedarf ist nicht mehr automatisch finanzierbar; Timing und Finanzierungsweg ändern sich.',action:'Ausnahmeweg, kleinere Einstiegsoption, Opex/Capex-Alternative und nächstes Budgetfenster prüfen.',mode:'Funding Strategy'},
- {id:'budget_gap',p:'commercial',sev:4,rx:/budgetlücke|preis.{0,40}(?:über|oberhalb).{0,30}budget|budget.{0,40}(?:unter|kleiner).{0,30}(?:preis|angebot)/i,title:'Preis-Budget-Lücke',effect:'Der Deal hängt an Scope, Finanzierung oder Sonderfreigabe – nicht an zusätzlicher Produktdemonstration.',action:'Lücke beziffern und vier Wege vergleichen: Scope, Phasenmodell, Sonderbudget oder kommerzielle Gegenleistung.',mode:'Commercial Structuring'},
- {id:'decision_delay',p:'timing',sev:4,rx:/entscheidung.{0,50}(?:vertagt|verschoben|ausgesetzt)|auf unbestimmte zeit|wiederaufnahme.{0,40}(?:später|quartal)|kein entscheidungstermin/i,title:'Entscheidung vertagt',effect:'Momentum und Forecast-Termin sinken, während der fachliche Fit unverändert bleiben kann.',action:'Wiederaufnahme-Trigger, Überbrückungsnutzen, Verantwortlichen und exakten Reaktivierungstermin vereinbaren.',mode:'Momentum Recovery'},
- {id:'deadline',p:'timing',sev:3,rx:/muss bis|deadline|vertragsende|kündigungsfrist|go-live.{0,30}(?:bis|am)|regulatorische frist/i,title:'Harter Zeitanker',effect:'Ein belastbarer Termin kann Momentum erhöhen, erzeugt aber Rückwärtsplanungs- und Ressourcenrisiko.',action:'Entscheidung, Vertrag, Security, Migration und Go-live rückwärts planen; kritischen Pfad bestätigen.',mode:'Critical Path Management'},
- {id:'criteria_conflict',p:'process',sev:5,rx:/zielkonflikt|unterschiedliche kaufkriterien|keine gemeinsame priorisierung|präferenzspaltung|wirtschaftliche wirkung.{0,80}prozessaufwand/i,title:'Konflikt der Entscheidungskriterien',effect:'Mehr Analyse löst die Opportunity nicht, solange die Organisation Kriterien nicht gemeinsam gewichtet.',action:'Gewichtete Scorecard, Mindestschwellen und Eskalationsregel mit allen relevanten Entscheidern vereinbaren.',mode:'Decision Facilitation'},
- {id:'unclear_process',p:'process',sev:4,rx:/entscheidungsweg.{0,40}(?:unklar|offen|nicht bekannt)|wer entscheidet.{0,30}(?:unklar|offen)|freigabeprozess.{0,40}(?:unklar|offen)/i,title:'Unklarer Entscheidungsprozess',effect:'Positive Gespräche lassen sich nicht belastbar in Forecast übersetzen.',action:'Rollen, Reihenfolge, Kriterien, Gremien, Dokumente und Termin des tatsächlichen Beschlusses sichtbar machen.',mode:'Decision Architecture'},
- {id:'adoption',p:'change',sev:4,rx:/akzeptanz.{0,40}(?:gering|offen|kritisch)|widerstand der nutzer|change management|anwender.{0,40}(?:skeptisch|ablehnung)|betriebsrat/i,title:'Adoptions- oder Veränderungsrisiko',effect:'Ein fachlich überzeugendes Produkt kann an Verhalten, Anreizsystemen oder Betriebsrat scheitern.',action:'Betroffene Gruppen, Verhaltensänderung, persönliche Nachteile, Pilotbotschafter und Adoptionsmessung definieren.',mode:'Change Management'},
- {id:'value_unproven',p:'economic',sev:4,rx:/baseline.{0,40}(?:offen|fehlt|unklar)|wirkungsnachweis.{0,40}(?:offen|fehlt)|business case.{0,40}(?:nicht belastbar|offen)|erfolgskriterien.{0,40}(?:offen|nicht bestätigt)/i,title:'Wirkung noch nicht belastbar',effect:'Die Investition kann trotz Problemverständnis nicht rational freigegeben werden.',action:'Baseline, vermeidbaren Anteil, Messmethode, Erfolgsschwelle und Entscheidungsfolge gemeinsam bestätigen.',mode:'Business Case Engineering'},
- {id:'scope_creep',p:'functional',sev:3,rx:/scope.{0,40}(?:wächst|unklar|ausgeweitet)|zusätzliche anforderungen|immer neue anforderungen|anforderungskatalog.{0,30}(?:wächst|erweitert)/i,title:'Scope-Ausweitung',effect:'Komplexität, Preis und Zeitplan steigen; die ursprüngliche Kaufhypothese verwässert.',action:'Muss-Scope einfrieren, spätere Ausbaustufen trennen und jede neue Anforderung gegen Nutzen und Termin bewerten.',mode:'Scope Control'},
- {id:'priority_loss',p:'economic',sev:4,rx:/priorität.{0,40}(?:gesunken|verloren|unklar)|anderes projekt.{0,40}(?:wichtiger|vorgezogen)|kein dringender handlungsbedarf/i,title:'Prioritätsverlust',effect:'Ein vorhandener Bedarf reicht ohne zeitkritischen Auslöser nicht für aktives Kaufverhalten.',action:'Konsequenz des Nichtstuns, konkurrierende Initiativen und nächsten zwingenden Auslöser transparent machen.',mode:'Priority Rebuild'},
- {id:'procurement',p:'commercial',sev:3,rx:/procurement|einkauf|beschaffung|vendor management|lieferantenmanagement/i,title:'Einkauf aktiv',effect:'Die Opportunity wechselt von Wertargumentation zu kommerzieller und formaler Abschlusslogik.',action:'Verhandlungspunkte, Entscheidungsbefugnis, Beschaffungsprozess und Gegenleistungen vorab strukturieren.',mode:'Procurement Navigation'}
-];
-
-function detectSignals(){return SIGNALS.filter(s=>s.rx.test(raw())).map(s=>({...s}));}
-function basePerspectiveScores(){
- const r=raw(),m=state.metrics||{},out={};Object.keys(PERSPECTIVES).forEach(k=>out[k]={score:45,status:'beobachten',evidence:[],risks:[]});
- if(m.hours||m.annualCost||m.recurringInternalCost||m.lost!=null){out.economic.score+=20;out.economic.evidence.push('Wirtschaftliche oder operative Ausgangswerte erkannt.')}else out.economic.risks.push('Belastbare Baseline fehlt.');
- if(/anforderung|use case|fachlich|prozess|demo|muss-kriter/i.test(r)){out.functional.score+=18;out.functional.evidence.push('Fachliche Anforderungen oder Anwendungsfälle erkannt.')}else out.functional.risks.push('Fachlicher Erfolgsnachweis ist dünn.');
- try{if(buyer()){out.buying.score+=12;out.buying.evidence.push(dmName()+' als Entscheidungsrolle erkannt.')}else out.buying.risks.push('Wirtschaftliche Entscheidungsrolle nicht erkannt.')}catch(e){}
- if(/wettbewerb|mitbewerber|anbieter|shortlist|ablösung|bestandsanbieter/i.test(r)){out.competition.score+=10;out.competition.evidence.push('Wettbewerbskontext erkannt.')}else out.competition.risks.push('Wettbewerbslage nicht dokumentiert.');
- if(/integration|schnittstelle|api|architektur|security|datenschutz/i.test(r)){out.technical.score+=8;out.technical.evidence.push('Technische Prüfobjekte erkannt.')}else out.technical.risks.push('Technische Leitplanken nicht dokumentiert.');
- if(/projektteam|ressourcen|kapazität|rollout|einführung|migration/i.test(r)){out.resources.score+=8;out.resources.evidence.push('Umsetzungsfaktoren erkannt.')}else out.resources.risks.push('Umsetzungsbereitschaft nicht belegt.');
- return out;
-}
-function perspectiveModel(){
- const out=basePerspectiveScores(),signals=detectSignals();
- signals.forEach(s=>{const p=out[s.p];p.score-=s.sev*7;p.risks.push(s.title);p.signal=s;});
- Object.entries(out).forEach(([k,v])=>{v.score=Math.max(8,Math.min(92,v.score));v.status=v.score>=70?'stark':v.score>=52?'tragfähig':v.score>=35?'offen':'kritisch'});
- return out;
-}
-function impactModel(){
- const signals=detectSignals().sort((a,b)=>b.sev-a.sev),p=perspectiveModel();
- let scoreDelta=0,forecastDelta=0,weeks=0;
- signals.forEach(s=>{scoreDelta-=s.sev>=5?8:s.sev>=4?5:3;forecastDelta-=s.sev>=5?10:s.sev>=4?7:4;if(['new_decider','hq','sale_company','decision_delay','no_capacity'].includes(s.id))weeks+=s.id==='hq'?8:s.id==='sale_company'?10:s.id==='decision_delay'?6:4;});
- const positive=[];
- if(/budget.{0,50}(?:bestätigt|freigegeben)|investitionsfreigabe/i.test(raw()))positive.push('Budget oder Investitionsfreigabe bestätigt');
- if(/erfolgskriterien.{0,40}(?:bestätigt|vereinbart)|baseline.{0,40}(?:bestätigt|vereinbart)/i.test(raw()))positive.push('Erfolgskriterien oder Baseline bestätigt');
- if(/vertrag.{0,30}(?:unterzeichnet|abgeschlossen)/i.test(raw()))positive.push('Vertrag abgeschlossen');
- scoreDelta+=Math.min(9,positive.length*3);forecastDelta+=Math.min(9,positive.length*3);
- return{signals,perspectives:p,scoreDelta:Math.max(-32,scoreDelta),forecastDelta:Math.max(-38,forecastDelta),weeks:Math.min(16,weeks),positive};
-}
-function dominant(){
- const im=impactModel();
- if(im.signals.length)return im.signals[0];
- const p=Object.entries(im.perspectives).sort((a,b)=>a[1].score-b[1].score)[0];
- const fallback={economic:'Business Case Engineering',functional:'Solution Validation',technical:'Solution Validation',security:'Risk Clearance',buying:'Buying Center Development',political:'Political Selling',competition:'Competitive Selling',commercial:'Commercial Structuring',resources:'Delivery Readiness',change:'Change Management',legal:'Contract Negotiation',process:'Decision Architecture',corporate:'Executive Requalification',timing:'Momentum Recovery'};
- return{id:'baseline',p:p[0],sev:2,title:PERSPECTIVES[p[0]].label+' ist die schwächste Perspektive',effect:(p[1].risks[0]||'Diese Perspektive ist noch nicht belastbar genug.'),action:'Gezielt Evidenz, Verantwortlichen und nächsten Kundenschritt für diese Perspektive festlegen.',mode:fallback[p[0]]};
-}
-function adaptiveQuestions(){
- const d=dominant(),signals=impactModel().signals.slice(0,3),qs=[];
- const add=(label,q,why,impact)=>qs.push({label,q,why,impact});
- const map={
- new_competitor:[['Situation','Wer hat den neuen Anbieter eingebracht und zu welchem Zeitpunkt?','Der Initiator zeigt, welche interne Kraft oder welches neue Kriterium den Deal verändert.','kritisch'],['Problem','Welches bisher nicht ausreichend erfüllte Kriterium soll der neue Anbieter besser abdecken?','Damit wird aus einem Namen eine konkrete Wettbewerbsursache.','kritisch'],['Implication','Wie verändert die Aufnahme den Zeitplan, die Gewichtung und die Position unseres Sponsors?','Der Effekt betrifft meist mehr als nur die Produktauswahl.','hoch'],['Need-Payoff','Welche belastbare Differenzierung würde die Entscheidungsgruppe trotz des neuen Anbieters akzeptieren?','Die Antwort definiert den nötigen Win-Nachweis.','hoch']],
- incumbent:[['Situation','Welche Prozesse, Daten, Verträge und Beziehungen sind heute an den Bestandsanbieter gebunden?','Der Status quo hat strukturelle Vorteile, die eine reine Funktionsdemo nicht überwindet.','kritisch'],['Problem','Welche konkreten Defizite des bestehenden Produkts erzeugen einen ausreichend starken Wechselgrund?','Ohne belegten Wechselgrund bleibt Nichtstun die sicherste Option.','kritisch'],['Implication','Welche Kosten und Risiken entstehen beim Wechsel – und wer muss sie intern vertreten?','Wechselkosten beeinflussen Macht, Timing und Business Case.','hoch'],['Need-Payoff','Wäre Ergänzung, Teilablösung oder vollständige Ablösung politisch und wirtschaftlich am tragfähigsten?','Die richtige Eintrittsstrategie kann wichtiger sein als die Produktüberlegenheit.','hoch']],
- blocker:[['Situation','Welche formale und informelle Macht besitzt die blockierende Person?','Einwände sind nur dann dealrelevant, wenn Einfluss und Vetorecht verstanden sind.','kritisch'],['Problem','Welchen persönlichen, fachlichen oder politischen Nachteil erwartet diese Person durch die Lösung?','Der sichtbare Einwand ist oft nicht die eigentliche Motivation.','kritisch'],['Implication','Welche weiteren Personen oder Gremien kann sie gegen die Opportunity mobilisieren?','Blockade kann sich im Buying Center ausbreiten.','hoch'],['Need-Payoff','Welche Einbindung, Absicherung oder Gegenleistung würde aus Widerstand zumindest Neutralität machen?','Neutralisierung ist oft realistischer als Überzeugung.','hoch']],
- no_capacity:[['Situation','Welche Rollen und wie viele Personentage sind für Einführung und Betrieb tatsächlich verfügbar?','Kaufbereitschaft und Umsetzungsbereitschaft müssen getrennt bewertet werden.','kritisch'],['Problem','Welches Arbeitspaket scheitert zuerst am Ressourcenengpass?','Der konkrete Engpass bestimmt die passende Lösung.','kritisch'],['Implication','Welche Folgen hätte ein Abschluss ohne gesicherte Ressourcen für Go-live, Akzeptanz und Referenzfähigkeit?','Ein verkaufter, aber gescheiterter Start zerstört Dealwert.','hoch'],['Need-Payoff','Welche Kombination aus kleinerem Scope, späterem Start oder externer Unterstützung macht die Einführung realistisch?','Die Frage übersetzt ein Nein in gestaltbare Optionen.','hoch']],
- new_decider:[['Situation','Welche Prioritäten, Erfahrungen und Kostenziele bringt der neue Entscheider in seine ersten 90 Tage mit?','Neue Führungskräfte bewerten bestehende Initiativen häufig neu.','kritisch'],['Problem','Welche bisherigen Zusagen hängen ausschließlich an der Vorgängerperson?','Personenbezogene Evidenz ist nicht automatisch weiter gültig.','kritisch'],['Implication','Welche Anbieterpräferenz oder Investitionspause könnte daraus entstehen?','Der Führungswechsel kann Wettbewerb und Timing gleichzeitig verändern.','hoch'],['Need-Payoff','Wie muss die Opportunity neu gerahmt werden, damit sie zu seiner Agenda passt?','Requalifizierung braucht einen aktuellen, nicht historischen Business Case.','hoch']],
- price_cut:[['Situation','Ist der Wettbewerberpreis vollständig vergleichbar – inklusive Scope, Laufzeit, Services und Folgekosten?','Ein nomineller Preisvergleich ist häufig unvollständig.','kritisch'],['Problem','Welche Person nutzt den Preisunterschied und mit welchem Verhandlungsziel?','So wird echter Budgetdruck von taktischem Druck unterschieden.','kritisch'],['Implication','Welchen Wert oder welches Risiko würde ein reines Nachziehen beim Preis zerstören?','Ungezielte Rabatte senken Marge, ohne den Abschluss zwingend zu sichern.','hoch'],['Need-Payoff','Welche Gegenleistung – Laufzeit, Scope, Referenz, Volumen oder Abschlussdatum – rechtfertigt ein Zugeständnis?','Jede Konzession braucht einen messbaren Gegenwert.','hoch']],
- sale_company:[['Situation','In welcher Phase befindet sich der Verkaufs- oder Übernahmeprozess und wer darf noch investieren?','Transaktionsphase und Governance bestimmen die Handlungsfreiheit.','kritisch'],['Problem','Wird die Lösung als EBITDA-Hebel, Integrationsrisiko oder verzichtbare Investition gesehen?','Die gleiche Opportunity kann je nach Käuferlogik gewinnen oder verlieren.','kritisch'],['Implication','Welche Budgets, Systeme und Entscheider könnten nach der Transaktion entfallen?','Der bisherige Forecast kann strukturell ungültig werden.','hoch'],['Need-Payoff','Welche kurzfristige Wirkung oder strategische Anschlussfähigkeit macht die Investition transaktionsfest?','Eine neue Wertlogik kann den Deal retten.','hoch']],
- hq:[['Situation','Welche Entscheidung bleibt in Deutschland und welche liegt nun beim Headquarter?','Lokale Zustimmung ist ohne globale Entscheidungsmacht möglicherweise nicht ausreichend.','kritisch'],['Problem','Welche globalen Architektur-, Security-, Vendor- oder Budgetregeln sind neu entstanden?','Diese Gates können den Deal unabhängig vom lokalen Nutzen stoppen.','kritisch'],['Implication','Wie verändern sich Abschlussdatum, Dealgröße und Sponsorrolle?','Globalisierung kann Potenzial erhöhen und Reife senken.','hoch'],['Need-Payoff','Welcher gemeinsame Plan verbindet lokalen Business Case mit globaler Freigabe und möglichem Rollout?','Damit wird aus Eskalation ein strategischer Pfad.','hoch']],
- criteria_conflict:[['Situation','Welche Entscheidungskriterien vertreten die beteiligten Funktionen jeweils?','Der Konflikt muss als unterschiedliche Wertlogik sichtbar werden.','kritisch'],['Problem','Welche Kriterien schließen sich praktisch aus oder haben keine gemeinsame Gewichtung?','Ohne Priorisierung bleibt jede Lösung angreifbar.','kritisch'],['Implication','Wer kann eine Pattsituation auflösen und nach welcher Eskalationsregel?','Ungeklärte Governance macht den Forecast instabil.','hoch'],['Need-Payoff','Welche gewichtete Scorecard und Mindestschwellen akzeptieren alle Entscheider?','Eine gemeinsame Bewertungslogik macht die Entscheidung wieder führbar.','hoch']]
+// === 8.20.0 Perspective Cockpit Foundation ===
+// First controlled step toward multi-perspective opportunity intelligence.
+// The validated report and Quality Suite remain unchanged; this layer changes only cockpit guidance and SPIN questions.
+(function(){
+ const BASE_RENDER_COCKPIT=renderCockpit;
+ const BASE_RENDER_INPUTS=renderInputs;
+ const PERSPECTIVES=[
+  {key:'competition',label:'Wettbewerb',icon:'⚔️',rx:/Wettbewerb|Mitbewerber|Alternative|Bestandsanbieter|bereits im Haus|Preis.*gesenkt|Preisnachlass|Shortlist/i},
+  {key:'buying',label:'Buying Center',icon:'👥',rx:/blockiert|Gegner|Skeptiker|Vetorecht|Champion|Sponsor|neuer Entscheider|neue Entscheiderin|ausgeschieden|verlassen/i},
+  {key:'delivery',label:'Umsetzung',icon:'🛠️',rx:/keine (?:freie )?Kapazität|keine Zeit|Ressourcenengpass|Umsetzungsteam|Pilotverantwortung|Rollout-Verantwortung|Einführungskapazität|Projektleitung/i},
+  {key:'technical',label:'Technik & Konzern',icon:'🏢',rx:/Headquarter|USA|Konzern|Architektur|Integration|Security|Datenschutz|IT-Freigabe|Vendor-Liste|technische Freigabe/i},
+  {key:'commercial',label:'Kommerziell',icon:'💶',rx:/Budget|Preis|Nachlass|Sonderfreigabe|Einkauf|Vertrag|Zahlungsziel|Investitionssperre/i},
+  {key:'business',label:'Business Case',icon:'📈',rx:/ROI|Business Case|wirtschaftlich|Schaden|Aufwand|Nutzen|Amortisation|Ergebniswirkung/i},
+  {key:'change',label:'Veränderung',icon:'🔄',rx:/Unternehmen.*verkauft|Verkauf des Unternehmens|Übernahme|Akquisition|Reorganisation|neuer CIO|neue Geschäftsführung|Entscheidung vertagt|verschoben/i},
+  {key:'functional',label:'Fachlicher Fit',icon:'🎯',rx:/fachlich|Anforderung|Muss-Kriterium|Use Case|Prozess|Funktion|Demo|Pilot/i}
+ ];
+ function text(){return String(state.rawImport||'')+'\n'+String((state.additions||[]).map(x=>x.text).join('\n'));}
+ function perspectiveModel(){
+  const raw=text(), found=PERSPECTIVES.map(p=>({...p,hits:(raw.match(new RegExp(p.rx.source,'gi'))||[]).length})).filter(p=>p.hits>0).sort((a,b)=>b.hits-a.hits);
+  const special=(typeof specialState==='function'&&specialState())||'';
+  const map={
+   ENTSCHEIDUNGSKRITERIENKONFLIKT:['buying','functional','business'],PREIS_BUDGET_LÜCKE:['commercial','business'],REQUALIFIZIERUNG:['buying','change'],ENTSCHEIDUNG_VERTAGT:['change','commercial','delivery'],WETTBEWERBSENTSCHEIDUNG:['competition','technical','business'],
+   ENTSCHEIDERZUGANG:['buying'],KAUFBEDINGUNGEN:['commercial','buying'],SONDERBUDGET:['commercial'],VERTRAGSFREIGABE:['commercial'],VERTRAGSVERHANDLUNG:['commercial'],EVIDENZKONFLIKT:['functional','business']
+  };
+  (map[special]||[]).forEach((k,i)=>{const p=PERSPECTIVES.find(x=>x.key===k);if(p&&!found.some(x=>x.key===k))found.push({...p,hits:5-i});});
+  found.sort((a,b)=>b.hits-a.hits);
+  const primary=found[0]||PERSPECTIVES.find(x=>x.key==='functional');
+  const secondary=found.filter(x=>x.key!==primary.key).slice(0,3);
+  return{primary,secondary,special};
+ }
+ function roleLine(k){return({competition:'Heute bist du Wettbewerbsstratege.',buying:'Heute steuerst du das Buying Center.',delivery:'Heute sicherst du die Umsetzbarkeit.',technical:'Heute koordinierst du Technik und Konzernfreigaben.',commercial:'Heute führst du die kommerzielle Entscheidung.',business:'Heute baust du den belastbaren Business Case.',change:'Heute stabilisierst du eine veränderte Entscheidungslage.',functional:'Heute schärfst du den fachlichen Entscheidungsbeweis.'})[k]||'Heute steuerst du die nächste Kundenentscheidung.';}
+ function effectLine(k){return({competition:'Kriterien, Differenzierung und Reaktion auf Wettbewerbsbewegungen bestimmen jetzt den Deal.',buying:'Macht, Haltung und mögliche Blockaden einzelner Personen bestimmen jetzt den Deal.',delivery:'Kapazität, Verantwortung und realistischer Start bestimmen jetzt den Deal.',technical:'Architektur, Security, Integration oder Konzernvorgaben bestimmen jetzt den Deal.',commercial:'Budget, Preis, Freigabeweg und Gegenleistungen bestimmen jetzt den Deal.',business:'Messbare Wirkung und akzeptierte Entscheidungsschwelle bestimmen jetzt den Deal.',change:'Neue Personen, Reorganisation oder externe Ereignisse machen frühere Zusagen teilweise unsicher.',functional:'Der konkrete fachliche Nachweis und die Abgrenzung der Anforderungen bestimmen jetzt den Deal.'})[k]||'';}
+ function nextLine(k){return({competition:'Kläre, wer den Wettbewerber eingebracht hat, welche neuen Kriterien gelten und wie beide Angebote identisch gewichtet werden.',buying:'Identifiziere die tatsächlich blockierende oder entscheidende Person, ihre Motivation, ihr Vetorecht und den erforderlichen Positionswechsel.',delivery:'Bestätige Owner, verfügbare Kapazität, realistischen Scope und einen belastbaren Start- oder Rolloutplan.',technical:'Kläre lokale und globale Entscheidungsrechte, Pflichtprüfungen, Architekturstandards und den realistischen Freigabezeitplan.',commercial:'Entscheide zwischen Sonderfreigabe, Paketierung, Scope-Anpassung und Zugeständnissen gegen verbindliche Gegenleistungen.',business:'Bestätige Baseline, vermeidbaren Anteil, Ergebniswirkung und die vom Kunden akzeptierte Mindestwirkung.',change:'Requalifiziere Priorität, Sponsor, Kriterien, Budget und Zeitplan bei den neuen Verantwortlichen.',functional:'Führe den Beweis an realen Anwendungsfällen und vereinbare vorab messbare fachliche Erfolgskriterien.'})[k]||'Nächste Kundenentscheidung konkretisieren.';}
+ function questions(){
+  const m=perspectiveModel(),k=m.primary.key, q={
+   competition:[['Situation','Welche Anbieter oder internen Alternativen sind aktuell tatsächlich im Rennen – und wer hat sie eingebracht?'],['Problem','Welches konkrete Kriterium erfüllt der stärkste Wettbewerber aus Kundensicht besser als wir?'],['Auswirkung','Wie verändert die neue Wettbewerbslage Entscheidungskriterien, Zeitplan, Preisposition und interne Präferenzen?'],['Nutzen','Welche gemeinsame Bewertungslogik macht unseren wirtschaftlichen und fachlichen Vorteil entscheidbar?']],
+   buying:[['Situation','Welche Person kann die Entscheidung aktuell beschleunigen, blockieren oder formal stoppen?'],['Problem','Welche fachliche, politische oder persönliche Motivation steckt hinter der kritischen Haltung dieser Person?'],['Auswirkung','Welche Zusagen, Kriterien oder Termine werden unsicher, wenn ihre Position unverändert bleibt?'],['Nutzen','Welcher konkrete Nachweis oder welche Einbindung würde diese Person zu einer tragfähigen Zustimmung bewegen?']],
+   delivery:[['Situation','Welche internen Personen und Kapazitäten stehen für Pilot, Einführung oder Rollout tatsächlich zur Verfügung?'],['Problem','Wo fehlen heute Owner, Zeit, Skills oder Entscheidungsbefugnis für die Umsetzung?'],['Auswirkung','Welche Auswirkungen hat der Ressourcenengpass auf Abschlussdatum, Scope, Adoption und erwartete Wirkung?'],['Nutzen','Welche kleinere, gestaffelte oder unterstützte Einführung wäre belastbar umsetzbar?']],
+   technical:[['Situation','Welche lokalen und globalen IT-, Security- oder Architekturinstanzen beeinflussen die Entscheidung?'],['Problem','Welche konkrete Vorgabe, Integration oder Freigabe kann den lokalen Entscheidungsweg außer Kraft setzen?'],['Auswirkung','Wie verändern zusätzliche Konzernprüfungen Dealgröße, Zeitplan, Risiko und Verantwortlichkeiten?'],['Nutzen','Welcher technische Nachweis und welcher globale Freigabeplan schaffen eine belastbare Entscheidung?']],
+   commercial:[['Situation','Welche Budgetgrenze, Preisposition und formale Freigabestufe gelten aktuell verbindlich?'],['Problem','Ist die Lücke ein echter Finanzierungsengpass, ein Verhandlungsmittel oder ein Scope-Konflikt?'],['Auswirkung','Welche Folgen haben Preisbewegung, fehlende Deckung oder Zugeständnisse für Marge, Umfang und Abschlusswahrscheinlichkeit?'],['Nutzen','Welche Paketierung oder Gegenleistung macht das Angebot freigabefähig, ohne den Wert zu entkernen?']],
+   business:[['Situation','Welche wirtschaftlichen Ausgangswerte und Ergebniswirkungen sind bereits vom Kunden bestätigt?'],['Problem','Welche entscheidende Wirkungsannahme ist noch nicht belegt oder wird intern bezweifelt?'],['Auswirkung','Welche Investitionsentscheidung bleibt ohne diese Evidenz blockiert oder angreifbar?'],['Nutzen','Welche Messung würde den Nutzen für den Kunden entscheidungsfähig und intern verteidigbar machen?']],
+   change:[['Situation','Was hat sich seit der letzten belastbaren Bewertung bei Personen, Eigentum, Prioritäten oder Organisation verändert?'],['Problem','Welche früheren Zusagen oder Annahmen sind durch diese Veränderung nicht mehr aktuell?'],['Auswirkung','Wie verändert das Ereignis Sponsor, Budget, Kriterien, Wettbewerbsposition und Abschlussdatum?'],['Nutzen','Welche Punkte müssen mit den neuen Verantwortlichen gezielt requalifiziert werden, ohne den Deal unnötig zurückzusetzen?']],
+   functional:[['Situation','Welche fachlichen Muss-Anforderungen und realen Anwendungsfälle sind bestätigt?'],['Problem','Wo besteht noch eine konkrete fachliche Lücke, Unsicherheit oder Abgrenzung zur bestehenden Lösung?'],['Auswirkung','Welche Prozesse, Nutzer oder Geschäftsergebnisse sind betroffen, wenn diese Lücke bestehen bleibt?'],['Nutzen','Welcher reale Beweis macht den fachlichen Vorteil für alle relevanten Rollen überprüfbar?']]
+  };
+  return q[k]||SPIN_QUESTIONS;
+ }
+ renderCockpit=function(){
+  if(!state||(!state.company&&!state.opportunity&&!state.rawImport))return BASE_RENDER_COCKPIT();
+  const base=BASE_RENDER_COCKPIT(),m=perspectiveModel(),p=m.primary,sec=m.secondary;
+  const card=`<div class="card violet"><div class="kicker">Dominante Verkaufsperspektive</div><div class="headline">${esc(p.icon+' '+p.label)} · ${esc(roleLine(p.key))}</div><div class="divider"></div><div class="body">${esc(effectLine(p.key))}</div>${sec.length?`<div class="divider"></div><div class="label">Weitere aktive Perspektiven</div><div class="list">${sec.map(x=>`<div class="item">${esc(x.icon+' '+x.label)}</div>`).join('')}</div>`:''}</div><div class="card blue"><div class="kicker">Situationsabhängiger Verkaufsauftrag</div><div class="body">${esc(nextLine(p.key))}</div></div>`;
+  return card+base;
  };
- (map[d.id]||[['Situation','Welche neue oder veränderte Tatsache ist für diese Perspektive am stärksten belegt?','KI21 trennt aktuelle Evidenz von alten Annahmen.','hoch'],['Problem','Was verhindert in dieser Perspektive aktuell die nächste Kundenentscheidung?','Der konkrete Engpass muss perspektivisch statt generisch formuliert werden.','kritisch'],['Implication','Wie wirkt dieser Engpass auf Abschlusschance, Termin, Dealwert und interne Unterstützung?','Der Effekt entscheidet über Priorität und Forecast.','kritisch'],['Need-Payoff','Welche Kundenentscheidung oder Zusage würde diese Perspektive belastbar verbessern?','Die Frage übersetzt Analyse in eine überprüfbare Aktion.','hoch']]).forEach(x=>add(...x));
- signals.slice(1).forEach(s=>add('Zusatzperspektive',`Wie beeinflusst „${s.title}“ die dominante Situation „${d.title}“?`,`Mehrere Signale wirken oft zusammen und dürfen nicht isoliert behandelt werden.`,'hoch'));
- return qs.slice(0,7);
-}
-function cockpit900(){
- const sc=typeof scores==='function'?scores():{score:0,forecast:0},im=impactModel(),d=dominant(),pers=Object.entries(im.perspectives).sort((a,b)=>a[1].score-b[1].score).slice(0,6);
- const adjustedScore=Math.max(5,Math.min(95,Number(sc.score||0)+im.scoreDelta));
- const adjustedForecast=Math.max(5,Math.min(95,Number(sc.forecast||0)+im.forecastDelta));
- const effectBits=[`Score-Effekt ${im.scoreDelta>0?'+':''}${im.scoreDelta} Punkte`,`Forecast-Effekt ${im.forecastDelta>0?'+':''}${im.forecastDelta} Punkte`,im.weeks?`mögliche Verschiebung +${im.weeks} Wochen`:'kein zusätzlicher Zeitabschlag'];
- return`<div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${adjustedScore}%</div><div class="metric-sub">mehrperspektivisch</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${adjustedForecast}%</div><div class="metric-sub">inklusive Ereigniseffekt</div></div></div>
- <div class="card orange"><div class="kicker">Dominanter Sales Mode</div><div class="headline">Heute bist du: ${esc9(d.mode)}</div><div class="divider"></div><div class="body"><strong>${esc9(d.title)}</strong> – ${esc9(d.effect)}</div></div>
- <div class="card red"><div class="kicker">Veränderung und Effekt</div><div class="list">${effectBits.map(x=>`<div class="item">${esc9(x)}</div>`).join('')}</div></div>
- <div class="card violet"><div class="kicker">Mehrperspektivische Diagnose</div><div class="list">${pers.map(([k,v])=>`<div class="item"><strong>${esc9(PERSPECTIVES[k].icon+' '+PERSPECTIVES[k].label)}:</strong> ${esc9(v.status)} · ${v.score}/100${v.risks[0]?' · '+esc9(v.risks[0]):''}</div>`).join('')}</div></div>
- <div class="card blue"><div class="kicker">Höchster Verkaufshebel</div><div class="headline">${esc9(d.action)}</div></div>
- ${im.signals.length>1?`<div class="card"><div class="kicker">Weitere aktive Kräfte</div><div class="list">${im.signals.slice(1,5).map(s=>`<div class="item"><strong>${esc9(s.title)}:</strong> ${esc9(s.effect)}</div>`).join('')}</div></div>`:''}
- <div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div>`;
-}
-renderCockpit=function(){try{return cockpit900()}catch(e){console.error('KI21 9.0 cockpit',e);return priorRenderCockpit()}};
-renderInputs=function(){
- if(state.inputTab!=='spin')return priorRenderInputs();
- const qs=adaptiveQuestions();
- return`<div class="input-nav">${[['crm','CRM-Import'],['qual','Qualifizierung'],['spin','SPIN'],['add','Ergänzung'],['offer','Angebot']].map(([k,l])=>`<button class="${state.inputTab===k?'active':''}" data-input-tab="${k}">${l}</button>`).join('')}</div><div class="card blue"><div class="kicker">Adaptive SPIN- und Strategiefragen</div><div class="body muted">Fragen werden aus Ereignissen, Perspektiven, Buying Center, Wettbewerb, Umsetzung und Deal-Dynamik abgeleitet.</div><div class="divider"></div>${qs.map((x,i)=>`<div class="question"><div class="q-label">${esc9(x.label)} · Impact ${esc9(x.impact)}</div><div class="q-text">${esc9(x.q)}</div><div class="body muted" style="margin-top:6px"><strong>Warum diese Frage?</strong> ${esc9(x.why)}</div><textarea data-answer-kind="spin" data-answer-index="${i}">${esc9(state.answers&&state.answers.spin&&state.answers.spin[i]||'')}</textarea></div>`).join('')}<button class="btn primary" data-action="save-answers" data-kind="spin">Antworten speichern & auswerten</button></div>`;
-};
-
-processAnalysis=function(name){
- const base=priorProcessAnalysis(name),d=dominant(),im=impactModel();
- const areaMap={Qualifizierung:['buying','process','economic'],Bedarfsanalyse:['functional','economic','change'],Demo:['functional','technical','security'],Einwandbehandlung:['political','competition','commercial'],['Wirtschaftlicher Nutzen & ROI']:['economic','commercial','resources'],Angebot:['commercial','legal','competition'],Abschluss:['process','timing','corporate']};
- const keys=areaMap[name]||[],weak=keys.map(k=>[k,im.perspectives[k]]).sort((a,b)=>a[1].score-b[1].score)[0];
- if(weak&&weak[1].score<55){base.status=weak[1].status;base.insight=`${PERSPECTIVES[weak[0]].label} ist in diesem Bereich der dominierende Risikotreiber: ${weak[1].risks[0]||d.effect}`;base.next=d.p===weak[0]?d.action:`${PERSPECTIVES[weak[0]].label} gezielt klären: Evidenz, Verantwortlichen und verbindlichen Termin festlegen.`;}
- return base;
-};
-
-function intelligenceSection(){
- const im=impactModel(),d=dominant(),qs=adaptiveQuestions();
- let t=`\n\n=== STRATEGIC OPPORTUNITY INTELLIGENCE ===\n• Dominanter Sales Mode: ${d.mode}\n• Dominante Situation: ${d.title}\n• Wirkung: ${d.effect}\n• Empfohlene Reaktion: ${d.action}\n• Modellierter Score-Effekt: ${im.scoreDelta>0?'+':''}${im.scoreDelta} Punkte\n• Modellierter Forecast-Effekt: ${im.forecastDelta>0?'+':''}${im.forecastDelta} Punkte\n• Modellierter Zeiteffekt: ${im.weeks?`+${im.weeks} Wochen`:'kein zusätzlicher Zeitabschlag'}\n\nAKTIVE EREIGNISSE UND KRÄFTE\n`;
- t+=im.signals.length?im.signals.map((s,i)=>`${i+1}. ${s.title}\n   Perspektive: ${PERSPECTIVES[s.p].label}\n   Effekt: ${s.effect}\n   Reaktion: ${s.action}`).join('\n'):'1. Kein explizites Sonderereignis erkannt; schwächste Perspektive wird priorisiert.';
- t+='\n\nPERSPEKTIVEN';Object.entries(im.perspectives).sort((a,b)=>a[1].score-b[1].score).forEach(([k,v])=>{t+=`\n• ${PERSPECTIVES[k].label}: ${v.status} (${v.score}/100)${v.risks[0]?' · '+v.risks[0]:''}`});
- t+='\n\nADAPTIVE FRAGEN';qs.forEach((q,i)=>{t+=`\n${i+1}. [${q.label} · ${q.impact}] ${q.q}\n   Warum: ${q.why}`});return t;
-}
-fullReport=function(){let r=String(priorFullReport());r=r.replace(/Version: KI21 Core[^\n]+/g,'Version: '+V);return r+intelligenceSection()};
-
-window.KI21StrategicIntelligence={detectSignals,perspectiveModel,impactModel,dominant,adaptiveQuestions,version:V};
-try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.0.3';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
-try{if(typeof render==='function')render()}catch(e){console.error('KI21 9.0 initial render',e)}
-})();
-</script>
-
-
-<script id="ki21-v903-quality-gate-integrity-fix">
-(()=>{
-'use strict';
-const V='KI21 Core 9.0.3 · Quality Gate Integrity Fix';
-const baseEvaluate=window.ki2118EvaluateCase;
-const DEFAULT_IDS=(window.KI21_SMART_QUALITY_DEFAULT_IDS||['T01','T03','T07','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20']).slice();
-const REF_IDS=['T07','N05','N09','N10','N13','N16','N17','N18','N19','N20'];
-function evaluate(tc,index){
-  const x=baseEvaluate(tc,index);
-  // Strategic Intelligence intentionally expands the report. Length remains a safety
-  // check, but its ceiling must reflect the richer multi-perspective output.
-  const lengthIndex=17;
-  const lengthOk=String(x.report||'').length<180000;
-  if(Array.isArray(x.checks)&&x.checks.length>lengthIndex){
-    x.checks[lengthIndex]=lengthOk;
-    x.points=x.checks.filter(Boolean).length;
-    x.max=x.checks.length;
-    x.passed=x.points===x.max;
-    const names=['Bericht erzeugt','7 Bereichsanalysen','keine ungültigen Tokens','Version konsistent','Deal-State korrekt','Forecast reifer Abschlusszustände','Score-Forecast-Abstand','Widerspruchszahl','Kaufbedingungen','Sonderbudget-Betrag','Entscheiderstatus','Vertragsfreigabe ohne Altblocker','Vertragsverhandlung ohne Altblocker','Aha von Einschätzung verschieden','7 unterschiedliche Bereichs-Ahas','nächster Kundenschritt vorhanden','keine Nullwerte','Berichtslänge','zentrale Kundenentscheidung','keine Doppelungen','N16 Kriterienkonflikt','N17 Budgetlücke','N18 Requalifizierung','N19 Vertagung','N20 Wettbewerb'];
-    x.failedChecks=x.checks.map((ok,i)=>ok?'':names[i]).filter(Boolean);
-  }
-  return x;
-}
-window.ki2118EvaluateCase=evaluate;
-window.ki2118BuildLocalSuite=function(ids){
- const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evaluate),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0),runtime=Math.round(performance.now()-started);
- const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}${x.failedChecks&&x.failedChecks.length?' | Fehlchecks: '+x.failedChecks.join(', '):''}`).join('\n');
- const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\nFehlchecks: ${x.failedChecks&&x.failedChecks.length?x.failedChecks.join(', '):'keine'}\nBerichtslänge: ${String(x.report||'').length} Zeichen\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');
- return{results,text:`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`};
-};
-try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.0.3';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
+ renderInputs=function(){
+  if(state.inputTab!=='spin')return BASE_RENDER_INPUTS();
+  const nav=[['crm','CRM-Import'],['qual','Qualifizierung'],['spin','SPIN'],['add','Ergänzung'],['offer','Angebot']];
+  return`<div class="input-nav">${nav.map(([k,l])=>`<button class="${state.inputTab===k?'active':''}" data-input-tab="${k}">${l}</button>`).join('')}</div>${renderQuestions('spin',questions())}`;
+ };
+ window.KI21_PERSPECTIVE_MODEL=perspectiveModel;
+ window.KI21_ADAPTIVE_SPIN=questions;
+ VERSION='KI21 Core 8.20.0 · Perspective Cockpit Foundation';
+ document.title=VERSION;
+ const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.20.0';
+ const fv=document.getElementById('footerVersion');if(fv)fv.textContent=VERSION;
+ try{render()}catch(e){console.error('KI21 8.20.0 render refresh failed',e)}
 })();
 </script>
 
