@@ -5285,5 +5285,69 @@ try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 })();
 </script>
 
+
+<script id="ki21-v8221-cockpit-state-sync">
+(()=>{
+'use strict';
+const V8221='KI21 Core 8.22.1 · Cockpit State Sync';
+const PREV_FULL_REPORT=fullReport;
+const PREV_DECISION_BRIEF=decisionBrief;
+const esc8221=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function currentReport8221(){
+  return String(PREV_FULL_REPORT()).replaceAll('KI21 Core 8.22.0 · State Priority Fusion',V8221);
+}
+function section8221(rep,title,nextTitles){
+  const e=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const next=(nextTitles||[]).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const rx=new RegExp('(?:^|\\n)'+e+'\\n([\\s\\S]*?)'+(next?'(?=\\n(?:'+next+')\\n|$)':'$'));
+  const m=rep.match(rx);return m?m[1].trim():'';
+}
+function line8221(rep,label){const m=rep.match(new RegExp('(?:^|\\n)• '+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':?\\s*([^\\n]+)'));return m?m[1].trim():''}
+function cockpitModel8221(){
+  const rep=currentReport8221();
+  const assessment=section8221(rep,'EINSCHÄTZUNG',['DIE PUNKTE, DIE ZÄHLEN']);
+  const decision=section8221(rep,'ZENTRALE KUNDENENTSCHEIDUNG',['GRÖSSTER ENGPASS']).replace(/^•\s*/,'');
+  const bottleneck=section8221(rep,'GRÖSSTER ENGPASS',['EXECUTIVE AHA']).replace(/^•\s*/,'');
+  const business=section8221(rep,'BUSINESS CASE UND NUTZEN',['NÄCHSTER SCHRITT']).replace(/^•\s*/,'');
+  const stepsRaw=section8221(rep,'NÄCHSTER SCHRITT',['STATE CHECK']);
+  const steps=[...stepsRaw.matchAll(/^\d+\.\s*(.+)$/gm)].map(m=>m[1].replace(/[.]+$/,'')).slice(0,3);
+  const stateName=line8221(rep,'Deal-State');
+  const score=Number((rep.match(/• Opportunity Score:\s*(\d+)%/)||[])[1]||0);
+  const forecast=Number((rep.match(/• Forecast:\s*(\d+)%/)||[])[1]||0);
+  return{rep,assessment,decision,bottleneck,business,steps,stateName,score,forecast,opportunityId:String(state&&state.id||'')};
+}
+renderCockpit=function(){
+  const d=cockpitModel8221();
+  const steps=d.steps.length?d.steps:['Nächste Kundenentscheidung mit Verantwortlichem und Termin verbindlich machen'];
+  const businessBlock=d.business&& !/kein belastbarer wirtschaftlicher Ausgangswert erkannt/i.test(d.business)
+    ?`<div class="divider"></div><div class="body">${esc8221(d.business)}</div>`:'';
+  return `<div data-ki21-opportunity-id="${esc8221(d.opportunityId)}" data-ki21-deal-state="${esc8221(d.stateName)}">
+  <div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${d.score}%</div><div class="metric-sub">${esc8221(d.stateName||'evidenzbasiert')}</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${d.forecast}%</div><div class="metric-sub">evidenzbasiert</div></div></div>
+  <div class="card orange"><div class="kicker">Aktuelles Lagebild</div><div class="headline">${esc8221(d.assessment||'Die aktuelle Entscheidungslage wird neu bewertet.')}</div>${businessBlock}</div>
+  <div class="card violet"><div class="kicker">Nächste Kundenentscheidung</div><div class="headline">${esc8221(d.decision||'Welche konkrete Kundenentscheidung bringt die Opportunity belastbar voran?')}</div></div>
+  <div class="card red"><div class="kicker">Größter Engpass</div><div class="body">${esc8221(d.bottleneck||'Der entscheidende Engpass ist noch nicht belastbar erkannt.')}</div></div>
+  <div class="card blue"><div class="kicker">Nächster Schritt</div><div class="list">${steps.map(x=>`<div class="item">${esc8221(x)}.</div>`).join('')}</div></div>
+  <div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div></div>`;
+};
+fullReport=currentReport8221;
+decisionBrief=function(){return String(PREV_DECISION_BRIEF()).replaceAll('KI21 Core 8.22.0 · State Priority Fusion',V8221)};
+const OLD_RENDER=render;
+render=function(){
+  const expectedId=String(state&&state.id||'');
+  OLD_RENDER();
+  if(state&&state.activeTab==='cockpit'){
+    const root=document.querySelector('[data-ki21-opportunity-id]');
+    if(!root||root.getAttribute('data-ki21-opportunity-id')!==expectedId){
+      const view=document.getElementById('view');if(view){view.innerHTML=renderCockpit();bindView();}
+    }
+  }
+};
+try{VERSION=V8221}catch(e){}document.title=V8221;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.22.1';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8221;
+try{render()}catch(e){console.error('KI21 8.22.1 cockpit sync refresh failed',e)}
+})();
+</script>
+
 </body>
 </html>
