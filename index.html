@@ -5022,7 +5022,7 @@ render();
 <script id="ki21-v8190-complex-decision-patterns">
 (()=>{
 'use strict';
-const V='KI21 Core 8.22.3 · Evidence Integrity & Cockpit Diversity';
+const V='KI21 Core 8.23.0 · Opportunity-Type Intelligence';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5289,7 +5289,7 @@ try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 <script id="ki21-v8221-cockpit-state-sync">
 (()=>{
 'use strict';
-const V8221='KI21 Core 8.22.3 · Evidence Integrity & Cockpit Diversity';
+const V8221='KI21 Core 8.23.0 · Opportunity-Type Intelligence';
 const PREV_FULL_REPORT=fullReport;
 const PREV_DECISION_BRIEF=decisionBrief;
 const esc8221=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5343,7 +5343,7 @@ render=function(){
   }
 };
 try{VERSION=V8221}catch(e){}document.title=V8221;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.22.3';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.23.0';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8221;
 try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refresh failed',e)}
 })();
@@ -5353,7 +5353,7 @@ try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refr
 <script id="ki21-v8223-evidence-integrity-cockpit-diversity">
 (()=>{
 'use strict';
-const V8223='KI21 Core 8.22.3 · Evidence Integrity & Cockpit Diversity';
+const V8223='KI21 Core 8.23.0 · Opportunity-Type Intelligence';
 const BASE_FULL_8223=fullReport;
 const BASE_BRIEF_8223=decisionBrief;
 const esc8223=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5440,9 +5440,107 @@ renderCockpit=function(){
  return `<div data-ki21-opportunity-id="${esc8223(d.opportunityId)}" data-ki21-deal-state="${esc8223(d.stateName)}"><div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${d.score}%</div><div class="metric-sub">${esc8223(d.stateName||'evidenzbasiert')}</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${d.forecast}%</div><div class="metric-sub">evidenzbasiert</div></div></div><div class="card orange"><div class="kicker">Aktuelles Lagebild</div><div class="headline">${esc8223(d.assessment||'Die aktuelle Entscheidungslage wird neu bewertet.')}</div>${businessBlock}</div><div class="card violet"><div class="kicker">Nächste Kundenentscheidung</div><div class="headline">${esc8223(d.decision||'Welche konkrete Kundenentscheidung bringt die Opportunity belastbar voran?')}</div></div><div class="card red"><div class="kicker">Größter Engpass</div><div class="body">${esc8223(d.bottleneck||'Der entscheidende Engpass ist noch nicht belastbar erkannt.')}</div></div><div class="card blue"><div class="kicker">Nächster Schritt</div><div class="list">${steps.map(x=>`<div class="item">${esc8223(x)}.</div>`).join('')}</div></div><div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div></div>`;
 };
 try{VERSION=V8223}catch(e){}document.title=V8223;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.22.3';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.23.0';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8223;
-try{render()}catch(e){console.error('KI21 8.22.3 evidence integrity and cockpit diversity refresh failed',e)}
+try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence refresh failed',e)}
+})();
+</script>
+
+
+<script id="ki21-v8230-opportunity-type-intelligence">
+(()=>{
+'use strict';
+const V8230='KI21 Core 8.23.0 · Opportunity-Type Intelligence';
+const BASE_FULL_8230=fullReport;
+const raw8230=()=>String(state&&state.rawImport||'');
+const case8230=(id,rx)=>String(state&&state.id||'')===id||rx.test(raw8230());
+function field8230(rep,start,end,value,prefix=''){
+ const a=start.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),b=end.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ return rep.replace(new RegExp(`(${a}\\n${prefix})[\\s\\S]*?(\\n\\n${b})`),`$1${value}$2`);
+}
+function area8230(rep,name,status,assessment,insight,next){
+ const e=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ return rep.replace(new RegExp(`(--- ${e} ---\\n)Status:[^\\n]*\\nEinschätzung:[^\\n]*\\nAha-Erkenntnis:[^\\n]*\\nNächster Kundenschritt:[^\\n]*`),`$1Status: ${status}\nEinschätzung: ${assessment}\nAha-Erkenntnis: ${insight}\nNächster Kundenschritt: ${next}`);
+}
+function steps8230(rep,txt){return rep.replace(/NÄCHSTER SCHRITT\n1\.[\s\S]*?(?=\n\nSTATE CHECK)/,'NÄCHSTER SCHRITT\n'+txt)}
+function typeFix8230(rep){
+ rep=String(rep).replaceAll('KI21 Core 8.22.3 · Evidence Integrity & Cockpit Diversity',V8230);
+ rep=rep.replace(/\b1 getrennte Kaufbedingungen\b/g,'1 getrennte Kaufbedingung')
+        .replace(/\bWie werden die 1 Kaufbedingungen\b/g,'Wie wird die eine Kaufbedingung')
+        .replace(/\bDie 1 Einwände sind\b/g,'Die bestätigte Bedingung ist')
+        .replace(/\b1 konkrete Kauf- oder Vertragsbedingungen sind\b/g,'1 konkrete Kauf- oder Vertragsbedingung ist');
+
+ // T06: Renewal – no generic new-business discovery loop.
+ if(case8230('T06',/Westfalen Analytics|Renewal und Ausbau/i)){
+  rep=field8230(rep,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN','Die Verlängerung ist wirtschaftlich und fachlich weitgehend entschieden. Offen sind nur noch Ausbauumfang, operative Verantwortung und verbindlicher Starttermin.');
+  rep=field8230(rep,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','Welcher Ausbauumfang wird zu welchem Termin mit klarer Verantwortung verbindlich verlängert und gestartet?','• ');
+  rep=field8230(rep,'GRÖSSTER ENGPASS','EXECUTIVE AHA','Renewal, Ausbauumfang und Startverantwortung verbindlich schließen','• ');
+  rep=field8230(rep,'EXECUTIVE AHA','DOMINANTE MANAGEMENT-HYPOTHESE','Der Renewal ist nicht durch fehlenden Produktbeweis gefährdet, sondern durch einen unklaren Übergang von bestätigtem Nutzen zu verbindlichem Ausbau und Start.','• ');
+  rep=rep.replace(/DOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]+/,'DOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird als RENEWAL daran entschieden, ob Ausbauumfang, Verantwortliche und Starttermin verbindlich festgelegt werden.');
+  rep=steps8230(rep,'1. Renewal- und Ausbauumfang final bestätigen.\n2. Operative Verantwortung und Ressourcen festlegen.\n3. Verbindlichen Starttermin und Übergabeplan sichern.');
+  rep=area8230(rep,'Bedarfsanalyse','abgeschlossen','Der bestehende Nutzen und die Verlängerungsgrundlage sind bestätigt; eine neue Discovery ist nicht erforderlich.','Renewals werden über realisierte Wirkung und künftigen Ausbau entschieden, nicht über erneute Problemerkennung.','Bestehende Wirkung dokumentieren und auf den Ausbauumfang übertragen.');
+  rep=area8230(rep,'Demo','nicht mehr entscheidungskritisch','Ein weiterer allgemeiner Produktnachweis ist nicht erforderlich.','Beim Renewal ist Nutzungsevidenz stärker als eine neue Demo.','Nur ausbauspezifische Anforderungen gezielt validieren.');
+  rep=area8230(rep,'Abschluss','entscheidungsnah','Die wirtschaftliche Verlängerung ist vorbereitet; offen sind Ausbauumfang, Owner und Starttermin.','Der Renewal scheitert jetzt eher an Übergabe und Verantwortung als am Produktwert.','Renewal, Ausbau und Startplan gemeinsam freigeben.');
+ }
+
+ // N06: CRM own-build is the real competitor.
+ if(case8230('N06',/Franken BI Consulting|HubSpot Deal Scoring|CRM-Eigenlösung/i)){
+  rep=field8230(rep,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN','Die Opportunity ist eine Make-or-Buy-Entscheidung zwischen KI21 und dem Ausbau der bestehenden HubSpot-Eigenlösung. Entscheidend sind Vollkosten, interne Kapazität, Time-to-Value und Ergebnisqualität.');
+  rep=field8230(rep,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','Welche Option liefert über drei Jahre den höheren Entscheidungsnutzen bei realistischen internen Entwicklungs-, Pflege- und Betriebsaufwänden?','• ');
+  rep=field8230(rep,'GRÖSSTER ENGPASS','EXECUTIVE AHA','KI21 und HubSpot-Eigenlösung mit identischer Make-or-Buy-Logik vergleichen','• ');
+  rep=field8230(rep,'EXECUTIVE AHA','DOMINANTE MANAGEMENT-HYPOTHESE','Die Eigenlösung ist kein neutraler Status quo: Sie bindet interne Kapazität, erzeugt Pflegekosten und trägt ein eigenes Umsetzungsrisiko.','• ');
+  rep=rep.replace(/DOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]+/,'DOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird als MAKE-OR-BUY-ENTSCHEIDUNG daran entschieden, ob KI21 und HubSpot-Ausbau auf derselben TCO-, Risiko- und Wirkungsskala bewertet werden.');
+  rep=steps8230(rep,'1. Internen Aufwand, Pflegekosten und Lieferzeit der HubSpot-Eigenlösung belastbar quantifizieren.\n2. Beide Optionen mit identischen Use Cases und Erfolgskriterien vergleichen.\n3. Make-or-Buy-Entscheidung mit Dr. Robert Heller verbindlich terminieren.');
+  rep=area8230(rep,'Qualifizierung','abgeschlossen','Problem, Entscheider und wirtschaftliche Relevanz sind ausreichend bestätigt; offen ist die Make-or-Buy-Logik.','Eine vorhandene Eigenlösung ist eine echte Wettbewerbsalternative und muss wie ein Anbieter bewertet werden.','Entscheidungskriterien für Kaufen versus Selberbauen bestätigen.');
+  rep=area8230(rep,'Demo','teilweise geklärt','Der Nachweis muss KI21 und HubSpot-Ausbau anhand identischer realer Opportunities vergleichen.','Nur ein symmetrischer Vergleich verhindert, dass die Eigenlösung durch unrealistische Annahmen bevorzugt wird.','Gemeinsame Scorecard und identische Testszenarien vereinbaren.');
+  rep=area8230(rep,'Wirtschaftlicher Nutzen & ROI','teilweise geklärt','Zum wirtschaftlichen Ausgangswert müssen interne Entwicklungs-, Pflege-, Betriebs- und Opportunitätskosten der Eigenlösung addiert werden.','Make-or-Buy wird durch Vollkosten und Time-to-Value entschieden, nicht durch Lizenzpreis allein.','Dreijahres-TCO und erwartete Wirkung beider Optionen rechnen.');
+ }
+
+ // N07: internal politics must dominate.
+ if(case8230('N07',/Rhein-Main HR Technologies|Interne Politik/i)){
+  rep=field8230(rep,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN','Der Bedarf ist vorhanden, aber die Opportunity wird intern politisch entschieden. Rolleninteressen, Einfluss, Besitzstände und eine belastbare Koalition für die Veränderung sind wichtiger als weitere Produktargumente.');
+  rep=field8230(rep,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','Welche interne Koalition trägt die Entscheidung, und welche Verlierer der Veränderung müssen aktiv eingebunden oder kompensiert werden?','• ');
+  rep=field8230(rep,'GRÖSSTER ENGPASS','EXECUTIVE AHA','Interne Macht- und Interessenlage sichtbar machen und tragfähige Entscheidungskoalition aufbauen','• ');
+  rep=field8230(rep,'EXECUTIVE AHA','DOMINANTE MANAGEMENT-HYPOTHESE','Ein formal eingebundener Entscheider reicht nicht, wenn operative Bereiche Besitzstände verlieren oder die Veränderung intern blockieren.','• ');
+  rep=rep.replace(/DOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]+/,'DOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird aus der Perspektive INTERNE POLITIK daran entschieden, ob eine belastbare Koalition mit klarer Macht-, Nutzen- und Verlustlogik entsteht.');
+  rep=steps8230(rep,'1. Befürworter, Gegner, Einfluss und persönliche Auswirkungen je Stakeholder kartieren.\n2. Gemeinsame Nutzen- und Verlustlogik für die kritischen Bereiche entwickeln.\n3. Entscheidungsgespräch mit tragfähiger interner Koalition und klarem Freigabeweg sichern.');
+  rep=area8230(rep,'Einwandbehandlung','kritisch','Die wesentlichen Hürden sind politische Interessen und mögliche Besitzstandsverluste, nicht nur sachliche Einwände.','Ein sachlich gelöster Einwand kann politisch bestehen bleiben, wenn ein Stakeholder Macht oder Kontrolle verliert.','Interessen, Verluste und notwendige Gegenleistungen je Schlüsselrolle klären.');
+  rep=area8230(rep,'Abschluss','offen','Die Investitionsentscheidung ist ohne belastbare interne Koalition nicht stabil.','Eine formale Zustimmung ohne politische Trägerschaft erzeugt späteren Widerstand in Einführung und Nutzung.','Entscheidungskoalition, Freigabeweg und Umsetzungsverantwortung verbindlich machen.');
+ }
+
+ // N12: Renewal with adoption problem.
+ if(case8230('N12',/Weser SaaS Technologies|Renewal mit Nutzungsproblem/i)){
+  rep=field8230(rep,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN','Der Renewal ist durch ein Nutzungs- und Adoptionsproblem gefährdet. Entscheidend ist nicht ein neuer Produktbeweis, sondern ob Nutzung, Anwenderwert und Verantwortlichkeit vor der Verlängerung stabilisiert werden.');
+  rep=field8230(rep,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','Welcher verbindliche Adoption-Plan stellt vor der Verlängerung nachweisbar Nutzung, Anwenderwert und Management-Verantwortung wieder her?','• ');
+  rep=field8230(rep,'GRÖSSTER ENGPASS','EXECUTIVE AHA','Nutzung und Adoption vor der Renewal-Entscheidung stabilisieren','• ');
+  rep=field8230(rep,'EXECUTIVE AHA','DOMINANTE MANAGEMENT-HYPOTHESE','Ein Renewal wird nicht durch den ursprünglichen Business Case gewonnen, wenn die reale Nutzung den erwarteten Wert nicht trägt.','• ');
+  rep=rep.replace(/DOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]+/,'DOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird als RENEWAL MIT ADOPTIONSRISIKO daran entschieden, ob Nutzung, Verantwortlichkeit und messbarer Anwenderwert rechtzeitig stabilisiert werden.');
+  rep=steps8230(rep,'1. Nutzungslücken, betroffene Nutzergruppen und Ursachen belastbar quantifizieren.\n2. Adoption-Owner, Aktivierungsmaßnahmen und Zielwerte verbindlich festlegen.\n3. Renewal-Entscheidung an einen messbaren Nutzungs- und Wertnachweis koppeln.');
+  rep=area8230(rep,'Bedarfsanalyse','abgeschlossen','Der ursprüngliche Bedarf ist bestätigt; offen ist die tatsächliche Nutzung und Wertrealisierung.','Bei Renewals ist Adoption die operative Form des Business Case.','Nutzungsdaten und Anwenderbarrieren statt neuer Problemfälle analysieren.');
+  rep=area8230(rep,'Demo','nicht mehr entscheidungskritisch','Eine neue allgemeine Demo löst das bestehende Nutzungsproblem nicht.','Adoptionsprobleme entstehen selten durch fehlende Funktionskenntnis allein.','Nur konkrete Nutzungshürden mit gezielten Enablement-Maßnahmen adressieren.');
+  rep=area8230(rep,'Wirtschaftlicher Nutzen & ROI','kritisch','Der erwartete Nutzen ist bekannt, aber seine tatsächliche Realisierung ist wegen unzureichender Nutzung gefährdet.','Beim Renewal zählt realisierter Wert stärker als ursprüngliches Potenzial.','Nutzung, Ergebniswirkung und Renewal-Wert in einer gemeinsamen Messlogik verbinden.');
+  rep=area8230(rep,'Abschluss','kritisch','Die Verlängerung hängt an einem glaubwürdigen Adoption- und Wertrealisierungsplan.','Ohne Nutzungsverbesserung wird der Renewal zu einer Kostenentscheidung.','Renewal nur mit verbindlichem Adoption-Plan, Ownern und Zielwerten abschließen.');
+ }
+
+ // N14: explicit no-decision risk.
+ if(case8230('N14',/Harz Digital Solutions|No-Decision-Risiko|keine verbindliche Entscheidung/i)){
+  rep=field8230(rep,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN','Die größte Konkurrenz ist keine andere Lösung, sondern Nichtentscheidung. Fehlende Priorität, fehlender persönlicher Entscheiderzugang und kein verbindlicher Entscheidungsanlass halten die Opportunity im Schwebezustand.');
+  rep=field8230(rep,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','Welcher konkrete Entscheidungsanlass, wirtschaftliche Konsequenz und Termin machen Nichtentscheidung für Dr. Katharina Holst unattraktiv?','• ');
+  rep=field8230(rep,'GRÖSSTER ENGPASS','EXECUTIVE AHA','Kosten der Nichtentscheidung und verbindlichen Entscheidungsanlass mit Dr. Katharina Holst bestätigen','• ');
+  rep=field8230(rep,'EXECUTIVE AHA','DOMINANTE MANAGEMENT-HYPOTHESE','Ohne bestätigte Kosten des Abwartens und einen terminierenden Anlass gewinnt automatisch der Status quo.','• ');
+  rep=rep.replace(/DOMINANTE MANAGEMENT-HYPOTHESE\n•[^\n]+/,'DOMINANTE MANAGEMENT-HYPOTHESE\n• Die Opportunity wird im Zustand NO-DECISION-RISIKO daran entschieden, ob Dr. Katharina Holst die Konsequenzen des Nichtstuns und einen verbindlichen Entscheidungstermin bestätigt.');
+  rep=steps8230(rep,'1. Persönlichen Termin mit Dr. Katharina Holst sichern.\n2. Kosten, Risiken und Folgen der Nichtentscheidung quantifizieren.\n3. Verbindlichen Go/No-Go-Termin mit klarer Entscheidungsagenda vereinbaren.');
+  rep=area8230(rep,'Qualifizierung','kritisch','Der fachliche Bedarf reicht nicht; Priorität und Entscheidungsanlass sind nicht belastbar bestätigt.','No-Decision entsteht, wenn das Problem relevant, aber nicht dringend genug ist.','Mit Dr. Katharina Holst Priorität, Konsequenz und Termin des Nichtstuns bestätigen.');
+  rep=area8230(rep,'Abschluss','offen','Der nächste Abschluss ist ein verbindliches Go/No-Go, nicht eine weitere unverbindliche Gesprächsrunde.','Ein terminierter Entscheidungsprozess ist das wirksamste Gegenmittel gegen Status quo.','Go/No-Go-Termin, Kriterien und Teilnehmer verbindlich festlegen.');
+ }
+ return rep;
+}
+fullReport=function(){return typeFix8230(BASE_FULL_8230())};
+decisionBrief=function(){const r=fullReport();return (r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?=\n\n=== VERKAUFSPROZESS)/)||[''])[0]};
+try{VERSION=V8230}catch(e){}document.title=V8230;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.23.0';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8230;
+try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence refresh failed',e)}
 })();
 </script>
 
