@@ -5022,7 +5022,7 @@ render();
 <script id="ki21-v8190-complex-decision-patterns">
 (()=>{
 'use strict';
-const V='KI21 Core 8.21.0 · Perspective Analysis Propagation';
+const V='KI21 Core 8.22.0 · State Priority Fusion';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5202,9 +5202,9 @@ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('heade
  };
  window.KI21_PERSPECTIVE_MODEL=perspectiveModel;
  window.KI21_ADAPTIVE_SPIN=questions;
- VERSION='KI21 Core 8.21.0 · Perspective Analysis Propagation';
+ VERSION='KI21 Core 8.22.0 · State Priority Fusion';
  document.title=VERSION;
- const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.21.0';
+ const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.22.0';
  const fv=document.getElementById('footerVersion');if(fv)fv.textContent=VERSION;
  try{render()}catch(e){console.error('KI21 8.20.0 render refresh failed',e)}
 })();
@@ -5213,7 +5213,7 @@ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('heade
 <script id="ki21-v8210-perspective-propagation">
 (()=>{
 'use strict';
-const V821='KI21 Core 8.21.0 · Perspective Analysis Propagation';
+const V821='KI21 Core 8.22.0 · State Priority Fusion';
 const BASE_FULL_REPORT=fullReport;
 const BASE_DECISION_BRIEF=decisionBrief;
 const BASE_PROCESS_ANALYSIS=processAnalysis;
@@ -5222,13 +5222,16 @@ const has821=rx=>rx.test(raw821());
 function state821(){try{return typeof specialState==='function'&&specialState()||typeof dealState==='function'&&dealState()||''}catch(e){return''}}
 function perspective821(){
  const st=state821(),r=raw821();
+ const protectedStates=['ENTSCHEIDUNGSKRITERIENKONFLIKT','PREIS_BUDGET_LÜCKE','REQUALIFIZIERUNG','ENTSCHEIDUNG_VERTAGT','WETTBEWERBSENTSCHEIDUNG','ENTSCHEIDERZUGANG','KAUFBEDINGUNGEN','SONDERBUDGET','VERTRAGSFREIGABE','VERTRAGSVERHANDLUNG','EVIDENZKONFLIKT','WIRKUNGSNACHWEIS','KAUFENTSCHEIDUNG','UMSETZUNGSÜBERGANG','STARTFREIGABEN'];
+ // Explicit, strong competitive evidence may shape an otherwise generic state.
  if(/Wettbewerber|Mitbewerber|Altanbieter|Bestandsanbieter|Shortlist|Anbietervergleich|Ablösung|Preis(?: massiv| deutlich)? gesenkt/i.test(r))return'competition';
- if(/keine (?:freie )?Kapazität|keine Zeit|Ressourcenengpass|Umsetzungsteam|Pilotverantwortung|Rollout-Verantwortung|Einführungskapazität|Projektleitung/i.test(r))return'delivery';
- if(/Headquarter|USA|Konzernstandard|Vendor-Liste|Enterprise Architecture|Security Review|IT-Freigabe|Datenschutzfreigabe/i.test(r))return'technical';
- if(/Unternehmen.{0,30}(?:verkauft|Übernahme)|Akquisition|Reorganisation|neuer (?:CIO|CFO|CEO|Geschäftsführer)|neue Geschäftsführung|Investitionssperre|vertagt/i.test(r))return'change';
- if(/blockiert|Vetorecht|Gegner|Skeptiker|Champion|Sponsor|Entscheiderzugang|nicht persönlich eingebunden|ausgeschieden/i.test(r)||st==='ENTSCHEIDERZUGANG'||st==='REQUALIFIZIERUNG')return'buying';
- if(/Budget|Preis|Nachlass|Sonderfreigabe|Einkauf|Vertrag|Zahlungsziel|Haftung|Kündigungsrecht/i.test(r)||['PREIS_BUDGET_LÜCKE','SONDERBUDGET','VERTRAGSFREIGABE','VERTRAGSVERHANDLUNG','KAUFBEDINGUNGEN'].includes(st))return'commercial';
- if(/ROI|Business Case|Amortisation|wirtschaftlicher Nutzen|Ergebniswirkung|Wirkungsnachweis/i.test(r)||st==='WIRKUNGSNACHWEIS')return'business';
+ // A precise Deal-State has priority over broad keyword perspectives.
+ if(protectedStates.includes(st))return null;
+ if(/keine (?:freie )?Kapazität|keine Zeit|Ressourcenengpass|Umsetzungsteam|Rollout-Verantwortung|Einführungskapazität|Projektleitung/i.test(r))return'delivery';
+ if(/Headquarter|Konzernstandard|Vendor-Liste|Enterprise Architecture|Security Review|zentrale IT-Freigabe|globale Freigabe/i.test(r))return'technical';
+ if(/Unternehmen.{0,30}(?:verkauft|Übernahme)|Akquisition|Reorganisation|neuer (?:CIO|CFO|CEO|Geschäftsführer)|neue Geschäftsführung/i.test(r))return'change';
+ if(/(?:blockiert|Vetorecht|Gegner|Skeptiker)[\s\S]{0,120}(?:Person|Leitung|CFO|COO|CEO|Geschäftsführer|Entscheider)|(?:Person|Leitung|CFO|COO|CEO|Geschäftsführer|Entscheider)[\s\S]{0,120}(?:blockiert|Vetorecht|Gegner|Skeptiker)/i.test(r))return'buying';
+ if(/ROI|Business Case|Amortisation|wirtschaftlicher Nutzen|Ergebniswirkung|Wirkungsnachweis/i.test(r))return'business';
  return'functional';
 }
 const LABEL={competition:'Wettbewerbsstrategie',buying:'Buying-Center-Steuerung',delivery:'Umsetzungsfähigkeit',technical:'Technik & Konzern-Governance',commercial:'Kommerzielle Entscheidung',business:'Business Case',change:'Veränderte Entscheidungslage',functional:'Fachlicher Entscheidungsbeweis'};
@@ -5274,11 +5277,11 @@ function replaceAreas821(rep,k){
  for(const name of PROCESS_AREAS){const a=area821(k,name),escName=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const rx=new RegExp(`(--- ${escName} ---\\n)Status:[^\\n]*\\nEinschätzung:[^\\n]*\\nAha-Erkenntnis:[^\\n]*\\nNächster Kundenschritt:[^\\n]*`);rep=rep.replace(rx,`$1Status: ${a.status}\nEinschätzung: ${a.assessment}\nAha-Erkenntnis: ${a.insight}\nNächster Kundenschritt: ${a.next}`)}
  return rep;
 }
-processAnalysis=function(name){const st=state821();if(['ENTSCHEIDUNGSKRITERIENKONFLIKT','PREIS_BUDGET_LÜCKE','REQUALIFIZIERUNG','ENTSCHEIDUNG_VERTAGT','WETTBEWERBSENTSCHEIDUNG'].includes(st))return BASE_PROCESS_ANALYSIS(name);return area821(perspective821(),name)};
-decisionBrief=function(){const st=state821(),base=BASE_DECISION_BRIEF();if(['ENTSCHEIDUNGSKRITERIENKONFLIKT','PREIS_BUDGET_LÜCKE','REQUALIFIZIERUNG','ENTSCHEIDUNG_VERTAGT','WETTBEWERBSENTSCHEIDUNG'].includes(st))return base;return replaceBrief821(base,perspective821())};
-fullReport=function(){const st=state821(),base=BASE_FULL_REPORT();if(['ENTSCHEIDUNGSKRITERIENKONFLIKT','PREIS_BUDGET_LÜCKE','REQUALIFIZIERUNG','ENTSCHEIDUNG_VERTAGT','WETTBEWERBSENTSCHEIDUNG'].includes(st))return base.replaceAll('KI21 Core 8.20.0 · Perspective Cockpit Foundation',V821);let rep=replaceBrief821(base,perspective821());rep=replaceAreas821(rep,perspective821());return rep.replaceAll('KI21 Core 8.20.0 · Perspective Cockpit Foundation',V821)};
-VERSION=V821;document.title=V821;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.21.0';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V821;
-try{render()}catch(e){console.error('KI21 8.21.0 render refresh failed',e)}
+processAnalysis=function(name){const p=perspective821();return p?area821(p,name):BASE_PROCESS_ANALYSIS(name)};
+decisionBrief=function(){const base=BASE_DECISION_BRIEF(),p=perspective821();return p?replaceBrief821(base,p):base};
+fullReport=function(){const base=BASE_FULL_REPORT(),p=perspective821();let rep=base;if(p){rep=replaceBrief821(rep,p);rep=replaceAreas821(rep,p)}return rep.replaceAll('KI21 Core 8.20.0 · Perspective Cockpit Foundation',V821).replaceAll('KI21 Core 8.21.0 · Perspective Analysis Propagation',V821)};
+VERSION=V821;document.title=V821;const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.22.0';const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V821;
+try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 })();
 </script>
 
