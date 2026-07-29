@@ -7450,5 +7450,76 @@ window.KI21_VERSION=V1101;
 })();
 </script>
 
+
+<script id="ki21-11-0-2-visible-quality-lab">
+(function(){
+'use strict';
+const V='KI21 Core 11.0.2 · Visible Autonomous Quality Lab';
+try{VERSION=V}catch(_e){}
+document.title=V;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.0.2';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
+
+function safeEsc(v){
+  if(typeof window.esc==='function')return window.esc(String(v||''));
+  return String(v||'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
+}
+function openVisibleLab(){
+  const existing=document.getElementById('ki211102LabOverlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='ki211102LabOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(2,5,9,.88);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;';
+  overlay.innerHTML=`<div class="modal quality-suite-modal" style="display:block;width:min(980px,96vw);max-height:92vh;overflow:auto;position:relative;box-sizing:border-box;">
+    <div class="quality-suite-head"><div><div class="kicker">KI21 Autonomous Quality Lab</div><div class="headline">Nur Auffälligkeiten statt 35 Vollberichte</div><div class="body muted">Technische Regression, Golden Cases, Kontextverbote und automatische Reparaturen in einem Lauf.</div></div><button type="button" class="icon-btn" id="q1102Close">×</button></div>
+    <div id="q1102Status" class="body muted quality-status">Autonomes Qualitätslabor läuft …</div>
+    <div id="q1102Box"><div class="quality-spinner">Semantische Golden Cases und Kontextintegrität werden geprüft …</div></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  overlay.querySelector('#q1102Close').addEventListener('click',close);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+  setTimeout(()=>{
+    const status=overlay.querySelector('#q1102Status');
+    const box=overlay.querySelector('#q1102Box');
+    try{
+      if(typeof window.ki211100BuildAutonomousQualityLab!=='function')throw new Error('Autonomous-Quality-Engine nicht gefunden');
+      const out=window.ki211100BuildAutonomousQualityLab();
+      if(!out||!Array.isArray(out.results))throw new Error('Keine Qualitätsergebnisse erzeugt');
+      status.textContent=`${out.total} Fälle · ${out.repaired.length} autonom korrigiert · ${out.manual.length} manuell prüfen · 0 API-Aufrufe`;
+      box.innerHTML=`<div class="card ${out.releaseReady?'green':'red'}"><div class="kicker">Autonomes Release Gate</div><div class="headline">${out.releaseReady?'✅ Freigabefähig':'⚠️ Semantische Ausnahmen offen'}</div><div class="body" style="margin-top:7px">Kritisch ${out.critical} · Hoch ${out.high} · Mittel ${out.medium} · automatische Reparaturen ${out.repaired.length}</div></div><div class="card violet"><div class="kicker">Dein Prüfaufwand</div><div class="headline">${out.manual.length?out.manual.length+' markierte Grenzfälle':'Keine manuelle Detailprüfung nötig'}</div><div class="body muted" style="margin-top:7px">${out.manual.length?'Nur prüfen: '+out.manual.join(', '):'Alle Golden Cases und Kontextverbote sind erfüllt.'}</div></div><div class="actions"><button type="button" class="btn primary" id="q1102Copy">Kompaktbericht kopieren</button><button type="button" class="btn secondary" id="q1102Show">Bericht anzeigen</button></div>`;
+      box.querySelector('#q1102Copy').addEventListener('click',async()=>{await copyTextReliable(out.text);toast('Autonomous-Quality-Bericht kopiert')});
+      box.querySelector('#q1102Show').addEventListener('click',()=>{let ta=box.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:55vh;margin-top:12px;width:100%;box-sizing:border-box;';ta.value=out.text;box.appendChild(ta)}});
+    }catch(err){
+      status.textContent='Qualitätslabor fehlgeschlagen.';
+      box.innerHTML=`<div class="card red"><div class="kicker">Startdiagnose</div><div class="headline">${safeEsc(err&&err.message?err.message:String(err))}</div></div>`;
+      console.error('KI21 11.0.2 Quality Lab',err);
+    }
+  },50);
+}
+window.ki211102OpenVisibleQualityLab=openVisibleLab;
+window.ki211100OpenAutonomousQualityLab=openVisibleLab;
+
+function bind(){
+  const btn=document.getElementById('ki2110RunRegression');
+  if(!btn)return false;
+  btn.type='button';
+  btn.textContent='🧠 Autonomes Qualitätslabor starten';
+  btn.onclick=null;
+  if(btn.dataset.ki211102Bound==='1')return true;
+  btn.dataset.ki211102Bound='1';
+  btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openVisibleLab();},true);
+  return true;
+}
+document.addEventListener('click',function(e){
+  const btn=e.target&&e.target.closest?e.target.closest('#ki2110RunRegression'):null;
+  if(btn){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openVisibleLab();}
+},true);
+const observer=new MutationObserver(bind);observer.observe(document.documentElement,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
+setTimeout(bind,0);setTimeout(bind,200);setTimeout(bind,800);
+})();
+</script>
+
 </body>
 </html>
