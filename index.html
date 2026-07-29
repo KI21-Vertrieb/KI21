@@ -6248,7 +6248,7 @@ try{render()}catch(e){console.error('KI21 9.1.7 activation failed',e)}
 <script id="ki21-v920-evaluator-reset">
 (()=>{
 'use strict';
-const V920='KI21 Core 9.2.1 · S06 Check Fix';
+const V920='KI21 Core 10.0.0 · Decision Navigator';
 try{VERSION=V920}catch(e){}
 document.title=V920;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.2.0';
@@ -6383,6 +6383,49 @@ ki21111RunLocalSuiteChunked=async function(overlay,ids){
  }finally{if(button){button.disabled=false;button.textContent='Lokalen Mehrfachtest starten'}}
 };
 try{render()}catch(e){console.error('KI21 9.2.0 activation failed',e)}
+})();
+</script>
+
+<script>
+(()=>{
+const V100='KI21 Core 10.0.0 · Decision Navigator';
+try{VERSION=V100}catch(e){}
+document.title=V100;
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V100;
+
+function dnCleanAction(s){
+ return String(s||'').replace(/^\d+\.\s*/,'').replace(/\s+/g,' ').trim();
+}
+function dnImpact(action,report,index){
+ const a=(action+' '+report).toLowerCase();
+ let score=[12,8,5][index]||4, forecast=[16,10,6][index]||5, effort=['mittel','gering','gering'][index]||'gering';
+ if(/wirtschaftlich|cfo|budget|freigabe|entscheider/.test(a)){score+=5;forecast+=7;effort='mittel'}
+ if(/champion|sponsor|owner/.test(a)){score+=4;forecast+=5}
+ if(/procurement|legal|vertrag|haftung/.test(a)){score+=3;forecast+=6;effort='hoch'}
+ if(/evidenz|widerspr|validier|bestätig/.test(a)){score+=3;forecast+=4}
+ if(/roi|business case|nutzen|baseline/.test(a)){score+=4;forecast+=3}
+ return {score:Math.min(score,22),forecast:Math.min(forecast,28),effort};
+}
+function dnBlock(report){
+ const text=String(report||'');
+ if(text.includes('=== DECISION NAVIGATOR ==='))return text;
+ const m=text.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/);
+ let actions=m?((m[1].match(/^\d+\.\s+.+$/gm)||[]).map(dnCleanAction)):[];
+ if(!actions.length)actions=['Wirtschaftlichen Entscheider persönlich einbinden','Größten Engpass mit belastbarer Kundenevidenz schließen','Verbindlichen Entscheidungstermin mit allen Verantwortlichen vereinbaren'];
+ actions=actions.slice(0,3);
+ while(actions.length<3)actions.push('Nächste offene Kaufbedingung verbindlich bestätigen');
+ const rows=actions.map((a,i)=>{const x=dnImpact(a,text,i);return `${i+1}. ${a}\n   Erwarteter Hebel: Score +${x.score} · Forecast +${x.forecast} Prozentpunkte · Aufwand: ${x.effort}`}).join('\n');
+ const top=dnImpact(actions[0],text,0);
+ const block=`=== DECISION NAVIGATOR ===\n\nHÖCHSTER VERKAUFSHEBEL\n• ${actions[0]}\n• Erwartete Wirkung bei erfolgreicher Bestätigung: Score bis zu +${top.score}, Forecast bis zu +${top.forecast} Prozentpunkte.\n\nPRIORISIERTER AKTIONSPLAN\n${rows}\n\nMANAGEMENT-REGEL\n• Erst nach belastbarer Kundenevidenz neu bewerten; erwartete Hebel sind Entscheidungssimulationen und keine automatisch zugesicherten Score-Erhöhungen.`;
+ if(/\n\nSTATE CHECK/.test(text))return text.replace(/\n\nSTATE CHECK/,`\n\n${block}\n\nSTATE CHECK`);
+ return text+'\n\n'+block;
+}
+function stamp100(v){return String(v||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V100)}
+const prevFull100=fullReport;
+const prevBrief100=decisionBrief;
+fullReport=()=>dnBlock(stamp100(prevFull100()));
+decisionBrief=()=>dnBlock(stamp100(prevBrief100()));
+try{render()}catch(e){console.error('KI21 10.0.0 activation failed',e)}
 })();
 </script>
 
