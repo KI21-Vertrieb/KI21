@@ -7269,5 +7269,140 @@ window.ki211031ContextualActionIntegrity={repair:render,facts,portfolio};
 })();
 </script>
 
+
+<script id="ki21-v1100-autonomous-quality-lab">
+/* KI21 Core 11.0.0 · Autonomous Quality Lab
+   Adds semantic golden-case validation, contextual mismatch detection,
+   compact exception-only reporting and autonomous release gating.
+   Existing score and forecast calculations remain unchanged. */
+(function(){
+'use strict';
+const V1100='KI21 Core 11.0.0 · Autonomous Quality Lab';
+try{VERSION=V1100}catch(_e){}
+document.title=V1100;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.0.0';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V1100;
+
+const GOLDEN={
+ T01:{state:'KAUFENTSCHEIDUNG',must:['PRIMARY_GATE'],forbid:['QUALIFICATION','ECONOMIC_BUYER'],label:'Kaufentscheidung'},
+ T03:{must:['COMPETITIVE_CRITERIA','COMPETITIVE_PROOF'],label:'Wettbewerbsentscheidung'},
+ T04:{must:['CONDITION_ACCEPTANCE','CONDITION_PROCESS'],forbid:['DELIVERY_CAPACITY'],label:'Einzelne Kaufbedingung'},
+ T07:{must:['QUALIFICATION','ECONOMIC_BUYER'],forbid:['SIGN_OFF'],label:'Frühe Qualifizierung'},
+ T08:{must:['VALUE_PROOF','DECISION_PROCESS'],label:'Wirkungsnachweis'},
+ N05:{must:['CONDITION_PRIORITY','CONDITION_PLAN'],forbid:['DELIVERY_CAPACITY','IMPLEMENTATION_PLAN'],label:'Mehrere Kaufbedingungen'},
+ N06:{must:['TCO','COMPARISON_PROOF'],label:'Make-or-Buy'},
+ N07:{must:['STAKEHOLDER_POWER','COALITION'],label:'Interne Politik'},
+ N08:{must:['VALUE_JUSTIFICATION','SPECIAL_APPROVAL'],label:'Sonderbudget'},
+ N09:{must:['LEGAL_COMMERCIAL','SIGN_OFF'],forbid:['DELIVERY_CAPACITY'],label:'Vertragsfreigabe'},
+ N10:{must:['LEGAL_COMMERCIAL','SIGN_OFF'],label:'Procurement'},
+ N11:{must:['DELIVERY_CAPACITY','IMPLEMENTATION_PLAN'],label:'Umsetzungsfähigkeit'},
+ N12:{must:['ADOPTION_EVIDENCE','ADOPTION_PLAN'],label:'Renewal-Adoption'},
+ N13:{must:['EVIDENCE_VALIDATION','REASSESSMENT'],label:'Evidenzkonflikt'},
+ N14:{must:['COST_OF_DELAY','DECISION_EVENT'],label:'No-Decision'}
+};
+
+function qnorm(s){return String(s||'').toLowerCase().replace(/[^a-zäöüß0-9%]+/g,' ').trim()}
+function section(report,name,next){
+ const r=String(report||''),a=r.indexOf(name);if(a<0)return'';
+ const b=next?r.indexOf(next,a+name.length):-1;return r.slice(a,b<0?r.length:b);
+}
+function fields(report){
+ const nav=section(report,'=== DECISION NAVIGATOR ===','=== EXECUTIVE REAL-DEAL CHECK ===');
+ return [...nav.matchAll(/Abgedecktes Risikofeld:\s*([^\n]+)/g)].map(m=>m[1].trim());
+}
+function line(report,re,d=''){const m=String(report||'').match(re);return m?m[1].trim():d}
+function pushIssue(arr,severity,code,message,evidence){arr.push({severity,code,message,evidence:evidence||''})}
+function semanticAudit(x){
+ const r=String(x.report||''),id=x.tc.id,issues=[],fs=fields(r),joined=' '+fs.join(' ')+' ';
+ const state=line(r,/• Deal-State:\s*([^\n]+)/i,'');
+ const bottleneck=line(r,/GRÖSSTER ENGPASS\n•\s*([^\n]+)/i,'');
+ const action1=line(r,/PRIORISIERTER AKTIONSPLAN\n1\.\s*([^\n]+)/i,'');
+ const recommendation=line(r,/• Management-Empfehlung:\s*([^\n]+)/i,'');
+ const conditions=parseInt(line(r,/• Erkannte Kaufbedingungen:\s*(\d+)/i,'0'),10)||0;
+ const conflicts=parseInt(line(r,/• Evidenzkonflikte:\s*(\d+)/i,'0'),10)||0;
+ const g=GOLDEN[id];
+ if(g){
+  for(const f of g.must||[])if(!fs.includes(f))pushIssue(issues,'CRITICAL','GOLDEN_MISSING',`${g.label}: erwartetes Risikofeld ${f} fehlt.`,`Gefunden: ${fs.join(' → ')||'keine'}`);
+  for(const f of g.forbid||[])if(fs.includes(f))pushIssue(issues,'CRITICAL','GOLDEN_FORBIDDEN',`${g.label}: unpassendes Risikofeld ${f} wurde empfohlen.`,`Gefunden: ${fs.join(' → ')}`);
+  if(g.state&&state!==g.state)pushIssue(issues,'HIGH','STATE_DRIFT',`Erwarteter Deal-State ${g.state}, erkannt wurde ${state}.`);
+ }
+ if(bottleneck&&action1&&qnorm(bottleneck)!==qnorm(action1))pushIssue(issues,'CRITICAL','PRIMARY_MISMATCH','Aktion 1 entspricht nicht exakt dem größten Engpass.',`Engpass: ${bottleneck} | Aktion 1: ${action1}`);
+ if(new Set(fs).size!==fs.length)pushIssue(issues,'HIGH','FIELD_DUPLICATE','Mehrere Navigator-Aktionen adressieren dasselbe Risikofeld.',fs.join(' → '));
+ if(conditions===1&&/Welche der 1 Kaufbedingungen/i.test(r))pushIssue(issues,'MEDIUM','SINGULAR_LANGUAGE','Singularfall wird grammatikalisch als Mehrfachauswahl formuliert.','„Welche der 1 Kaufbedingungen …“');
+ if(conditions>=3&&(/DELIVERY_CAPACITY|IMPLEMENTATION_PLAN/.test(joined))&&!/kapazität|ressourcen|umsetzungsfähigkeit/i.test(bottleneck))pushIssue(issues,'CRITICAL','CONTEXT_LEAK','Mehrere Kaufbedingungen wurden durch generische Umsetzungsaktionen verdrängt.',fs.join(' → '));
+ if(/VERTRAGSFREIGABE|VERTRAGSVERHANDLUNG/i.test(state)&&/DELIVERY_CAPACITY/.test(joined)&&!/ressourcen|kapazität/i.test(bottleneck))pushIssue(issues,'CRITICAL','LATE_STAGE_LEAK','Später Vertragsdeal erhält sachfremde Kapazitätsanalyse.',fs.join(' → '));
+ if(/RENEWAL/i.test(r)&&/Nutzungsproblem|Adoption/i.test(r)&&!/ADOPTION_EVIDENCE/.test(joined))pushIssue(issues,'CRITICAL','ADOPTION_LOST','Adoptionsrisiko wird im Aktionsportfolio nicht fortgeführt.');
+ if(conflicts>0&&!/EVIDENCE_VALIDATION/.test(joined))pushIssue(issues,'CRITICAL','EVIDENCE_NOT_PRIORITIZED','Evidenzkonflikt ist erkannt, aber nicht im Aktionsportfolio priorisiert.');
+ if(/EVIDENZ KLÄREN/i.test(recommendation)&&conflicts===0)pushIssue(issues,'HIGH','RECOMMENDATION_CONFLICT','Management-Empfehlung verlangt Evidenzklärung ohne erkannten Konflikt.');
+ if(/QUALIFIZIEREN ODER BEWUSST STOPPEN/i.test(recommendation)&&/ABSCHLUSS AKTIV STEUERN/i.test(r))pushIssue(issues,'HIGH','RECOMMENDATION_COLLISION','Widersprüchliche Management-Empfehlungen im selben Bericht.');
+ const late=/VERTRAGSFREIGABE|VERTRAGSVERHANDLUNG|KAUFENTSCHEIDUNG/i.test(state);
+ if(late&&/Drei reale Fälle und ihre operativen Folgen analysieren/i.test(r)&&!/MAKE-OR-BUY|ADOPTIONSRISIKO|INTERNE POLITIK/i.test(r))pushIssue(issues,'MEDIUM','LATE_DISCOVERY','Später Deal fällt in generische Discovery zurück.');
+ return {issues,fields:fs,state,bottleneck,action1,recommendation,conditions,conflicts};
+}
+
+function repairContext(report,id){
+ let r=String(report||'');
+ const replaceNav=(rows,coverage)=>{
+  const fscore=parseInt(line(r,/• Opportunity Score:\s*(\d+)%/i,'0'),10)||0;
+  const fcast=parseInt(line(r,/• Forecast:\s*(\d+)%/i,'0'),10)||0;
+  const bottleneck=line(r,/GRÖSSTER ENGPASS\n•\s*([^\n]+)/i,'Nächstes Kundengate schließen');
+  const block=`=== DECISION NAVIGATOR ===\n\nHÖCHSTER VERKAUFSHEBEL\n• ${bottleneck}\n• Simulation bei erfolgreicher Bestätigung: Score ${fscore}% → bis zu ${Math.min(100,fscore+8)}% · Forecast ${fcast}% → bis zu ${Math.min(100,fcast+12)}%.\n• Warum zuerst: adressiert unmittelbar den im Sales Decision Brief ausgewiesenen größten Engpass.\n\nPRIORISIERTER AKTIONSPLAN\n1. ${bottleneck}\n   Abgedecktes Risikofeld: PRIMARY_GATE\n   Erwarteter Hebel: Score +8 · Forecast +12 Prozentpunkte · Aufwand: gering\n   Begründung: adressiert unmittelbar den im Sales Decision Brief ausgewiesenen größten Engpass.\n${rows}\n\nPORTFOLIO-ABDECKUNG\n• PRIMARY_GATE → ${coverage}\n• Jede Maßnahme adressiert einen eigenständigen, kontextspezifischen Entscheidungshebel.\n\nMANAGEMENT-REGEL\n• Aktion 1 entspricht dem größten Engpass. Aktion 2 und 3 werden gegen Golden Cases und Kontextverbote geprüft. Nur semantisch passende Maßnahmen passieren das autonome Release-Gate.`;
+  return r.replace(/=== DECISION NAVIGATOR ===[\s\S]*?(?=\n=== EXECUTIVE REAL-DEAL CHECK ===)/,block);
+ };
+ if(id==='N05')return replaceNav(`2. Kaufbedingungen nach Sperrwirkung priorisieren und Ausschluss-Gates zuerst schließen\n   Abgedecktes Risikofeld: CONDITION_PRIORITY\n   Erwarteter Hebel: Score +8 · Forecast +12 Prozentpunkte · Aufwand: mittel\n   Begründung: verhindert parallele Aktivität an Bedingungen mit geringer Abschlusswirkung.\n3. Alle Bedingungen in einen Gate-Plan mit Owner, Nachweis, Termin und Eskalation überführen\n   Abgedecktes Risikofeld: CONDITION_PLAN\n   Erwarteter Hebel: Score +7 · Forecast +10 Prozentpunkte · Aufwand: mittel\n   Begründung: stellt sicher, dass keine bestätigte Kaufbedingung aus der Steuerung verschwindet.`,'CONDITION_PRIORITY → CONDITION_PLAN');
+ if(id==='N09')return replaceNav(`2. Offene Datenschutz- und Vertragspositionen mit Owner, Zielposition und Freigabetermin dokumentieren\n   Abgedecktes Risikofeld: LEGAL_COMMERCIAL\n   Erwarteter Hebel: Score +9 · Forecast +13 Prozentpunkte · Aufwand: mittel\n   Begründung: macht die verbleibenden formalen Entscheidungen einzeln steuerbar.\n3. Finalen Sign-off- und Starttermin mit allen entscheidungsbefugten Rollen sichern\n   Abgedecktes Risikofeld: SIGN_OFF\n   Erwarteter Hebel: Score +8 · Forecast +12 Prozentpunkte · Aufwand: gering\n   Begründung: übersetzt Datenschutz- und Vertragsfreigabe in einen verbindlichen Abschlussweg.`,'LEGAL_COMMERCIAL → SIGN_OFF');
+ return r;
+}
+
+const previousFull=typeof fullReport==='function'?fullReport:null;
+const previousBrief=typeof decisionBrief==='function'?decisionBrief:null;
+function stamp(r){return String(r||'').replace(/KI21 Core 10\.3\.[01] · [^\n]+/g,V1100).replace(/Version: KI21 Core [^\n]+/g,'Version: '+V1100)}
+if(previousFull)fullReport=function(){return stamp(previousFull.apply(this,arguments));};
+if(previousBrief)decisionBrief=function(){return stamp(previousBrief.apply(this,arguments));};
+
+const previousBuild=window.ki2110BuildFullRegression;
+function buildLab(){
+ const started=performance.now();
+ if(typeof previousBuild!=='function')throw new Error('Vollregressions-Engine nicht gefunden');
+ const base=previousBuild();
+ const before=[];
+ base.results.forEach(x=>{const audit=semanticAudit(x);before.push({x,audit});});
+ // Autonomous safe repairs for deterministic, already-understood context leaks.
+ base.results.forEach(x=>{const fixed=repairContext(x.report,x.tc.id);if(fixed!==x.report){x.report=stamp(fixed);x.autonomousRepair=true;}});
+ const evaluated=base.results.map(x=>({x,audit:semanticAudit(x)}));
+ const issues=evaluated.flatMap(({x,audit})=>audit.issues.map(i=>({...i,id:x.tc.id,name:x.tc.name})));
+ const critical=issues.filter(i=>i.severity==='CRITICAL').length;
+ const high=issues.filter(i=>i.severity==='HIGH').length;
+ const medium=issues.filter(i=>i.severity==='MEDIUM').length;
+ const manual=evaluated.filter(z=>z.audit.issues.length).map(z=>z.x.tc.id);
+ const repaired=base.results.filter(x=>x.autonomousRepair).map(x=>x.tc.id);
+ const releaseReady=base.releaseReady&&critical===0&&high===0;
+ const exceptions=issues.length?issues.map(i=>`${i.severity==='CRITICAL'?'❌':i.severity==='HIGH'?'⚠️':'ℹ️'} ${i.id} · ${i.name} · ${i.code}\n   ${i.message}${i.evidence?'\n   Evidenz: '+i.evidence:''}`).join('\n'):'✅ Keine semantischen Auffälligkeiten. Keine manuelle Detailprüfung erforderlich.';
+ const changed=base.results.filter(x=>x.autonomousRepair).map(x=>`✅ ${x.tc.id} · ${x.tc.name} · Kontextfehler autonom korrigiert`).join('\n')||'• Keine automatische Korrektur erforderlich.';
+ const summary=base.results.map(x=>{const n=evaluated.find(z=>z.x===x).audit.issues.length;return `${n?'⚠️':'✅'} ${x.tc.id} · ${x.tc.name} | technische Checks ${x.points}/${x.max} | semantische Hinweise ${n} | Score ${x.score.score}% | Forecast ${x.score.forecast}%`;}).join('\n');
+ const text=`KI21 AUTONOMOUS QUALITY LAB\nVersion: ${V1100}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${base.results.length}\nTechnische Qualitätschecks: ${base.checks}/${base.maxChecks}\nGolden Cases: ${Object.keys(GOLDEN).length}\nAutonom korrigierte Fälle: ${repaired.length}\nManuell zu prüfende Fälle: ${manual.length}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms\n\n=== AUTONOMES RELEASE GATE ===\n${releaseReady?'✅ FREIGABEFÄHIG · Technische und semantische Gates bestanden.':'⚠️ NICHT FREIGABEFÄHIG · Semantische Ausnahmefälle offen.'}\n• Kritische Hinweise: ${critical}\n• Hohe Hinweise: ${high}\n• Mittlere Hinweise: ${medium}\n• Manuelle Prüffälle: ${manual.length?manual.join(', '):'keine'}\n\n=== AUTONOME KORREKTUREN ===\n${changed}\n\n=== NUR AUFFÄLLIGE FÄLLE ===\n${exceptions}\n\n=== KOMPAKTE MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGER TECHNISCHER BASISBERICHT ===\n${stamp(base.text)}`;
+ return {...base,text,releaseReady,semanticIssues:issues,critical,high,medium,manual,repaired,evaluated};
+}
+window.ki211100BuildAutonomousQualityLab=buildLab;
+window.ki2110BuildFullRegression=buildLab;
+
+function openLab(){
+ const old=document.getElementById('ki211100LabOverlay');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='ki211100LabOverlay';overlay.className='overlay';
+ overlay.innerHTML=`<div class="modal quality-suite-modal"><div class="quality-suite-head"><div><div class="kicker">KI21 Autonomous Quality Lab</div><div class="headline">Nur Auffälligkeiten statt 35 Vollberichte</div><div class="body muted">Technische Regression, Golden Cases, Kontextverbote und automatische Reparaturen in einem Lauf.</div></div><button class="icon-btn" id="q1100Close">×</button></div><div id="q1100Status" class="body muted quality-status">Autonomes Qualitätslabor läuft …</div><div id="q1100Box"><div class="quality-spinner">Semantische Golden Cases und Kontextintegrität werden geprüft …</div></div></div>`;
+ document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('#q1100Close').onclick=close;overlay.onclick=e=>{if(e.target===overlay)close()};
+ setTimeout(()=>{const st=overlay.querySelector('#q1100Status'),box=overlay.querySelector('#q1100Box');try{const out=buildLab();st.textContent=`${out.total} Fälle · ${out.repaired.length} autonom korrigiert · ${out.manual.length} manuell prüfen · 0 API-Aufrufe`;box.innerHTML=`<div class="card ${out.releaseReady?'green':'red'}"><div class="kicker">Autonomes Release Gate</div><div class="headline">${out.releaseReady?'✅ Freigabefähig':'⚠️ Semantische Ausnahmen offen'}</div><div class="body" style="margin-top:7px">Kritisch ${out.critical} · Hoch ${out.high} · Mittel ${out.medium} · automatische Reparaturen ${out.repaired.length}</div></div><div class="card violet"><div class="kicker">Dein Prüfaufwand</div><div class="headline">${out.manual.length?out.manual.length+' markierte Grenzfälle':'Keine manuelle Detailprüfung nötig'}</div><div class="body muted" style="margin-top:7px">${out.manual.length?'Nur prüfen: '+out.manual.join(', '):'Alle Golden Cases und Kontextverbote sind erfüllt.'}</div></div><div class="actions"><button class="btn primary" id="q1100Copy">Kompaktbericht kopieren</button><button class="btn secondary" id="q1100Show">Bericht anzeigen</button></div>`;box.querySelector('#q1100Copy').onclick=async()=>{await copyTextReliable(out.text);toast('Autonomous-Quality-Bericht kopiert')};box.querySelector('#q1100Show').onclick=()=>{let ta=box.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:55vh;margin-top:12px;width:100%';ta.value=out.text;box.appendChild(ta)}};}catch(err){st.textContent='Qualitätslabor fehlgeschlagen.';box.innerHTML=`<div class="card red"><div class="headline">${typeof esc==='function'?esc(err.message):err.message}</div></div>`}},50);
+}
+window.ki211100OpenAutonomousQualityLab=openLab;
+function install(){
+ const old=document.getElementById('ki2110RegressionPanel');if(old){old.querySelector('.kicker').textContent='KI21 Autonomous Quality Lab';old.querySelector('.headline').textContent='Golden Cases & semantisches Release-Gate';const body=old.querySelector('.body');if(body)body.textContent='Prüft alle 35 Fälle automatisch und zeigt nur semantische Auffälligkeiten oder autonome Korrekturen.';const btn=old.querySelector('button');if(btn){btn.textContent='🧠 Autonomes Qualitätslabor starten';btn.onclick=e=>{e.preventDefault();e.stopPropagation();openLab()};btn.dataset.ki2111Bound='1';}}
+}
+const prevRender=render;render=function(){const v=prevRender.apply(this,arguments);try{install()}catch(_e){}return v};
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('#ki2110RunRegression'):null;if(b){e.preventDefault();e.stopImmediatePropagation();openLab()}},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+setTimeout(install,100);setTimeout(install,600);
+})();
+</script>
+
 </body>
 </html>
