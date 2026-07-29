@@ -6248,7 +6248,7 @@ try{render()}catch(e){console.error('KI21 9.1.7 activation failed',e)}
 <script id="ki21-v920-evaluator-reset">
 (()=>{
 'use strict';
-const V920='KI21 Core 10.0.1 · Differentiated Action Impact';
+const V920='KI21 Core 10.0.2 · Action Portfolio Coverage';
 try{VERSION=V920}catch(e){}
 document.title=V920;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.2.0';
@@ -6388,7 +6388,7 @@ try{render()}catch(e){console.error('KI21 9.2.0 activation failed',e)}
 
 <script>
 (()=>{
-const V100='KI21 Core 10.0.1 · Differentiated Action Impact';
+const V100='KI21 Core 10.0.2 · Action Portfolio Coverage';
 try{VERSION=V100}catch(e){}
 document.title=V100;
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V100;
@@ -6432,7 +6432,7 @@ try{render()}catch(e){console.error('KI21 10.0.0 activation failed',e)}
 
 <script>
 (()=>{
-const V101='KI21 Core 10.0.1 · Differentiated Action Impact';
+const V101='KI21 Core 10.0.2 · Action Portfolio Coverage';
 try{VERSION=V101}catch(e){}
 document.title=V101;
 const fv101=document.getElementById('footerVersion');if(fv101)fv101.textContent=V101;
@@ -6502,6 +6502,85 @@ const prevFull101=fullReport, prevBrief101=decisionBrief;
 fullReport=()=>dn101Block(prevFull101());
 decisionBrief=()=>dn101Block(prevBrief101());
 try{render()}catch(e){console.error('KI21 10.0.1 activation failed',e)}
+})();
+</script>
+
+<script>
+(()=>{
+const V102='KI21 Core 10.0.2 · Action Portfolio Coverage';
+try{VERSION=V102}catch(e){}
+document.title=V102;
+const hv102=document.getElementById('headerVersion');if(hv102)hv102.textContent='Core 10.0.2';
+const fv102=document.getElementById('footerVersion');if(fv102)fv102.textContent=V102;
+
+function dn102Clean(s){return String(s||'').replace(/^\d+\.\s*/,'').replace(/\s+/g,' ').trim()}
+function dn102Num(text,label){const m=String(text||'').match(new RegExp(label+'\\s*:\\s*(\\d+)%','i'));return m?Number(m[1]):0}
+function dn102Dnas(text){
+ const part=(String(text||'').match(/DOMINANTE OPPORTUNITY-DNA\n([\s\S]*?)(?:\n\nDNA-PRIORISIERUNG|\n\nDOMINANTE MANAGEMENT-HYPOTHESE)/)||[])[1]||'';
+ return [...part.matchAll(/•\s*([A-ZÄÖÜ_]+)\s*·/g)].map(x=>x[1]);
+}
+const DN102_ACTION={
+ CRM_EVIDENZKONFLIKT:'Widersprüchliche Aussagen nach Quelle, Datum und zuständiger Rolle verifizieren und den gültigen Deal-Stand neu bestätigen',
+ KANALKONFLIKT:'Kundenzugang, Deal Ownership, Marge und Eskalationsweg verbindlich zwischen den Kanälen regeln',
+ GLOBAL_LOCAL_BUDGET:'Globalen Owner, lokale Budgethalter und Verrechnungsmodell in einer gemeinsamen Freigabekaskade verbinden',
+ PRIORITÄTSLÜCKE:'Kosten des Aufschubs quantifizieren und ein verbindliches Management-Go/No-Go herbeiführen',
+ PROCUREMENT_BLOCKER:'Offene Vertragsabweichungen mit Fachentscheider, Legal und Procurement in einer Entscheidungsmatrix schließen',
+ MESSLOGIK_KONFLIKT:'Baseline, Kausalität, Datenquelle, Abnahme und Vergütungsgrenzen vor Vertragsschluss fixieren',
+ CHAMPION_VERLUST:'Neuen Champion gewinnen und Buying Center sowie Business Case persönlich requalifizieren',
+ ENTSCHEIDERLÜCKE:'Wirtschaftlichen Entscheider persönlich einbinden und Investitionskriterien sowie Entscheidungstermin bestätigen'
+};
+const DN102_TYPE={CRM_EVIDENZKONFLIKT:'EVIDENCE',KANALKONFLIKT:'CHANNEL',GLOBAL_LOCAL_BUDGET:'GOVERNANCE',PRIORITÄTSLÜCKE:'PRIORITY',PROCUREMENT_BLOCKER:'CONTRACT',MESSLOGIK_KONFLIKT:'MEASUREMENT',CHAMPION_VERLUST:'CHAMPION',ENTSCHEIDERLÜCKE:'ECONOMIC_BUYER'};
+function dn102Classify(action){
+ const a=String(action||'').toLowerCase();
+ if(/widerspr|evidenz|gültigen deal-stand|quelle|datum|verifiz/.test(a))return ['EVIDENCE',15,20,'mittel','stellt eine belastbare und gemeinsam bestätigte Entscheidungsgrundlage her'];
+ if(/globalen owner|lokale budget|verrechnung|freigabekaskade/.test(a))return ['GOVERNANCE',18,24,'hoch','schließt Governance-, Budget- und Freigabelücken in einem gemeinsamen Entscheidungsweg'];
+ if(/kosten des aufschubs|management-go|priorität/.test(a))return ['PRIORITY',11,14,'mittel','übersetzt Nutzen und Verzögerungskosten in eine verbindliche Managementpriorität'];
+ if(/deal ownership|kundenzugang|kanälen|marge|eskalationsweg/.test(a))return ['CHANNEL',12,16,'mittel','beseitigt politische und operative Ownership-Risiken zwischen den Vertriebskanälen'];
+ if(/procurement|legal|vertragsabweich|haftung|entscheidung Matrix/.test(a))return ['CONTRACT',14,21,'hoch','macht den fachlich gewonnenen Deal kommerziell und rechtlich unterschriftsfähig'];
+ if(/baseline|kausalität|datenquelle|abnahme|vergütungs/.test(a))return ['MEASUREMENT',10,14,'mittel','sichert Messbarkeit, Abnahme und wirtschaftliche Fairness des Erfolgsmodells'];
+ if(/neuen champion|trägerschaft|sponsor/.test(a))return ['CHAMPION',16,21,'mittel','stellt interne politische Trägerschaft und aktive Mobilisierung wieder her'];
+ if(/wirtschaftlichen entscheider|cfo|investitionskriterien|investitions-go/.test(a))return ['ECONOMIC_BUYER',17,24,'mittel','schließt die persönliche wirtschaftliche Entscheidungslücke'];
+ if(/mutual action plan|entscheidungstermin|sign-off|unterschriftspfad/.test(a))return ['PROCESS',8,12,'gering','übersetzt die geklärten Risiken in einen verbindlichen Abschluss- und Entscheidungspfad'];
+ return ['GENERAL',7,9,'gering','schließt eine konkrete offene Kaufbedingung'];
+}
+function dn102Portfolio(text){
+ const dnas=dn102Dnas(text), actions=[];
+ for(const dna of dnas){if(DN102_ACTION[dna]&&!actions.some(x=>x.dna===dna))actions.push({dna,action:DN102_ACTION[dna]});if(actions.length===3)break;}
+ const fallback=[
+  {dna:'PROCESS',action:'Mutual Action Plan mit Verantwortlichen, Entscheidungskriterien und verbindlichem Sign-off-Termin vereinbaren'},
+  {dna:'ECONOMIC_BUYER',action:'Wirtschaftlichen Entscheider persönlich einbinden und Investitionskriterien sowie Entscheidungstermin bestätigen'},
+  {dna:'VALUE',action:'Business Case mit belastbarer Baseline und Kosten des Aufschubs entscheidungsfähig machen'}
+ ];
+ for(const item of fallback){
+  const type=item.dna==='PROCESS'?'PROCESS':(DN102_TYPE[item.dna]||item.dna);
+  if(actions.length<3&&!actions.some(x=>(DN102_TYPE[x.dna]||x.dna)===type))actions.push(item);
+ }
+ return actions.slice(0,3);
+}
+function dn102Impact(action,index,currentScore,currentForecast,seen){
+ let [type,s,f,effort,reason]=dn102Classify(action);
+ const decay=[1,.72,.52][index]||.45;s=Math.round(s*decay);f=Math.round(f*decay);
+ if(seen.has(type)){s=Math.max(3,Math.round(s*.5));f=Math.max(4,Math.round(f*.5));reason+='; inhaltliche Überschneidungen reduzieren den zusätzlichen Hebel'}
+ seen.add(type);s=Math.min(s,Math.max(0,100-currentScore));f=Math.min(f,Math.max(0,100-currentForecast));
+ return {type,score:s,forecast:f,effort,reason};
+}
+function dn102Strip(text){return String(text||'').replace(/\n\n=== DECISION NAVIGATOR ===[\s\S]*?(?=\n\nSTATE CHECK|$)/,'')}
+function dn102Block(report){
+ let text=dn102Strip(report).replace(/Version: KI21 Core [^\n]+/g,'Version: '+V102);
+ const portfolio=dn102Portfolio(text),actions=portfolio.map(x=>dn102Clean(x.action));
+ const score=dn102Num(text,'Opportunity Score'),forecast=dn102Num(text,'Forecast'),seen=new Set();
+ const impacts=actions.map((a,i)=>dn102Impact(a,i,score,forecast,seen));
+ const rows=actions.map((a,i)=>`${i+1}. ${a}\n   Abgedecktes Risikofeld: ${portfolio[i].dna}\n   Erwarteter Hebel: Score +${impacts[i].score} · Forecast +${impacts[i].forecast} Prozentpunkte · Aufwand: ${impacts[i].effort}\n   Begründung: ${impacts[i].reason}.`).join('\n');
+ const top=impacts[0],projectedScore=Math.min(100,score+top.score),projectedForecast=Math.min(100,forecast+top.forecast);
+ const covered=portfolio.map(x=>x.dna).join(' → ');
+ const block=`=== DECISION NAVIGATOR ===\n\nHÖCHSTER VERKAUFSHEBEL\n• ${actions[0]}\n• Simulation bei erfolgreicher Bestätigung: Score ${score}% → bis zu ${projectedScore}% · Forecast ${forecast}% → bis zu ${projectedForecast}%.\n• Warum zuerst: ${top.reason}.\n\nPRIORISIERTER AKTIONSPLAN\n${rows}\n\nPORTFOLIO-ABDECKUNG\n• ${covered}\n• Jede priorisierte Maßnahme adressiert ein eigenes Risikofeld; bereits abgedeckte DNAs werden bei der Auswahl nachgelagerter Aktionen übersprungen.\n\nMANAGEMENT-REGEL\n• Hebel werden je Maßnahme und Deal-DNA differenziert simuliert. Erst neue Kundenevidenz löst eine tatsächliche Neubewertung aus.`;
+ if(/\n\nSTATE CHECK/.test(text))return text.replace(/\n\nSTATE CHECK/,`\n\n${block}\n\nSTATE CHECK`);
+ return text+'\n\n'+block;
+}
+const prevFull102=fullReport,prevBrief102=decisionBrief;
+fullReport=()=>dn102Block(prevFull102());
+decisionBrief=()=>dn102Block(prevBrief102());
+try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 })();
 </script>
 
