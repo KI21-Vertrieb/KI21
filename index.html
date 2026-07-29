@@ -6248,7 +6248,7 @@ try{render()}catch(e){console.error('KI21 9.1.7 activation failed',e)}
 <script id="ki21-v920-evaluator-reset">
 (()=>{
 'use strict';
-const V920='KI21 Core 10.0.0 · Decision Navigator';
+const V920='KI21 Core 10.0.1 · Differentiated Action Impact';
 try{VERSION=V920}catch(e){}
 document.title=V920;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.2.0';
@@ -6388,7 +6388,7 @@ try{render()}catch(e){console.error('KI21 9.2.0 activation failed',e)}
 
 <script>
 (()=>{
-const V100='KI21 Core 10.0.0 · Decision Navigator';
+const V100='KI21 Core 10.0.1 · Differentiated Action Impact';
 try{VERSION=V100}catch(e){}
 document.title=V100;
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V100;
@@ -6426,6 +6426,82 @@ const prevBrief100=decisionBrief;
 fullReport=()=>dnBlock(stamp100(prevFull100()));
 decisionBrief=()=>dnBlock(stamp100(prevBrief100()));
 try{render()}catch(e){console.error('KI21 10.0.0 activation failed',e)}
+})();
+</script>
+
+
+<script>
+(()=>{
+const V101='KI21 Core 10.0.1 · Differentiated Action Impact';
+try{VERSION=V101}catch(e){}
+document.title=V101;
+const fv101=document.getElementById('footerVersion');if(fv101)fv101.textContent=V101;
+
+function dn101Clean(s){return String(s||'').replace(/^\d+\.\s*/,'').replace(/\s+/g,' ').trim()}
+function dn101Num(text,label){const m=String(text||'').match(new RegExp(label+'\\s*:\\s*(\\d+)%','i'));return m?Number(m[1]):0}
+function dn101Dnas(text){
+ const part=(String(text||'').match(/DOMINANTE OPPORTUNITY-DNA\n([\s\S]*?)(?:\n\nDNA-PRIORISIERUNG|\n\nDOMINANTE MANAGEMENT-HYPOTHESE)/)||[])[1]||'';
+ return [...part.matchAll(/•\s*([A-ZÄÖÜ_]+)\s*·/g)].map(x=>x[1]);
+}
+function dn101SpecificThird(text,actions){
+ const d=dn101Dnas(text), used=actions.join(' ').toLowerCase();
+ const candidates=[];
+ if(d.includes('CRM_EVIDENZKONFLIKT'))candidates.push('Gültigen Deal-Stand durch die zuständigen Kundenrollen datiert bestätigen lassen');
+ if(d.includes('KANALKONFLIKT'))candidates.push('Kundenzugang, Deal Ownership und Eskalationsweg schriftlich zwischen den Kanälen festlegen');
+ if(d.includes('GLOBAL_LOCAL_BUDGET'))candidates.push('Regionale Budgetzusagen mit Betrag, Freigeber und Termin verbindlich dokumentieren');
+ if(d.includes('PRIORITÄTSLÜCKE'))candidates.push('Kosten des Aufschubs dem Management-Go/No-Go gegenüberstellen');
+ if(d.includes('PROCUREMENT_BLOCKER'))candidates.push('Rote Linien, Tauschwerte und Eskalationsgrenzen für jede Vertragsabweichung festlegen');
+ if(d.includes('MESSLOGIK_KONFLIKT'))candidates.push('Baseline, Datenquelle, Abnahme und Vergütungsdeckel schriftlich vereinbaren');
+ if(d.includes('CHAMPION_VERLUST'))candidates.push('Neue interne Trägerschaft durch einen persönlichen Mutual Action Plan absichern');
+ if(d.includes('ENTSCHEIDERLÜCKE'))candidates.push('Wirtschaftlichen Entscheider mit persönlichem Investitions-Go und Entscheidungstermin einbinden');
+ return candidates.find(x=>!used.includes(x.toLowerCase().slice(0,28)))||'Verbindlichen Entscheidungstermin mit Owner, Kriterium und nächstem Kundenschritt sichern';
+}
+function dn101Classify(action){
+ const a=String(action||'').toLowerCase();
+ if(/widerspr|evidenz|gültigen deal-stand|quelle|datum|verifiz/.test(a))return ['EVIDENCE',15,20,'mittel','stellt zuerst eine belastbare Entscheidungsgrundlage her'];
+ if(/globalen owner|lokale budget|verrechnung|freigabekaskade|regionale budget/.test(a))return ['GOVERNANCE',18,24,'hoch','schließt gleichzeitig Governance-, Budget- und Freigabelücken'];
+ if(/kosten des aufschubs|management-go|priorität/.test(a))return ['PRIORITY',11,14,'mittel','übersetzt technischen Nutzen in eine priorisierte Managemententscheidung'];
+ if(/deal ownership|kundenzugang|kanälen|marge|eskalation/.test(a))return ['CHANNEL',12,16,'mittel','beseitigt politische und operative Ownership-Risiken'];
+ if(/procurement|legal|vertragsabweich|haftung|rote linien|tauschwerte/.test(a))return ['CONTRACT',14,21,'hoch','macht den fachlich gewonnenen Deal kommerziell unterschriftsfähig'];
+ if(/baseline|kausalität|datenquelle|abnahme|vergütungs/.test(a))return ['MEASUREMENT',10,14,'mittel','sichert Messbarkeit, Abnahme und wirtschaftliche Fairness'];
+ if(/neuen champion|trägerschaft|sponsor/.test(a))return ['CHAMPION',16,21,'mittel','stellt interne politische Trägerschaft und Mobilisierung wieder her'];
+ if(/wirtschaftlichen entscheider|cfo|investitions-go/.test(a))return ['ECONOMIC_BUYER',17,24,'mittel','schließt die persönliche wirtschaftliche Entscheidungslücke'];
+ if(/business case|roi|nutzen|baseline/.test(a))return ['VALUE',12,13,'gering','erhöht wirtschaftliche Belegbarkeit und Priorität'];
+ if(/entscheidungstermin|mutual action plan|owner, kriterium/.test(a))return ['PROCESS',8,12,'gering','verbindet Verantwortlichkeit, Termin und Entscheidungskriterium'];
+ return ['GENERAL',7,9,'gering','schließt eine konkrete offene Kaufbedingung'];
+}
+function dn101Impact(action,index,currentScore,currentForecast,seen){
+ let [type,s,f,effort,reason]=dn101Classify(action);
+ const decay=[1,.72,.52][index]||.45;
+ s=Math.round(s*decay); f=Math.round(f*decay);
+ if(seen.has(type)){s=Math.max(3,Math.round(s*.55));f=Math.max(4,Math.round(f*.55));reason+='; Überschneidungen mit einer höher priorisierten Maßnahme reduzieren den Zusatzhebel'}
+ seen.add(type);
+ s=Math.min(s,Math.max(0,100-currentScore));
+ f=Math.min(f,Math.max(0,100-currentForecast));
+ return {type,score:s,forecast:f,effort,reason};
+}
+function dn101Strip(text){return String(text||'').replace(/\n\n=== DECISION NAVIGATOR ===[\s\S]*?(?=\n\nSTATE CHECK|$)/,'')}
+function dn101Block(report){
+ let text=dn101Strip(report).replace(/Version: KI21 Core [^\n]+/g,'Version: '+V101);
+ const m=text.match(/NÄCHSTER SCHRITT\n([\s\S]*?)(?:\n\nSTATE CHECK|$)/);
+ let actions=m?((m[1].match(/^\d+\.\s+.+$/gm)||[]).map(dn101Clean)):[];
+ if(!actions.length)actions=['Größten Engpass mit belastbarer Kundenevidenz schließen','Wirtschaftlichen Entscheider persönlich einbinden'];
+ actions=actions.slice(0,2);
+ actions.push(dn101SpecificThird(text,actions));
+ const score=dn101Num(text,'Opportunity Score'), forecast=dn101Num(text,'Forecast');
+ const seen=new Set();
+ const impacts=actions.map((a,i)=>dn101Impact(a,i,score,forecast,seen));
+ const rows=actions.map((a,i)=>`${i+1}. ${a}\n   Erwarteter Hebel: Score +${impacts[i].score} · Forecast +${impacts[i].forecast} Prozentpunkte · Aufwand: ${impacts[i].effort}\n   Begründung: ${impacts[i].reason}.`).join('\n');
+ const top=impacts[0];
+ const projectedScore=Math.min(100,score+top.score), projectedForecast=Math.min(100,forecast+top.forecast);
+ const block=`=== DECISION NAVIGATOR ===\n\nHÖCHSTER VERKAUFSHEBEL\n• ${actions[0]}\n• Simulation bei erfolgreicher Bestätigung: Score ${score}% → bis zu ${projectedScore}% · Forecast ${forecast}% → bis zu ${projectedForecast}%.\n• Warum zuerst: ${top.reason}.\n\nPRIORISIERTER AKTIONSPLAN\n${rows}\n\nMANAGEMENT-REGEL\n• Hebel werden je Maßnahme und Deal-DNA differenziert simuliert. Überschneidungen und nachgelagerte Aktionen erhalten bewusst abnehmende Zusatzwirkung. Erst neue Kundenevidenz löst eine tatsächliche Neubewertung aus.`;
+ if(/\n\nSTATE CHECK/.test(text))return text.replace(/\n\nSTATE CHECK/,`\n\n${block}\n\nSTATE CHECK`);
+ return text+'\n\n'+block;
+}
+const prevFull101=fullReport, prevBrief101=decisionBrief;
+fullReport=()=>dn101Block(prevFull101());
+decisionBrief=()=>dn101Block(prevBrief101());
+try{render()}catch(e){console.error('KI21 10.0.1 activation failed',e)}
 })();
 </script>
 
