@@ -6584,5 +6584,82 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 })();
 </script>
 
+
+<script>
+(()=>{
+const V110='KI21 Core 10.1.0 · Full Regression & Real-Deal Validation';
+try{VERSION=V110}catch(e){}
+document.title=V110;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.0';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V110;
+
+const REGRESSION_GROUPS=[
+ {key:'STANDARD',label:'Standard-Regression',ids:['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10'],goal:'Normale Verkaufsphasen und klassische Opportunity-Situationen'},
+ {key:'GENERALISATION',label:'Generalisierungs- und Stressfälle',ids:['N01','N02','N03','N04','N05','N06','N07','N08','N09','N10','N11','N12','N13','N14','N15','N16','N17','N18','N19','N20'],goal:'Unbekannte Muster, Grenzfälle und widersprüchliche Kaufsituationen'},
+ {key:'MULTI_DNA',label:'Multi-DNA-Regression',ids:['S06','S07','S08','S09','S10'],goal:'Priorisierung mehrerer gleichzeitig aktiver Dealrisiken'}
+];
+const ALL_REGRESSION_IDS=REGRESSION_GROUPS.flatMap(g=>g.ids);
+
+function r110Group(result){return REGRESSION_GROUPS.find(g=>g.ids.includes(result.tc.id))}
+function r110Pct(a,b){return b?Math.round(a/b*100):0}
+function r110Build(){
+ const started=performance.now();
+ const base=window.ki2118BuildLocalSuite(ALL_REGRESSION_IDS);
+ if(!base||!Array.isArray(base.results))throw new Error('Quality-Suite-Ergebnisse nicht verfügbar');
+ const results=base.results;
+ const passed=results.filter(x=>x.passed).length;
+ const checks=results.reduce((a,x)=>a+(x.points||0),0);
+ const maxChecks=results.reduce((a,x)=>a+(x.max||0),0);
+ const duplicates=results.reduce((a,x)=>a+(x.duplicates||0),0);
+ const badTokens=results.reduce((a,x)=>a+(x.badTokens||0),0);
+ const areaComplete=results.filter(x=>x.areaCount===7).length;
+ const navigatorComplete=results.filter(x=>/=== DECISION NAVIGATOR ===/.test(x.report||'')).length;
+ const groupLines=REGRESSION_GROUPS.map(g=>{
+   const rows=results.filter(x=>g.ids.includes(x.tc.id));
+   const gp=rows.filter(x=>x.passed).length;
+   const pts=rows.reduce((a,x)=>a+(x.points||0),0), mx=rows.reduce((a,x)=>a+(x.max||0),0);
+   return `${gp===rows.length?'✅':'⚠️'} ${g.label}: ${gp}/${rows.length} Fälle · ${pts}/${mx} Checks · ${g.goal}`;
+ }).join('\n');
+ const releaseReady=passed===results.length&&checks===maxChecks&&duplicates===0&&badTokens===0&&areaComplete===results.length&&navigatorComplete===results.length;
+ const failed=results.filter(x=>!x.passed);
+ const failedLines=failed.length?failed.map(x=>`⚠️ ${x.tc.id} · ${x.tc.name} · ${x.points}/${x.max} Checks${x.failedChecks&&x.failedChecks.length?' · '+x.failedChecks.join(', '):''}`).join('\n'):'✅ Keine fehlgeschlagenen Regressionstests.';
+ const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');
+ const details=results.map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${results.length} · ${x.tc.id} · ${x.tc.name}\nTestblock: ${(r110Group(x)||{}).label||'Nicht zugeordnet'}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${String(x.report||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V110)}`).join('\n\n');
+ const runtime=Math.round(performance.now()-started);
+ const text=`KI21 FULL REGRESSION & REAL-DEAL VALIDATION\nVersion: ${V110}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${checks}/${maxChecks}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms\n\n=== RELEASE GATE ===\n${releaseReady?'✅ FREIGABEFÄHIG · Alle technischen und semantischen Regressionstore bestanden.':'⚠️ NICHT FREIGABEFÄHIG · Mindestens ein Regressionstor ist offen.'}\n• Fälle bestanden: ${passed}/${results.length}\n• Qualitätsindex: ${r110Pct(checks,maxChecks)}%\n• Bereichsanalysen vollständig: ${areaComplete}/${results.length}\n• Decision Navigator vorhanden: ${navigatorComplete}/${results.length}\n• Doppelungen: ${duplicates}\n• Ungültige Tokens: ${badTokens}\n\n=== TESTBLÖCKE ===\n${groupLines}\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== OFFENE REGRESSIONEN ===\n${failedLines}\n\n=== REAL-DEAL VALIDATION · BEWERTUNGSRAHMEN ===\nFür reale CRM-Imports zusätzlich manuell prüfen:\n• Ist der größte Engpass tatsächlich der entscheidende Kaufblocker?\n• Ist Aktion 1 die beste unmittelbar ausführbare Verkäuferhandlung?\n• Sind Score und Forecast im Vergleich zur Kundenevidenz plausibel?\n• Decken die drei Navigator-Aktionen unterschiedliche Risikofelder ab?\n• Ist jede Aussage faktentreu und ohne erfundene Bestätigung?\n• Würde ein erfahrener Sales Director auf dieser Grundlage handeln?\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`;
+ return {results,text,releaseReady,passed,total:results.length,checks,maxChecks,runtime,duplicates,badTokens,areaComplete,navigatorComplete};
+}
+window.ki2110BuildFullRegression=r110Build;
+
+function r110Open(){
+ const overlay=document.createElement('div');overlay.className='overlay';
+ overlay.innerHTML=`<div class="modal quality-suite-modal"><div class="quality-suite-head"><div><div class="kicker">KI21 Release Validation</div><div class="headline">Full Regression & Real-Deal Validation</div><div class="body muted">35 lokale Testfälle in drei getrennten Testblöcken. Keine API-Kosten.</div></div><button class="icon-btn" id="r110Close">×</button></div><div id="r110Status" class="body muted quality-status">Regression wird ausgeführt …</div><div id="r110Results"><div class="quality-spinner">Standard-, Generalisierungs- und Multi-DNA-Fälle werden geprüft …</div></div></div>`;
+ document.body.appendChild(overlay);
+ const close=()=>overlay.remove();overlay.querySelector('#r110Close').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ requestAnimationFrame(()=>{
+  try{
+   const out=r110Build(),status=overlay.querySelector('#r110Status'),box=overlay.querySelector('#r110Results');
+   status.textContent=`${out.passed}/${out.total} Fälle · ${out.checks}/${out.maxChecks} Checks · ${out.runtime} ms · 0 API-Aufrufe`;
+   box.innerHTML=`<div class="card ${out.releaseReady?'green':'red'}"><div class="kicker">Release Gate</div><div class="headline">${out.releaseReady?'✅ Vollständig freigabefähig':'⚠️ Regression prüfen'}</div><div class="body" style="margin-top:7px">Bereichsanalysen ${out.areaComplete}/${out.total} · Navigator ${out.navigatorComplete}/${out.total} · Doppelungen ${out.duplicates} · ungültige Tokens ${out.badTokens}</div></div><div class="actions"><button class="btn primary" id="r110Copy">Gesamtbericht kopieren</button><button class="btn secondary" id="r110Show">Vollständigen Bericht anzeigen</button></div>`;
+   box.querySelector('#r110Copy').onclick=async()=>{await copyTextReliable(out.text);toast('Full-Regression-Bericht kopiert')};
+   box.querySelector('#r110Show').onclick=()=>{let ta=box.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:55vh;margin-top:12px';ta.value=out.text;box.appendChild(ta)}};
+  }catch(err){overlay.querySelector('#r110Status').textContent='Full Regression fehlgeschlagen.';overlay.querySelector('#r110Results').innerHTML=`<div class="card red"><div class="headline">${esc(err&&err.message?err.message:String(err))}</div></div>`}
+ });
+}
+function r110Install(){
+ if(document.getElementById('ki2110RegressionPanel'))return;
+ const cards=[...document.querySelectorAll('.card')];
+ const anchor=cards.find(x=>/KI21 Quality Suite/.test(x.textContent||''));
+ if(!anchor)return;
+ const panel=document.createElement('div');panel.id='ki2110RegressionPanel';panel.className='card violet';
+ panel.innerHTML='<div class="kicker">KI21 Release Validation</div><div class="headline">Full Regression & Real-Deal Validation</div><div class="body muted" style="margin-top:7px">Alle 35 Standard-, Stress- und Multi-DNA-Fälle gemeinsam prüfen und ein eindeutiges Release-Gate erzeugen.</div><div class="actions"><button class="btn primary" id="ki2110RunRegression">🧪 Vollregression starten</button></div>';
+ anchor.insertAdjacentElement('afterend',panel);panel.querySelector('#ki2110RunRegression').onclick=r110Open;
+}
+const previousRender110=render;
+render=function(){const value=previousRender110.apply(this,arguments);try{r110Install()}catch(e){console.error('KI21 10.1.0 panel failed',e)}return value};
+try{render();r110Install()}catch(e){console.error('KI21 10.1.0 activation failed',e)}
+})();
+</script>
+
 </body>
 </html>
