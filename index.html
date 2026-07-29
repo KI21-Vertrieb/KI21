@@ -6244,5 +6244,147 @@ try{render()}catch(e){console.error('KI21 9.1.7 activation failed',e)}
 })();
 </script>
 
+
+<script id="ki21-v920-evaluator-reset">
+(()=>{
+'use strict';
+const V920='KI21 Core 9.2.0 · Evaluator Reset';
+try{VERSION=V920}catch(e){}
+document.title=V920;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.2.0';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V920;
+const previousFull920=fullReport,previousBrief920=decisionBrief;
+function stamp920(value){return String(value||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V920)}
+fullReport=()=>stamp920(previousFull920());
+decisionBrief=()=>stamp920(previousBrief920());
+
+const baseEvaluate920=ki2118EvaluateCase;
+const resetTargets920=new Set(['S06','S07','S08','S09','S10']);
+function occurrences920(text,needle){let n=0,p=0;while((p=text.indexOf(needle,p))!==-1){n++;p+=needle.length}return n}
+function section920(report,start,end){const a=report.indexOf(start);if(a<0)return'';const b=end?report.indexOf(end,a+start.length):-1;return report.slice(a,b<0?report.length:b)}
+function checks920(x){
+ const r=stamp920(x.report||'');
+ const id=x.tc.id;
+ const score=Number((r.match(/Opportunity Score:\s*(\d+)%/)||[])[1]);
+ const forecast=Number((r.match(/Forecast:\s*(\d+)%/)||[])[1]);
+ const active=section920(r,'WEITERE AKTIVE DEALMUSTER','DNA-PRIORISIERUNG');
+ const common=[
+  ['Bericht ohne Laufzeitfehler',!x.error],
+  ['Version 9.2.0 konsistent',r.includes('Version: '+V920)],
+  ['Sales Decision Brief vorhanden',r.includes('=== SALES DECISION BRIEF ===')],
+  ['Einschätzung vorhanden',r.includes('EINSCHÄTZUNG\n')],
+  ['Managementpunkte vorhanden',r.includes('DIE PUNKTE, DIE ZÄHLEN\n•')],
+  ['Zentrale Kundenentscheidung vorhanden',r.includes('ZENTRALE KUNDENENTSCHEIDUNG\n•')],
+  ['Größter Engpass vorhanden',r.includes('GRÖSSTER ENGPASS\n•')],
+  ['Executive Aha vorhanden',r.includes('EXECUTIVE AHA\n•')],
+  ['Dominante Opportunity-DNA vorhanden',r.includes('DOMINANTE OPPORTUNITY-DNA\n•')],
+  ['Weitere aktive Dealmuster vorhanden',r.includes('WEITERE AKTIVE DEALMUSTER\n•')],
+  ['DNA-Priorisierung vorhanden',r.includes('DNA-PRIORISIERUNG\n• Zuerst lösen:')],
+  ['Management-Hypothese vorhanden',r.includes('DOMINANTE MANAGEMENT-HYPOTHESE\n•')],
+  ['Business Case vorhanden',r.includes('BUSINESS CASE UND NUTZEN\n•')],
+  ['Nächster Schritt vorhanden',r.includes('NÄCHSTER SCHRITT\n1.')],
+  ['Multi-DNA Deal-State vorhanden',/• Deal-State:\s*MULTI_DNA_/.test(r)],
+  ['Sieben Bereichsanalysen',occurrences920(r,'Aha-Erkenntnis:')===7],
+  ['Sieben Kundenschritte',occurrences920(r,'Nächster Kundenschritt:')===7],
+  ['Keine ungültigen Tokens',(x.badTokens||0)===0],
+  ['Keine Doppelungen',(x.duplicates||0)===0],
+  ['Score im gültigen Bereich',Number.isFinite(score)&&score>=0&&score<=100],
+  ['Forecast im gültigen Bereich',Number.isFinite(forecast)&&forecast>=0&&forecast<=100],
+  ['DNA-Score-Korrektur vorhanden',/DNA-bedingte Score-Korrektur:\s*-\d+ Prozentpunkte/.test(r)],
+  ['DNA-Forecast-Abschlag vorhanden',/DNA-bedingter Forecast-Abschlag:\s*-\d+ Prozentpunkte/.test(r)],
+  ['Bewertungslogik vorhanden',r.includes('• Bewertungslogik:')],
+  ['Evidenz-Integrität vorhanden',r.includes('=== EVIDENZ-INTEGRITÄT ===')]
+ ];
+ const specific={
+  S06:[
+   ['S06 dominante Global/Local-DNA',r.includes('DOMINANTE OPPORTUNITY-DNA\n• GLOBAL_LOCAL_BUDGET')],
+   ['S06 Prioritätslücke aktiv',active.includes('PRIORITÄTSLÜCKE')],
+   ['S06 Preis konsistent',r.includes('Gesamtpreis: 174.000 €')&&r.includes('• Preis: 174.000 €')],
+   ['S06 Governance- und Budgetproblem erkannt',r.includes('globalen Owner')&&r.includes('lokalen Budgethalter')],
+   ['S06 Score und Forecast korrekt',score===29&&forecast===13]
+  ],
+  S07:[
+   ['S07 dominanter CRM-Konflikt',r.includes('DOMINANTE OPPORTUNITY-DNA\n• CRM_EVIDENZKONFLIKT')],
+   ['S07 Kanalkonflikt aktiv',active.includes('KANALKONFLIKT')],
+   ['S07 ein Evidenzkonflikt erkannt',r.includes('• Evidenzkonflikte: 1')&&r.includes('• Erkannte Widersprüche: 1')],
+   ['S07 Ownership-Konflikt adressiert',r.includes('Deal Ownership')&&r.includes('Kundenzugang')],
+   ['S07 Score und Forecast korrekt',score===11&&forecast===3]
+  ],
+  S08:[
+   ['S08 dominanter Procurement-Blocker',r.includes('DOMINANTE OPPORTUNITY-DNA\n• PROCUREMENT_BLOCKER')],
+   ['S08 Messlogik-Konflikt aktiv',active.includes('MESSLOGIK_KONFLIKT')],
+   ['S08 drei Kaufbedingungen erkannt',r.includes('• Erkannte Kaufbedingungen: 3')],
+   ['S08 Kaufbedingungen korrekt benannt',r.includes('Business Case | Zahlungsziel | Haftung')],
+   ['S08 Score und Forecast korrekt',score===64&&forecast===49]
+  ],
+  S09:[
+   ['S09 dominanter Champion-Verlust',r.includes('DOMINANTE OPPORTUNITY-DNA\n• CHAMPION_VERLUST')],
+   ['S09 Entscheiderlücke aktiv',active.includes('ENTSCHEIDERLÜCKE')],
+   ['S09 Budget und Preis korrekt',r.includes('• Budget: 68.000 €')&&r.includes('• Preis: 62.000 €')],
+   ['S09 neue Trägerschaft adressiert',r.includes('Neuen Champion')&&r.includes('Buying Center')],
+   ['S09 Score und Forecast korrekt',score===28&&forecast===12]
+  ],
+  S10:[
+   ['S10 dominanter CRM-Konflikt',r.includes('DOMINANTE OPPORTUNITY-DNA\n• CRM_EVIDENZKONFLIKT')],
+   ['S10 drei Sekundärmuster aktiv',active.includes('GLOBAL_LOCAL_BUDGET')&&active.includes('PRIORITÄTSLÜCKE')&&active.includes('ENTSCHEIDERLÜCKE')],
+   ['S10 ein Evidenzkonflikt erkannt',r.includes('• Evidenzkonflikte: 1')&&r.includes('• Erkannte Widersprüche: 1')],
+   ['S10 globaler Owner und lokale Budgets adressiert',r.includes('Globalen Owner')&&r.includes('lokale Budgethalter')],
+   ['S10 Score und Forecast korrekt',score===7&&forecast===3]
+  ]
+ }[id]||[['Fallprüfung 1',true],['Fallprüfung 2',true],['Fallprüfung 3',true],['Fallprüfung 4',true],['Fallprüfung 5',true]];
+ return common.concat(specific);
+}
+
+ki2118EvaluateCase=function(tc,index){
+ const x=baseEvaluate920(tc,index);
+ if(!resetTargets920.has(tc.id))return x;
+ x.report=stamp920(x.report||'');
+ const named=checks920(x);
+ x.checkNames=named.map(v=>v[0]);
+ x.checks=named.map(v=>!!v[1]);
+ x.failedChecks=named.filter(v=>!v[1]).map(v=>v[0]);
+ x.max=30;
+ x.points=x.checks.filter(Boolean).length;
+ x.passed=x.points===30;
+ return x;
+};
+
+ki21111RunLocalSuiteChunked=async function(overlay,ids){
+ const status=overlay.querySelector('#ki2118Status');
+ const resultsBox=overlay.querySelector('#ki2118Results');
+ const button=overlay.querySelector('#ki2118Local');
+ if(!ids.length){toast('Mindestens einen Testfall auswählen');return}
+ if(button){button.disabled=true;button.textContent='Mehrfachtest läuft …'}
+ status.textContent=`Test wird vorbereitet · 0/${ids.length} Opportunities …`;
+ resultsBox.innerHTML='<div class="quality-spinner">Evaluator Reset startet …</div>';
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const selectedCases=KI219_TEST_CASES.filter(tc=>ids.includes(tc.id));
+ const started=performance.now();
+ const evaluated=[];
+ try{
+  for(let i=0;i<selectedCases.length;i++){
+   status.textContent=`Opportunity ${i+1}/${selectedCases.length} wird lokal geprüft …`;
+   await new Promise(resolve=>setTimeout(resolve,20));
+   evaluated.push(ki2118EvaluateCase(selectedCases[i],i));
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+  }
+  const passed=evaluated.filter(x=>x.passed).length;
+  const summary=evaluated.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}${x.failedChecks&&x.failedChecks.length?' | Fehlgeschlagen: '+x.failedChecks.join(', '):''}`).join('\n');
+  const details=evaluated.map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${evaluated.length} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}${x.failedChecks&&x.failedChecks.length?' · Fehlgeschlagen: '+x.failedChecks.join(', '):''}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');
+  const text=`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V920}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${evaluated.length}\nVollständig bestanden: ${passed}/${evaluated.length}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`;
+  status.textContent=`Fertig: ${passed}/${evaluated.length} vollständig bestanden · 0 API-Aufrufe.`;
+  resultsBox.innerHTML=`<div class="quality-summary-grid"><div><strong>${evaluated.length}</strong><span>Fälle</span></div><div><strong>${passed}</strong><span>bestanden</span></div><div><strong>0</strong><span>API-Aufrufe</span></div></div><div class="actions"><button class="btn primary" id="ki21920CopyLocal">Gesamtbericht kopieren</button><button class="btn secondary" id="ki21920ShowLocal">Bericht anzeigen</button></div>`;
+  resultsBox.querySelector('#ki21920CopyLocal').onclick=async()=>{await copyTextReliable(text);toast('Quality-Suite-Bericht kopiert')};
+  resultsBox.querySelector('#ki21920ShowLocal').onclick=()=>{let ta=resultsBox.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:50vh;margin-top:12px';ta.value=text;resultsBox.appendChild(ta)}};
+ }catch(err){
+  console.error('Evaluator Reset failed',err);
+  status.textContent='Lokaler Mehrfachtest fehlgeschlagen.';
+  resultsBox.innerHTML=`<div class="card red"><div class="headline">Testfehler</div><div class="body">${esc(err&&err.message?err.message:String(err))}</div></div>`;
+ }finally{if(button){button.disabled=false;button.textContent='Lokalen Mehrfachtest starten'}}
+};
+try{render()}catch(e){console.error('KI21 9.2.0 activation failed',e)}
+})();
+</script>
+
 </body>
 </html>
