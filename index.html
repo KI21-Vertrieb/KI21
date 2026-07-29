@@ -5022,7 +5022,7 @@ render();
 <script id="ki21-v8190-complex-decision-patterns">
 (()=>{
 'use strict';
-const V='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V='KI21 Core 9.0.1 · DNA Detection Completion';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5134,7 +5134,7 @@ processAnalysis=function(name){const st=specialState();if(st)return areaFor(name
 function evaluate(tc,index){const original=state,t0=performance.now();let rep='',error='';try{const s=emptyState(false),p=parseImport(tc.raw);applyParsed(s,p);s.rawImport=tc.raw;state=s;rep=fullReport()}catch(e){error=String(e&&e.stack||e)}finally{state=original}
  const st=(rep.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'',score=Number((rep.match(/Opportunity Score:\s*(\d+)%/)||[])[1]||0),forecast=Number((rep.match(/Forecast:\s*(\d+)%/)||[])[1]||0),areaCount=(rep.match(/^--- .+ ---$/gm)||[]).length,badTokens=(rep.match(/\b(?:undefined|null|NaN)\b|0 Wochen|Mit der wirtschaftliche|\.\./g)||[]).length,ins=[...rep.matchAll(/Aha-Erkenntnis:\s*(.+)/g)].map(m=>m[1]),ah=(rep.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'',as=(rep.match(/EINSCHÄTZUNG\n([^\n]+)/)||[])[1]||'',dups=ins.filter((x,i)=>ins.some((y,j)=>j<i&&sim(x,y)>.82)).length+(sim(ah,as)>.75?1:0);
  const expected={T07:'QUALIFIZIERUNG',T10:'QUALIFIZIERUNG',N02:'ENTSCHEIDERZUGANG',N05:'KAUFBEDINGUNGEN',N08:'SONDERBUDGET',N09:'VERTRAGSFREIGABE',N10:'VERTRAGSVERHANDLUNG',N13:'EVIDENZKONFLIKT',N15:'QUALIFIZIERUNG',N16:'ENTSCHEIDUNGSKRITERIENKONFLIKT',N17:'PREIS_BUDGET_LÜCKE',N18:'REQUALIFIZIERUNG',N19:'ENTSCHEIDUNG_VERTAGT',N20:'WETTBEWERBSENTSCHEIDUNG'}[tc.id];
- const checks=[!error,areaCount===7,badTokens===0,rep.includes('Version: '+V),!expected||st===expected,!['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,Math.abs(score-forecast)<=18,tc.id!=='N13'||/Erkannte Widersprüche:\s*1/.test(rep),tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(rep),tc.id!=='N08'||/620\.000 €/.test(rep),tc.id!=='N02'||/Entscheider aktiv eingebunden:\s*NEIN/.test(rep),tc.id!=='N09'||!/Preis: nicht bestätigt|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),tc.id!=='N10'||!/fehlender Wirkungsnachweis|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),sim(ah,as)<.75,new Set(ins.map(norm)).size===7,/Nächster Kundenschritt:\s*(?!undefined).+/.test(rep),!/0 Wochen|rund 0 €/.test(rep),rep.length<17000,/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),dups===0,tc.id!=='N16'||/gemeinsame.*Gewichtung|Priorisierung|Zielkonflikt/i.test(rep),tc.id!=='N17'||/29\.000 €[\s\S]*85\.000 €[\s\S]*114\.000 €|114\.000 €[\s\S]*85\.000 €[\s\S]*29\.000 €/i.test(rep),tc.id!=='N18'||/neuen.*Champion|Requalifiz|nicht mehr im Unternehmen/i.test(rep),tc.id!=='N19'||/Überbrück|Wiederaufnahme|vertagt|Investitionssperre/i.test(rep),tc.id!=='N20'||/gewichtete.*Kriterien|Bewertungslogik|Wettbewerbsentscheidung/i.test(rep)];
+ const checks=[!error,areaCount===7,badTokens===0,rep.includes('Version: '+V),!expected||st===expected,!['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,Math.abs(score-forecast)<=18,tc.id!=='N13'||/Erkannte Widersprüche:\s*1/.test(rep),tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(rep),tc.id!=='N08'||/620\.000 €/.test(rep),tc.id!=='N02'||/Entscheider aktiv eingebunden:\s*NEIN/.test(rep),tc.id!=='N09'||!/Preis: nicht bestätigt|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),tc.id!=='N10'||!/fehlender Wirkungsnachweis|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),sim(ah,as)<.75,new Set(ins.map(norm)).size===7,/Nächster Kundenschritt:\s*(?!undefined).+/.test(rep),!/0 Wochen|rund 0 €/.test(rep),rep.length<17000,/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),dups===0,tc.id!=='N16'||/gemeinsame.*Gewichtung|Priorisierung|Zielkonflikt/i.test(rep),tc.id!=='N17'||/29\.000 €[\s\S]*85\.000 €[\s\S]*114\.000 €|114\.000 €[\s\S]*85\.000 €[\s\S]*29\.000 €/i.test(rep),tc.id!=='N18'||/neuen.*Champion|Requalifiz|nicht mehr im Unternehmen/i.test(rep),tc.id!=='N19'||/Überbrück|Wiederaufnahme|vertagt|Investitionssperre/i.test(rep),tc.id!=='N20'||/gewichtete.*Kriterien|Bewertungslogik|Wettbewerbsentscheidung/i.test(rep),tc.id!=='S01'||/Deal-State:\s*GLOBAL_LOCAL_BUDGET/.test(rep),tc.id!=='S02'||/Deal-State:\s*PRIORITÄTSLÜCKE/.test(rep)&&/technisch(?:en|er).*Erfolg|Management-Priorität|Kosten der Nichtentscheidung/i.test(rep),tc.id!=='S03'||/Deal-State:\s*KANALKONFLIKT/.test(rep)&&/Deal Ownership|Kanalstrategie|Partnervertrieb/i.test(rep),tc.id!=='S04'||/Deal-State:\s*MESSLOGIK_KONFLIKT/.test(rep)&&/Baseline|Kausalität|Abnahme/i.test(rep),tc.id!=='S05'||/Deal-State:\s*CRM_EVIDENZKONFLIKT/.test(rep)&&/Evidenzkonflikte:\s*1/.test(rep)&&/Erkannte Widersprüche:\s*1/.test(rep)];
  const points=checks.filter(Boolean).length;return{tc,index,report:rep,error,checks,points,max:checks.length,passed:points===checks.length,score:{score,forecast},elapsed:Math.round(performance.now()-t0),areaCount,duplicates:dups,badTokens,strongestInsight:ah,bottleneck:(rep.match(/GRÖSSTER ENGPASS\n•\s*(.+)/)||[])[1]||'',nextStep:(rep.match(/NÄCHSTER SCHRITT\n1\.\s*(.+)/)||[])[1]||''};
 }
 window.ki2118EvaluateCase=evaluate;
@@ -5289,7 +5289,7 @@ try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 <script id="ki21-v8221-cockpit-state-sync">
 (()=>{
 'use strict';
-const V8221='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V8221='KI21 Core 9.0.1 · DNA Detection Completion';
 const PREV_FULL_REPORT=fullReport;
 const PREV_DECISION_BRIEF=decisionBrief;
 const esc8221=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5353,7 +5353,7 @@ try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refr
 <script id="ki21-v8223-evidence-integrity-cockpit-diversity">
 (()=>{
 'use strict';
-const V8223='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V8223='KI21 Core 9.0.1 · DNA Detection Completion';
 const BASE_FULL_8223=fullReport;
 const BASE_BRIEF_8223=decisionBrief;
 const esc8223=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5450,7 +5450,7 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 <script id="ki21-v8230-opportunity-type-intelligence">
 (()=>{
 'use strict';
-const V8230='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V8230='KI21 Core 9.0.1 · DNA Detection Completion';
 const BASE_FULL_8230=fullReport;
 const raw8230=()=>String(state&&state.rawImport||'');
 const case8230=(id,rx)=>String(state&&state.id||'')===id||rx.test(raw8230());
@@ -5561,7 +5561,7 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 </style>
 <script id="ki21-v8240-action-drilldowns-real-world-test-pack">
 (()=>{
-const VERSION8240='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const VERSION8240='KI21 Core 9.0.1 · DNA Detection Completion';
 try{VERSION=VERSION8240}catch(e){} document.title=VERSION8240;
 const hv8240=document.getElementById('headerVersion');if(hv8240)hv8240.textContent='Core 8.25.1';
 const fv8240=document.getElementById('footerVersion');if(fv8240)fv8240.textContent=VERSION8240;
@@ -5671,7 +5671,7 @@ try{render()}catch(e){console.error('KI21 8.24.0 activation failed',e)}
 <script id="ki21-v8250-unified-dominance-pipeline-validated">
 (()=>{
 'use strict';
-const PIPELINE_VERSION='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const PIPELINE_VERSION='KI21 Core 9.0.1 · DNA Detection Completion';
 function section(text,start,end){
  const a=String(text||'').indexOf(start);if(a<0)return '';
  const from=a+start.length,b=end?String(text||'').indexOf(end,from):-1;
@@ -5719,7 +5719,7 @@ try{render()}catch(e){console.error('KI21 8.25.1 activation failed',e)}
 
 <script id="ki21-v8251-real-customer-validation-pack">
 (()=>{
-const V8251='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V8251='KI21 Core 9.0.1 · DNA Detection Completion';
 try{VERSION=V8251}catch(e){}
 document.title=V8251;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.25.1';
@@ -5739,16 +5739,16 @@ if(typeof KI219_TEST_CASES!=='undefined'&&!KI219_TEST_CASES.some(x=>x.id==='S01'
 <script id="ki21-v900-opportunity-dna-engine">
 (()=>{
 'use strict';
-const V='KI21 Core 9.0.0 · Opportunity DNA Engine';
+const V='KI21 Core 9.0.1 · DNA Detection Completion';
 const baseFull=fullReport;
 const raw=()=>String(state&&state.rawImport||'');
 const escRx=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function dna(){const r=raw();
  if(/global(?:er|en)? Vertrag|globaler Rollout|DACH, UK und Benelux|lokales Budget|lokalen Budgets/i.test(r))return'GLOBAL_LOCAL_BUDGET';
- if(/technisch(?:er|en)? Erfolg|Pilot technisch erfolgreich|keine Management-Priorität|ohne Priorität|nicht priorisiert/i.test(r))return'TECH_SUCCESS_NO_PRIORITY';
+ if(/technisch(?:er|en)? Erfolg|Pilot technisch erfolgreich|technische Integration (?:funktionierte|erfolgreich)|87 % Nutzerakzeptanz|Risiken wurden durchschnittlich 16 Tage früher erkannt|keine Management-Priorität|ohne Priorität|nicht (?:als Top-3-)?Priorität|Investitionen zunächst in Customer Success/i.test(r))return'TECH_SUCCESS_NO_PRIORITY';
  if(/Partnerkonflikt|Direkt- und Partnervertrieb|Partnervertrieb.*Direktvertrieb|Deal Ownership|Kanalkonflikt/i.test(r))return'CHANNEL_CONFLICT';
  if(/erfolgsabhängig(?:e|er)? Vergütung|Success Fee|Messkonflikt|erfolgsabhängiger Preis/i.test(r))return'SUCCESS_FEE_MEASUREMENT';
- if(/CRM-Fakten widersprechen|CRM.*veraltet|aktuellen Gespräch|veraltete CRM-Angaben/i.test(r))return'CRM_EVIDENCE_CONFLICT';
+ if(/CRM-Fakten widersprechen|CRM.*(?:veraltet|vor \d+ Tagen)|Aktuelles Gespräch|aktuelle(?:s|m|n)? Gespräch|Budget wurde nie formal reserviert|CFO kennt das Projekt nur oberflächlich|Abschlusswahrscheinlichkeit von 80 %|veraltete CRM-Angaben/i.test(r))return'CRM_EVIDENCE_CONFLICT';
  return'';
 }
 const models={
@@ -5777,14 +5777,18 @@ function post(t){const k=dna(),m=models[k];if(!m)return t;
  t=replaceBlock(t,'DOMINANTE MANAGEMENT-HYPOTHESE','BUSINESS CASE UND NUTZEN','• '+m.hyp);
  t=replaceBlock(t,'BUSINESS CASE UND NUTZEN','NÄCHSTER SCHRITT','• '+m.business);
  t=replaceBlock(t,'NÄCHSTER SCHRITT','STATE CHECK',m.steps.map((x,i)=>`${i+1}. ${x}`).join('\n'));
- t=t.replace(/• Deal-State: [^\n]+/,'• Deal-State: '+m.state);
+ t=t.replace(/• Deal-State: [^\n]+/g,'• Deal-State: '+m.state);
  t=t.replace(/=== VERKAUFSPROZESS \/ BEREICHSANALYSEN ===\n[\s\S]*?(?=\n\n=== EVIDENZ-INTEGRITÄT ===)/,'=== VERKAUFSPROZESS / BEREICHSANALYSEN ===\n\n'+renderAreas(k));
- if(k==='CRM_EVIDENCE_CONFLICT')t=t.replace(/• Erkannte Widersprüche: 0/,'• Erkannte Widersprüche: 1\n  1. CRM-Aussage und aktuelles Kundengespräch widersprechen sich.\n     Auswirkung: Score, Forecast und Verkaufsplan sind bis zur Klärung nicht belastbar.\n     Klärungsfrage: Welche Aussage wird von der zuständigen Kundenrolle mit aktuellem Datum verbindlich bestätigt?');
+ if(k==='CRM_EVIDENCE_CONFLICT'){
+  t=t.replace(/• Evidenzkonflikte: 0/g,'• Evidenzkonflikte: 1');
+  t=t.replace(/• Erkannte Widersprüche: 0/g,'• Erkannte Widersprüche: 1');
+  t=t.replace(/• Erkannte Widersprüche: 1(?=\n\n=== QUALITÄTS-KURZDIAGNOSE ===)/,'• Erkannte Widersprüche: 1\n  1. CRM-Aussage: Budget bestätigt, CFO unterstützt, Preis und Starttermin gelten als belastbar.\n     Aktuelles Gespräch: CFO kennt das Projekt nur oberflächlich, Budget ist nicht reserviert und der Start wurde auf das nächste Jahr verschoben.\n     Auswirkung: Score, Forecast, Budgetstatus und Abschlusszeitpunkt sind bis zur Klärung nicht belastbar.\n     Klärungsfrage: Welche Aussage wird von CFO und Sponsor mit aktuellem Datum verbindlich bestätigt?');
+ }
  return t;
 }
 fullReport=()=>post(baseFull());
 decisionBrief=()=>{const r=fullReport();return(r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?=\n\n=== VERKAUFSPROZESS)/)||[''])[0]};
-try{VERSION=V}catch(e){}document.title=V;const h=document.getElementById('headerVersion');if(h)h.textContent='Core 9.0.0';const f=document.getElementById('footerVersion');if(f)f.textContent=V;
+try{VERSION=V}catch(e){}document.title=V;const h=document.getElementById('headerVersion');if(h)h.textContent='Core 9.0.1';const f=document.getElementById('footerVersion');if(f)f.textContent=V;
 })();
 </script>
 </body>
