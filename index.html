@@ -7157,5 +7157,117 @@ if(typeof fullReport==='function'){const old=fullReport;fullReport=function(){re
 window.ki211030ExecutiveActionPortfolio={repair:render1030,facts:facts1030,actions:contextual1030};
 })();
 </script>
+
+<script>
+/* KI21 Core 10.3.1 · Contextual Action Integrity
+   Refines the action portfolio for special deal contexts, removes thematic
+   overlap between primary and secondary actions, and corrects conflict numbering.
+   Scoring and forecast calculations remain unchanged. */
+(function(){
+'use strict';
+const V1031='KI21 Core 10.3.1 · Contextual Action Integrity';
+try{if(typeof VERSION!=='undefined')VERSION=V1031;}catch(_e){}
+document.title=V1031;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.3.1';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V1031;
+
+function cap(t,re,d=''){const m=String(t||'').match(re);return m?String(m[1]).trim():d;}
+function yes(t,re){return re.test(String(t||''));}
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-zäöüß0-9]+/g,' ').trim();}
+function facts(t){
+ return {
+  state:cap(t,/• Deal-State:\s*([^\n]+)/i,'UNGEKLÄRT'),
+  bottleneck:cap(t,/GRÖSSTER ENGPASS\n•\s*([^\n]+)/i,''),
+  assessment:cap(t,/EINSCHÄTZUNG\n([^\n]+)/i,''),
+  aha:cap(t,/EXECUTIVE AHA\n•\s*([^\n]+)/i,''),
+  conditions:parseInt(cap(t,/• Erkannte Kaufbedingungen:\s*(\d+)/i,'0'),10)||0,
+  conflicts:parseInt(cap(t,/• Evidenzkonflikte:\s*(\d+)/i,'0'),10)||0,
+  buyer:cap(t,/• Wirtschaftlicher Entscheider:\s*([^\n]+)/i,''),
+  buyerActive:yes(t,/• Entscheider aktiv eingebunden:\s*JA/i),
+  score:parseInt(cap(t,/• Opportunity Score:\s*(\d+)%/i,'0'),10)||0,
+  forecast:parseInt(cap(t,/• Forecast:\s*(\d+)%/i,'0'),10)||0
+ };
+}
+function A(title,field,score,forecast,effort,reason){return{title,field,score,forecast,effort,reason};}
+function portfolio(f){
+ const c=norm([f.state,f.bottleneck,f.assessment,f.aha].join(' '));
+ const first=A(f.bottleneck||'Nächstes Kundengate verbindlich schließen','PRIMARY_GATE',8,12,'gering','adressiert unmittelbar den im Sales Decision Brief ausgewiesenen größten Engpass.');
+ let a=[first];
+ const add=x=>{if(x&&!a.some(y=>norm(y.title)===norm(x.title)))a.push(x);};
+
+ if(f.conflicts>0||/evidenzkonflikt|widersprüch/.test(c)){
+  add(A('Gültige Aussage je Konflikt mit Quelle, Datum, Rolle und Verbindlichkeit bestätigen','EVIDENCE_VALIDATION',10,14,'mittel','trennt aktuelle Kundenevidenz von veralteten oder nicht zuständig bestätigten Aussagen.'));
+  add(A('Alle abhängigen Bewertungen und nächsten Schritte kontrolliert neu berechnen','REASSESSMENT',7,10,'gering','verhindert, dass bereinigte Evidenz mit alten Score-, Forecast- oder Buying-Center-Annahmen vermischt wird.'));
+ }else if(/adoption|nutzung|anwenderwert/.test(c)){
+  add(A('Nutzungslücken, Ursachen und betroffene Nutzergruppen mit realen Nutzungsdaten quantifizieren','ADOPTION_EVIDENCE',8,11,'mittel','macht das Renewal-Risiko messbar und trennt Produktwert von tatsächlicher Nutzung.'));
+  add(A('Adoption-Owner, Aktivierungsmaßnahmen und verbindliche Zielwerte bis zum Renewal festlegen','ADOPTION_PLAN',9,13,'mittel','übersetzt die Diagnose in einen überprüfbaren Wiederherstellungsplan für Nutzung und Wertrealisierung.'));
+ }else if(/interne politik|macht|interessenlage|koalition|besitzstände/.test(c)){
+  add(A('Befürworter, Gegner, Einfluss und persönliche Auswirkungen je Schlüsselrolle kartieren','STAKEHOLDER_POWER',9,13,'mittel','zeigt, welche Interessen die formale Entscheidung tragen oder blockieren.'));
+  add(A('Tragfähige Entscheidungskoalition mit Nutzen-, Verlust- und Gegenleistungslogik sichern','COALITION',9,12,'mittel','macht aus formaler Zustimmung eine politisch belastbare Kundenentscheidung.'));
+ }else if(/make or buy|eigenlösung|hubspot|selberbauen/.test(c)){
+  add(A('Interne Entwicklungs-, Pflege-, Betriebs- und Opportunitätskosten der Eigenlösung quantifizieren','TCO',9,12,'mittel','verhindert einen Vergleich von Lizenzpreis gegen vermeintlich kostenlose interne Entwicklung.'));
+  add(A('Beide Optionen mit identischen Use Cases, Erfolgskriterien und Time-to-Value bewerten','COMPARISON_PROOF',8,11,'mittel','erzwingt eine symmetrische Make-or-Buy-Entscheidung auf derselben Evidenzbasis.'));
+ }else if(/umsetzungs|owner|kapazität|startfähigkeit|rollout verantwortung/.test(c)){
+  add(A('Verfügbare Kapazität, kritische Ressourcen und realistischen Minimal-Scope bestätigen','DELIVERY_CAPACITY',8,11,'mittel','prüft, welche Umsetzungsvariante organisatorisch tatsächlich lieferbar ist.'));
+  add(A('Start-, Unterstützungs- und Eskalationsplan mit klarer Go/No-Go-Logik vereinbaren','IMPLEMENTATION_PLAN',8,12,'mittel','macht die operative Startfähigkeit zu einer verbindlichen Kundenentscheidung.'));
+ }else if(/no decision|nichtentscheidung|status quo|entscheidungsanlass/.test(c)){
+  add(A('Kosten, Risiken und Folgen des Abwartens belastbar quantifizieren','COST_OF_DELAY',9,13,'mittel','macht Nichtentscheidung wirtschaftlich sichtbar und angreifbar.'));
+  add(A('Verbindlichen Go/No-Go-Termin mit Entscheidungsanlass, Teilnehmern und Kriterien sichern','DECISION_EVENT',8,12,'gering','übersetzt Dringlichkeit in einen terminierenden Kundenentscheid.'));
+ }else if(/wettbewerb|anbieterentscheidung|scorecard/.test(c)){
+  add(A('Muss-, Kann- und Differenzierungskriterien mit dem wirtschaftlichen Entscheider gewichten','COMPETITIVE_CRITERIA',9,13,'mittel','macht die Anbieterentscheidung anhand einer gemeinsam bestätigten Vergleichslogik belastbar.'));
+  add(A('Alternativen mit identischen Szenarien, TCO und Time-to-Value vergleichen','COMPETITIVE_PROOF',8,11,'mittel','verhindert asymmetrische Nachweise und politisch verzerrte Anbieterbewertungen.'));
+ }else if(/vertrags|procurement|haftung|zahlungsziel/.test(c)){
+  add(A('Jede offene Vertragsposition mit Owner, Zielposition, roter Linie und Tauschwert dokumentieren','LEGAL_COMMERCIAL',9,13,'mittel','macht rechtliche und kommerzielle Abweichungen einzeln entscheidbar.'));
+  add(A('Finalen Legal-/Procurement-Termin mit Entscheidungsmandat und Unterschriftspfad sichern','SIGN_OFF',8,12,'gering','führt die geklärten Positionen zu einer unterschriftsfähigen Gesamtentscheidung zusammen.'));
+ }else if(/sonderbudget|außerplanmäßig/.test(c)){
+  add(A('Business Case als formale Begründung für die außerplanmäßige Freigabe verdichten','VALUE_JUSTIFICATION',7,9,'mittel','stützt den Sonderfreigabeweg, ohne den bestätigten Nutzen erneut zu öffnen.'));
+  add(A('Freigeber, erforderliche Unterlagen und verbindlichen Entscheidungstermin festlegen','SPECIAL_APPROVAL',8,12,'gering','macht aus fehlendem Budget einen konkret steuerbaren Freigabeprozess.'));
+ }else if(/wirkungsnachweis|baseline|erfolgsschwelle/.test(c)){
+  add(A('Erfolgsschwelle, Messlogik und Bewertende schriftlich vereinbaren','VALUE_PROOF',8,11,'mittel','definiert, welche Wirkung tatsächlich eine Kaufentscheidung auslöst.'));
+  add(A('Go/No-Go-Termin unmittelbar an den Wirkungsnachweis koppeln','DECISION_PROCESS',6,9,'gering','verhindert einen Nachweis ohne verbindliche Folgeentscheidung.'));
+ }else if(/kaufbedingungen/.test(c)||f.conditions>0){
+  if(f.conditions===1){
+   add(A('Abnahmekriterium, zuständigen Freigeber und akzeptierten Nachweis der Bedingung bestätigen','CONDITION_ACCEPTANCE',8,12,'mittel','macht die einzelne Kaufbedingung konkret prüf- und freigabefähig.'));
+   add(A('Freigabetermin und Eskalationsweg für die Bedingung verbindlich vereinbaren','CONDITION_PROCESS',7,10,'gering','verhindert, dass die bekannte Bedingung ohne Entscheidungstermin offen bleibt.'));
+  }else{
+   add(A('Kaufbedingungen nach Sperrwirkung priorisieren und Ausschluss-Gates zuerst schließen','CONDITION_PRIORITY',8,12,'mittel','verhindert parallele Aktivität an Bedingungen mit geringer Abschlusswirkung.'));
+   add(A('Alle Bedingungen in einen Gate-Plan mit Owner, Nachweis, Termin und Eskalation überführen','CONDITION_PLAN',7,10,'mittel','stellt sicher, dass keine bestätigte Kaufbedingung aus der Steuerung verschwindet.'));
+  }
+ }else if(/entscheiderzugang/.test(c)||(!f.buyerActive&&f.buyer&&!/nicht erkannt/i.test(f.buyer))){
+  add(A('Entscheidungskriterien, Mindestwirkung und Investitionsweg im persönlichen Termin bestätigen','DECISION_CRITERIA',9,13,'mittel','macht aus Entscheiderzugang eine belastbare Kundenentscheidung statt eines Kennenlerntermins.'));
+  add(A('Verbindlichen Entscheidungs- und Folgetermin mit klarer Agenda vereinbaren','DECISION_PROCESS',6,9,'gering','sichert den Übergang vom Zugang zur tatsächlichen Investitionsentscheidung.'));
+ }else if(/qualifizierung/.test(c)||!f.buyer||/nicht erkannt/i.test(f.buyer)){
+  add(A('Priorisiertes Kundenproblem, messbare Auswirkung und betroffene Rollen bestätigen','QUALIFICATION',8,11,'mittel','prüft, ob weitere Verkaufsinvestition wirtschaftlich gerechtfertigt ist.'));
+  add(A('Wirtschaftlich entscheidende Rolle und verbindlichen Qualifizierungstermin identifizieren','ECONOMIC_BUYER',9,13,'mittel','verbindet Problemrelevanz mit einem belastbaren Entscheidungsweg.'));
+ }else{
+  add(A('Letzte offene Freigabe mit Verantwortlichem, Nachweis und Entscheidungstermin schließen','APPROVAL',8,12,'gering','konzentriert die Abschlussarbeit auf die tatsächlich verbleibende Kundenentscheidung.'));
+  add(A('Start- und Übergabeplan mit Ownern, Ressourcen und verbindlichem Termin bestätigen','IMPLEMENTATION',7,10,'gering','schließt die Lücke zwischen Kaufentscheidung und realer Startfähigkeit.'));
+ }
+ return a.slice(0,3);
+}
+function render(t){
+ t=String(t||'')
+  .replace(/KI21 Core 10\.3\.0 · Executive Action Portfolio/g,V1031)
+  .replace(/KI21 Core 10\.2\.3 · Primary Action Integrity/g,V1031);
+ const f=facts(t);if(!f.bottleneck)return t;
+ const a=portfolio(f),top=a[0];
+ const block=`=== DECISION NAVIGATOR ===\n\nHÖCHSTER VERKAUFSHEBEL\n• ${top.title}\n• Simulation bei erfolgreicher Bestätigung: Score ${f.score}% → bis zu ${Math.min(100,f.score+top.score)}% · Forecast ${f.forecast}% → bis zu ${Math.min(100,f.forecast+top.forecast)}%.\n• Warum zuerst: ${top.reason}\n\nPRIORISIERTER AKTIONSPLAN\n`+a.map((x,i)=>`${i+1}. ${x.title}\n   Abgedecktes Risikofeld: ${x.field}\n   Erwarteter Hebel: Score +${x.score} · Forecast +${x.forecast} Prozentpunkte · Aufwand: ${x.effort}\n   Begründung: ${x.reason}`).join('\n')+`\n\nPORTFOLIO-ABDECKUNG\n• ${a.map(x=>x.field).join(' → ')}\n• Jede Maßnahme adressiert einen eigenständigen Entscheidungshebel; thematische Doppelungen werden ausgeschlossen.\n\nMANAGEMENT-REGEL\n• Aktion 1 entspricht dem größten Engpass. Aktion 2 und 3 schließen komplementäre, kontextspezifische Risikofelder. Erst neue Kundenevidenz löst eine tatsächliche Neubewertung aus.\n\n`;
+ t=t.replace(/=== DECISION NAVIGATOR ===[\s\S]*?(?=\n=== EXECUTIVE REAL-DEAL CHECK ===)/,block.trimEnd());
+ // Correct repeated numbering in rendered evidence-conflict lists.
+ const marker='=== EVIDENZ-INTEGRITÄT ===';
+ const pos=t.indexOf(marker);
+ if(pos>=0){
+  const head=t.slice(0,pos),tail=t.slice(pos);
+  let n=0;
+  t=head+tail.replace(/^  1\. (?=(CRM-Aussage|Aussage A):)/gm,()=>`  ${++n}. `);
+ }
+ return t;
+}
+if(typeof decisionBrief==='function'){const old=decisionBrief;decisionBrief=function(){return render(old.apply(this,arguments));};}
+if(typeof fullReport==='function'){const old=fullReport;fullReport=function(){return render(old.apply(this,arguments));};}
+window.ki211031ContextualActionIntegrity={repair:render,facts,portfolio};
+})();
+</script>
+
 </body>
 </html>
