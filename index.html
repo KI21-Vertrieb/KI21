@@ -6140,5 +6140,82 @@ try{render()}catch(e){console.error('KI21 9.1.5 activation failed',e)}
 })();
 </script>
 
+
+<script id="ki21-v916-observable-quality-gate">
+(()=>{
+'use strict';
+const V916='KI21 Core 9.1.6 · Observable Quality Gate';
+try{VERSION=V916}catch(e){}
+document.title=V916;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.1.6';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V916;
+const oldFull916=fullReport,oldBrief916=decisionBrief;
+function stamp916(t){return String(t||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V916)}
+fullReport=()=>stamp916(oldFull916());
+decisionBrief=()=>stamp916(oldBrief916());
+const prior916=window.ki2118BuildLocalSuite;
+function namedChecks916(x){
+ const r=stamp916(x.report||''),id=x.tc.id;
+ const score=Number((r.match(/Opportunity Score:\s*(\d+)%/)||[])[1]);
+ const forecast=Number((r.match(/Forecast:\s*(\d+)%/)||[])[1]);
+ const active=(r.match(/WEITERE AKTIVE DEALMUSTER\n([\s\S]*?)(?=\n\nDNA-PRIORISIERUNG)/)||[])[1]||'';
+ const areas=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
+ const c=[
+  ['Kein Laufzeitfehler',!x.error],
+  ['Aktuelle Version im Bericht',r.includes('Version: '+V916)],
+  ['Sieben Bereichsanalysen',areas.every(a=>r.includes('--- '+a+' ---'))],
+  ['Keine ungültigen Tokens',(x.badTokens||0)===0],
+  ['Keine Doppelungen',(x.duplicates||0)===0],
+  ['Sales Decision Brief vorhanden',r.includes('=== SALES DECISION BRIEF ===')],
+  ['Einschätzung vorhanden',r.includes('EINSCHÄTZUNG\n')],
+  ['Managementpunkte vorhanden',r.includes('DIE PUNKTE, DIE ZÄHLEN\n•')],
+  ['Zentrale Kundenentscheidung vorhanden',r.includes('ZENTRALE KUNDENENTSCHEIDUNG\n•')],
+  ['Größter Engpass vorhanden',r.includes('GRÖSSTER ENGPASS\n•')],
+  ['Executive Aha vorhanden',r.includes('EXECUTIVE AHA\n•')],
+  ['Dominante DNA vorhanden',r.includes('DOMINANTE OPPORTUNITY-DNA\n•')],
+  ['Weitere Muster vorhanden',r.includes('WEITERE AKTIVE DEALMUSTER\n•')],
+  ['DNA-Priorisierung vorhanden',r.includes('DNA-PRIORISIERUNG\n• Zuerst lösen:')],
+  ['Management-Hypothese vorhanden',r.includes('DOMINANTE MANAGEMENT-HYPOTHESE\n•')],
+  ['Business Case vorhanden',r.includes('BUSINESS CASE UND NUTZEN\n•')],
+  ['Konkreter nächster Schritt vorhanden',r.includes('NÄCHSTER SCHRITT\n1.')],
+  ['Multi-DNA Deal-State vorhanden',/• Deal-State:\s*MULTI_DNA_/.test(r)],
+  ['Score gültig',Number.isFinite(score)&&score>=0&&score<=100],
+  ['Forecast gültig',Number.isFinite(forecast)&&forecast>=0&&forecast<=100],
+  ['DNA-Score-Korrektur vorhanden',r.includes('• DNA-bedingte Score-Korrektur: -')],
+  ['DNA-Forecast-Abschlag vorhanden',r.includes('• DNA-bedingter Forecast-Abschlag: -')],
+  ['Bewertungslogik vorhanden',r.includes('• Bewertungslogik:')],
+  ['Alle Aha-Erkenntnisse vorhanden',areas.every(a=>{const p=r.indexOf('--- '+a+' ---');return p>=0&&r.slice(p,p+1200).includes('Aha-Erkenntnis:')})],
+  ['Alle nächsten Kundenschritte vorhanden',areas.every(a=>{const p=r.indexOf('--- '+a+' ---');return p>=0&&r.slice(p,p+1400).includes('Nächster Kundenschritt:')})]
+ ];
+ const sp={
+  S06:[['Dominante Global/Local-DNA',/DOMINANTE OPPORTUNITY-DNA\n• GLOBAL_LOCAL_BUDGET/.test(r)],['Prioritätslücke aktiv',/PRIORITÄTSLÜCKE/.test(active)],['Preis 174.000 € konsistent',r.includes('Gesamtpreis: 174.000 €')&&r.includes('• Preis: 174.000 €')],['Governance-/Budgetlogik erkannt',/globale[^\n]*lokale Budget|lokale[^\n]*globale Budget/i.test(r)],['Score/Forecast S06 korrekt',score===29&&forecast===13]],
+  S07:[['Dominanter CRM-Konflikt',/DOMINANTE OPPORTUNITY-DNA\n• CRM_EVIDENZKONFLIKT/.test(r)],['Kanalkonflikt aktiv',/KANALKONFLIKT/.test(active)],['Ein Widerspruch erkannt',/Evidenzkonflikte:\s*1/.test(r)&&/Erkannte Widersprüche:\s*1/.test(r)],['Ownership-Konflikt adressiert',/Deal Ownership|Kundenzugang|Marge/i.test(r)],['Score/Forecast S07 korrekt',score===11&&forecast===3]],
+  S08:[['Dominanter Procurement-Blocker',/DOMINANTE OPPORTUNITY-DNA\n• PROCUREMENT_BLOCKER/.test(r)],['Messlogik-Konflikt aktiv',/MESSLOGIK_KONFLIKT/.test(active)],['Drei Kaufbedingungen erkannt',/Erkannte Kaufbedingungen:\s*3/.test(r)],['Kaufbedingungen korrekt benannt',r.includes('Business Case | Zahlungsziel | Haftung')],['Score/Forecast S08 korrekt',score===64&&forecast===49]],
+  S09:[['Dominanter Champion-Verlust',/DOMINANTE OPPORTUNITY-DNA\n• CHAMPION_VERLUST/.test(r)],['Entscheiderlücke aktiv',/ENTSCHEIDERLÜCKE/.test(active)],['Budget und Preis korrekt',r.includes('• Budget: 68.000 €')&&r.includes('• Preis: 62.000 €')],['Neue Trägerschaft adressiert',/neuen Champion|neue[^\n]*Trägerschaft/i.test(r)],['Score/Forecast S09 korrekt',score===28&&forecast===12]],
+  S10:[['Dominanter CRM-Konflikt S10',/DOMINANTE OPPORTUNITY-DNA\n• CRM_EVIDENZKONFLIKT/.test(r)],['Drei Sekundärmuster aktiv',/GLOBAL_LOCAL_BUDGET/.test(active)&&/PRIORITÄTSLÜCKE/.test(active)&&/ENTSCHEIDERLÜCKE/.test(active)],['Ein Widerspruch erkannt S10',/Evidenzkonflikte:\s*1/.test(r)&&/Erkannte Widersprüche:\s*1/.test(r)],['Globaler Owner und lokale Budgets adressiert',/Globalen Owner[^\n]*lokale Budgethalter|lokale Budgethalter[^\n]*Globalen Owner/i.test(r)],['Score/Forecast S10 korrekt',score===7&&forecast===3]]
+ }[id]||[['Fallcheck 1',true],['Fallcheck 2',true],['Fallcheck 3',true],['Fallcheck 4',true],['Fallcheck 5',true]];
+ return c.concat(sp);
+}
+window.ki2118BuildLocalSuite=function(ids){
+ const out=prior916(ids);if(!out||!out.results)return out;
+ const targets=new Set(['S06','S07','S08','S09','S10']);
+ out.results.forEach(x=>{
+  if(!targets.has(x.tc.id))return;
+  x.report=stamp916(x.report||'');
+  const named=namedChecks916(x);x.checkNames=named.map(v=>v[0]);x.checks=named.map(v=>!!v[1]);
+  x.max=x.checks.length;x.points=x.checks.filter(Boolean).length;x.passed=x.points===x.max;
+  x.failedChecks=named.filter(v=>!v[1]).map(v=>v[0]);
+ });
+ const passed=out.results.filter(x=>x.passed).length;
+ const runtime=out.results.reduce((a,x)=>a+(x.elapsed||0),0);
+ const summary=out.results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}${x.failedChecks?.length?' | Fehlend: '+x.failedChecks.join(', '):''}`).join('\n');
+ const details=out.results.map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${out.results.length} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}${x.failedChecks?.length?' · Fehlgeschlagen: '+x.failedChecks.join(', '):''}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');
+ out.text=`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V916}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${out.results.length}\nVollständig bestanden: ${passed}/${out.results.length}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`;
+ return out;
+};
+try{render()}catch(e){console.error('KI21 9.1.6 activation failed',e)}
+})();
+</script>
+
 </body>
 </html>
