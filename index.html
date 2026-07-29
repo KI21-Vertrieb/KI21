@@ -7271,13 +7271,13 @@ window.ki211031ContextualActionIntegrity={repair:render,facts,portfolio};
 
 
 <script id="ki21-v1100-autonomous-quality-lab">
-/* KI21 Core 11.0.0 · Autonomous Quality Lab
+/* KI21 Core 11.0.1 · Quality Lab Button Repair
    Adds semantic golden-case validation, contextual mismatch detection,
    compact exception-only reporting and autonomous release gating.
    Existing score and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1100='KI21 Core 11.0.0 · Autonomous Quality Lab';
+const V1100='KI21 Core 11.0.1 · Quality Lab Button Repair';
 try{VERSION=V1100}catch(_e){}
 document.title=V1100;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.0.0';
@@ -7401,6 +7401,52 @@ const prevRender=render;render=function(){const v=prevRender.apply(this,argument
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('#ki2110RunRegression'):null;if(b){e.preventDefault();e.stopImmediatePropagation();openLab()}},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 setTimeout(install,100);setTimeout(install,600);
+})();
+</script>
+
+
+<script id="ki21-11-0-1-button-repair">
+(function(){
+'use strict';
+const V1101='KI21 Core 11.0.1 · Quality Lab Button Repair';
+function replaceQualityButton(){
+ const panel=document.getElementById('ki2110RegressionPanel');
+ if(!panel)return false;
+ const old=panel.querySelector('#ki2110RunRegression');
+ if(!old)return false;
+ if(old.dataset.ki211101Bound==='1')return true;
+ const btn=old.cloneNode(true); // removes every legacy addEventListener binding
+ btn.type='button';
+ btn.textContent='🧠 Autonomes Qualitätslabor starten';
+ btn.removeAttribute('onclick');
+ btn.dataset.ki211101Bound='1';
+ btn.addEventListener('click',function(e){
+   e.preventDefault();
+   e.stopPropagation();
+   e.stopImmediatePropagation();
+   if(typeof window.ki211100OpenAutonomousQualityLab==='function'){
+     window.ki211100OpenAutonomousQualityLab();
+   }else{
+     const msg=document.createElement('div');
+     msg.className='overlay';
+     msg.innerHTML='<div class="modal"><div class="headline">Qualitätslabor konnte nicht geladen werden</div><div class="body" style="margin-top:8px">Bitte die Datei neu öffnen. Die Startfunktion ist in dieser Sitzung nicht verfügbar.</div><div class="actions"><button class="btn primary" id="q1101Close">Schließen</button></div></div>';
+     document.body.appendChild(msg);
+     msg.querySelector('#q1101Close').onclick=()=>msg.remove();
+   }
+ },true);
+ old.replaceWith(btn);
+ const kicker=panel.querySelector('.kicker');if(kicker)kicker.textContent='KI21 Autonomous Quality Lab';
+ const headline=panel.querySelector('.headline');if(headline)headline.textContent='Golden Cases & semantisches Release-Gate';
+ const body=panel.querySelector('.body');if(body)body.textContent='Prüft alle 35 Fälle automatisch und zeigt nur semantische Auffälligkeiten oder autonome Korrekturen.';
+ return true;
+}
+const oldRender=window.render;
+if(typeof oldRender==='function')window.render=function(){const r=oldRender.apply(this,arguments);setTimeout(replaceQualityButton,0);return r;};
+const observer=new MutationObserver(()=>replaceQualityButton());
+observer.observe(document.documentElement,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',replaceQualityButton);else replaceQualityButton();
+setTimeout(replaceQualityButton,0);setTimeout(replaceQualityButton,150);setTimeout(replaceQualityButton,700);
+window.KI21_VERSION=V1101;
 })();
 </script>
 
