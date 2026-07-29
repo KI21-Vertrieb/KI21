@@ -6587,7 +6587,7 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 
 <script>
 (()=>{
-const V110='KI21 Core 10.1.2 · Regression Gate Repair';
+const V110='KI21 Core 10.2.0 · Real-Deal Confidence';
 try{VERSION=V110}catch(e){}
 document.title=V110;
 const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.2';
@@ -6735,6 +6735,62 @@ document.addEventListener('click',e=>{
 const observer=new MutationObserver(bind111);observer.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind111);else bind111();
 setTimeout(bind111,0);setTimeout(bind111,250);setTimeout(bind111,1000);
+})();
+</script>
+
+<script>
+/* KI21 Core 10.2.0 · Real-Deal Confidence
+   Adds evidence confidence, executive recommendation and coaching questions
+   without changing the proven score/forecast calculation. */
+(function(){
+'use strict';
+const V1020='KI21 Core 10.2.0 · Real-Deal Confidence';
+try{ if(typeof VERSION!=='undefined') VERSION=V1020; }catch(_e){}
+
+function confidenceModel1020(){
+  const q=(typeof scores==='function'?scores():{score:0,forecast:0});
+  const evidence=Array.isArray(state&&state.evidence)?state.evidence:[];
+  const conflicts=Array.isArray(state&&state.evidenceConflicts)?state.evidenceConflicts.length:0;
+  const openFlags=state&&state.flags?Object.values(state.flags).filter(Boolean).length:0;
+  const stakeholders=Array.isArray(state&&state.stakeholders)?state.stakeholders.length:0;
+  const confirmed=evidence.filter(e=>String(e&&e.status||e&&e.type||'').match(/fakt|bestätigt/i)).length;
+  let value=35 + Math.min(25,confirmed*3) + Math.min(15,stakeholders*3) - conflicts*18 - Math.min(20,openFlags*3);
+  if(q.score>=65)value+=8;
+  value=Math.max(10,Math.min(95,Math.round(value)));
+  const level=value>=75?'HOCH':value>=50?'MITTEL':'NIEDRIG';
+  const recommendation=q.forecast>=65&&value>=65?'ABSCHLUSS AKTIV STEUERN':q.forecast>=40?'WEITERENTWICKELN – NÄCHSTES GATE SCHLIESSEN':'QUALIFIZIEREN ODER BEWUSST STOPPEN';
+  const missing=[];
+  if(!(typeof buyer==='function'&&buyer()))missing.push('wirtschaftlicher Entscheider');
+  if(state&&state.flags&&state.flags.approvalOpen)missing.push('Investitionsfreigabe');
+  if(state&&state.flags&&state.flags.successOpen)missing.push('Erfolgskriterien');
+  if(state&&state.flags&&state.flags.priceOpen)missing.push('bestätigter Preis');
+  if(conflicts)missing.push('Auflösung der Evidenzkonflikte');
+  if(!missing.length)missing.push('verbindlicher Kundenentscheid und Termin');
+  return {value,level,recommendation,missing,q};
+}
+function confidenceText1020(){
+ const c=confidenceModel1020();
+ const b=(typeof buyer==='function'?buyer():null);
+ return `=== EXECUTIVE REAL-DEAL CHECK ===\n• Management-Empfehlung: ${c.recommendation}\n• Forecast Confidence: ${c.value}% · ${c.level}\n• Interpretation: Der Forecast beträgt ${c.q.forecast}%. Seine Belastbarkeit ist ${c.level.toLowerCase()}, weil bestätigte Evidenz, offene Gates und mögliche Widersprüche getrennt bewertet werden.\n• Wichtigste fehlende Bestätigung: ${c.missing.join(', ')}.\n• Coaching-Frage 1: Welche konkrete Kundenentscheidung muss im nächsten Termin fallen?\n• Coaching-Frage 2: Wer kann diese Entscheidung verbindlich treffen${b&&b.name?' – insbesondere '+b.name:''}?\n• Coaching-Frage 3: Welche neue Kundenevidenz würde Score oder Forecast tatsächlich verändern?`;
+}
+function inject1020(text){
+ text=String(text||'').replace(/KI21 Core 10\.1\.2 · Regression Gate Repair/g,V1020);
+ if(text.includes('=== EXECUTIVE REAL-DEAL CHECK ==='))return text;
+ const marker='\nSTATE CHECK\n';
+ if(text.includes(marker))return text.replace(marker,'\n'+confidenceText1020()+'\n\nSTATE CHECK\n');
+ const marker2='\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===';
+ if(text.includes(marker2))return text.replace(marker2,'\n\n'+confidenceText1020()+marker2);
+ return text+'\n\n'+confidenceText1020();
+}
+if(typeof decisionBrief==='function'){
+ const oldDecisionBrief1020=decisionBrief;
+ decisionBrief=function(){return inject1020(oldDecisionBrief1020.apply(this,arguments));};
+}
+if(typeof fullReport==='function'){
+ const oldFullReport1020=fullReport;
+ fullReport=function(){return inject1020(oldFullReport1020.apply(this,arguments));};
+}
+window.ki211020ConfidenceModel=confidenceModel1020;
 })();
 </script>
 
