@@ -6587,10 +6587,10 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 
 <script>
 (()=>{
-const V110='KI21 Core 10.2.0 · Real-Deal Confidence';
+const V110='KI21 Core 10.2.1 · Executive Consistency Engine';
 try{VERSION=V110}catch(e){}
 document.title=V110;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.2';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.1';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V110;
 
 const REGRESSION_GROUPS=[
@@ -6683,7 +6683,7 @@ try{render();r110Install()}catch(e){console.error('KI21 10.1.0 activation failed
 const V111='KI21 Core 10.1.1 · Full Regression Startfix';
 try{VERSION=V111}catch(e){}
 document.title=V111;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.2';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.1';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V111;
 
 function openFullRegression111(){
@@ -6739,12 +6739,12 @@ setTimeout(bind111,0);setTimeout(bind111,250);setTimeout(bind111,1000);
 </script>
 
 <script>
-/* KI21 Core 10.2.0 · Real-Deal Confidence
+/* KI21 Core 10.2.1 · Executive Consistency Engine
    Adds evidence confidence, executive recommendation and coaching questions
    without changing the proven score/forecast calculation. */
 (function(){
 'use strict';
-const V1020='KI21 Core 10.2.0 · Real-Deal Confidence';
+const V1020='KI21 Core 10.2.1 · Executive Consistency Engine';
 try{ if(typeof VERSION!=='undefined') VERSION=V1020; }catch(_e){}
 
 function confidenceModel1020(){
@@ -6791,6 +6791,105 @@ if(typeof fullReport==='function'){
  fullReport=function(){return inject1020(oldFullReport1020.apply(this,arguments));};
 }
 window.ki211020ConfidenceModel=confidenceModel1020;
+})();
+</script>
+
+
+<script>
+/* KI21 Core 10.2.1 · Executive Consistency Engine
+   Aligns Executive Real-Deal Check with the rendered State Check and generates
+   deal-specific coaching questions. Existing score and forecast logic remains unchanged. */
+(function(){
+'use strict';
+const V1021='KI21 Core 10.2.1 · Executive Consistency Engine';
+try{ if(typeof VERSION!=='undefined') VERSION=V1021; }catch(_e){}
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.1';
+
+function pick(text,re,fallback){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
+function num(text,re,fallback){const v=parseInt(pick(text,re,''),10);return Number.isFinite(v)?v:fallback;}
+function stateFacts1021(text){
+ const fallback=(typeof scores==='function'?scores():{score:0,forecast:0});
+ return {
+  state:pick(text,/• Deal-State:\s*([^\n]+)/i,'UNGEKLÄRT'),
+  score:num(text,/• Opportunity Score:\s*(\d+)%/i,fallback.score||0),
+  forecast:num(text,/• Forecast:\s*(\d+)%/i,fallback.forecast||0),
+  buyer:pick(text,/• Wirtschaftlicher Entscheider:\s*([^\n]+)/i,''),
+  buyerActive:/• Entscheider aktiv eingebunden:\s*JA/i.test(text),
+  conditions:num(text,/• Erkannte Kaufbedingungen:\s*(\d+)/i,0),
+  conflicts:num(text,/• Evidenzkonflikte:\s*(\d+)/i,0),
+  budget:pick(text,/• Budget:\s*([^\n]+)/i,''),
+  price:pick(text,/• Preis:\s*([^\n]+)/i,''),
+  brakes:pick(text,/• Score-Bremsen:\s*([^\n]+)/i,''),
+  deduction:pick(text,/• Forecast-Abschlag:\s*([^\n]+)/i,'')
+ };
+}
+function missing1021(f){
+ const m=[];
+ if(!f.buyer||/nicht erkannt/i.test(f.buyer))m.push('wirtschaftlicher Entscheider');
+ else if(!f.buyerActive)m.push('persönlicher Entscheiderzugang');
+ if(/Investitionsfreigabe offen|investitionsfreigabe/i.test(f.brakes+' '+f.deduction))m.push('Investitionsfreigabe');
+ if(/Erfolgskriterien nicht|erfolgskriterien/i.test(f.brakes))m.push('Erfolgskriterien');
+ if(/nicht bestätigt|Preis offen/i.test(f.price+' '+f.brakes))m.push('bestätigter Preis');
+ if(f.conflicts>0)m.push('Auflösung der Evidenzkonflikte');
+ if(/Datenschutz/i.test(f.brakes+' '+f.deduction))m.push('Datenschutzfreigabe');
+ if(/Verantwortung|Owner|Pilotleitung|Starttermin/i.test(f.brakes+' '+f.deduction))m.push('Owner und Starttermin');
+ return [...new Set(m)].slice(0,4).length?[...new Set(m)].slice(0,4):['verbindlicher Kundenentscheid und Termin'];
+}
+function confidence1021(f){
+ let v=30 + Math.round(f.score*.35) + Math.round(f.forecast*.25);
+ if(f.buyerActive)v+=8; else v-=5;
+ if(f.conditions>0)v-=Math.min(12,f.conditions*2);
+ v-=Math.min(30,f.conflicts*18);
+ if(/offen|nicht bestätigt|fehlend|ungeklärt/i.test(f.brakes+' '+f.deduction))v-=7;
+ v=Math.max(10,Math.min(95,Math.round(v)));
+ return {value:v,level:v>=75?'HOCH':v>=50?'MITTEL':'NIEDRIG'};
+}
+function recommendation1021(f,c){
+ if(f.conflicts>0)return 'EVIDENZ KLÄREN – BEWERTUNG VORLÄUFIG';
+ if(f.forecast>=65&&c.value>=65)return 'ABSCHLUSS AKTIV STEUERN';
+ if(f.forecast>=40)return 'WEITERENTWICKELN – NÄCHSTES GATE SCHLIESSEN';
+ return 'QUALIFIZIEREN ODER BEWUSST STOPPEN';
+}
+function questions1021(f,missing){
+ const st=f.state.toUpperCase();
+ let q1='Welche konkrete Kundenentscheidung muss im nächsten Termin fallen?';
+ let q2=f.buyer&&!/nicht erkannt/i.test(f.buyer)?`Welche Aussage muss ${f.buyer} persönlich verbindlich bestätigen?`:'Wer ist die wirtschaftlich entscheidende Rolle und wie wird sie persönlich eingebunden?';
+ let q3=`Welche neue Kundenevidenz schließt zuerst „${missing[0]}“ und rechtfertigt danach eine Neubewertung?`;
+ if(/QUALIFIZIERUNG/.test(st))q1='Welches priorisierte Kundenproblem und welche messbare Auswirkung rechtfertigen weitere Verkaufsinvestition?';
+ else if(/ENTSCHEIDER/.test(st))q1='Wie wird der persönliche Termin mit dem wirtschaftlichen Entscheider verbindlich gesichert?';
+ else if(/WIRKUNGSNACHWEIS/.test(st))q1='Welche Baseline, Erfolgsschwelle und Messlogik akzeptiert der Kunde als kaufentscheidenden Nachweis?';
+ else if(/KAUFBEDINGUNGEN/.test(st))q1=`Welche der ${f.conditions||'offenen'} Kaufbedingungen besitzt die höchste Sperrwirkung und wer gibt sie frei?`;
+ else if(/VERTRAG|PROCUREMENT/.test(st))q1='Welche konkrete Vertragsposition verhindert heute die Unterschrift und wer besitzt das Entscheidungsmandat?';
+ else if(/EVIDENZKONFLIKT/.test(st))q1='Welche datierte und zuständig bestätigte Aussage ersetzt die widersprüchliche CRM-Evidenz?';
+ else if(/SONDERBUDGET/.test(st))q1='Wer genehmigt das Sonderbudget, unter welchen Bedingungen und bis zu welchem Termin?';
+ else if(/KAUFENTSCHEIDUNG/.test(st))q1='Welche letzte verbindliche Freigabe trennt die Opportunity noch von der Kundenentscheidung?';
+ return [q1,q2,q3];
+}
+function block1021(text){
+ const f=stateFacts1021(text), c=confidence1021(f), missing=missing1021(f), qs=questions1021(f,missing);
+ const rec=recommendation1021(f,c);
+ return `=== EXECUTIVE REAL-DEAL CHECK ===\n• Management-Empfehlung: ${rec}\n• Forecast Confidence: ${c.value}% · ${c.level}\n• Interpretation: Der ausgewiesene Forecast beträgt ${f.forecast}%. Seine Belastbarkeit ist ${c.level.toLowerCase()}, weil Deal-State, bestätigte Entscheiderbeteiligung, offene Gates und Evidenzkonflikte getrennt bewertet werden.\n• Wichtigste fehlende Bestätigung: ${missing.join(', ')}.\n• Coaching-Frage 1: ${qs[0]}\n• Coaching-Frage 2: ${qs[1]}\n• Coaching-Frage 3: ${qs[2]}`;
+}
+function repair1021(text){
+ text=String(text||'')
+  .replace(/KI21 Core 10\.1\.2 · Regression Gate Repair/g,V1021)
+  .replace(/KI21 Core 10\.2\.0 · Real-Deal Confidence/g,V1021);
+ text=text.replace(/=== EXECUTIVE REAL-DEAL CHECK ===[\s\S]*?(?=\nSTATE CHECK\n|\n=== VERKAUFSPROZESS \/ BEREICHSANALYSEN ===)/g,'');
+ const marker='\nSTATE CHECK\n';
+ if(text.includes(marker))return text.replace(marker,'\n'+block1021(text)+'\n\nSTATE CHECK\n');
+ const marker2='\n=== VERKAUFSPROZESS / BEREICHSANALYSEN ===';
+ if(text.includes(marker2))return text.replace(marker2,'\n\n'+block1021(text)+marker2);
+ return text+'\n\n'+block1021(text);
+}
+if(typeof decisionBrief==='function'){
+ const oldDecisionBrief1021=decisionBrief;
+ decisionBrief=function(){return repair1021(oldDecisionBrief1021.apply(this,arguments));};
+}
+if(typeof fullReport==='function'){
+ const oldFullReport1021=fullReport;
+ fullReport=function(){return repair1021(oldFullReport1021.apply(this,arguments));};
+}
+window.ki211021ExecutiveConsistency={stateFacts:stateFacts1021,repair:repair1021};
 })();
 </script>
 
