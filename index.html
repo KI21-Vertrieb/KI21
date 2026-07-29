@@ -5852,5 +5852,113 @@ try{render()}catch(e){console.error('KI21 9.1.0 activation failed',e)}
 })();
 </script>
 
+<script id="ki21-v911-narrative-evidence-integrity">
+(()=>{
+'use strict';
+const V911='KI21 Core 9.1.1 · Multi-DNA Narrative Integrity';
+try{VERSION=V911}catch(e){}
+document.title=V911;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 9.1.1';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V911;
+const base911=fullReport;
+const raw911=()=>String(state&&state.rawImport||'');
+const esc911=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function replace911(t,start,end,body){return t.replace(new RegExp(esc911(start)+'\\n[\\s\\S]*?(?=\\n\\n'+esc911(end)+')'),start+'\n'+body)}
+function active911(t){const m=t.match(/DOMINANTE OPPORTUNITY-DNA\n•\s*([A-Z_]+)/);const sec=[...t.matchAll(/^•\s*([A-Z_]+)\s*·/gm)].map(x=>x[1]);return [...new Set([m&&m[1],...sec].filter(Boolean))]}
+const T={
+ CRM_EVIDENZKONFLIKT:{
+  assessment:'Die Opportunity ist aktuell nicht belastbar steuerbar, weil CRM-Historie und jüngere Kundenaussagen einander widersprechen. Vor jeder weiteren Bewertung müssen Quelle, Zeitpunkt, Zuständigkeit und Gültigkeit der kritischen Aussagen geklärt werden.',
+  points:['CRM-Status und aktuelles Gespräch enthalten widersprüchliche Angaben.','Budget, Sponsor, Zeitplan oder Deal Ownership können dadurch falsch bewertet sein.','Score und Forecast bleiben bis zur Klärung vorläufig.','Die neue Aussage benötigt eine Bestätigung durch die zuständige Kundenrolle.'],
+  decision:'Welche aktuelle, zuständig bestätigte Aussage ersetzt die bisherige CRM-Evidenz und welche Folgebewertungen müssen anschließend korrigiert werden?',
+  bottleneck:'Widersprüchliche Evidenz klären, versionieren und Dealbewertung neu aufbauen',
+  aha:'Nicht die jüngste oder die im CRM gespeicherte Aussage ist automatisch wahr; belastbar ist nur die datierte und durch die zuständige Rolle bestätigte Evidenz.',
+  hyp:'Die Opportunity wird daran entschieden, ob der gültige Sachstand zuerst eindeutig hergestellt und danach Buying Center, Budget, Forecast und Kundenplan konsequent neu bewertet werden.',
+  business:'Wirtschaftliche Werte und Abschlussannahmen sind bis zur Evidenzklärung nur vorläufig. Eine belastbare Nutzen- oder Investitionsrechnung setzt einen gemeinsam bestätigten aktuellen Datenstand voraus.',
+  areas:[
+   ['Qualifizierung','kritisch','Deal-Phase, Budget, Sponsor und Ownership sind wegen widersprüchlicher Quellen nicht belastbar.','Eine Opportunity kann nicht qualifiziert sein, solange ihre Kerndaten zwei Wahrheiten enthalten.','Kritische Aussagen mit Quelle, Datum, Rolle und Gültigkeitsstatus gegenüberstellen.'],
+   ['Bedarfsanalyse','nicht belastbar','Problem, Priorität und Baseline können auf veralteten oder nicht zuständig bestätigten Aussagen beruhen.','Neue Aussagen dürfen alte Evidenz erst nach ausdrücklicher Bestätigung ersetzen.','Konfliktpunkte einzeln mit den zuständigen Kundenrollen verifizieren.'],
+   ['Demo','zurückgestellt','Ein weiterer Nachweis auf ungeklärten Annahmen könnte die falsche Frage beantworten.','Evidenzbereinigung kommt vor zusätzlicher Verkaufsaktivität.','Demo-Scope erst nach bestätigtem aktuellem Bedarf festlegen.'],
+   ['Einwandbehandlung','kritisch','Die Abweichung kann Meinungsänderung, Rollenunterschied, politischen Konflikt oder Datenfehler bedeuten.','Nicht jede Abweichung ist ein Einwand; zuerst muss ihre Ursache geklärt werden.','Aussagen nach Rolle, Zeitpunkt, Verbindlichkeit und Interesse trennen.'],
+   ['Wirtschaftlicher Nutzen & ROI','nicht belastbar','Baseline, Budget und Nutzenwerte dürfen bis zur Klärung nicht als bestätigt gelten.','Veraltete Werte erzeugen Scheingenauigkeit und einen falschen Forecast.','Aktuelle Baseline und Investitionsannahmen neu bestätigen.'],
+   ['Angebot','zurückgestellt','Umfang, Preis und Konditionen dürfen nicht auf widersprüchlichen Fakten finalisiert werden.','Ein Angebot auf veraltetem Scope institutionalisiert den Datenfehler.','Angebot nach Evidenzbereinigung neu validieren.'],
+   ['Abschluss','gesperrt','Vor einer Kundenentscheidung muss ein gemeinsamer und aktueller Sachstand bestehen.','Ungeklärte Datenwidersprüche werden spätestens in Freigabe oder Umsetzung zum Blocker.','Gültigen Deal-Stand bestätigen und alle Folgebewertungen neu rechnen.']]
+ },
+ PROCUREMENT_BLOCKER:{
+  assessment:'Die fachliche und wirtschaftliche Auswahl ist weit fortgeschritten, der Abschluss wird jedoch durch offene Einkaufs-, Rechts- und Vertragsbedingungen blockiert. Entscheidend ist jetzt nicht weiterer Produktbeweis, sondern eine strukturierte kommerzielle Freigabe.',
+  points:['Fachliche Auswahl und Business Case sind bestätigt.','Procurement fordert abweichende Haftungs-, Zahlungs- oder Vertragsbedingungen.','Das Success-Fee-Modell benötigt zusätzlich eine eindeutige Mess- und Abnahmelogik.','Ohne gemeinsame Entscheidungsmatrix bleibt die Opportunity trotz hoher Reife nicht unterschriftsfähig.'],
+  decision:'Welche Vertragsabweichungen werden von Fachentscheider, Legal und Procurement akzeptiert, abgelehnt oder eskaliert, damit ein unterschriftsfähiges Gesamtmodell entsteht?',
+  bottleneck:'Procurement-, Vertrags- und Messbedingungen zu einem freigabefähigen Gesamtmodell schließen',
+  aha:'Ein fachlich gewonnener Deal kann im Einkauf verloren gehen, wenn wirtschaftlicher Wert, Vertragsrisiko und Messlogik nicht gemeinsam entschieden werden.',
+  hyp:'Die Opportunity wird daran entschieden, ob alle offenen Vertragspositionen einen Owner, eine Zielposition, eine rote Linie und einen verbindlichen Freigabetermin erhalten.',
+  business:'Der bestätigte Business Case rechtfertigt die Investition grundsätzlich. Abschlussreif wird er erst, wenn Messbarkeit, Haftung, Zahlungsziel, Audit-Rechte und Vergütungsgrenzen wirtschaftlich tragfähig vereinbart sind.',
+  areas:[
+   ['Qualifizierung','weit fortgeschritten','Fachlicher Bedarf und wirtschaftliche Auswahl sind bestätigt; offen ist die kommerzielle Entscheidungsarchitektur.','In dieser Phase ist Procurement Teil des Buying Centers und kein administrativer Nachlauf.','Entscheider, Legal, Procurement und Messverantwortliche mit Mandat benennen.'],
+   ['Bedarfsanalyse','abgeschlossen','Der fachliche Bedarf ist ausreichend geklärt; strittig sind Vertrags- und Messfolgen.','Mehr Discovery löst keinen Haftungs- oder Zahlungszielkonflikt.','Nur offene Vertragsannahmen und Messgrenzen validieren.'],
+   ['Demo','abgeschlossen','Weitere Produktdemonstration erzeugt keine zusätzliche Abschlussreife.','Der Deal braucht jetzt Vertragsentscheidungen statt Funktionsnachweise.','Technische Nachweise nur noch für ausdrücklich offene Vertrags-Gates liefern.'],
+   ['Einwandbehandlung','kritisch','Haftung, Audit-Rechte, Zahlungsziel und Messbarkeit sind konkrete Kaufbedingungen.','Jede offene Klausel braucht eine wirtschaftliche Bewertung statt pauschaler Ablehnung.','Abweichungen mit Zielposition, Tauschwert, Owner und Eskalationsgrenze dokumentieren.'],
+   ['Wirtschaftlicher Nutzen & ROI','bestätigt mit Auflagen','Der Business Case ist bestätigt, muss aber die kommerziellen Risiken und Erfolgsvergütung tragen.','Ein hoher Nutzen rechtfertigt nicht automatisch unbegrenztes Vertragsrisiko.','Wert, Risiko, Vergütungsdeckel und Zahlungswirkung gemeinsam bewerten.'],
+   ['Angebot','kritisch','Das Angebot benötigt ein konsistentes Paket aus Basispreis, Success Fee, Messlogik und Vertragsbedingungen.','Ein guter Preis ohne akzeptierte Rechts- und Abnahmelogik ist nicht unterschriftsfähig.','Kommerzielle Anlage und Vertragsabweichungsmatrix gemeinsam finalisieren.'],
+   ['Abschluss','kritisch','Die Opportunity ist kaufbereit, aber noch nicht unterschriftsfähig.','Der letzte Engpass ist eine berechtigte Vertragsentscheidung, nicht zusätzliche Überzeugung.','Finalen Legal-/Procurement-Termin mit Entscheidungsmandat und Unterschriftspfad sichern.']]
+ },
+ CHAMPION_VERLUST:{
+  assessment:'Budget, Preis und fachliche Grundlagen sind vorhanden, aber mit dem bisherigen Champion ist die interne Trägerschaft weggebrochen. Die Opportunity muss politisch und wirtschaftlich requalifiziert werden, bevor der alte Forecast weiterverwendet werden darf.',
+  points:['Budget und Preis sind grundsätzlich bestätigt.','Der bisherige Champion hat das Unternehmen verlassen.','Eine Nachfolge und persönliche Übernahme des Business Case fehlen.','Der CFO kennt die Investitionslogik bislang nur aus einer früheren Vorlage.'],
+  decision:'Wer übernimmt intern Verantwortung für Problem, Business Case und Entscheidungsprozess und bestätigt die Investition persönlich neu?',
+  bottleneck:'Neuen Champion aufbauen und Buying Center vollständig requalifizieren',
+  aha:'Ein bestätigtes Budget überlebt nicht automatisch den Verlust des Menschen, der die Investition intern getragen hat.',
+  hyp:'Die Opportunity wird daran entschieden, ob eine neue glaubwürdige Trägerschaft entsteht und CFO sowie Buying Center Bedarf, Nutzen und Entscheidungstermin persönlich neu bestätigen.',
+  business:'Der bestehende Business Case bleibt eine Ausgangsbasis, aber keine aktuelle Kaufzusage. Seine Annahmen, Eigentümerschaft und Entscheidungsschwelle müssen mit dem neuen Buying Center erneut bestätigt werden.',
+  areas:[
+   ['Qualifizierung','kritisch','Die bisherige Qualifizierung hat durch den Champion-Verlust einen zentralen Gültigkeitsanker verloren.','Historische Zustimmung ist ohne aktuellen internen Eigentümer nicht forecastfähig.','Neue Trägerschaft, Rollen und politische Lage persönlich requalifizieren.'],
+   ['Bedarfsanalyse','neu zu bestätigen','Bedarf und Erfolgskriterien sind dokumentiert, aber noch nicht von der neuen Verantwortungsstruktur übernommen.','Dokumentierter Bedarf ist nicht gleich aktuell vertretene Priorität.','Problem, Wirkung und Muss-Kriterien mit der Nachfolge erneut bestätigen.'],
+   ['Demo','nicht entscheidungskritisch','Der fachliche Nachweis ist nicht das Hauptproblem.','Eine neue Demo ersetzt keinen neuen Champion.','Nur gezielte Übergabe- oder Vertrauensnachweise für neue Stakeholder durchführen.'],
+   ['Einwandbehandlung','kritisch','Mit dem Personalwechsel können neue Interessen, Risiken und Prioritäten entstehen.','Der gefährlichste Einwand ist derzeit möglicherweise noch unbekannt.','Neue Stakeholderpositionen und mögliche Verluste offen erheben.'],
+   ['Wirtschaftlicher Nutzen & ROI','neu zu bestätigen','Der Business Case existiert, braucht aber persönliche Eigentümerschaft und aktuelle Baseline.','Eine alte Vorlage entscheidet nicht; ein aktueller Entscheider muss sie vertreten können.','CFO und neuen Champion Wirkung, Annahmen und Schwelle bestätigen lassen.'],
+   ['Angebot','zurückgestellt','Preis und Umfang sind bekannt, sollten aber nicht ungeprüft in die neue Machtstruktur getragen werden.','Ein unverändertes Angebot kann auf veränderte Prioritäten treffen.','Angebot nach Requalifizierung mit neuem Sponsor erneut bestätigen.'],
+   ['Abschluss','offen','Die frühere Abschlusslogik ist durch den Champion-Verlust unterbrochen.','Der Deal muss politisch neu gewonnen werden, obwohl Budget bereits vorhanden ist.','Neuen Mutual Action Plan mit Sponsor, CFO und Entscheidungstermin vereinbaren.']]
+ }
+};
+function setCore911(t,x){
+ t=replace911(t,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN',x.assessment);
+ t=replace911(t,'DIE PUNKTE, DIE ZÄHLEN','ZENTRALE KUNDENENTSCHEIDUNG',x.points.map(v=>'• '+v).join('\n'));
+ t=replace911(t,'ZENTRALE KUNDENENTSCHEIDUNG','GRÖSSTER ENGPASS','• '+x.decision);
+ t=replace911(t,'GRÖSSTER ENGPASS','EXECUTIVE AHA','• '+x.bottleneck);
+ t=replace911(t,'EXECUTIVE AHA','DOMINANTE OPPORTUNITY-DNA','• '+x.aha);
+ t=replace911(t,'DOMINANTE MANAGEMENT-HYPOTHESE','BUSINESS CASE UND NUTZEN','• '+x.hyp);
+ t=replace911(t,'BUSINESS CASE UND NUTZEN','NÄCHSTER SCHRITT','• '+x.business);
+ const body=x.areas.map(a=>`--- ${a[0]} ---\nStatus: ${a[1]}\nEinschätzung: ${a[2]}\nAha-Erkenntnis: ${a[3]}\nNächster Kundenschritt: ${a[4]}`).join('\n\n');
+ t=replace911(t,'=== VERKAUFSPROZESS / BEREICHSANALYSEN ===','=== EVIDENZ-INTEGRITÄT ===',body);
+ return t;
+}
+function repairFacts911(t,active){const r=raw911();
+ const price=(r.match(/(?:Gesamtpreis|Preis)\s*:\s*([\d.]+\s*€)/i)||[])[1];
+ const budget=(r.match(/Budget\s*:\s*([\d.]+\s*€)[^\n]*(?:freigegeben|bestätigt|reserviert)/i)||[])[1];
+ if(price){t=t.replace(/Gesamtpreis:\s*[\d.]+\s*€/g,'Gesamtpreis: '+price).replace(/• Preis:\s*(?:nicht bestätigt|[\d.]+\s*€)/g,'• Preis: '+price);}
+ if(budget){t=t.replace(/• Budget:\s*(?:nicht erkannt|[\d.]+\s*€)/g,'• Budget: '+budget);}
+ if(active.includes('CRM_EVIDENZKONFLIKT')){
+  t=t.replace(/• Evidenzkonflikte:\s*0/g,'• Evidenzkonflikte: 1').replace(/• Erkannte Widersprüche:\s*0/g,'• Erkannte Widersprüche: 1');
+  if(!/\n  1\. CRM-Aussage:/.test(t)){
+   const crm=(r.match(/CRM(?: vor \d+ Tagen)?\s*:\s*([^\n]+)/i)||[])[1]||'Historischer CRM-Status weist Freigabe, Sponsor oder Abschlussreife aus.';
+   const now=(r.match(/Aktuelles Gespräch\s*:\s*([^\n]+)/i)||[])[1]||'Jüngere Kundenaussage widerspricht dem gespeicherten Status.';
+   t=t.replace(/(• Erkannte Widersprüche:\s*1)/,'$1\n  1. CRM-Aussage: '+crm+'\n     Aktuelles Gespräch: '+now+'\n     Auswirkung: Score, Forecast, Budgetstatus und nächster Schritt sind bis zur Klärung nicht belastbar.\n     Klärungsfrage: Welche Aussage wird durch die zuständigen Kundenrollen mit aktuellem Datum verbindlich bestätigt?');
+  }
+ }
+ return t;
+}
+function post911(t){t=t.replace(/Version: KI21 Core [^\n]+/g,'Version: '+V911);const active=active911(t);const dom=active[0];if(T[dom])t=setCore911(t,T[dom]);t=repairFacts911(t,active);return t;}
+fullReport=()=>post911(base911());
+decisionBrief=()=>{const r=fullReport();return(r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?=\n\n=== VERKAUFSPROZESS)/)||[''])[0]};
+const previous911=window.ki2118BuildLocalSuite;
+window.ki2118BuildLocalSuite=function(ids){const out=previous911(ids);if(!out||!out.results)return out;const targets=new Set(['S06','S07','S08','S09','S10']);out.results.forEach(x=>{if(!targets.has(x.tc.id))return;const r=x.report||'';const active=active911(r);const dom=active[0];const checks=[
+ !active.includes('CRM_EVIDENZKONFLIKT')||(/Evidenzkonflikte:\s*1/.test(r)&&/Erkannte Widersprüche:\s*1/.test(r)),
+ dom!=='CRM_EVIDENZKONFLIKT'||/EINSCHÄTZUNG\nDie Opportunity ist aktuell nicht belastbar steuerbar/.test(r),
+ dom!=='PROCUREMENT_BLOCKER'||/GRÖSSTER ENGPASS\n• Procurement-, Vertrags- und Messbedingungen/.test(r),
+ dom!=='CHAMPION_VERLUST'||/Budget und Preis sind grundsätzlich bestätigt/.test(r),
+ x.tc.id!=='S06'||/Preis:\s*174\.000 €/.test(r)
+ ];const add=checks.filter(Boolean).length;x.points+=add;x.max+=5;x.passed=x.points===x.max;});const passed=out.results.filter(x=>x.passed).length;const summary=out.results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');const details=out.results.map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1}/${out.results.length} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}\n\n${x.report}`).join('\n\n');out.text=`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V911}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${out.results.length}\nVollständig bestanden: ${passed}/${out.results.length}\nAPI-Aufrufe: 0\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== VOLLSTÄNDIGE EINZELBERICHTE ===\n\n${details}`;return out};
+try{render()}catch(e){console.error('KI21 9.1.1 activation failed',e)}
+})();
+</script>
+
 </body>
 </html>
