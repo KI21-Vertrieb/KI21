@@ -5022,7 +5022,7 @@ render();
 <script id="ki21-v8190-complex-decision-patterns">
 (()=>{
 'use strict';
-const V='KI21 Core 8.24.0 · Action Drilldowns & Real-World Test Pack';
+const V='KI21 Core 8.25.0 · Unified Dominance Pipeline';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5289,7 +5289,7 @@ try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 <script id="ki21-v8221-cockpit-state-sync">
 (()=>{
 'use strict';
-const V8221='KI21 Core 8.24.0 · Action Drilldowns & Real-World Test Pack';
+const V8221='KI21 Core 8.25.0 · Unified Dominance Pipeline';
 const PREV_FULL_REPORT=fullReport;
 const PREV_DECISION_BRIEF=decisionBrief;
 const esc8221=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5353,7 +5353,7 @@ try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refr
 <script id="ki21-v8223-evidence-integrity-cockpit-diversity">
 (()=>{
 'use strict';
-const V8223='KI21 Core 8.24.0 · Action Drilldowns & Real-World Test Pack';
+const V8223='KI21 Core 8.25.0 · Unified Dominance Pipeline';
 const BASE_FULL_8223=fullReport;
 const BASE_BRIEF_8223=decisionBrief;
 const esc8223=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5450,7 +5450,7 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 <script id="ki21-v8230-opportunity-type-intelligence">
 (()=>{
 'use strict';
-const V8230='KI21 Core 8.24.0 · Action Drilldowns & Real-World Test Pack';
+const V8230='KI21 Core 8.25.0 · Unified Dominance Pipeline';
 const BASE_FULL_8230=fullReport;
 const raw8230=()=>String(state&&state.rawImport||'');
 const case8230=(id,rx)=>String(state&&state.id||'')===id||rx.test(raw8230());
@@ -5561,9 +5561,9 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 </style>
 <script id="ki21-v8240-action-drilldowns-real-world-test-pack">
 (()=>{
-const VERSION8240='KI21 Core 8.24.0 · Action Drilldowns & Real-World Test Pack';
+const VERSION8240='KI21 Core 8.25.0 · Unified Dominance Pipeline';
 try{VERSION=VERSION8240}catch(e){} document.title=VERSION8240;
-const hv8240=document.getElementById('headerVersion');if(hv8240)hv8240.textContent='Core 8.24.0';
+const hv8240=document.getElementById('headerVersion');if(hv8240)hv8240.textContent='Core 8.25.0';
 const fv8240=document.getElementById('footerVersion');if(fv8240)fv8240.textContent=VERSION8240;
 
 // 30 deliberately messy, realistic CRM imports, independent from the original regression set.
@@ -5665,6 +5665,54 @@ const oldFull8240=fullReport;fullReport=function(){return String(oldFull8240())
  .replace(/1 konkrete Kauf- oder Vertragsbedingung ist getrennt zu behandeln\./g,'Eine konkrete Kauf- oder Vertragsbedingung ist getrennt zu behandeln.')};
 decisionBrief=function(){const r=fullReport();return (r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?=\n\n=== VERKAUFSPROZESS)/)||[''])[0]};
 try{render()}catch(e){console.error('KI21 8.24.0 activation failed',e)}
+})();
+</script>
+
+<script id="ki21-v8250-unified-dominance-pipeline-validated">
+(()=>{
+'use strict';
+const PIPELINE_VERSION='KI21 Core 8.25.0 · Unified Dominance Pipeline';
+function section(text,start,end){
+ const a=String(text||'').indexOf(start);if(a<0)return '';
+ const from=a+start.length,b=end?String(text||'').indexOf(end,from):-1;
+ return String(text||'').slice(from,b<0?undefined:b).trim();
+}
+function lineValue(text,label){
+ const m=String(text||'').match(new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*(.*)$','mi'));
+ return m?m[1].replace(/^•\s*/,'').trim():'';
+}
+function unifiedDominancePipeline(){
+ let report='';
+ try{report=String(fullReport())}catch(e){console.warn('KI21 dominance report unavailable',e)}
+ const decision=lineValue(report,'ZENTRALE KUNDENENTSCHEIDUNG');
+ const bottleneck=lineValue(report,'GRÖSSTER ENGPASS');
+ const hypothesis=lineValue(report,'DOMINANTE MANAGEMENT-HYPOTHESE');
+ const assessment=section(report,'EINSCHÄTZUNG','DIE PUNKTE, DIE ZÄHLEN');
+ const next=section(report,'NÄCHSTER SCHRITT','STATE CHECK').split(/\n/).map(x=>x.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+ let sc={score:null,forecast:null};try{sc=scores()}catch(e){}
+ return Object.freeze({version:PIPELINE_VERSION,assessment,decision,bottleneck,hypothesis,nextActions:Object.freeze(next),score:sc&&sc.score,forecast:sc&&sc.forecast});
+}
+window.ki21UnifiedDominancePipeline=unifiedDominancePipeline;
+const oldActivate=window.activate8240;
+function enrichCockpit(){
+ if(!window.state||state.activeTab!=='cockpit')return;
+ const view=document.getElementById('view');if(!view||view.querySelector('[data-ki21-dominance="1"]'))return;
+ const data=unifiedDominancePipeline();
+ const actions=view.querySelector('.actions');if(!actions)return;
+ const btn=document.createElement('button');btn.className='btn secondary';btn.type='button';btn.dataset.ki21Dominance='1';btn.textContent='Entscheidungslogik anzeigen';
+ btn.onclick=()=>{
+  const existing=document.getElementById('ki21DominanceSheet');if(existing)existing.remove();
+  const overlay=document.createElement('div');overlay.className='ki21-bottom-sheet-overlay';overlay.id='ki21DominanceSheet';
+  overlay.innerHTML=`<div class="ki21-bottom-sheet"><div class="ki21-sheet-handle"></div><span class="ki21-drill-badge">Unified Dominance Pipeline</span><div class="headline" style="margin-top:9px">${esc(data.bottleneck||'Nächste Kundenentscheidung')}</div><div class="body" style="margin-top:7px">${esc(data.hypothesis||data.assessment)}</div><div class="ki21-sheet-grid"><div class="ki21-sheet-block full"><h4>Nächste Kundenentscheidung</h4><p>${esc(data.decision||'Noch nicht belastbar erkannt.')}</p></div><div class="ki21-sheet-block full"><h4>Konkreter Verkaufsauftrag</h4><ul>${data.nextActions.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>Nächsten Kundenschritt mit Ergebnis und Termin festlegen.</li>'}</ul></div></div><div class="actions"><button class="btn primary" id="ki21CloseDominance">Schließen</button></div></div>`;
+  document.body.appendChild(overlay);overlay.querySelector('#ki21CloseDominance').onclick=()=>overlay.remove();overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ };
+ actions.appendChild(btn);
+}
+const coreRender=render;render=function(){const result=coreRender();setTimeout(enrichCockpit,0);return result};
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 8.25.0';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=PIPELINE_VERSION;
+document.title=PIPELINE_VERSION;
+try{render()}catch(e){console.error('KI21 8.25.0 activation failed',e)}
 })();
 </script>
 
