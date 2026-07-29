@@ -6587,10 +6587,10 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 
 <script>
 (()=>{
-const V110='KI21 Core 10.2.2 · Gate Priority Alignment';
+const V110='KI21 Core 10.2.3 · Primary Action Integrity';
 try{VERSION=V110}catch(e){}
 document.title=V110;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.2';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.3';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V110;
 
 const REGRESSION_GROUPS=[
@@ -6683,7 +6683,7 @@ try{render();r110Install()}catch(e){console.error('KI21 10.1.0 activation failed
 const V111='KI21 Core 10.1.1 · Full Regression Startfix';
 try{VERSION=V111}catch(e){}
 document.title=V111;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.2';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.2.3';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V111;
 
 function openFullRegression111(){
@@ -6739,12 +6739,12 @@ setTimeout(bind111,0);setTimeout(bind111,250);setTimeout(bind111,1000);
 </script>
 
 <script>
-/* KI21 Core 10.2.2 · Gate Priority Alignment
+/* KI21 Core 10.2.3 · Primary Action Integrity
    Adds evidence confidence, executive recommendation and coaching questions
    without changing the proven score/forecast calculation. */
 (function(){
 'use strict';
-const V1020='KI21 Core 10.2.2 · Gate Priority Alignment';
+const V1020='KI21 Core 10.2.3 · Primary Action Integrity';
 try{ if(typeof VERSION!=='undefined') VERSION=V1020; }catch(_e){}
 
 function confidenceModel1020(){
@@ -6796,14 +6796,14 @@ window.ki211020ConfidenceModel=confidenceModel1020;
 
 
 <script>
-/* KI21 Core 10.2.2 · Gate Priority Alignment
+/* KI21 Core 10.2.3 · Primary Action Integrity
    Aligns Executive Real-Deal Check with the rendered State Check and generates
    deal-specific coaching questions. Existing score and forecast logic remains unchanged. */
 (function(){
 'use strict';
-const V1021='KI21 Core 10.2.2 · Gate Priority Alignment';
+const V1021='KI21 Core 10.2.3 · Primary Action Integrity';
 try{ if(typeof VERSION!=='undefined') VERSION=V1021; }catch(_e){}
-const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.2';
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.3';
 
 function pick(text,re,fallback){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
 function num(text,re,fallback){const v=parseInt(pick(text,re,''),10);return Number.isFinite(v)?v:fallback;}
@@ -6895,14 +6895,14 @@ window.ki211021ExecutiveConsistency={stateFacts:stateFacts1021,repair:repair1021
 
 
 <script>
-/* KI21 Core 10.2.2 · Gate Priority Alignment
+/* KI21 Core 10.2.3 · Primary Action Integrity
    Resolves contradictory price status and prioritizes blocking evidence/gates
    in the Executive Real-Deal Check. Score and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1022='KI21 Core 10.2.2 · Gate Priority Alignment';
+const V1022='KI21 Core 10.2.3 · Primary Action Integrity';
 try{ if(typeof VERSION!=='undefined') VERSION=V1022; }catch(_e){}
-const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.2';
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.3';
 
 function pick1022(text,re,fallback){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
 function num1022(text,re,fallback){const v=parseInt(pick1022(text,re,''),10);return Number.isFinite(v)?v:fallback;}
@@ -6997,5 +6997,76 @@ if(typeof fullReport==='function'){
 window.ki211022GatePriorityAlignment={facts:facts1022,repair:repair1022};
 })();
 </script>
+
+<script>
+/* KI21 Core 10.2.3 · Primary Action Integrity
+   Aligns the Decision Navigator's first action with the explicitly identified
+   bottleneck and repairs confirmed-price contradictions in generated reports.
+   Score and forecast calculations remain unchanged. */
+(function(){
+'use strict';
+const V1023='KI21 Core 10.2.3 · Primary Action Integrity';
+try{ if(typeof VERSION!=='undefined') VERSION=V1023; }catch(_e){}
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent='Core 10.2.3';
+
+function capture1023(text,re,fallback=''){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
+function escape1023(s){return String(s||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function repairVersion1023(text){
+ return String(text||'')
+  .replace(/KI21 Core 10\.2\.2 · Gate Priority Alignment/g,V1023)
+  .replace(/KI21 Core 10\.2\.1 · Executive Consistency Engine/g,V1023);
+}
+function repairPrice1023(text){
+ text=String(text||'');
+ const price=capture1023(text,/• Preis:\s*([^\n]+)/i,'');
+ const confirmed=price&&!/(nicht bestätigt|nicht erkannt|offen)/i.test(price);
+ if(!confirmed)return text;
+ text=text.replace(/(• Score-Bremsen:\s*)([^\n]+)/i,function(_,p,v){
+   let parts=v.split(/,\s*/).filter(x=>!/\bPreis offen\b/i.test(x));
+   return p+(parts.length?parts.join(', '):'keine wesentlichen Bremsen');
+ });
+ text=text.replace(/--- Angebot ---\nStatus: offen\nEinschätzung: Ein verbindlicher Preis ist noch nicht bestätigt\./g,
+   '--- Angebot ---\nStatus: teilweise geklärt\nEinschätzung: Der Preis ist erkannt; offen bleiben nur die state-spezifischen Freigaben, Bedingungen und der verbindliche Entscheidungsweg.');
+ text=text.replace(/• Wichtigste fehlende Bestätigung:\s*([^\n]*?)bestätigter Preis(?:,\s*|\.)/gi,function(_,before){
+   const cleaned=before.replace(/,\s*$/,'').trim();
+   return '• Wichtigste fehlende Bestätigung: '+(cleaned||'verbindlicher Kundenentscheid und Termin')+'.';
+ });
+ return text;
+}
+function repairNavigator1023(text){
+ text=String(text||'');
+ if(/DOMINANTE OPPORTUNITY-DNA/.test(text))return text;
+ const bottleneck=capture1023(text,/GRÖSSTER ENGPASS\n•\s*([^\n]+)/i,'');
+ if(!bottleneck)return text;
+ const generic='Mutual Action Plan mit Verantwortlichen, Entscheidungskriterien und verbindlichem Sign-off-Termin vereinbaren';
+ const highRe=new RegExp('(HÖCHSTER VERKAUFSHEBEL\\n•\\s*)'+escape1023(generic));
+ text=text.replace(highRe,'$1'+bottleneck);
+ const actionRe=new RegExp('(PRIORISIERTER AKTIONSPLAN\\n1\\.\\s*)'+escape1023(generic));
+ text=text.replace(actionRe,'$1'+bottleneck);
+ text=text.replace(/(PRIORISIERTER AKTIONSPLAN\n1\.[\s\S]*?Abgedecktes Risikofeld:)\s*PROCESS/, '$1 PRIMARY_GATE');
+ text=text.replace(/(PRIORISIERTER AKTIONSPLAN\n1\.[\s\S]*?Begründung:)\s*übersetzt die geklärten Risiken in einen verbindlichen Abschluss- und Entscheidungspfad\./,
+   '$1 adressiert unmittelbar den im Sales Decision Brief ausgewiesenen größten Engpass.');
+ text=text.replace(/(HÖCHSTER VERKAUFSHEBEL[\s\S]*?Warum zuerst:)\s*übersetzt die geklärten Risiken in einen verbindlichen Abschluss- und Entscheidungspfad\./,
+   '$1 adressiert unmittelbar den im Sales Decision Brief ausgewiesenen größten Engpass.');
+ return text;
+}
+function repair1023(text){
+ text=repairVersion1023(text);
+ text=repairPrice1023(text);
+ text=repairNavigator1023(text);
+ return text;
+}
+if(typeof decisionBrief==='function'){
+ const oldDecisionBrief1023=decisionBrief;
+ decisionBrief=function(){return repair1023(oldDecisionBrief1023.apply(this,arguments));};
+}
+if(typeof fullReport==='function'){
+ const oldFullReport1023=fullReport;
+ fullReport=function(){return repair1023(oldFullReport1023.apply(this,arguments));};
+}
+window.ki211023PrimaryActionIntegrity={repair:repair1023};
+})();
+</script>
+
 </body>
 </html>
