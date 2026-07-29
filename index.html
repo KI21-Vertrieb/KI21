@@ -6587,10 +6587,10 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 
 <script>
 (()=>{
-const V110='KI21 Core 10.1.0 · Full Regression & Real-Deal Validation';
+const V110='KI21 Core 10.1.1 · Full Regression Startfix';
 try{VERSION=V110}catch(e){}
 document.title=V110;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.0';
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.1';
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V110;
 
 const REGRESSION_GROUPS=[
@@ -6658,6 +6658,68 @@ function r110Install(){
 const previousRender110=render;
 render=function(){const value=previousRender110.apply(this,arguments);try{r110Install()}catch(e){console.error('KI21 10.1.0 panel failed',e)}return value};
 try{render();r110Install()}catch(e){console.error('KI21 10.1.0 activation failed',e)}
+})();
+</script>
+
+
+<script id="ki21-10-1-1-startfix">
+(()=>{
+'use strict';
+const V111='KI21 Core 10.1.1 · Full Regression Startfix';
+try{VERSION=V111}catch(e){}
+document.title=V111;
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 10.1.1';
+const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V111;
+
+function openFullRegression111(){
+  const old=document.getElementById('ki2111RegressionOverlay');if(old)old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='ki2111RegressionOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(2,5,9,.86);display:flex;align-items:center;justify-content:center;padding:18px;';
+  overlay.innerHTML=`<div class="modal quality-suite-modal" style="display:block;width:min(980px,96vw);max-height:92vh;overflow:auto;position:relative;">
+    <div class="quality-suite-head"><div><div class="kicker">KI21 Release Validation</div><div class="headline">Full Regression & Real-Deal Validation</div><div class="body muted">35 lokale Testfälle in drei getrennten Testblöcken. Keine API-Kosten.</div></div><button type="button" class="icon-btn" id="r111Close">×</button></div>
+    <div id="r111Status" class="body muted quality-status">Regression wird ausgeführt …</div>
+    <div id="r111Results"><div class="quality-spinner">Standard-, Generalisierungs- und Multi-DNA-Fälle werden geprüft …</div></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  overlay.querySelector('#r111Close').addEventListener('click',close);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+  setTimeout(()=>{
+    const status=overlay.querySelector('#r111Status'),box=overlay.querySelector('#r111Results');
+    try{
+      if(typeof window.ki2110BuildFullRegression!=='function')throw new Error('Vollregressions-Engine nicht gefunden');
+      const out=window.ki2110BuildFullRegression();
+      if(!out||!Array.isArray(out.results))throw new Error('Keine Regressionsergebnisse erzeugt');
+      out.text=String(out.text||'').replace(/KI21 Core 10\.1\.0 · Full Regression & Real-Deal Validation/g,V111);
+      status.textContent=`${out.passed}/${out.total} Fälle · ${out.checks}/${out.maxChecks} Checks · ${out.runtime} ms · 0 API-Aufrufe`;
+      box.innerHTML=`<div class="card ${out.releaseReady?'green':'red'}"><div class="kicker">Release Gate</div><div class="headline">${out.releaseReady?'✅ Vollständig freigabefähig':'⚠️ Regression prüfen'}</div><div class="body" style="margin-top:7px">Bereichsanalysen ${out.areaComplete}/${out.total} · Navigator ${out.navigatorComplete}/${out.total} · Doppelungen ${out.duplicates} · ungültige Tokens ${out.badTokens}</div></div><div class="actions"><button type="button" class="btn primary" id="r111Copy">Gesamtbericht kopieren</button><button type="button" class="btn secondary" id="r111Show">Vollständigen Bericht anzeigen</button></div>`;
+      box.querySelector('#r111Copy').addEventListener('click',async()=>{await copyTextReliable(out.text);toast('Full-Regression-Bericht kopiert')});
+      box.querySelector('#r111Show').addEventListener('click',()=>{let ta=box.querySelector('textarea');if(!ta){ta=document.createElement('textarea');ta.style.cssText='min-height:55vh;margin-top:12px;width:100%';ta.value=out.text;box.appendChild(ta)}});
+    }catch(err){
+      status.textContent='Full Regression fehlgeschlagen.';
+      box.innerHTML=`<div class="card red"><div class="kicker">Startdiagnose</div><div class="headline">${typeof esc==='function'?esc(err&&err.message?err.message:String(err)):(err&&err.message?err.message:String(err))}</div></div>`;
+      console.error('KI21 10.1.1 Full Regression',err);
+    }
+  },40);
+}
+window.ki2111OpenFullRegression=openFullRegression111;
+
+function bind111(){
+ const btn=document.getElementById('ki2110RunRegression');
+ if(btn){
+   btn.type='button';
+   btn.onclick=null;
+   if(!btn.dataset.ki2111Bound){btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openFullRegression111()});btn.dataset.ki2111Bound='1'}
+ }
+}
+document.addEventListener('click',e=>{
+ const btn=e.target&&e.target.closest?e.target.closest('#ki2110RunRegression'):null;
+ if(btn&&!btn.dataset.ki2111Bound){e.preventDefault();e.stopPropagation();openFullRegression111()}
+},true);
+const observer=new MutationObserver(bind111);observer.observe(document.documentElement,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind111);else bind111();
+setTimeout(bind111,0);setTimeout(bind111,250);setTimeout(bind111,1000);
 })();
 </script>
 
