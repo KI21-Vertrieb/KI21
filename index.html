@@ -7830,5 +7830,62 @@ syncLabels();canonicalRender();
 })();
 </script>
 
+
+<script id="ki21-11-2-4-exclusive-navigation-repair">
+(function(){
+'use strict';
+var V='KI21 Core 11.2.4 · Exclusive Navigation Repair';
+try{VERSION=V}catch(_e){} window.KI21_VERSION=V;document.title=V;
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 11.2.4';if(f)f.textContent=V;}
+function currentState(){try{window.state=state;return state}catch(e){return window.state}}
+function persistOnly(){
+ try{
+  var s=currentState();if(!s)return;
+  s.updatedAt=new Date().toISOString();
+  var i=portfolio.opportunities.findIndex(function(x){return x.id===s.id});
+  if(i>=0)portfolio.opportunities[i]=s;else portfolio.opportunities.push(s);
+  portfolio.activeId=s.id;
+  if(typeof savePortfolio==='function')savePortfolio();
+ }catch(e){console.error('KI21 navigation persistence failed',e)}
+}
+function paint(){
+ try{
+  labels();window.__ki21QualityViewActive=false;
+  if(typeof window.render==='function')window.render();
+ }catch(e){
+  console.error('KI21 navigation render failed',e);
+  var v=document.getElementById('view');if(v)v.innerHTML='<div class="card red"><div class="kicker">Navigation</div><div class="headline">Ansicht konnte nicht geöffnet werden</div><div class="body">'+String(e&&e.message||e)+'</div></div>';
+ }
+}
+// A single capture-phase router prevents all inherited tab listeners from firing twice.
+document.addEventListener('click',function(ev){
+ var tab=ev.target&&ev.target.closest?ev.target.closest('.tabs [data-tab]'):null;
+ if(tab){
+  ev.preventDefault();ev.stopImmediatePropagation();
+  var key=tab.getAttribute('data-tab');
+  if(key==='quality'){
+   window.__ki21QualityViewActive=true;
+   document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='quality')});
+   if(typeof window.renderQuality==='function')window.renderQuality();
+   return;
+  }
+  var s=currentState();if(!s)return;
+  window.__ki21QualityViewActive=false;s.activeTab=key;persistOnly();
+  requestAnimationFrame(paint);return;
+ }
+ var input=ev.target&&ev.target.closest?ev.target.closest('[data-input-tab]'):null;
+ if(input){
+  ev.preventDefault();ev.stopImmediatePropagation();
+  var s2=currentState();if(!s2)return;
+  s2.activeTab='inputs';s2.inputTab=input.getAttribute('data-input-tab');persistOnly();
+  requestAnimationFrame(paint);return;
+ }
+},true);
+// Keep the global state property synchronized for later extension layers.
+try{window.state=state}catch(_e){}
+labels();
+})();
+</script>
+
 </body>
 </html>
