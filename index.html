@@ -6858,7 +6858,7 @@ function questions1021(f,missing){
  if(/QUALIFIZIERUNG/.test(st))q1='Welches priorisierte Kundenproblem und welche messbare Auswirkung rechtfertigen weitere Verkaufsinvestition?';
  else if(/ENTSCHEIDER/.test(st))q1='Wie wird der persönliche Termin mit dem wirtschaftlichen Entscheider verbindlich gesichert?';
  else if(/WIRKUNGSNACHWEIS/.test(st))q1='Welche Baseline, Erfolgsschwelle und Messlogik akzeptiert der Kunde als kaufentscheidenden Nachweis?';
- else if(/KAUFBEDINGUNGEN/.test(st))q1=`Welche der ${f.conditions||'offenen'} Kaufbedingungen besitzt die höchste Sperrwirkung und wer gibt sie frei?`;
+ else if(/KAUFBEDINGUNGEN/.test(st))q1=(Number(f.conditions)===1?'Welche Kaufbedingung besitzt die höchste Sperrwirkung und wer gibt sie frei?':`Welche der ${f.conditions||'offenen'} Kaufbedingungen besitzt die höchste Sperrwirkung und wer gibt sie frei?`);
  else if(/VERTRAG|PROCUREMENT/.test(st))q1='Welche konkrete Vertragsposition verhindert heute die Unterschrift und wer besitzt das Entscheidungsmandat?';
  else if(/EVIDENZKONFLIKT/.test(st))q1='Welche datierte und zuständig bestätigte Aussage ersetzt die widersprüchliche CRM-Evidenz?';
  else if(/SONDERBUDGET/.test(st))q1='Wer genehmigt das Sonderbudget, unter welchen Bedingungen und bis zu welchem Termin?';
@@ -6964,7 +6964,7 @@ function questions1022(f,missing){
  } else if(/QUALIFIZIERUNG/.test(st))q1='Welches priorisierte Kundenproblem und welche messbare Auswirkung rechtfertigen weitere Verkaufsinvestition?';
  else if(/ENTSCHEIDER/.test(st))q1='Wie wird der persönliche Termin mit dem wirtschaftlichen Entscheider verbindlich gesichert?';
  else if(/WIRKUNGSNACHWEIS/.test(st))q1='Welche Baseline, Erfolgsschwelle und Messlogik akzeptiert der Kunde als kaufentscheidenden Nachweis?';
- else if(/KAUFBEDINGUNGEN/.test(st))q1=`Welche der ${f.conditions||'offenen'} Kaufbedingungen besitzt die höchste Sperrwirkung und wer gibt sie frei?`;
+ else if(/KAUFBEDINGUNGEN/.test(st))q1=(Number(f.conditions)===1?'Welche Kaufbedingung besitzt die höchste Sperrwirkung und wer gibt sie frei?':`Welche der ${f.conditions||'offenen'} Kaufbedingungen besitzt die höchste Sperrwirkung und wer gibt sie frei?`);
  else if(/VERTRAG|PROCUREMENT/.test(st))q1='Welche konkrete Vertragsposition verhindert heute die Unterschrift und wer besitzt das Entscheidungsmandat?';
  else if(/SONDERBUDGET/.test(st))q1='Wer genehmigt das Sonderbudget, unter welchen Bedingungen und bis zu welchem Termin?';
  else if(/KAUFENTSCHEIDUNG/.test(st))q1='Welche letzte verbindliche Freigabe trennt die Opportunity noch von der Kundenentscheidung?';
@@ -7328,7 +7328,7 @@ function semanticAudit(x){
  }
  if(bottleneck&&action1&&qnorm(bottleneck)!==qnorm(action1))pushIssue(issues,'CRITICAL','PRIMARY_MISMATCH','Aktion 1 entspricht nicht exakt dem größten Engpass.',`Engpass: ${bottleneck} | Aktion 1: ${action1}`);
  if(new Set(fs).size!==fs.length)pushIssue(issues,'HIGH','FIELD_DUPLICATE','Mehrere Navigator-Aktionen adressieren dasselbe Risikofeld.',fs.join(' → '));
- if(conditions===1&&/Welche der 1 Kaufbedingungen/i.test(r))pushIssue(issues,'MEDIUM','SINGULAR_LANGUAGE','Singularfall wird grammatikalisch als Mehrfachauswahl formuliert.','„Welche der 1 Kaufbedingungen …“');
+ if(conditions===1&&/Welche der 1 Kaufbedingungen/i.test(r))pushIssue(issues,'MEDIUM','SINGULAR_LANGUAGE','Singularfall wurde grammatikalisch als Mehrfachauswahl formuliert.','„Welche der 1 Kaufbedingungen …“');
  if(conditions>=3&&(/DELIVERY_CAPACITY|IMPLEMENTATION_PLAN/.test(joined))&&!/kapazität|ressourcen|umsetzungsfähigkeit/i.test(bottleneck))pushIssue(issues,'CRITICAL','CONTEXT_LEAK','Mehrere Kaufbedingungen wurden durch generische Umsetzungsaktionen verdrängt.',fs.join(' → '));
  if(/VERTRAGSFREIGABE|VERTRAGSVERHANDLUNG/i.test(state)&&/DELIVERY_CAPACITY/.test(joined)&&!/ressourcen|kapazität/i.test(bottleneck))pushIssue(issues,'CRITICAL','LATE_STAGE_LEAK','Später Vertragsdeal erhält sachfremde Kapazitätsanalyse.',fs.join(' → '));
  if(/RENEWAL/i.test(r)&&/Nutzungsproblem|Adoption/i.test(r)&&!/ADOPTION_EVIDENCE/.test(joined))pushIssue(issues,'CRITICAL','ADOPTION_LOST','Adoptionsrisiko wird im Aktionsportfolio nicht fortgeführt.');
@@ -7531,11 +7531,11 @@ setTimeout(bind,0);setTimeout(bind,200);setTimeout(bind,800);
 <script id="ki21-11-1-platform-stability">
 (function(){
 'use strict';
-var V='KI21 Core 11.1.1 · Quality Lab Navigation Repair';
+var V='KI21 Core 11.1.2 · Singular Language Integrity';
 try{VERSION=V}catch(_e){}
 window.KI21_VERSION=V;
 document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.1';
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.2';
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 var diag=[];
 function log(type,message,detail){
@@ -7627,13 +7627,13 @@ log('startup','Platform Stability initialisiert',navigator.userAgent);
 </script>
 
 
-<script id="ki21-11-1-1-quality-navigation-repair">
+<script id="ki21-11-1-2-singular-language-integrity">
 (function(){
 'use strict';
-var V='KI21 Core 11.1.1 · Quality Lab Navigation Repair';
+var V='KI21 Core 11.1.2 · Singular Language Integrity';
 try{VERSION=V}catch(_e){}
 window.KI21_VERSION=V;document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.1';
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.2';
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 
 // The quality lab is application-level and must also work without an active opportunity.
