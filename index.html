@@ -7864,5 +7864,74 @@ labels();window.state=active();paint();
 })();
 </script>
 
+
+
+<script id="ki21-11-2-6-cockpit-content-integrity">
+(function(){
+'use strict';
+var V='KI21 Core 11.2.6 · Cockpit Content Integrity';
+try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
+function escx(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v)}catch(_e){return String(v==null?'':v)}}
+function num(v){v=Number(v||0);return isFinite(v)?v:0}
+function money(v){return num(v).toLocaleString('de-DE')+' €'}
+function first(arr,rx){for(var i=0;i<(arr||[]).length;i++){var x=arr[i]||{},t=String(x.text||x);if(rx.test(t))return t}return''}
+function person(rx){return (state.stakeholders||[]).find(function(x){return rx.test(String(x.function||'')+' '+String(x.role||'')+' '+String(x.authority||''))})||null}
+function build(){
+ var s=state||{},m=s.metrics||{},f=s.flags||{},ev=s.evidence||[],raw=String(s.rawImport||'');
+ var sc;try{sc=typeof scores==='function'?scores():{score:0,forecast:0}}catch(_e){sc={score:0,forecast:0}}
+ var buyerP=person(/chief financial officer|\bcfo\b|wirtschaftlich.*entscheider|finale investitionsfreigabe/i);
+ var sponsorP=person(/sponsor|champion|initiator|treibend/i);
+ var hours=num(m.hours),annual=num(m.recurringInternalCost||m.annualCost||(hours&&m.timeValue?hours*12*num(m.timeValue):0));
+ var budget=num(m.budget),price=num(m.price||((s.offer||{}).price));
+ var pain=first(ev,/stunden|nacharbeit|forecast|verlust|verloren|verschoben|margen|eskalation|kundenbindung/i);
+ var decision='';
+ if(f.economicBuyerOpen)decision='Bestätigt '+(buyerP?buyerP.name:'der wirtschaftliche Entscheider')+' persönlich die wirtschaftliche Relevanz, Entscheidungskriterien und den Freigabeweg?';
+ else if(f.successOpen)decision='Welche messbaren Erfolgskriterien und welche Wirkungsschwelle werden verbindlich als Entscheidungsgrundlage bestätigt?';
+ else if(f.approvalOpen)decision='Wird die Investition auf Basis des bestätigten Business Case und der geklärten Umsetzung verbindlich freigegeben?';
+ else decision='Welche letzte Kundenentscheidung sichert Starttermin, Verantwortlichkeit und verbindlichen Abschluss?';
+ var gaps=[];
+ if(f.economicBuyerOpen)gaps.push((buyerP?buyerP.name:'Wirtschaftlicher Entscheider')+' nicht aktiv eingebunden');
+ if(f.successOpen)gaps.push('Erfolgskriterien und Messlogik offen');
+ if(f.approvalOpen)gaps.push('Investitionsfreigabe offen');
+ if(f.priceOpen)gaps.push('Preis noch nicht bestätigt');
+ var bottleneck=gaps.length?gaps.join(' · '):'Die verbleibenden Abschlussbedingungen müssen mit Verantwortlichem und Termin verbindlich geschlossen werden.';
+ var facts=[];
+ if(hours)facts.push(hours+' Stunden Zusatzaufwand pro Monat');
+ if(annual)facts.push(money(annual)+' dokumentierter Aufwand pro Jahr');
+ if(budget)facts.push(money(budget)+' finanzieller Rahmen');
+ if(price)facts.push(money(price)+' Preis');
+ if(buyerP)facts.push((buyerP.name||buyerP.function)+' als wirtschaftliche Entscheidungsrolle');
+ if(sponsorP)facts.push((sponsorP.name||sponsorP.function)+' als fachlicher Treiber');
+ var assessment='';
+ if(facts.length)assessment='Die Opportunity ist inhaltlich belastbar erfasst. '+facts.slice(0,4).join(', ')+'. '+(gaps.length?'Entscheidungsreife fehlt noch wegen '+gaps.join(', ')+'.':'Die wesentlichen Entscheidungsparameter sind weitgehend bestätigt.');
+ else assessment='Der CRM-Import ist vorhanden, aber die entscheidungsrelevanten Fakten konnten noch nicht vollständig in strukturierte Deal-Daten überführt werden.';
+ var business='';
+ if(annual&&price)business='Dem dokumentierten Jahresaufwand von '+money(annual)+' steht ein Preis von '+money(price)+' gegenüber. Für die Freigabe müssen vermeidbarer Anteil, zusätzliche Ergebniswirkung und Betrachtungszeitraum bestätigt werden.';
+ else if(annual)business='Der wirtschaftliche Ausgangswert beträgt '+money(annual)+' pro Jahr. Für eine belastbare Investitionsrechnung fehlen noch Preis, vermeidbarer Anteil oder Betrachtungszeitraum.';
+ else if(pain)business='Bestätigtes Wirkungssignal: '+pain;
+ var steps=[];
+ if(f.economicBuyerOpen)steps.push('Persönlichen Entscheidungstermin mit '+(buyerP?buyerP.name:'dem wirtschaftlichen Entscheider')+' sichern');
+ if(f.successOpen)steps.push('Maximal drei messbare Erfolgskriterien mit Baseline, Zielwert und Messmethode bestätigen');
+ if(f.approvalOpen)steps.push('Freigabeweg, Verantwortliche und verbindlichen Entscheidungstermin festlegen');
+ if(!steps.length)steps.push('Letzte Abschlussbedingungen mit Verantwortlichem und Termin verbindlich schließen');
+ var stateName=f.approvalOpen?'ENTSCHEIDUNG OFFEN':f.successOpen?'WIRKUNG OFFEN':f.economicBuyerOpen?'ENTSCHEIDERZUGANG':'ABSCHLUSSREIF';
+ return{assessment:assessment,decision:decision,bottleneck:bottleneck,business:business,steps:steps.slice(0,3),stateName:stateName,score:num(sc.score),forecast:num(sc.forecast),opportunityId:String(s.id||'')};
+}
+function health(d){return Math.max(0,Math.min(100,Math.round(d.score*.45+d.forecast*.35+20)))}
+window.renderCockpit=function(){
+ var d=build(),h=health(d),steps=d.steps.length?d.steps:['Nächste Kundenentscheidung verbindlich machen'];
+ var business=d.business?'<div class="ki21-business-note">'+escx(d.business)+'</div>':'';
+ return '<div class="ki21-exec-shell" data-ki21-opportunity-id="'+escx(d.opportunityId)+'">'+
+ '<section class="ki21-exec-hero"><div class="ki21-eyebrow">Executive Deal Brief</div><div class="ki21-hero-title">'+escx(d.assessment)+'</div><div class="ki21-hero-foot"><span class="ki21-state-pill"><span class="ki21-state-dot"></span>'+escx(d.stateName)+'</span></div>'+business+'</section>'+
+ '<section class="ki21-score-grid"><button type="button" class="ki21-score-card" data-ki21-score="score"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Opportunity Score</div><div class="ki21-score-value">'+Math.round(d.score)+'%</div><div class="ki21-score-meta">Deal-Qualität</div><div class="ki21-score-bar"><span style="width:'+Math.round(d.score)+'%"></span></div></button><button type="button" class="ki21-score-card forecast" data-ki21-score="forecast"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Forecast</div><div class="ki21-score-value">'+Math.round(d.forecast)+'%</div><div class="ki21-score-meta">Abschlussnähe</div><div class="ki21-score-bar"><span style="width:'+Math.round(d.forecast)+'%"></span></div></button><button type="button" class="ki21-score-card health" data-ki21-score="health"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Health Score</div><div class="ki21-score-value">'+h+'%</div><div class="ki21-score-meta">Evidenz & Methodik</div><div class="ki21-score-bar"><span style="width:'+h+'%"></span></div></button></section>'+
+ '<section class="ki21-decision-grid"><div class="ki21-panel"><div class="ki21-panel-title"><span class="ki21-panel-icon">◇</span>Nächste Kundenentscheidung</div><div class="ki21-decision-text">'+escx(d.decision)+'</div></div><div class="ki21-panel ki21-bottleneck"><div class="ki21-panel-title"><span class="ki21-panel-icon">!</span>Größter Engpass</div><div class="ki21-bottleneck-text">'+escx(d.bottleneck)+'</div></div></section>'+
+ '<section class="ki21-panel ki21-action-card"><div class="ki21-panel-title"><span class="ki21-panel-icon">→</span>Priorisierter Verkaufsauftrag</div><div class="ki21-action-list">'+steps.map(function(x){return '<div class="ki21-action-item"><div>'+escx(x.replace(/[.]+$/,''))+'.</div></div>'}).join('')+'</div></section><div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>';
+};
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 11.2.6';if(f)f.textContent=V}
+labels();
+try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 11.2.6 cockpit refresh failed',err)}
+})();
+</script>
+
 </body>
 </html>
