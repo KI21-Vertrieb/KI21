@@ -7531,11 +7531,11 @@ setTimeout(bind,0);setTimeout(bind,200);setTimeout(bind,800);
 <script id="ki21-11-1-platform-stability">
 (function(){
 'use strict';
-var V='KI21 Core 11.1.0 · Platform Stability';
+var V='KI21 Core 11.1.1 · Quality Lab Navigation Repair';
 try{VERSION=V}catch(_e){}
 window.KI21_VERSION=V;
 document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.0';
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.1';
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 var diag=[];
 function log(type,message,detail){
@@ -7623,6 +7623,82 @@ function install(){ensureTab();if(window.state&&state.activeTab==='quality')rend
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 setTimeout(install,0);setTimeout(install,250);
 log('startup','Platform Stability initialisiert',navigator.userAgent);
+})();
+</script>
+
+
+<script id="ki21-11-1-1-quality-navigation-repair">
+(function(){
+'use strict';
+var V='KI21 Core 11.1.1 · Quality Lab Navigation Repair';
+try{VERSION=V}catch(_e){}
+window.KI21_VERSION=V;document.title=V;
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.1';
+var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
+
+// The quality lab is application-level and must also work without an active opportunity.
+window.__ki21QualityViewActive=false;
+
+function ensureQualityTab111(){
+  var tabs=document.querySelector('.tabs');if(!tabs)return null;
+  var btn=tabs.querySelector('[data-tab="quality"]');
+  if(!btn){btn=document.createElement('button');btn.type='button';btn.className='tab';btn.dataset.tab='quality';btn.textContent='Qualitätslabor';tabs.appendChild(btn)}
+  btn.classList.toggle('active',!!window.__ki21QualityViewActive);
+  return btn;
+}
+function showQuality111(){
+  window.__ki21QualityViewActive=true;
+  ensureQualityTab111();
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='quality')});
+  if(typeof window.renderQuality==='function')window.renderQuality();
+  else {
+    var view=document.getElementById('view');
+    if(view)view.innerHTML='<div class="card red"><div class="headline">Qualitätslabor nicht verfügbar</div><div class="body">Die integrierte Ansicht konnte nicht geladen werden.</div></div>';
+  }
+}
+
+// Export the previously local renderer through a small independent implementation.
+window.renderQuality=function(){
+  var view=document.getElementById('view');if(!view)return;
+  var local=true,portfolioFound=false,backupFound=false;
+  try{var k='__ki21_probe_111__';localStorage.setItem(k,'1');local=localStorage.getItem(k)==='1';localStorage.removeItem(k);portfolioFound=!!localStorage.getItem('ki21_portfolio_stable_v1');backupFound=!!localStorage.getItem('ki21_portfolio_stable_v1_backup')}catch(e){local=false}
+  view.innerHTML='<div class="card orange"><div class="kicker">KI21 Platform Stability</div><div class="headline">Autonomes Qualitätslabor</div><div class="body muted" style="margin-top:7px">Anwendungsweit verfügbar – auch ohne ausgewählte Opportunity.</div></div>'+
+    '<div class="quality-inline-grid"><div class="card '+(local?'green':'red')+'"><div class="kicker">Browser-Speicher</div><div class="headline">'+(local?'✅ verfügbar':'⚠️ eingeschränkt')+'</div><div class="body muted">Portfolio '+(portfolioFound?'gefunden':'nicht gefunden')+' · Backup '+(backupFound?'gefunden':'nicht gefunden')+'</div></div><div class="card violet"><div class="kicker">Testumfang</div><div class="headline">35 Referenzfälle</div><div class="body muted">Golden Cases, Kontextintegrität und automatische Reparaturen.</div></div></div>'+
+    '<div class="actions"><button type="button" class="btn primary" id="q1111Run">🧠 Qualitätslabor starten</button><button type="button" class="btn secondary" id="q1111Diag">Diagnose anzeigen</button></div><div id="q1111Result"></div>';
+  var run=document.getElementById('q1111Run');if(run)run.onclick=function(){
+    var result=document.getElementById('q1111Result');
+    result.innerHTML='<div class="card violet"><div class="headline">Qualitätslabor läuft …</div><div class="body muted">Semantische Prüfungen werden ausgeführt.</div></div>';
+    setTimeout(function(){
+      try{
+        if(typeof window.ki211100BuildAutonomousQualityLab!=='function')throw new Error('Autonomous-Quality-Engine nicht gefunden');
+        var out=window.ki211100BuildAutonomousQualityLab();
+        result.innerHTML='<div class="card '+(out.releaseReady?'green':'red')+'"><div class="kicker">Autonomes Release Gate</div><div class="headline">'+(out.releaseReady?'✅ Freigabefähig':'⚠️ Semantische Ausnahmen offen')+'</div><div class="body" style="margin-top:7px">'+out.total+' Fälle · kritisch '+out.critical+' · hoch '+out.high+' · mittel '+out.medium+' · autonom korrigiert '+out.repaired.length+'</div></div><div class="card violet"><div class="kicker">Dein Prüfaufwand</div><div class="headline">'+(out.manual.length?out.manual.length+' markierte Grenzfälle':'Keine manuelle Detailprüfung nötig')+'</div><div class="body muted" style="margin-top:7px">'+(out.manual.length?'Nur prüfen: '+out.manual.join(', '):'Alle Golden Cases und Kontextverbote sind erfüllt.')+'</div></div><div class="actions"><button type="button" class="btn primary" id="q1111Copy">Kompaktbericht kopieren</button><button type="button" class="btn secondary" id="q1111Show">Bericht anzeigen</button></div>';
+        var cp=document.getElementById('q1111Copy');if(cp)cp.onclick=async function(){if(typeof copyTextReliable==='function')await copyTextReliable(out.text);if(typeof toast==='function')toast('Bericht kopiert')};
+        var sh=document.getElementById('q1111Show');if(sh)sh.onclick=function(){result.innerHTML+='<textarea class="quality-log" readonly></textarea>';result.querySelector('textarea').value=out.text};
+      }catch(e){result.innerHTML='<div class="card red"><div class="headline">'+String(e.message||e)+'</div><div class="body muted">Der Fehler ist jetzt sichtbar und blockiert die App nicht.</div></div>'}
+    },40);
+  };
+  var dg=document.getElementById('q1111Diag');if(dg)dg.onclick=function(){
+    var r=document.getElementById('q1111Result');r.innerHTML='<textarea class="quality-log" readonly></textarea>';r.querySelector('textarea').value='KI21 PLATFORM DIAGNOSTICS\n'+V+'\nBrowser: '+navigator.userAgent+'\nlocalStorage: '+(local?'OK':'NICHT VERFÜGBAR')+'\nPortfolio: '+(portfolioFound?'JA':'NEIN')+'\nBackup: '+(backupFound?'JA':'NEIN');
+  };
+};
+
+document.addEventListener('click',function(e){
+  var tab=e.target&&e.target.closest?e.target.closest('.tab'):null;if(!tab)return;
+  if(tab.dataset.tab==='quality'){e.preventDefault();e.stopImmediatePropagation();showQuality111();return;}
+  window.__ki21QualityViewActive=false;
+},true);
+
+var previousRender=window.render;
+if(typeof previousRender==='function'){
+  window.render=function(){
+    if(window.__ki21QualityViewActive){ensureQualityTab111();window.renderQuality();return;}
+    var ret=previousRender.apply(this,arguments);ensureQualityTab111();return ret;
+  };
+}
+function install(){ensureQualityTab111();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+setTimeout(install,0);setTimeout(install,300);
 })();
 </script>
 
