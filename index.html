@@ -7521,5 +7521,110 @@ setTimeout(bind,0);setTimeout(bind,200);setTimeout(bind,800);
 })();
 </script>
 
+<style id="ki21-11-1-platform-stability-css">
+.ki21-stability-banner{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:2147483646;background:#281315;border:1px solid rgba(255,90,90,.55);border-radius:14px;padding:12px;color:#fff;box-shadow:0 12px 38px rgba(0,0,0,.45)}
+.ki21-stability-banner strong{display:block;margin-bottom:4px}.ki21-stability-banner button{margin-top:8px}
+.quality-inline-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.quality-inline-grid .card{margin:0}
+.quality-log{width:100%;min-height:42vh;box-sizing:border-box;margin-top:12px;background:#080d14;color:#e9eef6;border:1px solid var(--line);border-radius:14px;padding:12px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+@media(max-width:620px){.quality-inline-grid{grid-template-columns:1fr}.tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs .tab{flex:0 0 auto;min-width:138px}}
+</style>
+<script id="ki21-11-1-platform-stability">
+(function(){
+'use strict';
+var V='KI21 Core 11.1.0 · Platform Stability';
+try{VERSION=V}catch(_e){}
+window.KI21_VERSION=V;
+document.title=V;
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent='Core 11.1.0';
+var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
+var diag=[];
+function log(type,message,detail){
+  diag.push({time:new Date().toISOString(),type:type,message:String(message||''),detail:String(detail||'')});
+  if(diag.length>100)diag.shift();
+  try{sessionStorage.setItem('ki21_platform_diagnostics_v1',JSON.stringify(diag))}catch(_e){}
+}
+function storageHealth(){
+  var out={local:false,session:false,portfolio:false,backup:false,error:''};
+  try{var k='__ki21_probe__';localStorage.setItem(k,'1');out.local=localStorage.getItem(k)==='1';localStorage.removeItem(k)}catch(e){out.error='localStorage: '+e.message;log('storage',out.error)}
+  try{var s='__ki21_session_probe__';sessionStorage.setItem(s,'1');out.session=sessionStorage.getItem(s)==='1';sessionStorage.removeItem(s)}catch(e){out.error+=(out.error?' | ':'')+'sessionStorage: '+e.message;log('storage',e.message)}
+  try{out.portfolio=!!localStorage.getItem('ki21_portfolio_stable_v1');out.backup=!!localStorage.getItem('ki21_portfolio_stable_v1_backup')}catch(_e){}
+  return out;
+}
+function showFatal(message,detail){
+  log('runtime',message,detail);
+  var old=document.getElementById('ki21StabilityBanner');if(old)old.remove();
+  var b=document.createElement('div');b.id='ki21StabilityBanner';b.className='ki21-stability-banner';
+  b.innerHTML='<strong>KI21 hat einen Laufzeitfehler abgefangen</strong><div>'+safe(message)+'</div><button type="button" class="btn secondary">Diagnose öffnen</button>';
+  document.body.appendChild(b);b.querySelector('button').onclick=function(){activateQuality();};
+}
+function safe(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
+window.addEventListener('error',function(e){showFatal(e.message||'Unbekannter JavaScript-Fehler',(e.filename||'')+':'+(e.lineno||''))});
+window.addEventListener('unhandledrejection',function(e){showFatal('Nicht behandelter Programmfehler',e.reason&&e.reason.message?e.reason.message:String(e.reason||''))});
+
+// Protect AI settings from Safari storage exceptions.
+if(typeof window.getAISettings==='function'){
+  var oldGetAI=window.getAISettings;window.getAISettings=function(){try{return oldGetAI.apply(this,arguments)}catch(e){log('storage','AI-Einstellungen konnten nicht gelesen werden',e.message);return{model:'claude-sonnet-4-5',apiKey:''}}};
+}
+if(typeof window.saveAISettings==='function'){
+  var oldSaveAI=window.saveAISettings;window.saveAISettings=function(){try{return oldSaveAI.apply(this,arguments)}catch(e){log('storage','AI-Einstellungen konnten nicht gespeichert werden',e.message);if(typeof toast==='function')toast('Speichern in Safari nicht möglich')}};
+}
+
+function ensureTab(){
+  var tabs=document.querySelector('.tabs');if(!tabs)return;
+  var btn=tabs.querySelector('[data-tab="quality"]');
+  if(!btn){btn=document.createElement('button');btn.type='button';btn.className='tab';btn.dataset.tab='quality';btn.textContent='Qualitätslabor';tabs.appendChild(btn)}
+  btn.classList.toggle('active',window.state&&state.activeTab==='quality');
+}
+function diagnosticsText(){
+  var h=storageHealth();
+  return ['KI21 PLATFORM DIAGNOSTICS',V,'Erstellt: '+new Date().toLocaleString('de-DE'),'Browser: '+navigator.userAgent,'localStorage: '+(h.local?'OK':'NICHT VERFÜGBAR'),'sessionStorage: '+(h.session?'OK':'NICHT VERFÜGBAR'),'Portfolio vorhanden: '+(h.portfolio?'JA':'NEIN'),'Backup vorhanden: '+(h.backup?'JA':'NEIN'),h.error?'Fehler: '+h.error:'Fehler: keine', '', 'LAUFZEITPROTOKOLL'].concat(diag.length?diag.map(function(x){return x.time+' | '+x.type+' | '+x.message+(x.detail?' | '+x.detail:'')}):['Keine Fehler protokolliert.']).join('\n');
+}
+function qualityStartHtml(){
+  var h=storageHealth();
+  return '<div class="card orange"><div class="kicker">KI21 Platform Stability</div><div class="headline">Autonomes Qualitätslabor</div><div class="body muted" style="margin-top:7px">Fest in die Anwendung integriert – ohne Popup und ohne Overlay. Safari, Chrome, Edge und Firefox verwenden denselben Ablauf.</div></div>'+
+  '<div class="quality-inline-grid"><div class="card '+(h.local?'green':'red')+'"><div class="kicker">Browser-Speicher</div><div class="headline">'+(h.local?'✅ verfügbar':'⚠️ eingeschränkt')+'</div><div class="body muted">Portfolio '+(h.portfolio?'gefunden':'nicht gefunden')+' · Backup '+(h.backup?'gefunden':'nicht gefunden')+'</div></div><div class="card violet"><div class="kicker">Fehlerdiagnose</div><div class="headline">'+diag.length+' protokollierte Hinweise</div><div class="body muted">Fehler werden sichtbar abgefangen, statt eine weiße Seite zu erzeugen.</div></div></div>'+
+  '<div class="actions"><button type="button" class="btn primary" id="q111Run">🧠 Qualitätslabor starten</button><button type="button" class="btn secondary" id="q111Diag">Diagnose anzeigen</button><button type="button" class="btn secondary" id="q111Reload">Portfolio neu laden</button></div><div id="q111Result"></div>';
+}
+function renderQuality(){
+  var view=document.getElementById('view');if(!view)return;
+  view.innerHTML=qualityStartHtml();bindQuality();
+}
+function bindQuality(){
+  var run=document.getElementById('q111Run');if(run)run.onclick=runQuality;
+  var dg=document.getElementById('q111Diag');if(dg)dg.onclick=function(){showText(diagnosticsText())};
+  var rl=document.getElementById('q111Reload');if(rl)rl.onclick=function(){
+    try{var recovered=(typeof readPortfolioKey==='function'&&(readPortfolioKey('ki21_portfolio_stable_v1')||readPortfolioKey('ki21_portfolio_stable_v1_backup')))||(typeof loadPortfolio==='function'?loadPortfolio():null);if(recovered&&recovered.opportunities){portfolio=recovered;state=portfolio.opportunities.find(function(x){return x.id===portfolio.activeId})||portfolio.opportunities[0];if(typeof render==='function')render();if(typeof toast==='function')toast('Portfolio neu geladen')}}catch(e){showFatal('Portfolio konnte nicht neu geladen werden',e.message)}
+  };
+}
+function showText(text){var result=document.getElementById('q111Result');if(!result)return;result.innerHTML='<textarea class="quality-log" readonly></textarea><div class="actions"><button type="button" class="btn secondary" id="q111CopyText">Text kopieren</button></div>';result.querySelector('textarea').value=text;result.querySelector('#q111CopyText').onclick=async function(){try{if(typeof copyTextReliable==='function')await copyTextReliable(text);else await navigator.clipboard.writeText(text);if(typeof toast==='function')toast('Bericht kopiert')}catch(e){log('clipboard','Kopieren fehlgeschlagen',e.message)}}}
+function runQuality(){
+  var result=document.getElementById('q111Result');if(!result)return;
+  result.innerHTML='<div class="card violet"><div class="headline">Qualitätslabor läuft …</div><div class="body muted">Golden Cases, Kontextintegrität und automatische Reparaturen werden geprüft.</div></div>';
+  setTimeout(function(){
+    try{
+      if(typeof window.ki211100BuildAutonomousQualityLab!=='function')throw new Error('Autonomous-Quality-Engine nicht gefunden');
+      var out=window.ki211100BuildAutonomousQualityLab();if(!out||!Array.isArray(out.results))throw new Error('Keine Qualitätsergebnisse erzeugt');
+      result.innerHTML='<div class="card '+(out.releaseReady?'green':'red')+'"><div class="kicker">Autonomes Release Gate</div><div class="headline">'+(out.releaseReady?'✅ Freigabefähig':'⚠️ Semantische Ausnahmen offen')+'</div><div class="body" style="margin-top:7px">'+out.total+' Fälle · kritisch '+out.critical+' · hoch '+out.high+' · mittel '+out.medium+' · autonom korrigiert '+out.repaired.length+'</div></div><div class="card violet"><div class="kicker">Dein Prüfaufwand</div><div class="headline">'+(out.manual.length?out.manual.length+' markierte Grenzfälle':'Keine manuelle Detailprüfung nötig')+'</div><div class="body muted" style="margin-top:7px">'+(out.manual.length?'Nur prüfen: '+safe(out.manual.join(', ')):'Alle Golden Cases und Kontextverbote sind erfüllt.')+'</div></div><div class="actions"><button type="button" class="btn primary" id="q111Copy">Kompaktbericht kopieren</button><button type="button" class="btn secondary" id="q111Show">Bericht anzeigen</button></div>';
+      document.getElementById('q111Copy').onclick=async function(){if(typeof copyTextReliable==='function')await copyTextReliable(out.text);if(typeof toast==='function')toast('Autonomous-Quality-Bericht kopiert')};
+      document.getElementById('q111Show').onclick=function(){showText(out.text)};
+    }catch(e){log('quality','Qualitätslabor fehlgeschlagen',e.message);result.innerHTML='<div class="card red"><div class="kicker">Startdiagnose</div><div class="headline">'+safe(e.message)+'</div><div class="body muted" style="margin-top:7px">Der Fehler wurde protokolliert. Die App bleibt bedienbar.</div></div><div class="actions"><button type="button" class="btn secondary" id="q111ErrorDiag">Diagnose anzeigen</button></div>';document.getElementById('q111ErrorDiag').onclick=function(){showText(diagnosticsText())}}
+  },30);
+}
+function activateQuality(){
+  try{if(window.state){state.activeTab='quality';try{if(typeof saveState==='function')saveState()}catch(e){log('storage','Tabstatus nicht gespeichert',e.message)}}if(typeof render==='function')render();else renderQuality()}catch(e){showFatal('Qualitätslabor konnte nicht geöffnet werden',e.message)}
+}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-tab="quality"]'):null;if(b){e.preventDefault();e.stopPropagation();activateQuality()}},true);
+
+var baseRender=window.render;
+if(typeof baseRender==='function'){
+  window.render=function(){var ret=baseRender.apply(this,arguments);ensureTab();if(window.state&&state.activeTab==='quality'){document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='quality')});renderQuality()}return ret};
+}
+function install(){ensureTab();if(window.state&&state.activeTab==='quality')renderQuality()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+setTimeout(install,0);setTimeout(install,250);
+log('startup','Platform Stability initialisiert',navigator.userAgent);
+})();
+</script>
+
 </body>
 </html>
