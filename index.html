@@ -7779,5 +7779,56 @@ document.addEventListener('click',function(ev){var b=ev.target&&ev.target.closes
 var h1121=document.getElementById('headerVersion');if(h1121)h1121.textContent='Core 11.2.2';var f1121=document.getElementById('footerVersion');if(f1121)f1121.textContent=V;
 })();
 </script>
+
+<script id="ki21-11-2-3-canonical-render-repair">
+(function(){
+'use strict';
+var V='KI21 Core 11.2.3 · Canonical Render Repair';
+try{VERSION=V}catch(_e){} window.KI21_VERSION=V;document.title=V;
+function syncLabels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 11.2.3';if(f)f.textContent=V;}
+function canonicalRender(){
+ try{
+  syncLabels();
+  if(window.__ki21QualityViewActive&&typeof window.renderQuality==='function'){
+   document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='quality')});
+   window.renderQuality();return;
+  }
+  if(!window.state)return;
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===state.activeTab)});
+  var blank=!state.company&&!state.opportunity&&!state.rawImport;
+  var name=document.getElementById('oppName'),status=document.getElementById('statusLine'),view=document.getElementById('view');
+  if(name)name.textContent=blank?'Keine Opportunity ausgewählt':((state.company||'Neue Opportunity')+' · '+(state.opportunity||'CRM-Import erforderlich'));
+  if(status)status.textContent=blank?'Opportunity auswählen oder neu importieren':(typeof statusText==='function'?statusText():'Opportunity bearbeiten');
+  if(!view)return;
+  if(blank&&!state.__importStarted){
+   view.innerHTML='<div class="card orange"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" data-action="open-opportunity-manager">Gespeicherte Opportunities</button><button class="btn secondary" data-action="new-opportunity">Neue Opportunity</button></div></div>';
+  }else if(state.activeTab==='cockpit') view.innerHTML=window.renderCockpit();
+  else if(state.activeTab==='process') view.innerHTML=window.renderProcess();
+  else view.innerHTML=window.renderInputs();
+  if(typeof bindView==='function')bindView();
+ }catch(err){
+  console.error('KI21 canonical render failed',err);
+  var v=document.getElementById('view');if(v)v.innerHTML='<div class="card red"><div class="kicker">Technische Diagnose</div><div class="headline">Ansicht konnte nicht aufgebaut werden</div><div class="body" style="margin-top:8px">'+String(err&&err.message||err)+'</div><div class="actions"><button class="btn secondary" onclick="location.reload()">App neu laden</button></div></div>';
+ }
+}
+window.render=canonicalRender;
+window.createOpportunity=function(){
+ try{
+  if(typeof closeTransientOverlays==='function')closeTransientOverlays();
+  var s=emptyState(false);s.activeTab='inputs';s.inputTab='crm';s.__importStarted=true;
+  portfolio.opportunities.push(s);portfolio.activeId=s.id;window.state=state=s;
+  if(typeof savePortfolio==='function')savePortfolio();
+  canonicalRender();
+  requestAnimationFrame(function(){var t=document.getElementById('crmText');if(t)t.focus()});
+  if(typeof toast==='function')toast('CRM-Import geöffnet');
+ }catch(err){console.error('KI21 create opportunity failed',err);alert('Neue Opportunity konnte nicht geöffnet werden: '+String(err&&err.message||err));}
+};
+// Rebind static navigation once, without inherited render wrappers.
+document.querySelectorAll('.tab').forEach(function(b){b.onclick=function(ev){ev.preventDefault();if(b.dataset.tab==='quality'){window.__ki21QualityViewActive=true;if(typeof window.renderQuality==='function')window.renderQuality();return;}window.__ki21QualityViewActive=false;state.activeTab=b.dataset.tab;if(typeof saveState==='function')saveState();canonicalRender();};});
+var opp=document.getElementById('oppName');if(opp)opp.onclick=function(ev){ev.preventDefault();ev.stopPropagation();if(typeof showOpportunityManager==='function')showOpportunityManager();};
+syncLabels();canonicalRender();
+})();
+</script>
+
 </body>
 </html>
