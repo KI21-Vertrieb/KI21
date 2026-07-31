@@ -8029,5 +8029,98 @@ labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')pa
 })();
 </script>
 
+
+<script id="ki21-12-1-0-hypothesis-decision-engine">
+(function(){
+'use strict';
+var V='KI21 Core 12.1.0 · Hypothesis Decision Engine';
+try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
+function esc2(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v)}catch(_e){return String(v==null?'':v)}}
+function num(v){v=Number(v||0);return isFinite(v)?v:0}
+function fmt(v){return num(v).toLocaleString('de-DE')}
+function rawParts(){var s=state||{},a=[];[s.rawImport,s.notes,s.description].forEach(function(x){if(x)a.push(String(x))});(s.evidence||[]).forEach(function(x){var v=x&&x.text||x;if(v)a.push(String(v))});return a}
+function cleanText(){var bad=/komplett neue|vollständigen end-to-end-test|bewusst realistisch aufgebaut|genug substanz für score|ohne künstliches extrem|testfall|test-szenario|crm-import\s*$/i;return rawParts().join('\n').split(/\n+/).map(function(x){return x.trim()}).filter(function(x){return x&&!bad.test(x)}).join('\n')}
+function flat(){return cleanText().replace(/\s+/g,' ').trim()}
+function hit(rx){return rx.test(flat())}
+function stakeholder(rx){return (state.stakeholders||[]).find(function(x){return rx.test([x.name,x.function,x.role,x.authority,x.influence,x.status].join(' '))})||null}
+function sentences(){return cleanText().split(/(?<=[.!?])\s+|\n+/).map(function(x){return x.trim()}).filter(Boolean)}
+function first(rx){var a=sentences();for(var i=0;i<a.length;i++)if(rx.test(a[i]))return a[i];return''}
+function flags(){return (state||{}).flags||{}}
+function metrics(){return (state||{}).metrics||{}}
+function classify(){var t=flat();
+ if(/pilot|proof of concept|\bpoc\b|testphase/i.test(t))return'Pilotentscheidung';
+ if(/ablösung|migration|wechsel vom|wettbewerber|incumbent|bestehende lösung ersetzen/i.test(t))return'Wettbewerbsablösung';
+ if(/bestandskunde|vertragserweiterung|zusätzliche module|mehrlizenzen|renewal|verlängerung/i.test(t))return'Bestandsausbau';
+ if(/procurement|einkauf|legal|vertragsprüfung|finales angebot|rabattforderung/i.test(t))return'Kommerzielle Abschlussphase';
+ if(/discovery|qualifizierung|erstgespräch|frühe phase/i.test(t))return'Frühe Discovery';
+ return'Strategischer B2B-Deal'}
+function evidence(){var s=state||{},m=metrics(),r=[];
+ function add(k,v,w){if(v)r.push({k:k,v:v,w:w||1})}
+ add('Unternehmen',s.company||s.account||s.customer,3);
+ add('Preis',num(m.price||((s.offer||{}).price))?fmt(m.price||((s.offer||{}).price))+' €':'',3);
+ add('Budget',num(m.budget)?fmt(m.budget)+' €':'',3);
+ add('Operativer Aufwand',num(m.hours)?fmt(m.hours)+' Stunden pro Monat':'',3);
+ add('Jährlicher Ausgangswert',num(m.recurringInternalCost||m.annualCost)?fmt(m.recurringInternalCost||m.annualCost)+' €':'',3);
+ var pain=first(/nacharbeit|forecast[- ]?fehler|verlust|verloren|verschoben|kosten|marge|stunden|risiko/i);add('Wirkungssignal',pain,2);
+ var buyer=stakeholder(/cfo|ceo|geschäftsführ|wirtschaft.*entscheider|budgetverantwort|investitionsfreigabe/i);if(buyer)add('Finale Entscheidungsrolle',buyer.name||buyer.function||buyer.role,3);
+ var champ=stakeholder(/champion|sponsor|initiator|treibend|fachlich.*verantwort/i);if(champ)add('Interner Treiber',champ.name||champ.function||champ.role,2);
+ return r.sort(function(a,b){return b.w-a.w}).slice(0,7)}
+function hypothesis(type){var f=flags(),m=metrics(),t=flat(),buyer=stakeholder(/cfo|ceo|geschäftsführ|wirtschaft.*entscheider|budgetverantwort|investitionsfreigabe/i),champ=stakeholder(/champion|sponsor|initiator|treibend|fachlich.*verantwort/i);
+ var h={title:'Der Deal ist fachlich plausibel, aber noch nicht entscheidungsfähig.',reason:'Mehrere positive Signale sind dokumentiert, doch es fehlt eine Kundenhandlung, die echtes Commitment beweist.',confidence:'mittel'};
+ if(type==='Pilotentscheidung'){
+   if(/rollout|skalierung|weitere nutzer|ausweitung/i.test(t))h={title:'Der eigentliche Deal ist nicht der Pilot, sondern die spätere Rollout-Entscheidung.',reason:'Der Pilot ist finanziell überschaubar und fachlich attraktiv. Das größere Risiko liegt darin, dass ein erfolgreicher Test ohne vorher definierte Entscheidungsfolge endet.',confidence:'hoch'};
+   else h={title:'Der Pilot droht zum unverbindlichen Lernprojekt zu werden.',reason:'Ein Test kann Zustimmung erzeugen, ohne eine Kaufentscheidung auszulösen. Entscheidend ist deshalb nicht nur, was gemessen wird, sondern welche Folgeentscheidung an das Ergebnis gebunden ist.',confidence:'hoch'};
+ }
+ if(type==='Wettbewerbsablösung')h={title:'Der Status quo ist derzeit wahrscheinlich stärker als der Wettbewerber.',reason:'Eine Ablösung scheitert selten an fehlenden Funktionen, sondern daran, dass Wechselrisiko und interne Belastung größer wirken als der zusätzliche Nutzen.',confidence:'hoch'};
+ if(type==='Bestandsausbau')h={title:'Der bestehende Vertrag reduziert den Veränderungsdruck für die Erweiterung.',reason:'Zufriedenheit mit dem Bestand schafft Vertrauen, liefert aber allein keinen zwingenden Grund für zusätzliche Investitionen.',confidence:'mittel'};
+ if(num(m.budget)>0&&f.economicBuyerOpen)h={title:'Budget ist nicht der Engpass; interne Priorität und Verantwortung sind es.',reason:'Ein finanzieller Rahmen ist vorhanden, aber die finale wirtschaftliche Rolle trägt die Entscheidung noch nicht aktiv. Das spricht gegen ein Preisproblem und für fehlende interne Verbindlichkeit.',confidence:'hoch'};
+ if(champ&&f.economicBuyerOpen)h.reason+=' Der interne Treiber bewegt den Deal fachlich, kann die fehlende wirtschaftliche Autorisierung jedoch nicht ersetzen.';
+ return h}
+function contradictions(type){var f=flags(),m=metrics(),t=flat(),a=[];
+ if(num(m.budget)>0&&f.economicBuyerOpen)a.push('Ein Budgetrahmen existiert, aber die Person mit finaler Ergebnisverantwortung ist nicht aktiv im Entscheidungsprozess.');
+ if((num(m.hours)>0||/dringend|kritisch|erheblich|massiv/i.test(t))&&/offen|unverbindlich|verschoben|kein termin|keine priorität/i.test(t))a.push('Der dokumentierte Handlungsdruck erzeugt bislang keine entsprechend verbindliche Kundenhandlung.');
+ if(/technisch.*(?:machbar|geklärt|bestätigt)|security.*(?:grün|freigegeben)|integration.*(?:möglich|geklärt)/i.test(t)&&(f.approvalOpen||f.successOpen))a.push('Die technische Reife liegt vor der wirtschaftlichen und organisatorischen Entscheidungsreife.');
+ if(type==='Pilotentscheidung'&&/rollout|skalierung|weitere nutzer/i.test(t)&&f.successOpen)a.push('Ein größerer Rollout wird bereits in Aussicht gestellt, obwohl die messbare Schwelle für diese Folgeentscheidung noch offen ist.');
+ if(!a.length)a.push('Positive Einzelsignale ergeben noch keine belastbare Kaufbewegung, solange kein nächster Schritt mit Ressource, Termin und Konsequenz zugesagt ist.');
+ return a.slice(0,3)}
+function challenge(type,h){var f=flags(),t=flat();
+ if(type==='Pilotentscheidung')return'Keine weitere allgemeine Discovery und keine Erweiterung des Pilots. Zuerst die Entscheidungslogik nach dem Pilot verbindlich machen.';
+ if(type==='Wettbewerbsablösung')return'Nicht weiter über Funktionsbreite verkaufen. Zuerst beweisen, warum das Verbleiben beim Status quo wirtschaftlich oder operativ teurer ist als der Wechsel.';
+ if(type==='Bestandsausbau')return'Die Erweiterung nicht als automatische Fortsetzung behandeln. Sie muss einen eigenen, zusätzlich messbaren Business Case tragen.';
+ if(f.economicBuyerOpen)return'Nicht über Preis oder Detailumfang verhandeln, bevor die finale wirtschaftliche Rolle den Handlungsdruck und die Entscheidungslogik persönlich bestätigt hat.';
+ return'Nicht mehr Aktivität erzeugen. Nur noch Schritte verfolgen, die nachweisbares Kunden-Commitment schaffen.'}
+function infoGain(type){var f=flags(),q=[];
+ if(type==='Pilotentscheidung')q.push('Welche konkrete Folgeentscheidung wird bei Erreichen welcher messbaren Zielwerte automatisch ausgelöst?');
+ if(type==='Wettbewerbsablösung')q.push('Welcher Schaden des Status quo ist groß genug, um Wechselaufwand und politisches Risiko intern zu rechtfertigen?');
+ if(type==='Bestandsausbau')q.push('Welcher zusätzliche Effekt entsteht ausschließlich durch die Erweiterung und nicht bereits durch den bestehenden Vertrag?');
+ if(f.economicBuyerOpen)q.push('Welches Ergebnis oder Risiko muss die finale Entscheidungsrolle persönlich anerkennen, damit sie die Investition aktiv vertritt?');
+ if(f.successOpen)q.push('Welche eine Messgröße würde bei Bestätigung die Kaufwahrscheinlichkeit am stärksten verändern?');
+ if(f.approvalOpen)q.push('Welche konkrete Person kann die Freigabe noch stoppen, obwohl fachlich bereits Zustimmung besteht?');
+ return q.slice(0,2)}
+function action(type){var f=flags(),t=flat(),buyer=stakeholder(/cfo|ceo|geschäftsführ|wirtschaft.*entscheider|budgetverantwort|investitionsfreigabe/i),bn=buyer?(buyer.name||buyer.function||buyer.role):'der finalen wirtschaftlichen Entscheidungsrolle';
+ if(type==='Pilotentscheidung'&&/rollout|skalierung|weitere nutzer/i.test(t))return'Vereinbare einen Entscheidungstermin mit '+bn+' und dem fachlichen Sponsor. Ergebnis des Termins muss eine schriftliche Wenn-dann-Regel sein: Zielwert erreicht → Rollout-Entscheidung mit Termin, Umfang und Verantwortlichem.';
+ if(type==='Pilotentscheidung')return'Definiere vor dem Pilot exakt drei Testfälle, je eine Baseline und Zielgröße sowie die daran gebundene Kaufentscheidung. Ohne diese Regel den Pilot nicht starten.';
+ if(type==='Wettbewerbsablösung')return'Ersetze die nächste Produktdemo durch einen Beweistermin zu genau einem Wechselgrund: heutiger Schaden, gewünschte Verbesserung, Nachweis und akzeptierter Wechselaufwand.';
+ if(type==='Bestandsausbau')return'Lasse den zusätzlichen Nutzen der Erweiterung separat bestätigen und quantifizieren. Erst danach Umfang, Preis und Rollout verhandeln.';
+ if(f.economicBuyerOpen)return'Ersetze den nächsten Status-Call durch ein 45-minütiges Entscheidungsgespräch mit '+bn+'. Agenda: wirtschaftlicher Schaden, Konsequenz des Nichtstuns, Freigabekriterium und verbindlicher Beschlusstermin.';
+ return'Mache den nächsten Schritt zu einem Commitment-Gate: konkrete Kundenressource, fester Termin, klarer Entscheider und definierte Konsequenz.'}
+function build(){var sc;try{sc=typeof scores==='function'?scores():{score:0,forecast:0}}catch(_e){sc={score:0,forecast:0}}var type=classify(),ev=evidence(),h=hypothesis(type),cs=contradictions(type),ig=infoGain(type);return{type:type,evidence:ev,h:h,contradictions:cs,challenge:challenge(type,h),questions:ig,action:action(type),score:num(sc.score),forecast:num(sc.forecast),id:String((state||{}).id||'')}}
+window.renderCockpit=function(){var d=build(),depth=Math.max(0,Math.min(100,Math.round((d.evidence.length/7)*55+d.contradictions.length*8+d.questions.length*10)));
+ function card(title,icon,body,cl){return '<section class="ki21-panel '+(cl||'')+'"><div class="ki21-panel-title"><span class="ki21-panel-icon">'+icon+'</span>'+title+'</div>'+body+'</section>'}
+ function items(a){return '<div class="ki21-action-list">'+a.map(function(x){return '<div class="ki21-action-item"><div>'+esc2(x)+'</div></div>'}).join('')+'</div>'}
+ var ev=items(d.evidence.map(function(x){return '<strong>'+esc2(x.k)+':</strong> '+esc2(x.v)}));
+ return '<div class="ki21-exec-shell" data-ki21-opportunity-id="'+esc2(d.id)+'">'+
+ '<section class="ki21-exec-hero"><div class="ki21-eyebrow">KI21 Hypothesis Engine · '+esc2(d.type)+'</div><div class="ki21-hero-title">'+esc2(d.h.title)+'</div><div style="margin-top:18px;font-size:1.05rem;line-height:1.55;color:var(--muted,#a9b7c7)">'+esc2(d.h.reason)+'</div><div class="ki21-hero-foot"><span class="ki21-state-pill"><span class="ki21-state-dot"></span>HYPOTHESE · '+esc2(d.h.confidence.toUpperCase())+'</span></div></section>'+
+ '<section class="ki21-score-grid"><button type="button" class="ki21-score-card" data-ki21-score="score"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Opportunity Score</div><div class="ki21-score-value">'+Math.round(d.score)+'%</div><div class="ki21-score-meta">Deal-Qualität</div><div class="ki21-score-bar"><span style="width:'+Math.round(d.score)+'%"></span></div></button><button type="button" class="ki21-score-card forecast" data-ki21-score="forecast"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Forecast</div><div class="ki21-score-value">'+Math.round(d.forecast)+'%</div><div class="ki21-score-meta">Abschlussnähe</div><div class="ki21-score-bar"><span style="width:'+Math.round(d.forecast)+'%"></span></div></button><button type="button" class="ki21-score-card health" data-ki21-score="health"><span class="ki21-score-arrow">›</span><div class="ki21-score-label">Evidence Depth</div><div class="ki21-score-value">'+depth+'%</div><div class="ki21-score-meta">verwertete Signale</div><div class="ki21-score-bar"><span style="width:'+depth+'%"></span></div></button></section>'+
+ card('Strategie-Challenge','!','<div class="ki21-decision-text">'+esc2(d.challenge)+'</div>','ki21-bottleneck')+
+ '<section class="ki21-decision-grid">'+card('Widersprüche im Deal','≠',items(d.contradictions),'')+card('Höchster Informationsgewinn','?',items(d.questions),'')+'</section>'+
+ card('Nächster verbindlicher Kundenschritt','→','<div class="ki21-decision-text">'+esc2(d.action)+'</div>','ki21-action-card')+
+ card('Belege für diese Hypothese','◇',ev,'')+
+ '<div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>'}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 12.1.0';if(f)f.textContent=V}
+labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 12.1.0 refresh failed',err)}
+})();
+
+</script>
 </body>
 </html>
