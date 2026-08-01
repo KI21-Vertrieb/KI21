@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>KI21 Core 14.2.1 · Authoritative Version Repair</title>
+<title>KI21 Core 14.2.2 · Stable Runtime Gate</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -40,12 +40,30 @@
 </script>
 </head>
 <body>
+<script id="ki21-stable-runtime-gate">
+(function(){
+  window.__KI21_RELEASE_GATE__={version:'14.2.2',started:false,rendered:false,errors:[]};
+  function showFatal(msg){
+    try{
+      var old=document.getElementById('ki21FatalGate'); if(old)return;
+      var box=document.createElement('div');box.id='ki21FatalGate';
+      box.style.cssText='position:fixed;inset:0;z-index:99999;background:#080c12;color:#f4f7fb;padding:24px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+      box.innerHTML='<div style="max-width:680px;margin:8vh auto;border:1px solid #49313a;border-radius:18px;padding:20px;background:#111722"><div style="color:#ff7b72;font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-size:12px">Technische Diagnose</div><h2 style="margin:12px 0">KI21 konnte nicht vollständig starten</h2><div style="color:#cbd4df;line-height:1.5">'+String(msg||'Unbekannter Startfehler').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</div><button onclick="location.reload()" style="margin-top:18px;width:100%;min-height:46px;border-radius:12px;border:1px solid #ff7a1a;background:#ff7a1a;color:#fff;font-weight:900">App neu laden</button></div>';
+      document.body.appendChild(box);
+    }catch(_e){}
+  }
+  window.addEventListener('error',function(e){window.__KI21_RELEASE_GATE__.errors.push(String(e.message||e.error||'Fehler'));setTimeout(function(){if(!window.__KI21_RELEASE_GATE__.rendered)showFatal(e.message)},0)});
+  window.addEventListener('unhandledrejection',function(e){var m=String(e.reason&&e.reason.message||e.reason||'Promise-Fehler');window.__KI21_RELEASE_GATE__.errors.push(m);setTimeout(function(){if(!window.__KI21_RELEASE_GATE__.rendered)showFatal(m)},0)});
+  window.addEventListener('DOMContentLoaded',function(){window.__KI21_RELEASE_GATE__.started=true;setTimeout(function(){var v=document.getElementById('view');if(v&&v.children.length){window.__KI21_RELEASE_GATE__.rendered=true}else showFatal('Render-Gate nicht bestanden: Hauptansicht blieb leer.')},1800)},{once:true});
+})();
+</script>
+
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 14.2.1</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 14.2.2</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 14.2.1 · Authoritative Version Repair</div>
+<div class="footer" id="footerVersion">KI21 Core 14.2.2 · Stable Runtime Gate</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
@@ -58,7 +76,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-let VERSION='KI21 Core 14.2.1 · Authoritative Version Repair';
+var VERSION='KI21 Core 14.2.2 · Stable Runtime Gate';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -7796,9 +7814,9 @@ var h1121=document.getElementById('headerVersion');if(h1121)h1121.textContent='C
 <script id="ki21-11-2-5-navigation-state-repair">
 (function(){
 'use strict';
-var V='KI21 Core 14.2.1 · Authoritative Version Repair';
+var V='KI21 Core 14.2.2 · Stable Runtime Gate';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
-function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 14.2.1';if(f)f.textContent=V;}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 14.2.2';if(f)f.textContent=V;}
 function active(){try{return state}catch(_e){return window.state||null}}
 function persist(){
  var s=active();if(!s)return;
@@ -8131,7 +8149,7 @@ window.renderCockpit=function(){var d=build(),depth=Math.max(0,Math.min(100,Math
  card('Belege für diese Hypothese','◇',ev,'')+
  '<div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>'}
 function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 12.1.0';if(f)f.textContent=V}
-labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 14.2.1 refresh failed',err)}
+labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 14.2.2 refresh failed',err)}
 })();
 
 </script>
@@ -8139,10 +8157,10 @@ labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')pa
 <script>
 (function(){
 'use strict';
-var V='KI21 Core 14.2.1 · Authoritative Version Repair';
+var V='KI21 Core 14.2.2 · Stable Runtime Gate';
 window.KI21_VERSION=V; document.title=V;
 function sync(){
- try{var h=document.getElementById('headerVersion');if(h)h.textContent='Core 14.2.1'}catch(_){}
+ try{var h=document.getElementById('headerVersion');if(h)h.textContent='Core 14.2.2'}catch(_){}
  try{var f=document.getElementById('footerVersion');if(f)f.textContent=V}catch(_){}
 }
 function fatal(msg){
@@ -8158,7 +8176,7 @@ function boot(){
   if(typeof render==='function'){render();sync()}
   else if(typeof paint==='function'){paint();sync()}
   else throw new Error('Keine Render-Funktion gefunden');
- }catch(e){console.error('KI21 14.2.1 boot failed',e);fatal(e&&e.message)}
+ }catch(e){console.error('KI21 14.2.2 boot failed',e);fatal(e&&e.message)}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);
 setTimeout(function(){sync();if(document.body&&!document.body.textContent.trim())fatal((window.__KI21_BOOT_ERRORS__||[]).join(' | ')||'Leerer Bildschirm erkannt')},1800);
@@ -8172,7 +8190,7 @@ setTimeout(function(){sync();if(document.body&&!document.body.textContent.trim()
 <script id="ki21-13-0-decision-intelligence-platform">
 (function(){
 'use strict';
-var V='KI21 Core 14.2.1 · Authoritative Version Repair';
+var V='KI21 Core 14.2.2 · Stable Runtime Gate';
 window.KI21_VERSION=V;document.title=V;
 function E(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}catch(_){return String(v==null?'':v)}}
 function N(v){v=Number(v||0);return isFinite(v)?v:0}
@@ -8210,8 +8228,8 @@ window.renderCockpit=function(){var d=model(),depth=Math.min(100,Math.round(d.fa
 window.renderProcess=function(){var d=model();return '<div class="card ki21-journey-intro"><div class="kicker">Dynamische Deal Journey · '+E(d.type)+'</div><div class="headline">Diese Journey wurde aus der Deal-DNA abgeleitet.</div><div class="body muted">Nicht jede Opportunity durchläuft dieselben Phasen. Gezeigt werden nur die Entscheidungsstufen, die für diesen Deal relevant sind.</div></div><div class="ki21-journey-grid">'+d.journey.map(function(x,i){return '<section class="ki21-journey-card '+(i===0?'open':'')+'"><button class="ki21-journey-head" type="button"><span class="ki21-journey-num">'+(i+1)+'</span><span class="ki21-journey-title">'+E(x[0])+'</span><span class="ki21-journey-status">'+(i===0?'jetzt relevant':'nachgelagert')+'</span><span class="ki21-journey-arrow">›</span></button><div class="ki21-journey-body"><div class="ki21-journey-section"><h4>Ziel</h4><p>'+E(x[1])+'</p></div><div class="ki21-journey-section"><h4>Exit-Kriterium</h4><p>'+E(x[2])+'</p></div></div></section>'}).join('')+'</div>'}
 function bindJourney(){document.querySelectorAll('.ki21-journey-head').forEach(function(b){b.onclick=function(){var c=b.closest('.ki21-journey-card');if(c)c.classList.toggle('open')}})}
 var oldBind=window.bindView;window.bindView=function(){try{if(typeof oldBind==='function')oldBind()}catch(_){ }bindJourney()};
-function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 14.2.1';if(f)f.textContent=V}
-function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();sync();bindJourney()}catch(e){console.error('KI21 14.2.1 boot failed',e)}}
+function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent='Core 14.2.2';if(f)f.textContent=V}
+function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();sync();bindJourney()}catch(e){console.error('KI21 14.2.2 boot failed',e)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);
 })();
 </script>
@@ -8220,10 +8238,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="ki21-14-authoritative-runtime">
 (function(){
   'use strict';
-  var VERSION='KI21 Core 14.2.1 · Authoritative Version Repair';
-  var SHORT='Core 14.2.1';
+  var VERSION='KI21 Core 14.2.2 · Stable Runtime Gate';
+  var SHORT='Core 14.2.2';
   window.KI21_VERSION=VERSION;
-  window.KI21_RELEASE={version:'14.2.1',name:'Authoritative Version Repair',built:'2026-07-31'};
+  window.KI21_RELEASE={version:'14.2.2',name:'Stable Runtime Gate',built:'2026-07-31'};
   function applyVersion(){
     try{ document.title=VERSION; }catch(_e){}
     try{ var h=document.getElementById('headerVersion'); if(h&&h.textContent!==SHORT) h.textContent=SHORT; }catch(_e){}
@@ -8249,7 +8267,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(app&&app.innerHTML.trim()===''){
         if(typeof render==='function')render(); else if(typeof paint==='function')paint();
       }
-    }catch(err){ console.error('KI21 14.2.1 integrity recovery failed',err); }
+    }catch(err){ console.error('KI21 14.2.2 integrity recovery failed',err); }
     applyVersion();
   }
   function boot(){
@@ -8285,8 +8303,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="ki21-14-1-explainable-journey-engine">
 (function(){
 'use strict';
-var VERSION='KI21 Core 14.2.1 · Authoritative Version Repair',SHORT='Core 14.2.1';
-window.KI21_VERSION=VERSION;window.KI21_RELEASE={version:'14.2.1',name:'Authoritative Version Repair',built:'2026-07-31'};
+var VERSION='KI21 Core 14.2.2 · Stable Runtime Gate',SHORT='Core 14.2.2';
+window.KI21_VERSION=VERSION;window.KI21_RELEASE={version:'14.2.2',name:'Stable Runtime Gate',built:'2026-07-31'};
 function esc2(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c})}
 function st(){return window.state||{}}
 function source(){var s=st(),a=[];[s.rawImport,s.notes,s.description,s.summary].forEach(function(x){if(x)a.push(String(x))});(s.evidence||[]).forEach(function(x){var t=x&&x.text||x;if(t)a.push(String(t))});return a.join('\n').replace(/<[^>]+>/g,' ')}
@@ -8320,7 +8338,7 @@ window.renderProcess=function(){var ps=phases(),d=dna(),top=ps[0]||{},avg=Math.r
 function bind(){document.querySelectorAll('.ki21-journey-head').forEach(function(b){b.onclick=function(){var c=b.closest('.ki21-journey-card');if(c)c.classList.toggle('open')}})}
 var prior=window.bindView;window.bindView=function(){try{if(typeof prior==='function')prior()}catch(_e){}bind()};
 function sync(){try{document.title=VERSION;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=VERSION}catch(_e){}}
-function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();bind();sync()}catch(e){console.error('KI21 14.2.1 boot failed',e)}}
+function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();bind();sync()}catch(e){console.error('KI21 14.2.2 boot failed',e)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);setInterval(sync,1200);
 })();
 </script>
@@ -8342,8 +8360,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="ki21-14-2-decision-narrative-runtime">
 (function(){
 'use strict';
-var RELEASE='KI21 Core 14.2.1 · Authoritative Version Repair';
-var SHORT='Core 14.2.1';
+var RELEASE='KI21 Core 14.2.2 · Stable Runtime Gate';
+var SHORT='Core 14.2.2';
 try{VERSION=RELEASE}catch(_e){}
 window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'14.2.0',name:'Decision Narrative Engine',built:'2026-07-31'};
@@ -8394,8 +8412,8 @@ setInterval(sync,1500);
 <script id="ki21AuthoritativeVersionGuard">
 (function(){
   'use strict';
-  var V='KI21 Core 14.2.1 · Authoritative Version Repair';
-  var H='Core 14.2.1';
+  var V='KI21 Core 14.2.2 · Stable Runtime Gate';
+  var H='Core 14.2.2';
   try{ VERSION=V; }catch(_){ window.VERSION=V; }
   window.KI21_VERSION=V;
   function forceVersion(){
