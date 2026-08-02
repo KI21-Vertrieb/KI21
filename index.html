@@ -8861,5 +8861,67 @@ window.addEventListener('pageshow',boot);
 })();
 </script>
 
+
+<script id="ki21-1520-runtime-isolation">
+(function(){
+'use strict';
+var RELEASE='KI21 Core 15.2.0 · Runtime Isolation & Evidence Reset';
+var SHORT='Core 15.2.0';
+function syncVersion(){
+  try{window.VERSION=RELEASE;VERSION=RELEASE}catch(_e){}
+  window.KI21_VERSION=RELEASE;
+  window.KI21_RELEASE={version:'15.2.0',name:'Runtime Isolation & Evidence Reset',built:'2026-08-02'};
+  document.title=RELEASE;
+  var h=document.getElementById('headerVersion');if(h)h.textContent=SHORT;
+  var f=document.getElementById('footerVersion');if(f)f.textContent=RELEASE;
+}
+function invalidTokens(text){return (String(text||'').match(/\b(?:undefined|null|NaN)\b/g)||[]).length;}
+function duplicateCount(lines){
+  if(typeof window.ki2118DuplicateCount==='function')return window.ki2118DuplicateCount(lines);
+  var seen=new Set(),n=0;lines.forEach(function(x){var k=String(x||'').trim().toLowerCase();if(!k)return;if(seen.has(k))n++;else seen.add(k)});return n;
+}
+window.ki2118EvaluateCase=function(tc,index){
+  var originalLexical;try{originalLexical=state}catch(_e){originalLexical=undefined}
+  var originalWindow=window.state;
+  var t0=performance.now(),testState=null,report='',error='';
+  try{
+    testState=emptyState(false);
+    var parsed=parseImport(tc.raw);
+    applyParsed(testState,parsed);
+    repairEconomicMetrics(testState);
+    testState.rawImport=tc.raw;
+    testState.__ki21CaseId=tc.id;
+    testState.__ki21RuntimeId='15.2.0-'+tc.id+'-'+index+'-'+Date.now();
+    state=testState;
+    window.state=testState;
+    report=window.fullReport?window.fullReport():fullReport();
+  }catch(e){error=String(e&&e.stack||e)}finally{
+    try{state=originalLexical}catch(_e){}
+    window.state=originalWindow;
+  }
+  var areaCount=(report.match(/^--- .+ ---$/gm)||[]).length;
+  var badTokens=invalidTokens(report);
+  var nextLines=(report.match(/^Nächster Kundenschritt[^:]*:\s*(.+)$/gm)||[]).map(function(x){return x.replace(/^.*?:\s*/,'')});
+  var executiveActions=(report.match(/^\d+\.\s+(.+)$/gm)||[]).map(function(x){return x.replace(/^\d+\.\s+/,'')});
+  var duplicates=duplicateCount(nextLines.concat(executiveActions));
+  var companyOk=!!(testState&&testState.company&&report.indexOf(String(testState.company))>=0);
+  var opportunityOk=!!(testState&&testState.opportunity&&report.indexOf(String(testState.opportunity))>=0);
+  var importOk=!!(tc.raw&&report.indexOf(String(tc.raw).slice(0,80))>=0);
+  var noPlaceholders=!/\b(?:undefined|null|NaN)\b/.test(report)&&!/Möglicher Rollout-Owner:\s*(?:$|undefined)/m.test(report);
+  var hasScore=/Opportunity Score:\s*\d+%/.test(report)||/Berechneter Opportunity Score:\s*\d+%/.test(report);
+  var hasForecast=/Forecast:\s*\d+%/.test(report)||/Berechneter Forecast:\s*\d+%/.test(report);
+  var checks=[!error,companyOk,opportunityOk,importOk,noPlaceholders,hasScore,hasForecast,duplicates<=2];
+  var score={score:0,forecast:0};
+  if(testState){
+    var oldL;try{oldL=state}catch(_e){oldL=undefined}var oldW=window.state;
+    try{state=testState;window.state=testState;score=window.scores?window.scores():scores()}catch(_e){}finally{try{state=oldL}catch(_x){}window.state=oldW}
+  }
+  return {tc:tc,index:index,report:report,error:error,elapsed:Math.round(performance.now()-t0),areaCount:areaCount,badTokens:badTokens,duplicates:duplicates,points:checks.filter(Boolean).length,max:checks.length,passed:checks.every(Boolean),score:score,runtimeId:testState&&testState.__ki21RuntimeId||''};
+};
+function boot(){syncVersion();try{if(typeof render==='function')render()}catch(e){console.error('KI21 15.2.0 boot',e)}syncVersion();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);
+window.addEventListener('pageshow',syncVersion);
+})();
+</script>
 </body>
 </html>
