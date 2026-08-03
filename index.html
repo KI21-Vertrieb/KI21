@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>KI21 Core 18.0.0 · Product Edition</title>
+<title>KI21 Core 19.0.0 · Intelligence Refinement</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -8786,6 +8786,102 @@ decisionBrief=function(){return String(BASE_DECISION_BRIEF()).replace(/KI21 Core
 window.KI21_SPICED_MODEL=spicedModel;window.KI21_SALES_PLAYBOOK=playbook;window.KI21_DYNAMIC_SPICED_QUESTIONS=questionSet;
 function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE;document.title=RELEASE;}
 function boot(){sync();try{if(typeof render==='function')render()}catch(e){console.error('KI21 Product Edition render',e)}sync();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="ki21-v1900-intelligence-refinement">
+(function(){
+'use strict';
+var RELEASE='KI21 Core 19.0.0 · Intelligence Refinement', SHORT='Core 19.0.0';
+try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
+window.KI21_RELEASE={version:'19.0.0',name:'Intelligence Refinement',built:'2026-08-03T11:45:00+02:00'};
+function allRaw(){return String((state&&state.rawImport)||'')+'\n'+String(((state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'));}
+function euro(v){return Number(v||0).toLocaleString('de-DE')+' €';}
+function explicitAnnual(){
+ var r=allRaw(), patterns=[
+  /(?:dokumentierter|bestätigter|quantifizierter)\s+(?:interner\s+)?(?:jahresaufwand|aufwand|zusatzaufwand)[^\d\n]{0,60}([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]+)\s*€\s*(?:pro\s+jahr|jährlich)/i,
+  /([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]+)\s*€\s*(?:dokumentierter|bestätigter|quantifizierter)?\s*(?:interner\s+)?(?:jahresaufwand|aufwand|zusatzaufwand)?\s*(?:pro\s+jahr|jährlich)/i,
+  /(?:wirtschaftlicher\s+ausgangswert|interner\s+aufwand)[^\d\n]{0,60}([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]+)\s*€/i
+ ];
+ for(var i=0;i<patterns.length;i++){var m=r.match(patterns[i]);if(m)return Number(String(m[1]).replace(/\./g,''));}
+ return 0;
+}
+function canonicalAnnual(){
+ var x=explicitAnnual();if(x)return x;
+ var m=(state&&state.metrics)||{};
+ return Number(m.documentedLastYearCost||m.annualCost||m.recurringInternalCost||(m.hours&&m.timeValue?m.hours*12*m.timeValue:0)||0);
+}
+function person(rx){return ((state&&state.stakeholders)||[]).find(function(x){return rx.test((x.function||'')+' '+(x.role||'')+' '+(x.status||'')+' '+(x.attitude||'')+' '+(x.authority||''));})||null;}
+function decisionPeople(){
+ var b=typeof buyer==='function'?buyer():null;
+ var people=((state&&state.stakeholders)||[]).filter(function(x){return /wirtschaftlich(?:e|er)?\s*(?:mit)?entscheider|finale\s+(?:investitions|budget)?freigabe|chief financial officer|chief revenue officer|\bcfo\b|\bcro\b/i.test((x.role||'')+' '+(x.authority||'')+' '+(x.function||''));});
+ if(b&&!people.includes(b))people.unshift(b);return people;
+}
+function statusModel(){
+ var r=allRaw(),annual=canonicalAnnual(),people=decisionPeople();
+ var hasDate=/entscheidung\s+bis\s*:|entscheidungstermin\s*:|vertragsende|renewal\s+date|budgetfreigabe\s+bis|vorstandstermin|go.?live\s+bis/i.test(r);
+ var hasTrigger=/vertragsverlängerung|ablösung|budgetjahr|kündigungsfrist|auslaufender vertrag|managemententscheidung|critical event/i.test(r);
+ var criteria=/entscheidungskriter|bewertungsmatrix|scorecard|gewichtung|tco|migrationsrisiko|adoption/i.test(r);
+ var process=/beschlussweg|entscheidungsprozess|finale freigabe|gemeinsame entscheidung|wer entscheidet/i.test(r);
+ var buyerOpen=!!(state.flags&&state.flags.economicBuyerOpen);
+ var C=hasDate?{level:'BESTÄTIGT',confirmed:true,summary:'Ein konkreter Entscheidungstermin oder verbindlicher Auslöser ist dokumentiert.'}:hasTrigger?{level:'TEILWEISE',confirmed:false,summary:'Ein Entscheidungsauslöser ist erkennbar, aber Termin, Owner oder Verbindlichkeit sind noch nicht vollständig bestätigt.'}:{level:'OFFEN',confirmed:false,summary:'Ein verbindlicher Handlungs- oder Entscheidungsauslöser ist noch nicht ausreichend bestätigt.'};
+ var D;
+ if(people.length&&criteria&&process&&!buyerOpen)D={level:'BESTÄTIGT',confirmed:true,summary:'Wirtschaftliche Entscheider, Kriterien und Beschlussweg sind belastbar bestätigt.'};
+ else if(people.length)D={level:'TEILWEISE',confirmed:false,summary:'Wirtschaftliche Entscheider sind identifiziert. Offen sind verbindliche Kriteriengewichtung, politischer Einfluss oder formaler Beschlussweg.'};
+ else D={level:'OFFEN',confirmed:false,summary:'Wirtschaftliche Entscheidungsrollen und Beschlussweg sind nicht eindeutig bestätigt.'};
+ return{
+  S:{level:(state.company&&state.opportunity)?'BESTÄTIGT':'OFFEN',confirmed:!!(state.company&&state.opportunity),summary:state.phase||'Opportunity und aktueller Kontext sind erfasst.'},
+  P:{level:annual?'BESTÄTIGT':'TEILWEISE',confirmed:!!annual,summary:annual?'Wirtschaftlicher Ausgangswert: '+euro(annual):'Problemrelevanz ist beschrieben, aber noch nicht belastbar quantifiziert.'},
+  I:{level:annual?'BESTÄTIGT':(/wirkung|folge|verlust|marge|ergebnis|verschoben/i.test(r)?'TEILWEISE':'OFFEN'),confirmed:!!annual,summary:annual?'Quantifizierte Wirkung: '+euro(annual)+' pro Jahr':'Auswirkungen sind beschrieben, aber noch nicht vollständig quantifiziert.'},
+  C:C,D:D
+ };
+}
+var OLD_MODEL=window.KI21_SPICED_MODEL, OLD_PLAYBOOK=window.KI21_SALES_PLAYBOOK;
+function refinedModel(){
+ var old=typeof OLD_MODEL==='function'?OLD_MODEL():{};var st=statusModel();
+ var qs=(old.questions||[]).map(function(q){var x=st[q.key]||{};return Object.assign({},q,{confirmed:!!x.confirmed,summary:x.summary||q.summary,status:x.level||'OFFEN'});});
+ qs.sort(function(a,b){var rank={D:1,C:2,I:3,P:4,S:5};return (rank[a.key]||9)-(rank[b.key]||9);});
+ var strongest=st.C.level!=='BESTÄTIGT'||st.D.level!=='BESTÄTIGT'?'Pain und Impact sind stark; Critical Event und Decision bestimmen den Fortschritt.':'SPICED ist belastbar bestätigt; jetzt zählt die konsequente Umsetzung des Beschlussplans.';
+ return Object.assign({},old,{status:st,questions:qs,gaps:qs.filter(function(x){return x.status!=='BESTÄTIGT';}).slice(0,3),strongest:strongest,completion:Object.keys(st).filter(function(k){return st[k].level==='BESTÄTIGT';}).length});
+}
+function refinedPlaybook(){
+ var old=typeof OLD_PLAYBOOK==='function'?OLD_PLAYBOOK():{},m=refinedModel(),sp=typeof sponsor==='function'?sponsor():null,b=typeof buyer==='function'?buyer():null;
+ var opponent=person(/befürworter\s+des\s+wettbewerbers|status.?quo|gegner|skeptiker/i),annual=canonicalAnnual();
+ var stakeholder=[];
+ if(sp)stakeholder.push('Champion: '+sp.name+' soll gemeinsam mit '+(b?b.name:'der wirtschaftlichen Entscheidungsrolle')+' die Bewertungskriterien moderieren, damit die Vergleichslogik nicht von einer einzelnen Status-quo-Position geprägt wird.');
+ else stakeholder.push('Champion: Einen fachlich glaubwürdigen internen Treiber benennen und mit klarem Mandat für die nächste Kundenentscheidung ausstatten.');
+ if(b)stakeholder.push('Economic Buyer: '+b.name+' soll den dokumentierten Ausgangswert von '+(annual?euro(annual):'noch zu bestätigender Höhe')+', die akzeptierte Entscheidungsschwelle und die formalen Freigabebedingungen bestätigen.');
+ else stakeholder.push('Economic Buyer: Wirtschaftliche Entscheidungsrolle, Entscheidungsschwelle und Freigabebedingungen verbindlich identifizieren.');
+ if(opponent)stakeholder.push('Status quo: '+opponent.name+'s Präferenz anhand derselben gewichteten Kriterien, einer identischen TCO-Basis und eines überprüfbaren Migrations- und Adoption-Nachweises transparent prüfen.');
+ else stakeholder.push('Kritische Rollen: mögliche Vetos, Eigeninteressen und fehlende Mandate ausdrücklich prüfen.');
+ var aha=(old.aha||[]).map(function(x){return x.replace(/(?:[0-9]{1,3}(?:\.[0-9]{3})+)\s*€/g,euro(annual));});
+ return Object.assign({},old,{stakeholder:stakeholder,aha:aha,questions:m.questions.filter(function(x){return x.status!=='BESTÄTIGT';}).slice(0,7)});
+}
+function spicedTextRefined(){var m=refinedModel(),labels={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};return ['S','P','I','C','D'].map(function(k){var x=m.status[k];return '• '+labels[k]+': '+x.level+' · '+x.summary;}).join('\n');}
+function playbookTextRefined(){
+ var p=refinedPlaybook(),m=refinedModel();
+ return 'KI21 SALES PLAYBOOK\n\nDEAL-THESE\n• '+m.strongest+'\n\nAHA-EFFEKTE\n'+(p.aha||[]).map(function(x){return'• '+x}).join('\n')+'\n\nNÄCHSTE GESPRÄCHSFRAGEN\n'+(p.questions||[]).map(function(x,i){return(i+1)+'. ['+x.label+'] '+x.question}).join('\n')+'\n\nSTAKEHOLDER-PLAN\n'+p.stakeholder.map(function(x){return'• '+x}).join('\n')+'\n\nBEWEISPLAN\n• '+p.proof+'\n\nVERHANDLUNGSLEITPLANKEN\n• '+p.negotiation+'\n\nABSCHLUSS- UND BESCHLUSSPLAN\n• '+p.close;
+}
+var BASE_FULL=fullReport,BASE_DECISION=decisionBrief,BASE_RENDER_INPUTS=renderInputs;
+fullReport=function(){
+ var r=String(BASE_FULL()).replace(/KI21 Core 18\.0\.0 · Product Edition/g,RELEASE);
+ r=r.replace(/=== SPICED DEAL INTELLIGENCE ===[\s\S]*?(?=\n\n=== SALES PLAYBOOK ===)/,'=== SPICED DEAL INTELLIGENCE ===\n'+spicedTextRefined());
+ r=r.replace(/=== SALES PLAYBOOK ===[\s\S]*?(?=\n\n=== EVIDENZ-INTEGRITÄT ===)/,'=== SALES PLAYBOOK ===\n'+playbookTextRefined());
+ return r;
+};
+decisionBrief=function(){return String(BASE_DECISION()).replace(/KI21 Core 18\.0\.0 · Product Edition/g,RELEASE);};
+renderInputs=function(){
+ var html=String(BASE_RENDER_INPUTS());if(state.inputTab!=='spin')return html;
+ var m=refinedModel();
+ ['S','P','I','C','D'].forEach(function(k){var x=m.status[k];var label={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'}[k];var rx=new RegExp(label+' · (?:BESTÄTIGT|OFFEN|TEILWEISE)','g');html=html.replace(rx,label+' · '+x.level);});
+ html=html.replace(/Wirtschaftlicher Ausgangswert:\s*[0-9.]+ €/, 'Wirtschaftlicher Ausgangswert: '+euro(canonicalAnnual())).replace(/Quantifizierte Wirkung:\s*[0-9.]+ € pro Jahr/,'Quantifizierte Wirkung: '+euro(canonicalAnnual())+' pro Jahr');
+ return html;
+};
+window.KI21_SPICED_MODEL=refinedModel;window.KI21_SALES_PLAYBOOK=refinedPlaybook;window.KI21_CANONICAL_ANNUAL_VALUE=canonicalAnnual;
+function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE;document.title=RELEASE;}
+function boot(){sync();try{if(typeof render==='function')render()}catch(e){console.error('KI21 Intelligence Refinement',e)}sync();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
