@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="de">
 <head>
+<script id="ki21-safari-observer-guard">
+(function(){
+  try{
+    window.__KI21_NATIVE_MUTATION_OBSERVER__=window.MutationObserver;
+    window.MutationObserver=function(){return{observe:function(){},disconnect:function(){},takeRecords:function(){return[]}}};
+  }catch(_e){}
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080c12">
@@ -8321,7 +8329,7 @@ function bind(){document.querySelectorAll('.ki21-journey-head').forEach(function
 var prior=window.bindView;window.bindView=function(){try{if(typeof prior==='function')prior()}catch(_e){}bind()};
 function sync(){try{document.title=VERSION;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=VERSION}catch(_e){}}
 function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();bind();sync()}catch(e){console.error('KI21 16.0.4 boot failed',e)}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);setInterval(sync,1200);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);/* KI21 20.3.2: periodic version loop disabled */
 })();
 </script>
 
@@ -9365,7 +9373,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="ki21-20-3-1-quality-evaluator-fix">
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'20.3.1',short:'Core 20.3.1',full:'KI21 Core 20.3.1 · Quality Evaluator Fix'});
+var RELEASE=Object.freeze({version:'20.3.2',short:'Core 20.3.2',full:'KI21 Core 20.3.2 · Safari Runtime Recovery'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function sync(){
  try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full}catch(_e){}
@@ -9390,5 +9398,33 @@ window.addEventListener('pageshow',sync);
 })();
 </script>
 
+
+<script id="ki21-20-3-2-safari-runtime-recovery">
+(function(){
+'use strict';
+var RELEASE=Object.freeze({version:'20.3.2',short:'Core 20.3.2',full:'KI21 Core 20.3.2 · Safari Runtime Recovery'});
+window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
+function sync(){
+ try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h&&h.textContent!==RELEASE.short)h.textContent=RELEASE.short;if(f&&f.textContent!==RELEASE.full)f.textContent=RELEASE.full}catch(_e){}
+}
+function clearStartupBlockers(){
+ try{document.documentElement.style.overflow='';document.body.style.overflow='';document.body.style.pointerEvents='';}catch(_e){}
+}
+function bindStatic(){
+ try{
+  document.querySelectorAll('.tab').forEach(function(btn){
+   if(btn.__ki2032Bound)return;btn.__ki2032Bound=true;
+   btn.addEventListener('click',function(){try{if(window.state){state.activeTab=btn.dataset.tab;if(typeof saveState==='function')saveState();if(typeof render==='function')render()}}catch(e){console.error('KI21 tab',e)}});
+  });
+ }catch(_e){}
+}
+function afterRender(){sync();clearStartupBlockers();bindStatic()}
+var originalRender=typeof window.render==='function'?window.render:null;
+if(originalRender){window.render=function(){var out=originalRender.apply(this,arguments);afterRender();return out}}
+window.addEventListener('pageshow',function(){afterRender()});
+window.addEventListener('focus',sync);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){afterRender()},{once:true});else afterRender();
+})();
+</script>
 </body>
 </html>
