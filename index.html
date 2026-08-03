@@ -41,11 +41,11 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 8.14.2</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 20.0.0</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 8.9.9 · CRM Import Entry Fix</div>
+<div class="footer" id="footerVersion">KI21 Core 20.0.0 · Product Candidate</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
@@ -9047,6 +9047,87 @@ renderInputs=function(){var html=String(BASE_RENDER());if(state.inputTab!=='spin
 window.KI21_SPICED_MODEL=model;window.KI21_SALES_PLAYBOOK=playbook;window.KI21_CANONICAL_ANNUAL_VALUE=annual;
 function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE;document.title=RELEASE;}
 function boot(){sync();try{if(typeof render==='function')render()}catch(e){console.error('KI21 19.0.2 final consistency',e)}sync();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="ki21-v2000-product-candidate">
+(function(){
+'use strict';
+var RELEASE='KI21 Core 20.0.0 · Product Candidate', SHORT='Core 20.0.0';
+try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
+window.KI21_RELEASE={version:'20.0.0',name:'Product Candidate',built:'2026-08-03T12:15:00+02:00'};
+var BASE_FULL=fullReport, BASE_DECISION=decisionBrief, BASE_RENDER=renderInputs, BASE_RENDER_APP=render;
+function baseReport(){try{return String(BASE_FULL())}catch(e){return''}}
+function baseDecision(){try{return String(BASE_DECISION())}catch(e){return''}}
+function numberDE(x){return Number(String(x||'').replace(/\./g,'').replace(',','.'))||0}
+function euro(v){return Number(v||0).toLocaleString('de-DE')+' €'}
+function canonicalAnnual(){
+ var d=baseDecision(),r=baseReport(),m;
+ m=d.match(/Dokumentierter interner Aufwand:\s*([0-9.]+(?:,[0-9]+)?)\s*€\s*pro Jahr/i);if(m)return numberDE(m[1]);
+ m=r.match(/Quantifizierter wirtschaftlicher Ausgangswert:\s*([0-9.]+(?:,[0-9]+)?)\s*€/i);if(m)return numberDE(m[1]);
+ m=r.match(/Dokumentierter interner Aufwand:\s*([0-9.]+(?:,[0-9]+)?)\s*€\s*pro Jahr/i);if(m)return numberDE(m[1]);
+ var mm=(state&&state.metrics)||{};return Number(mm.documentedLastYearCost||mm.recurringInternalCost||mm.annualCost||0);
+}
+function buyingCenter(){
+ var r=baseReport(),block=(r.match(/=== BUYING CENTER ===\n([\s\S]*?)(?=\n\n===)/)||[])[1]||'';
+ var rows=block.split('\n').map(function(x){return x.trim()}).filter(function(x){return /^•\s+/.test(x)}).map(function(x){var p=x.replace(/^•\s*/, '').split('|').map(function(y){return y.trim()});return{name:p[0]||'',function:p[1]||'',role:p[2]||''}});
+ if(rows.length)return rows;
+ return Array.isArray(state&&state.stakeholders)?state.stakeholders.map(function(x){return{name:x.name||'',function:x.function||'',role:x.role||'',status:x.status||'',authority:x.authority||''}}):[];
+}
+function findPerson(rx){return buyingCenter().find(function(p){return rx.test([p.name,p.function,p.role,p.status,p.authority].join(' '))})||null}
+function raw(){return String((state&&state.rawImport)||'')+'\n'+String(((state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'))}
+function spiced(){
+ var text=raw(),annual=canonicalAnnual();
+ var situation=state&&state.company&&state.opportunity?{level:'BESTÄTIGT',summary:(state.phase||'Opportunity und Wettbewerbskontext sind erfasst.')}:{level:'OFFEN',summary:'Opportunity und aktueller Kontext sind noch nicht vollständig erfasst.'};
+ var pain=annual?{level:'BESTÄTIGT',summary:'Wirtschaftlicher Ausgangswert: '+euro(annual)}:{level:'TEILWEISE',summary:'Der Schmerz ist beschrieben, aber noch nicht belastbar quantifiziert.'};
+ var impact=annual?{level:'BESTÄTIGT',summary:'Quantifizierte Wirkung: '+euro(annual)+' pro Jahr'}:{level:'TEILWEISE',summary:'Die wirtschaftliche oder strategische Wirkung ist noch nicht vollständig quantifiziert.'};
+ var date=/entscheidung\s+bis\s*:|entscheidungstermin\s*:|vorstandstermin|vertragsende\s*:|renewal\s+date|budgetfreigabe\s+bis/i.test(text);
+ var trigger=/vertragsverlängerung|ablösung|kündigungsfrist|auslaufender vertrag|managemententscheidung|finale wettbewerbsentscheidung/i.test(text);
+ var critical=date?{level:'BESTÄTIGT',summary:'Ein konkreter Entscheidungstermin oder verbindlicher Auslöser ist dokumentiert.'}:trigger?{level:'TEILWEISE',summary:'Die Ablösungs- oder Verlängerungsentscheidung ist als Auslöser erkennbar; Termin, Owner oder Verbindlichkeit müssen noch bestätigt werden.'}:{level:'OFFEN',summary:'Ein verbindlicher Handlungs- oder Entscheidungsauslöser ist noch nicht ausreichend bestätigt.'};
+ var cro=findPerson(/chief revenue officer|\bcro\b|wirtschaftlicher entscheider/i),cfo=findPerson(/chief financial officer|\bcfo\b|wirtschaftliche mitentscheider/i);
+ var hasBuyer=!!(cro||cfo),criteria=/entscheidungskriter|bewertungsmatrix|gewichtung|scorecard/i.test(text),formal=/beschlussweg|formaler beschluss|finale freigabe|entscheidungsprozess verbindlich/i.test(text);
+ var decision=!hasBuyer?{level:'OFFEN',summary:'Wirtschaftliche Entscheidungsrollen und Beschlussweg sind nicht eindeutig bestätigt.'}:(criteria&&formal?{level:'BESTÄTIGT',summary:'Wirtschaftliche Entscheider, Kriteriengewichtung und Beschlussweg sind belastbar bestätigt.'}:{level:'TEILWEISE',summary:'CRO und CFO sind als wirtschaftliche Entscheidungsrollen identifiziert. Offen sind die verbindliche Kriteriengewichtung, der politische Einfluss und der formale Beschlussweg.'});
+ return{S:situation,P:pain,I:impact,C:critical,D:decision};
+}
+function questions(m){var out=[];
+ if(m.D.level!=='BESTÄTIGT')out.push({label:'Decision',question:'Wer gewichtet die Vergleichskriterien verbindlich, wie werden Migration, Adoption und Dreijahres-TCO bewertet, und wer dokumentiert den finalen Beschluss?'});
+ if(m.C.level!=='BESTÄTIGT')out.push({label:'Critical Event',question:'Welches Vertrags-, Budget- oder Managementereignis erzwingt die Anbieterentscheidung, bis wann und mit welchem verantwortlichen Owner?'});
+ if(m.S.level!=='BESTÄTIGT')out.push({label:'Situation',question:'Nach welcher verbindlichen Logik werden SalesPulse und KI21 heute verglichen, und wer hat diese Logik geprägt?'});
+ if(m.P.level!=='BESTÄTIGT')out.push({label:'Pain',question:'Welche konkreten Schwächen des Status quo verursachen den dokumentierten Aufwand, und welche davon sind für CRO und CFO nicht länger akzeptabel?'});
+ if(m.I.level!=='BESTÄTIGT')out.push({label:'Impact',question:'Welche finanzielle und vertriebliche Wirkung entsteht, wenn der Status quo weitere drei Jahre bestehen bleibt?'});
+ return out.slice(0,7)}
+function playbook(){var m=spiced(),annual=canonicalAnnual(),champ=findPerson(/fachlicher sponsor|champion|vp sales/i),cro=findPerson(/chief revenue officer|\bcro\b|wirtschaftlicher entscheider/i),cfo=findPerson(/chief financial officer|\bcfo\b|wirtschaftliche mitentscheider/i),opp=findPerson(/befürworter des wettbewerbers|revenue operations|status.?quo/i);
+ var decisionNames=[cro&&cro.name,cfo&&cfo.name].filter(Boolean).join(' und ')||'CRO und CFO';
+ return{
+ thesis:'Der wirtschaftliche Bedarf ist bestätigt. Der Deal wird jetzt durch Vergleichshoheit, politischen Status quo und den belastbaren Nachweis des Wechselrisikos entschieden.',
+ aha:[
+  'Der Bedarf ist nicht mehr der Engpass; Vergleichslogik, Wechselrisiko und politische Durchsetzung entscheiden.',
+  'Der dokumentierte wirtschaftliche Ausgangswert von '+euro(annual)+' macht die Vertragsverlängerung zu einer aktiv zu begründenden Entscheidung.',
+  'Ein vollständiges Buying Center ersetzt keine gemeinsam gewichtete Entscheidungslogik: Formale Macht und politische Wirkung müssen in denselben Beschlussweg geführt werden.'
+ ],
+ questions:questions(m),
+ stakeholder:[
+  champ?'Champion: '+champ.name+' soll gemeinsam mit '+decisionNames+' die Vergleichskriterien moderieren und den Wechselnachweis intern vertreten.':'Champion: Einen fachlich glaubwürdigen internen Treiber mit klarem Mandat für die nächste Kundenentscheidung benennen.',
+  (cro||cfo)?'Economic Buyer: '+decisionNames+' sollen den Ausgangswert von '+euro(annual)+', die akzeptierte Entscheidungsschwelle und die formalen Freigabebedingungen verbindlich bestätigen.':'Economic Buyer: Wirtschaftliche Entscheidungsrolle, Entscheidungsschwelle und Freigabebedingungen verbindlich identifizieren.',
+  opp?'Status quo: '+opp.name+'s Präferenz für den bestehenden Anbieter anhand derselben gewichteten Kriterien, einer identischen TCO-Basis und eines überprüfbaren Migrations- und Adoption-Nachweises transparent prüfen.':'Kritische Rollen: mögliche Vetos, Eigeninteressen und fehlende Mandate ausdrücklich prüfen.'
+ ],
+ proof:'Gewichtete Scorecard, identische Dreijahres-TCO-Basis sowie Migrations- und Adoption-Nachweis an realen Szenarien.',
+ negotiation:'Zugeständnisse nur gegen konkrete Gegenleistungen: verbindlicher Entscheidungsprozess, Referenzumfang, Laufzeit, Zahlungsbedingungen oder beschleunigte Freigabe.',
+ close:'Beschlussweg mit Owner, Termin, erforderlichen Freigaben und dokumentierter nächster Kundenentscheidung als Mutual Action Plan festhalten.'
+ }}
+function spicedText(){var m=spiced(),l={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};return['S','P','I','C','D'].map(function(k){return'• '+l[k]+': '+m[k].level+' · '+m[k].summary}).join('\n')}
+function playbookText(){var p=playbook();return 'KI21 SALES PLAYBOOK\n\nDEAL-THESE\n• '+p.thesis+'\n\nAHA-EFFEKTE\n'+p.aha.map(function(x){return'• '+x}).join('\n')+'\n\nNÄCHSTE GESPRÄCHSFRAGEN\n'+(p.questions.length?p.questions.map(function(x,i){return(i+1)+'. ['+x.label+'] '+x.question}).join('\n'):'• Keine zusätzliche Discovery-Frage erforderlich; bestätigten Beschlussplan konsequent umsetzen.')+'\n\nSTAKEHOLDER-PLAN\n'+p.stakeholder.map(function(x){return'• '+x}).join('\n')+'\n\nBEWEISPLAN\n• '+p.proof+'\n\nVERHANDLUNGSLEITPLANKEN\n• '+p.negotiation+'\n\nABSCHLUSS- UND BESCHLUSSPLAN\n• '+p.close}
+function replaceVersion(t){return String(t).replace(/KI21 Core (?:18\.0\.0 · Product Edition|19\.0\.0 · Intelligence Refinement|19\.0\.1 · Intelligence Consistency Fix|19\.0\.2 · Final Intelligence Consistency)/g,RELEASE)}
+fullReport=function(){var r=replaceVersion(baseReport());r=r.replace(/=== SPICED DEAL INTELLIGENCE ===[\s\S]*?(?=\n\n=== SALES PLAYBOOK ===)/,'=== SPICED DEAL INTELLIGENCE ===\n'+spicedText());r=r.replace(/=== SALES PLAYBOOK ===[\s\S]*?(?=\n\n=== EVIDENZ-INTEGRITÄT ===)/,'=== SALES PLAYBOOK ===\n'+playbookText());return r};
+decisionBrief=function(){return replaceVersion(baseDecision())};
+renderInputs=function(){var html=String(BASE_RENDER());if(state.inputTab!=='spin')return html;var m=spiced(),labels={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};Object.keys(labels).forEach(function(k){html=html.replace(new RegExp(labels[k]+' · (?:BESTÄTIGT|TEILWEISE|OFFEN)','g'),labels[k]+' · '+m[k].level)});html=html.replace(/Wirtschaftlicher Ausgangswert:\s*[0-9.]+\s*€/g,'Wirtschaftlicher Ausgangswert: '+euro(canonicalAnnual())).replace(/Quantifizierte Wirkung:\s*[0-9.]+\s*€\s*pro Jahr/g,'Quantifizierte Wirkung: '+euro(canonicalAnnual())+' pro Jahr');return html};
+function sync(){try{document.title=RELEASE;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE}catch(_e){}}
+render=function(){var result=BASE_RENDER_APP.apply(this,arguments);sync();return result};
+window.KI21_SPICED_MODEL=spiced;window.KI21_SALES_PLAYBOOK=playbook;window.KI21_CANONICAL_ANNUAL_VALUE=canonicalAnnual;
+var observer=new MutationObserver(function(){sync()});
+function boot(){sync();try{observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});if(typeof render==='function')render()}catch(e){console.error('KI21 20.0.0 Product Candidate',e)}sync()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
