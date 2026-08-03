@@ -45,7 +45,7 @@
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 20.0.0 · Product Candidate</div>
+<div class="footer" id="footerVersion">KI21 Core 20.0.1 · Product Candidate Interaction Fix</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
@@ -9055,9 +9055,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="ki21-v2000-product-candidate">
 (function(){
 'use strict';
-var RELEASE='KI21 Core 20.0.0 · Product Candidate', SHORT='Core 20.0.0';
+var RELEASE='KI21 Core 20.0.1 · Product Candidate Interaction Fix', SHORT='Core 20.0.1';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
-window.KI21_RELEASE={version:'20.0.0',name:'Product Candidate',built:'2026-08-03T12:15:00+02:00'};
+window.KI21_RELEASE={version:'20.0.1',name:'Product Candidate Interaction Fix',built:'2026-08-03T12:15:00+02:00'};
 var BASE_FULL=fullReport, BASE_DECISION=decisionBrief, BASE_RENDER=renderInputs, BASE_RENDER_APP=render;
 function baseReport(){try{return String(BASE_FULL())}catch(e){return''}}
 function baseDecision(){try{return String(BASE_DECISION())}catch(e){return''}}
@@ -9123,11 +9123,21 @@ function replaceVersion(t){return String(t).replace(/KI21 Core (?:18\.0\.0 · Pr
 fullReport=function(){var r=replaceVersion(baseReport());r=r.replace(/=== SPICED DEAL INTELLIGENCE ===[\s\S]*?(?=\n\n=== SALES PLAYBOOK ===)/,'=== SPICED DEAL INTELLIGENCE ===\n'+spicedText());r=r.replace(/=== SALES PLAYBOOK ===[\s\S]*?(?=\n\n=== EVIDENZ-INTEGRITÄT ===)/,'=== SALES PLAYBOOK ===\n'+playbookText());return r};
 decisionBrief=function(){return replaceVersion(baseDecision())};
 renderInputs=function(){var html=String(BASE_RENDER());if(state.inputTab!=='spin')return html;var m=spiced(),labels={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};Object.keys(labels).forEach(function(k){html=html.replace(new RegExp(labels[k]+' · (?:BESTÄTIGT|TEILWEISE|OFFEN)','g'),labels[k]+' · '+m[k].level)});html=html.replace(/Wirtschaftlicher Ausgangswert:\s*[0-9.]+\s*€/g,'Wirtschaftlicher Ausgangswert: '+euro(canonicalAnnual())).replace(/Quantifizierte Wirkung:\s*[0-9.]+\s*€\s*pro Jahr/g,'Quantifizierte Wirkung: '+euro(canonicalAnnual())+' pro Jahr');return html};
-function sync(){try{document.title=RELEASE;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE}catch(_e){}}
+function sync(){
+ try{
+  if(document.title!==RELEASE)document.title=RELEASE;
+  var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');
+  if(h&&h.textContent!==SHORT)h.textContent=SHORT;
+  if(f&&f.textContent!==RELEASE)f.textContent=RELEASE;
+ }catch(_e){}
+}
 render=function(){var result=BASE_RENDER_APP.apply(this,arguments);sync();return result};
 window.KI21_SPICED_MODEL=spiced;window.KI21_SALES_PLAYBOOK=playbook;window.KI21_CANONICAL_ANNUAL_VALUE=canonicalAnnual;
-var observer=new MutationObserver(function(){sync()});
-function boot(){sync();try{observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});if(typeof render==='function')render()}catch(e){console.error('KI21 20.0.0 Product Candidate',e)}sync()}
+function boot(){
+ sync();
+ try{if(typeof render==='function')render()}catch(e){console.error('KI21 20.0.1 Product Candidate Interaction Fix',e)}
+ sync();
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
