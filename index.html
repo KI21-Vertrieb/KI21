@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>KI21 Core 19.0.0 · Intelligence Refinement</title>
+<title>KI21 Core 19.0.1 · Intelligence Consistency Fix</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -8882,6 +8882,98 @@ renderInputs=function(){
 window.KI21_SPICED_MODEL=refinedModel;window.KI21_SALES_PLAYBOOK=refinedPlaybook;window.KI21_CANONICAL_ANNUAL_VALUE=canonicalAnnual;
 function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE;document.title=RELEASE;}
 function boot(){sync();try{if(typeof render==='function')render()}catch(e){console.error('KI21 Intelligence Refinement',e)}sync();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="ki21-v1901-intelligence-consistency-fix">
+(function(){
+'use strict';
+var RELEASE='KI21 Core 19.0.1 · Intelligence Consistency Fix', SHORT='Core 19.0.1';
+try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
+window.KI21_RELEASE={version:'19.0.1',name:'Intelligence Consistency Fix',built:'2026-08-03T11:55:00+02:00'};
+function activeModel(){
+ try{
+  if(typeof modelFromRaw==='function'&&typeof currentRaw==='function')return modelFromRaw(currentRaw());
+ }catch(_e){}
+ return null;
+}
+function canonicalAnnual(){
+ var d=activeModel();
+ if(d&&Number(d.annualCost||0)>0)return Number(d.annualCost);
+ var m=(state&&state.metrics)||{};
+ return Number(m.annualCost||m.recurringInternalCost||m.documentedLastYearCost||0);
+}
+function euro(v){return Number(v||0).toLocaleString('de-DE')+' €';}
+function rolePerson(rx){
+ var d=activeModel();
+ var people=(d&&d.people)||[];
+ for(var i=0;i<people.length;i++){
+  var p=people[i]||{},hay=[p.name,p.function,p.role,p.status,p.attitude,p.authority].join(' ');
+  if(rx.test(hay))return p;
+ }
+ return null;
+}
+function raw(){try{return typeof currentRaw==='function'?String(currentRaw()):String((state&&state.rawImport)||'')}catch(_e){return String((state&&state.rawImport)||'')}}
+function decisionStatus(){
+ var d=activeModel(),people=(d&&d.people)||[];
+ var buyer=rolePerson(/wirtschaftlich(?:e|er)?\s*(?:mit)?entscheider|chief revenue officer|chief financial officer|\bcro\b|\bcfo\b/i);
+ var r=raw();
+ var criteria=/entscheidungskriter|bewertungsmatrix|scorecard|gewichtung|tco|migrationsrisiko|adoption/i.test(r);
+ var process=/beschlussweg|entscheidungsprozess|finale freigabe|gemeinsame entscheidung|wer entscheidet/i.test(r);
+ if(buyer&&criteria&&process)return{level:'BESTÄTIGT',confirmed:true,summary:'Wirtschaftliche Entscheider, Kriterien und Beschlussweg sind belastbar bestätigt.'};
+ if(people.length||buyer)return{level:'TEILWEISE',confirmed:false,summary:'CRO und CFO sind als wirtschaftliche Entscheidungsrollen identifiziert. Offen sind die verbindliche Kriteriengewichtung, der politische Einfluss und der formale Beschlussweg.'};
+ return{level:'OFFEN',confirmed:false,summary:'Wirtschaftliche Entscheidungsrollen und Beschlussweg sind nicht eindeutig bestätigt.'};
+}
+function criticalStatus(){
+ var r=raw();
+ var hasDate=/entscheidung\s+bis\s*:|entscheidungstermin\s*:|vertragsende|renewal\s+date|budgetfreigabe\s+bis|vorstandstermin|go.?live\s+bis/i.test(r);
+ var hasTrigger=/vertragsverlängerung|ablösung|budgetjahr|kündigungsfrist|auslaufender vertrag|managemententscheidung|critical event/i.test(r);
+ if(hasDate)return{level:'BESTÄTIGT',confirmed:true,summary:'Ein konkreter Entscheidungstermin oder verbindlicher Auslöser ist dokumentiert.'};
+ if(hasTrigger)return{level:'TEILWEISE',confirmed:false,summary:'Die Ablösungs- oder Verlängerungsentscheidung ist als Auslöser erkennbar; Termin, Owner oder Verbindlichkeit sind noch nicht vollständig bestätigt.'};
+ return{level:'OFFEN',confirmed:false,summary:'Ein verbindlicher Handlungs- oder Entscheidungsauslöser ist noch nicht ausreichend bestätigt.'};
+}
+var PREV_MODEL=window.KI21_SPICED_MODEL, PREV_PLAYBOOK=window.KI21_SALES_PLAYBOOK;
+function model(){
+ var old=typeof PREV_MODEL==='function'?PREV_MODEL():{};
+ var annual=canonicalAnnual(),d=activeModel()||{},C=criticalStatus(),D=decisionStatus();
+ var status=Object.assign({},old.status||{}, {
+  S:{level:(d.company&&d.opportunity)?'BESTÄTIGT':'OFFEN',confirmed:!!(d.company&&d.opportunity),summary:d.phase||'Opportunity und aktueller Kontext sind erfasst.'},
+  P:{level:annual?'BESTÄTIGT':'TEILWEISE',confirmed:!!annual,summary:annual?'Wirtschaftlicher Ausgangswert: '+euro(annual):'Problemrelevanz ist beschrieben, aber noch nicht belastbar quantifiziert.'},
+  I:{level:annual?'BESTÄTIGT':'TEILWEISE',confirmed:!!annual,summary:annual?'Quantifizierte Wirkung: '+euro(annual)+' pro Jahr':'Auswirkungen sind beschrieben, aber noch nicht vollständig quantifiziert.'},
+  C:C,D:D
+ });
+ var qs=(old.questions||[]).map(function(q){var x=status[q.key]||{};return Object.assign({},q,{confirmed:!!x.confirmed,summary:x.summary||q.summary,status:x.level||'OFFEN'});});
+ var rank={D:1,C:2,I:3,P:4,S:5};qs.sort(function(a,b){return(rank[a.key]||9)-(rank[b.key]||9)});
+ return Object.assign({},old,{status:status,questions:qs,gaps:qs.filter(function(x){return x.status!=='BESTÄTIGT'}).slice(0,3),strongest:(C.level!=='BESTÄTIGT'||D.level!=='BESTÄTIGT')?'Pain und Impact sind stark; Critical Event und Decision bestimmen den Fortschritt.':'SPICED ist belastbar bestätigt; jetzt zählt die konsequente Umsetzung des Beschlussplans.'});
+}
+function playbook(){
+ var old=typeof PREV_PLAYBOOK==='function'?PREV_PLAYBOOK():{},m=model(),annual=canonicalAnnual();
+ var champion=rolePerson(/fachlicher sponsor|champion|initiator|vp sales/i);
+ var buyer=rolePerson(/wirtschaftlich(?:e|er)?\s*(?:mit)?entscheider|chief revenue officer|chief financial officer|\bcro\b|\bcfo\b/i);
+ var opponent=rolePerson(/befürworter\s+des\s+wettbewerbers|status.?quo|gegner|skeptiker|revenue operations/i);
+ var stakeholder=[];
+ stakeholder.push(champion?'Champion: '+champion.name+' soll gemeinsam mit '+(buyer?buyer.name:'CRO und CFO')+' die Bewertungskriterien moderieren, damit die Vergleichslogik nicht von der Status-quo-Position geprägt wird.':'Champion: Einen fachlich glaubwürdigen internen Treiber mit klarem Mandat für die nächste Kundenentscheidung ausstatten.');
+ stakeholder.push(buyer?'Economic Buyer: '+buyer.name+' soll den dokumentierten Ausgangswert von '+euro(annual)+', die akzeptierte Entscheidungsschwelle und die formalen Freigabebedingungen bestätigen.':'Economic Buyer: Wirtschaftliche Entscheidungsrolle, Entscheidungsschwelle und Freigabebedingungen verbindlich identifizieren.');
+ stakeholder.push(opponent?'Status quo: '+opponent.name+'s Präferenz anhand derselben gewichteten Kriterien, einer identischen TCO-Basis und eines überprüfbaren Migrations- und Adoption-Nachweises transparent prüfen.':'Kritische Rollen: mögliche Vetos, Eigeninteressen und fehlende Mandate ausdrücklich prüfen.');
+ var aha=(old.aha||[]).map(function(x){return String(x).replace(/[0-9]{1,3}(?:\.[0-9]{3})+\s*€/g,euro(annual));});
+ return Object.assign({},old,{stakeholder:stakeholder,aha:aha,questions:m.questions.filter(function(x){return x.status!=='BESTÄTIGT'}).slice(0,7)});
+}
+function spicedText(){var m=model(),labels={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};return['S','P','I','C','D'].map(function(k){var x=m.status[k];return'• '+labels[k]+': '+x.level+' · '+x.summary}).join('\n')}
+function playbookText(){var p=playbook(),m=model();return 'KI21 SALES PLAYBOOK\n\nDEAL-THESE\n• '+m.strongest+'\n\nAHA-EFFEKTE\n'+(p.aha||[]).map(function(x){return'• '+x}).join('\n')+'\n\nNÄCHSTE GESPRÄCHSFRAGEN\n'+(p.questions||[]).map(function(x,i){return(i+1)+'. ['+x.label+'] '+x.question}).join('\n')+'\n\nSTAKEHOLDER-PLAN\n'+p.stakeholder.map(function(x){return'• '+x}).join('\n')+'\n\nBEWEISPLAN\n• '+p.proof+'\n\nVERHANDLUNGSLEITPLANKEN\n• '+p.negotiation+'\n\nABSCHLUSS- UND BESCHLUSSPLAN\n• '+p.close}
+var BASE_FULL=fullReport,BASE_DECISION=decisionBrief,BASE_RENDER=renderInputs;
+fullReport=function(){
+ var r=String(BASE_FULL()).replace(/KI21 Core 19\.0\.0 · Intelligence Refinement/g,RELEASE);
+ r=r.replace(/=== SPICED DEAL INTELLIGENCE ===[\s\S]*?(?=\n\n=== SALES PLAYBOOK ===)/,'=== SPICED DEAL INTELLIGENCE ===\n'+spicedText());
+ r=r.replace(/=== SALES PLAYBOOK ===[\s\S]*?(?=\n\n=== EVIDENZ-INTEGRITÄT ===)/,'=== SALES PLAYBOOK ===\n'+playbookText());
+ return r;
+};
+decisionBrief=function(){return String(BASE_DECISION()).replace(/KI21 Core 19\.0\.0 · Intelligence Refinement/g,RELEASE)};
+renderInputs=function(){var html=String(BASE_RENDER());if(state.inputTab!=='spin')return html;var m=model(),labels={S:'Situation',P:'Pain',I:'Impact',C:'Critical Event',D:'Decision'};['S','P','I','C','D'].forEach(function(k){var x=m.status[k],rx=new RegExp(labels[k]+' · (?:BESTÄTIGT|OFFEN|TEILWEISE)','g');html=html.replace(rx,labels[k]+' · '+x.level)});html=html.replace(/Wirtschaftlicher Ausgangswert:\s*[0-9.]+ €/g,'Wirtschaftlicher Ausgangswert: '+euro(canonicalAnnual())).replace(/Quantifizierte Wirkung:\s*[0-9.]+ € pro Jahr/g,'Quantifizierte Wirkung: '+euro(canonicalAnnual())+' pro Jahr');return html};
+window.KI21_SPICED_MODEL=model;window.KI21_SALES_PLAYBOOK=playbook;window.KI21_CANONICAL_ANNUAL_VALUE=canonicalAnnual;
+function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=RELEASE;document.title=RELEASE}
+function boot(){sync();try{if(typeof render==='function')render()}catch(e){console.error('KI21 19.0.1 consistency fix',e)}sync()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
