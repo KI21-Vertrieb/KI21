@@ -9142,5 +9142,139 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<script id="ki21-20-1-0-product-release-gate">
+(function(){
+'use strict';
+const RELEASE=Object.freeze({version:'20.1.0',short:'Core 20.1.0',full:'KI21 Core 20.1.0 · Product Release Gate',name:'Product Release Gate'});
+window.KI21_RELEASE=RELEASE;
+try{VERSION=RELEASE.full}catch(_e){}
+window.KI21_VERSION=RELEASE.full;
+
+const OLD_VERSION_PATTERNS=[
+ /KI21 Core 18\.0\.0 · Product Edition/g,
+ /Core 18\.0\.0/g,
+ /KI21 Core 19\.0\.0 · Intelligence Refinement/g,
+ /KI21 Core 19\.0\.1 · Intelligence Consistency Fix/g,
+ /KI21 Core 19\.0\.2 · Final Intelligence Consistency/g,
+ /KI21 Core 20\.0\.0 · Product Candidate/g,
+ /KI21 Core 20\.0\.1 · Product Candidate Interaction Fix/g,
+ /Core 20\.0\.0/g,
+ /Core 20\.0\.1/g
+];
+function normalizeVersionText(value){
+ let s=String(value==null?'':value);
+ OLD_VERSION_PATTERNS.forEach(function(rx){s=s.replace(rx,rx.source.startsWith('Core')?RELEASE.short:RELEASE.full)});
+ return s;
+}
+function syncReleaseLabels(root){
+ try{document.title=RELEASE.full}catch(_e){}
+ const h=document.getElementById('headerVersion');if(h&&h.textContent!==RELEASE.short)h.textContent=RELEASE.short;
+ const f=document.getElementById('footerVersion');if(f&&f.textContent!==RELEASE.full)f.textContent=RELEASE.full;
+ const scope=root&&root.nodeType?root:document.body;
+ if(!scope)return;
+ const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);
+ const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);
+ nodes.forEach(function(node){const next=normalizeVersionText(node.nodeValue);if(next!==node.nodeValue)node.nodeValue=next});
+}
+
+// A guarded observer only touches nodes that still contain a legacy release string.
+// Once corrected, the mutation no longer matches and therefore cannot self-trigger endlessly.
+let versionSyncQueued=false;
+const versionObserver=new MutationObserver(function(mutations){
+ let needed=false;
+ for(const m of mutations){
+  for(const node of m.addedNodes||[]){
+   if(node.nodeType===3&&/(?:18\.0\.0|19\.0\.[0-2]|20\.0\.[01])/.test(node.nodeValue||'')){needed=true;break}
+   if(node.nodeType===1&&/(?:18\.0\.0|19\.0\.[0-2]|20\.0\.[01])/.test(node.textContent||'')){needed=true;break}
+  }
+  if(needed)break;
+ }
+ if(!needed||versionSyncQueued)return;
+ versionSyncQueued=true;requestAnimationFrame(function(){versionSyncQueued=false;syncReleaseLabels(document.body)});
+});
+
+function qualityResultModel(out){
+ const results=out&&Array.isArray(out.results)?out.results:[];
+ const expected=35;
+ const rows=results.map(function(x){
+  const semantic=(out.evaluated||[]).find(function(z){return z.x===x});
+  const issues=semantic&&semantic.audit&&Array.isArray(semantic.audit.issues)?semantic.audit.issues:[];
+  const blocking=issues.filter(function(i){return i.severity==='CRITICAL'||i.severity==='HIGH'});
+  const technical=Number(x.points||0)===Number(x.max||0)&&Number(x.max||0)>0;
+  const passed=technical&&blocking.length===0;
+  return {id:x.tc&&x.tc.id||'—',name:x.tc&&x.tc.name||'Referenzfall',points:Number(x.points||0),max:Number(x.max||0),issues:issues,passed:passed};
+ });
+ const executed=rows.length;
+ const passed=rows.filter(function(x){return x.passed}).length;
+ const failed=executed-passed;
+ const complete=executed===expected;
+ const releaseReady=!!(out&&out.releaseReady)&&complete&&failed===0;
+ return {expected:expected,executed:executed,passed:passed,failed:failed,complete:complete,releaseReady:releaseReady,rows:rows,raw:out};
+}
+function esc20(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
+function storageStatus(){
+ let local=false,portfolio=false,backup=false;
+ try{const k='__ki21_q_probe_2010__';localStorage.setItem(k,'1');local=localStorage.getItem(k)==='1';localStorage.removeItem(k);portfolio=!!localStorage.getItem('ki21_portfolio_stable_v1');backup=!!localStorage.getItem('ki21_portfolio_stable_v1_backup')}catch(_e){}
+ return{local:local,portfolio:portfolio,backup:backup};
+}
+let lastQualityModel=null;
+function startQualityLab(){
+ const box=document.getElementById('q2010Result');if(!box)return;
+ box.innerHTML='<div class="card violet"><div class="kicker">Ausführung</div><div class="headline">35 Referenzfälle werden tatsächlich ausgeführt …</div><div class="body muted" style="margin-top:7px">Technische Checks, Golden Cases und Kontextintegrität laufen jetzt.</div></div>';
+ setTimeout(function(){
+  try{
+   if(typeof window.ki211100BuildAutonomousQualityLab!=='function')throw new Error('Referenzfall-Engine nicht verfügbar');
+   const raw=window.ki211100BuildAutonomousQualityLab();
+   const model=qualityResultModel(raw);lastQualityModel=model;
+   const stamp=new Date();
+   const rows=model.rows.map(function(x){return '<tr><td>'+esc20(x.id)+'</td><td>'+esc20(x.name)+'</td><td>'+(x.passed?'✅ Bestanden':'❌ Fehlgeschlagen')+'</td><td>'+x.points+'/'+x.max+'</td><td>'+x.issues.length+'</td></tr>'}).join('');
+   box.innerHTML='<div class="quality-summary-grid">'+
+    '<div><strong>'+model.expected+'</strong><span>vorhanden</span></div>'+
+    '<div><strong>'+model.executed+'</strong><span>ausgeführt</span></div>'+
+    '<div><strong>'+model.passed+'</strong><span>bestanden</span></div>'+
+    '<div><strong>'+model.failed+'</strong><span>fehlgeschlagen</span></div>'+
+    '<div><strong>'+Math.round((raw&&raw.duration)||0)+' ms</strong><span>Laufzeit</span></div>'+
+    '<div><strong>'+stamp.toLocaleTimeString('de-DE')+'</strong><span>letzte Ausführung</span></div></div>'+
+    '<div class="card '+(model.releaseReady?'green':'red')+'"><div class="kicker">Autonomes Release Gate</div><div class="headline">'+(model.releaseReady?'✅ Freigabefähig':'⛔ Nicht freigabefähig')+'</div><div class="body" style="margin-top:7px">Freigabe nur bei 35/35 ausgeführten und bestandenen Referenzfällen. Aktuell: '+model.executed+'/35 ausgeführt · '+model.passed+' bestanden · '+model.failed+' fehlgeschlagen.</div></div>'+
+    '<div class="card blue"><div class="kicker">Einzelergebnisse</div><div class="quality-table-wrap"><table class="quality-table"><thead><tr><th>ID</th><th>Referenzfall</th><th>Status</th><th>Checks</th><th>Hinweise</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'+
+    '<div class="actions"><button type="button" class="btn primary" id="q2010RunAgain">Erneut ausführen</button><button type="button" class="btn secondary" id="q2010Report">Vollbericht anzeigen</button><button type="button" class="btn secondary" id="q2010Copy">Bericht kopieren</button></div>';
+   document.getElementById('q2010RunAgain').onclick=startQualityLab;
+   document.getElementById('q2010Report').onclick=function(){const ta=document.createElement('textarea');ta.className='quality-log';ta.readOnly=true;ta.value=normalizeVersionText(raw.text||'');box.appendChild(ta);ta.scrollIntoView({behavior:'smooth',block:'start'})};
+   document.getElementById('q2010Copy').onclick=async function(){const t=normalizeVersionText(raw.text||'');if(typeof copyTextReliable==='function')await copyTextReliable(t);else if(navigator.clipboard)await navigator.clipboard.writeText(t);if(typeof toast==='function')toast('Qualitätsbericht kopiert')};
+   syncReleaseLabels(box);
+  }catch(e){lastQualityModel=null;box.innerHTML='<div class="card red"><div class="kicker">Qualitätslabor</div><div class="headline">⛔ Testausführung fehlgeschlagen</div><div class="body" style="margin-top:7px">'+esc20(e&&e.message||e)+'</div></div>';}
+ },40);
+}
+window.renderQuality=function(){
+ const view=document.getElementById('view');if(!view)return;
+ const s=storageStatus();
+ view.innerHTML='<div class="card orange"><div class="kicker">KI21 Platform Stability</div><div class="headline">Autonomes Qualitätslabor</div><div class="body muted" style="margin-top:7px">Das Release Gate basiert ausschließlich auf tatsächlich ausgeführten Referenzfällen.</div></div>'+
+  '<div class="quality-inline-grid"><div class="card '+(s.local?'green':'red')+'"><div class="kicker">Browser-Speicher</div><div class="headline">'+(s.local?'✅ verfügbar':'⚠️ eingeschränkt')+'</div><div class="body muted">Portfolio '+(s.portfolio?'gefunden':'nicht gefunden')+' · Backup '+(s.backup?'gefunden':'nicht gefunden')+'</div></div><div class="card violet"><div class="kicker">Testumfang</div><div class="headline">35 Referenzfälle</div><div class="body muted">Vorhanden ist nicht bestanden: Beim Öffnen werden alle Fälle neu ausgeführt.</div></div></div>'+
+  '<div class="actions"><button type="button" class="btn primary" id="q2010Run">🧠 35 Referenzfälle ausführen</button><button type="button" class="btn secondary" id="q2010Diag">Diagnose anzeigen</button></div><div id="q2010Result"><div class="card yellow"><div class="kicker">Release Gate</div><div class="headline">Noch nicht geprüft</div><div class="body muted" style="margin-top:7px">Freigabe wird erst nach einer vollständigen Ausführung vergeben.</div></div></div>';
+ document.getElementById('q2010Run').onclick=startQualityLab;
+ document.getElementById('q2010Diag').onclick=function(){const box=document.getElementById('q2010Result');box.innerHTML='<textarea class="quality-log" readonly>'+esc20('KI21 PLATFORM DIAGNOSTICS\n'+RELEASE.full+'\nBrowser: '+navigator.userAgent+'\nlocalStorage: '+(s.local?'OK':'NICHT VERFÜGBAR')+'\nPortfolio: '+(s.portfolio?'JA':'NEIN')+'\nBackup: '+(s.backup?'JA':'NEIN'))+'</textarea>'};
+ syncReleaseLabels(view);
+ // Run automatically so an empty or misleading 0-case gate can never be shown.
+ startQualityLab();
+};
+
+const baseFullReport=typeof fullReport==='function'?fullReport:null;
+if(baseFullReport)fullReport=function(){return normalizeVersionText(baseFullReport.apply(this,arguments))};
+const baseDecisionBrief=typeof decisionBrief==='function'?decisionBrief:null;
+if(baseDecisionBrief)decisionBrief=function(){return normalizeVersionText(baseDecisionBrief.apply(this,arguments))};
+const baseRender=typeof render==='function'?render:null;
+if(baseRender)render=function(){const r=baseRender.apply(this,arguments);syncReleaseLabels(document.body);return r};
+
+function boot2010(){
+ syncReleaseLabels(document.body);
+ if(document.body)versionObserver.observe(document.body,{childList:true,subtree:true});
+ try{if(typeof render==='function')render()}catch(e){console.error('KI21 20.1.0 boot',e)}
+ syncReleaseLabels(document.body);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot2010,{once:true});else boot2010();
+})();
+</script>
+
 </body>
 </html>
