@@ -8555,7 +8555,8 @@ function evaluate(tc,index){
  var t0=performance.now(),d=modelFromRaw(tc.raw),rep=reportFromModel(d),names=['Bericht erzeugt','Opportunity stimmt mit Testfall überein','Unternehmen erkannt','Deal-Typ vorhanden','Opportunity Score vorhanden','Forecast vorhanden','Score und Forecast differenziert','Sieben Bereichsanalysen','Sieben unterschiedliche Aha-Erkenntnisse','Originalimport vorhanden','Aktiver Import isoliert','Keine ungültigen Tokens','Keine Fremd-Opportunity','Keine Fremdpersonen','Budget nicht als 0 bestätigt','Preis nicht als 0 bestätigt','Zentrale Kundenentscheidung vorhanden','Größter Engpass vorhanden','Executive Aha vorhanden','Drei priorisierte Schritte','Buying Center vorhanden oder funktional erklärt','Evidenz-Integrität vorhanden','Version konsistent','Score plausibel','Forecast plausibel','Forecast nicht über Score','Offene Gates vorhanden','Berichtslänge plausibel','Spezifische Deal-Story','Keine Cross-Opportunity-Daten'];
  var low=rep.toLowerCase(),caseOpp=first(tc.raw,[/^\s*Opportunity-Name\s*:\s*([^\n]+)/im,/^\s*Opportunity\s*:\s*([^\n]+)/im]),caseCompany=first(tc.raw,[/^\s*Firmenname\s*:\s*([^\n]+)/im,/^\s*Unternehmen\s*:\s*([^\n]+)/im]);
  var ah=[].slice.call(rep.matchAll(/Aha-Erkenntnis:\s*(.+)/g)).map(function(m){return m[1]});
- var checks=[!!rep,!caseOpp||rep.indexOf(caseOpp)>=0,!caseCompany||rep.indexOf(caseCompany)>=0,!!d.type,d.score>0,d.forecast>0,d.score!==d.forecast,(rep.match(/^--- .+ ---$/gm)||[]).length===7,new Set(ah).size===7,/Originalimport vorhanden: JA/.test(rep),/Aktiver Import isoliert: JA/.test(rep),!/\b(?:undefined|null|NaN)\b/.test(rep),!caseOpp||rep.split('\n')[3].indexOf(caseOpp)>=0,!/Michael Kern|Dr\. Thomas Krüger|Sabine Wolf/.test(rep)||/Michael Kern|Dr\. Thomas Krüger|Sabine Wolf/.test(tc.raw),!/Budget: 0 €/.test(rep),!/Preis: 0 €/.test(rep),/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),/GRÖSSTER ENGPASS\n•\s*.+/.test(rep),/EXECUTIVE AHA\n•\s*.+/.test(rep),(rep.match(/^\d\. /gm)||[]).length>=3,/=== BUYING CENTER ===/.test(rep),/=== EVIDENZ-INTEGRITÄT ===/.test(rep),/Version konsistent: JA/.test(rep),d.score>=15&&d.score<=92,d.forecast>=10&&d.forecast<=88,d.forecast<=d.score,d.missing.length>0,rep.length>1800&&rep.length<18000,d.aha!=='Nur neue Kundenevidenz rechtfertigt eine Neubewertung.'||d.type==='QUALIFIZIERUNG',!(/Südwest Medical/.test(rep)&&!/Südwest Medical/.test(tc.raw))];
+ var areaCount=(rep.match(/^--- .+ ---$/gm)||[]).length;
+ var checks=[!!rep,!caseOpp||rep.indexOf(caseOpp)>=0,!caseCompany||rep.indexOf(caseCompany)>=0,!!d.type,d.score>0,d.forecast>0,d.score!==d.forecast,areaCount===7,new Set(ah).size===7,/Originalimport vorhanden: JA/.test(rep),/Aktiver Import isoliert: JA/.test(rep),!/\b(?:undefined|null|NaN)\b/.test(rep),!caseOpp||rep.split('\n')[3].indexOf(caseOpp)>=0,!/Michael Kern|Dr\. Thomas Krüger|Sabine Wolf/.test(rep)||/Michael Kern|Dr\. Thomas Krüger|Sabine Wolf/.test(tc.raw),!/Budget: 0 €/.test(rep),!/Preis: 0 €/.test(rep),/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),/GRÖSSTER ENGPASS\n•\s*.+/.test(rep),/EXECUTIVE AHA\n•\s*.+/.test(rep),(rep.match(/^\d\. /gm)||[]).length>=3,/=== BUYING CENTER ===/.test(rep),/=== EVIDENZ-INTEGRITÄT ===/.test(rep),/Version konsistent: JA/.test(rep),d.score>=15&&d.score<=92,d.forecast>=10&&d.forecast<=88,d.forecast<=d.score,d.missing.length>0,rep.length>1800&&rep.length<18000,d.aha!=='Nur neue Kundenevidenz rechtfertigt eine Neubewertung.'||d.type==='QUALIFIZIERUNG',!(/Südwest Medical/.test(rep)&&!/Südwest Medical/.test(tc.raw))];
  // Golden-master and architecture regression gates protect already validated behavior.
  var gm=[];
  function gate(name,ok){gm.push([name,!!ok])}
@@ -8567,9 +8568,9 @@ function evaluate(tc,index){
  gate('Elbe politischer Gegner priorisiert',!/elbe logistics digital/i.test(norm(tc.raw))||/status-quo-präferenz|wettbewerber/i.test(norm((d.actions||[]).join(' '))));
  gate('Sieben Bereiche stabil',areaCount===7);
  gate('Opportunity-Isolation stabil',/Aktiver Import isoliert: JA/.test(rep));
- gate('Version 18.0.0 konsistent',/Version: KI21 Core 18\.0\.0 · Product Edition/.test(rep)&&/Version konsistent: JA/.test(rep));
+ gate('Aktuelle Release-Version konsistent',rep.indexOf('Version: '+RELEASE)>=0&&/Version konsistent: JA/.test(rep));
  gm.forEach(function(g){names.push('Golden Master · '+g[0]);checks.push(g[1])});
- var failed=names.filter(function(_,i){return!checks[i]});return{tc:tc,index:index,report:rep,error:'',checks:checks,checkNames:names,points:checks.filter(Boolean).length,max:checks.length,passed:checks.every(Boolean),score:{score:d.score,forecast:d.forecast},elapsed:Math.round(performance.now()-t0),duplicates:0,badTokens:(rep.match(/\b(?:undefined|null|NaN)\b/g)||[]).length,areaCount:7,failed:failed,strongestInsight:d.aha,bottleneck:d.bottleneck,nextStep:d.actions[0]||'',goldenMaster:gm};
+ var failed=names.filter(function(_,i){return!checks[i]});return{tc:tc,index:index,report:rep,error:'',checks:checks,checkNames:names,points:checks.filter(Boolean).length,max:checks.length,passed:checks.every(Boolean),score:{score:d.score,forecast:d.forecast},elapsed:Math.round(performance.now()-t0),duplicates:0,badTokens:(rep.match(/\b(?:undefined|null|NaN)\b/g)||[]).length,areaCount:areaCount,failed:failed,strongestInsight:d.aha,bottleneck:d.bottleneck,nextStep:d.actions[0]||'',goldenMaster:gm};
 }
 window.ki2118EvaluateCase=evaluate;
 window.ki2118BuildLocalSuite=function(ids){
@@ -9357,6 +9358,35 @@ window.KI21_EXPORT_PORTFOLIO=downloadBackup;window.KI21_SEED_TEST_DATA=function(
 function boot(){syncRelease();seedDefaultsIfEmpty();syncRelease()}
 window.addEventListener('pageshow',function(){syncRelease()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="ki21-20-3-1-quality-evaluator-fix">
+(function(){
+'use strict';
+var RELEASE=Object.freeze({version:'20.3.1',short:'Core 20.3.1',full:'KI21 Core 20.3.1 · Quality Evaluator Fix'});
+window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
+function sync(){
+ try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full}catch(_e){}
+}
+var base=window.ki2118EvaluateCase;
+if(typeof base==='function'){
+ window.ki2118EvaluateCase=function(tc,index){
+  try{
+   var x=base(tc,index);
+   if(!x||typeof x!=='object')throw new Error('Einzelfall-Engine lieferte kein Ergebnis');
+   if(!Number.isFinite(Number(x.areaCount))){x.areaCount=((String(x.report||'').match(/^--- .+ ---$/gm)||[]).length);}
+   return x;
+  }catch(e){
+   return {tc:tc,index:index,report:'',error:String(e&&e.stack||e),checks:[false],checkNames:['Evaluator ohne Laufzeitfehler'],points:0,max:1,passed:false,score:{score:0,forecast:0},elapsed:0,duplicates:0,badTokens:0,areaCount:0,failed:['Evaluator ohne Laufzeitfehler']};
+  }
+ };
+ try{ki2118EvaluateCase=window.ki2118EvaluateCase}catch(_e){}
+}
+function boot(){sync();setTimeout(sync,0);setTimeout(sync,100)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('pageshow',sync);
 })();
 </script>
 
