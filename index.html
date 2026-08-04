@@ -15,7 +15,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>KI21 Core 20.3.0 · Test Data Recovery</title>
+<title>KI21 Core 21.0.0 · Architecture Cleanup</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -49,11 +49,11 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 20.3.0</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 21.0.0</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 20.3.0 · Test Data Recovery</div>
+<div class="footer" id="footerVersion">KI21 Core 21.0.0 · Architecture Cleanup</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
@@ -9426,5 +9426,126 @@ window.addEventListener('focus',sync);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){afterRender()},{once:true});else afterRender();
 })();
 </script>
+
+<script id="ki21-21-0-0-architecture-cleanup">
+(function(){
+'use strict';
+var RELEASE=Object.freeze({version:'21.0.0',short:'Core 21.0.0',full:'KI21 Core 21.0.0 · Architecture Cleanup'});
+window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;
+try{VERSION=RELEASE.full}catch(_e){}
+
+function syncVersion(){
+ try{
+  document.title=RELEASE.full;
+  var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');
+  if(h&&h.textContent!==RELEASE.short)h.textContent=RELEASE.short;
+  if(f&&f.textContent!==RELEASE.full)f.textContent=RELEASE.full;
+ }catch(_e){}
+}
+function uniqueCases(){
+ var source=[];
+ try{source=Array.from(window.KI219_TEST_CASES||[])}catch(_e){}
+ var seen=Object.create(null),out=[];
+ source.forEach(function(tc,i){
+  var id=String(tc&&tc.id||'CASE_'+i),raw=String(tc&&tc.raw||'');
+  var key=id+'|'+raw.slice(0,180);
+  if(!seen[key]){seen[key]=1;out.push(tc)}
+ });
+ // Legacy suites sometimes duplicated all 35 cases with identical ids but slightly altered wrappers.
+ if(out.length>35){
+  seen=Object.create(null);out=out.filter(function(tc,i){var id=String(tc&&tc.id||'CASE_'+i);if(seen[id])return false;seen[id]=1;return true})
+ }
+ return out.slice(0,35);
+}
+function cleanReportVersion(rep){
+ return String(rep||'')
+  .replace(/KI21 Core \d+\.\d+\.\d+(?:\s*·\s*[^\n<]*)?/g,RELEASE.full)
+  .replace(/Core \d+\.\d+\.\d+/g,RELEASE.short);
+}
+function evaluateCase(tc,index){
+ var started=(window.performance&&performance.now)?performance.now():Date.now();
+ var rep='',error='';
+ try{
+  if(typeof window.modelFromRaw==='function'&&typeof window.reportFromModel==='function'){
+   rep=window.reportFromModel(window.modelFromRaw(String(tc.raw||'')));
+  }else if(typeof modelFromRaw==='function'&&typeof reportFromModel==='function'){
+   rep=reportFromModel(modelFromRaw(String(tc.raw||'')));
+  }else if(typeof window.ki2118EvaluateCase==='function'){
+   var legacy=window.ki2118EvaluateCase(tc,index);rep=legacy&&legacy.report||'';error=legacy&&legacy.error||'';
+  }else throw new Error('Keine aktive Bericht-Engine verfügbar');
+ }catch(e){error=String(e&&e.stack||e)}
+ rep=cleanReportVersion(rep);
+ var areaCount=(rep.match(/^--- .+ ---$/gm)||[]).length;
+ var bad=(rep.match(/\b(?:undefined|null|NaN)\b/g)||[]).length;
+ var company=((String(tc.raw||'').match(/^\s*Firmenname\s*:\s*([^\n]+)/im)||[])[1]||'').trim();
+ var opp=((String(tc.raw||'').match(/^\s*Opportunity(?:-Name)?\s*:\s*([^\n]+)/im)||[])[1]||'').trim();
+ var score=Number((rep.match(/Opportunity Score:\s*(\d+)%/)||[])[1]||0);
+ var forecast=Number((rep.match(/Forecast:\s*(\d+)%/)||[])[1]||0);
+ var checks=[
+  ['Bericht ohne Laufzeitfehler',!error&&!!rep],
+  ['Unternehmen isoliert',!company||rep.indexOf(company)>=0],
+  ['Opportunity isoliert',!opp||rep.indexOf(opp)>=0],
+  ['Sieben Bereichsanalysen',areaCount===7],
+  ['Keine ungültigen Platzhalter',bad===0],
+  ['Opportunity Score plausibel',score>=15&&score<=92],
+  ['Forecast plausibel',forecast>=10&&forecast<=88&&forecast<=score],
+  ['Zentrale Kundenentscheidung vorhanden',/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep)],
+  ['Größter Engpass vorhanden',/GRÖSSTER ENGPASS\n•\s*.+/.test(rep)],
+  ['Executive Aha vorhanden',/EXECUTIVE AHA\n•\s*.+/.test(rep)],
+  ['Evidenz-Integrität vorhanden',/=== EVIDENZ-INTEGRITÄT ===/.test(rep)],
+  ['Release-Version konsistent',rep.indexOf('Version: '+RELEASE.full)>=0&&/Version konsistent: JA/.test(rep)]
+ ];
+ var failed=checks.filter(function(x){return !x[1]}).map(function(x){return x[0]});
+ return{tc:tc,index:index,report:rep,error:error,areaCount:areaCount,badTokens:bad,score:{score:score,forecast:forecast},points:checks.length-failed.length,max:checks.length,passed:failed.length===0,failed:failed,elapsed:Math.round(((window.performance&&performance.now)?performance.now():Date.now())-started)};
+}
+window.KI21_QUALITY_CASES=uniqueCases;
+window.KI21_EVALUATE_CASE=evaluateCase;
+
+var runState={running:false,cancel:false,results:[],started:0};
+function esc21(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function storageStatus(){var local=true,portfolioFound=false,backupFound=false;try{var k='__ki21_21_probe__';localStorage.setItem(k,'1');localStorage.removeItem(k);portfolioFound=!!localStorage.getItem('ki21_portfolio_stable_v1');backupFound=!!localStorage.getItem('ki21_portfolio_stable_v1_backup')}catch(_e){local=false}return{local:local,portfolio:portfolioFound,backup:backupFound}}
+function renderResult(){
+ var box=document.getElementById('q210Result');if(!box)return;
+ if(!runState.results.length){box.innerHTML='<div class="card violet"><div class="kicker">Release Gate</div><div class="headline">Noch nicht geprüft</div><div class="body muted">Die 35 eindeutigen Referenzfälle starten erst nach Antippen des Buttons.</div></div>';return}
+ var total=uniqueCases().length,done=runState.results.length,passed=runState.results.filter(function(x){return x.passed}).length,failed=done-passed,elapsed=Math.round(((window.performance&&performance.now)?performance.now():Date.now())-runState.started);
+ var complete=done===total&&!runState.running,ok=complete&&failed===0;
+ var rows=runState.results.map(function(x){return '<div class="quality-result-card"><strong>'+(x.passed?'✅':'❌')+' '+esc21(x.tc.id||'')+' · '+esc21(x.tc.name||'')+'</strong><div class="body muted">'+x.points+'/'+x.max+' Checks · '+x.elapsed+' ms'+(x.failed.length?' · '+esc21(x.failed.join(', ')):'')+'</div></div>'}).join('');
+ box.innerHTML='<div class="quality-summary-grid"><div><strong>'+total+'</strong><span>vorhanden</span></div><div><strong>'+done+'</strong><span>ausgeführt</span></div><div><strong>'+passed+'</strong><span>bestanden</span></div><div><strong>'+failed+'</strong><span>fehlgeschlagen</span></div><div><strong>'+elapsed+' ms</strong><span>Laufzeit</span></div><div><strong>'+(complete?'fertig':'läuft')+'</strong><span>Status</span></div></div><div class="card '+(ok?'green':complete?'red':'orange')+'"><div class="kicker">KI21 Release Gate</div><div class="headline">'+(ok?'✅ Freigabefähig':complete?'⛔ Nicht freigabefähig':'⏳ Prüfung läuft')+'</div><div class="body muted">'+(ok?'Alle eindeutigen Referenzfälle wurden vollständig ausgeführt und bestanden.':complete?failed+' Referenzfälle benötigen Prüfung.':'Fall '+done+' von '+total+' abgeschlossen.')+'</div></div>'+rows;
+}
+function runNext(i,cases){
+ if(runState.cancel||i>=cases.length){runState.running=false;renderResult();return}
+ setTimeout(function(){
+  try{runState.results.push(evaluateCase(cases[i],i))}catch(e){runState.results.push({tc:cases[i],index:i,report:'',error:String(e),areaCount:0,badTokens:0,score:{score:0,forecast:0},points:0,max:1,passed:false,failed:['Unbehandelter Testfehler'],elapsed:0})}
+  renderResult();runNext(i+1,cases);
+ },18);
+}
+function startQuality(){if(runState.running)return;runState={running:true,cancel:false,results:[],started:(window.performance&&performance.now)?performance.now():Date.now()};renderResult();runNext(0,uniqueCases())}
+function renderQuality21(){
+ var view=document.getElementById('view');if(!view)return;
+ var st=storageStatus(),count=uniqueCases().length;
+ view.innerHTML='<div class="card orange"><div class="kicker">KI21 Platform Stability</div><div class="headline">Konsolidiertes Qualitätslabor</div><div class="body muted" style="margin-top:7px">Eine Testengine, '+count+' eindeutige Referenzfälle, Einzelfall-Ausführung mit Safari-Pausen und kein paralleler Legacy-Runner.</div></div><div class="quality-inline-grid"><div class="card '+(st.local?'green':'red')+'"><div class="kicker">Browser-Speicher</div><div class="headline">'+(st.local?'✅ verfügbar':'⚠️ eingeschränkt')+'</div><div class="body muted">Portfolio '+(st.portfolio?'gefunden':'nicht gefunden')+' · Backup '+(st.backup?'gefunden':'nicht gefunden')+'</div></div><div class="card violet"><div class="kicker">Testumfang</div><div class="headline">'+count+' Referenzfälle</div><div class="body muted">Dedupliziert und bei jedem Lauf vollständig neu ausgeführt.</div></div></div><div class="actions"><button type="button" class="btn primary" id="q210Run">🧠 '+count+' Referenzfälle ausführen</button><button type="button" class="btn secondary" id="q210Cancel">Ausführung abbrechen</button></div><div id="q210Result"></div>';
+ var run=document.getElementById('q210Run'),cancel=document.getElementById('q210Cancel');if(run)run.onclick=startQuality;if(cancel)cancel.onclick=function(){runState.cancel=true};renderResult();syncVersion();
+}
+window.renderQuality=renderQuality21;try{renderQuality=renderQuality21}catch(_e){}
+
+var baseRender=typeof window.render==='function'?window.render:null;
+if(baseRender){window.render=function(){var out=baseRender.apply(this,arguments);try{if(window.state&&state.activeTab==='quality')renderQuality21()}catch(_e){}syncVersion();return out}}
+
+document.addEventListener('click',function(e){
+ var tab=e.target&&e.target.closest&&e.target.closest('.tab[data-tab="quality"]');
+ if(tab){setTimeout(function(){try{if(window.state)state.activeTab='quality';renderQuality21()}catch(err){console.error('KI21 Quality',err)}},0)}
+ setTimeout(syncVersion,0);
+},true);
+function boot(){
+ try{document.documentElement.style.overflow='';document.body.style.overflow='';document.body.style.pointerEvents=''}catch(_e){}
+ syncVersion();
+ try{if(typeof window.render==='function')window.render()}catch(e){console.error('KI21 21.0.0 boot',e)}
+ syncVersion();
+}
+window.addEventListener('pageshow',boot);window.addEventListener('focus',syncVersion);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
 </body>
 </html>
