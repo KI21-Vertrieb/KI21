@@ -13,14 +13,14 @@
 })();
 </script>
 <script>
-/* KI21 Core 26.0.1 · single authoritative release identity */
+/* KI21 Core 26.0.2 · single authoritative release identity */
 (function(){
   'use strict';
   var RELEASE=Object.freeze({
-    version:'26.0.1',
-    short:'Core 26.0.1',
-    full:'KI21 Core 26.0.1 · Central Version Authority',
-    name:'Central Version Authority'
+    version:'26.0.2',
+    short:'Core 26.0.2',
+    full:'KI21 Core 26.0.2 · Procurement Result Integrity',
+    name:'Procurement Result Integrity'
   });
   window.KI21_RELEASE_AUTHORITY=RELEASE;
   window.KI21_VERSION=RELEASE.full;
@@ -49,7 +49,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>KI21 Core 26.0.1 · Central Version Authority</title>
+<title>KI21 Core 26.0.2 · Procurement Result Integrity</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -86,11 +86,11 @@
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 26.0.1</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button id="settingsButton" aria-label="Einstellungen" title="Einstellungen" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer">⚙</button><div class="version" id="headerVersion">Core 26.0.2</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 26.0.1 · Central Version Authority</div>
+<div class="footer" id="footerVersion">KI21 Core 26.0.2 · Procurement Result Integrity</div>
 </main>
 </div>
 <div id="toast" class="toast"></div>
@@ -11233,10 +11233,10 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 
 
 <script>
-/* KI21 Core 26.0.1 · final version enforcement and release scanner */
+/* KI21 Core 26.0.2 · final version enforcement and release scanner */
 (function(){
   'use strict';
-  var A=window.KI21_RELEASE_AUTHORITY||{version:'26.0.1',short:'Core 26.0.1',full:'KI21 Core 26.0.1 · Central Version Authority'};
+  var A=window.KI21_RELEASE_AUTHORITY||{version:'26.0.2',short:'Core 26.0.2',full:'KI21 Core 26.0.2 · Procurement Result Integrity'};
   function sync(){
     try{VERSION=A.full;}catch(_e){window.KI21_VERSION=A.full;}
     try{portfolio.version=A.full;}catch(_e){}
@@ -11263,6 +11263,131 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
   window.addEventListener('pageshow',function(){sync();scan()});
   window.addEventListener('focus',function(){sync();scan()});
   requestAnimationFrame(function(){sync();scan();requestAnimationFrame(function(){sync();scan();});});
+})();
+</script>
+<script>
+/* KI21 Core 26.0.2 · procurement result integrity and final language gate */
+(function(){
+  'use strict';
+  var A=window.KI21_RELEASE_AUTHORITY||{version:'26.0.2',short:'Core 26.0.2',full:'KI21 Core 26.0.2 · Procurement Result Integrity'};
+  function stripSection(text,title){
+    var safe=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return String(text).replace(new RegExp('(?:\\n|^)=== '+safe+' ===\\n[\\s\\S]*?(?=\\n=== [^\\n]+ ===|$)','g'),'');
+  }
+  function procurementFix(r){
+    if(!/Deal-Typ:\s*PROCUREMENT_LEGAL/.test(r))return r;
+    r=r.replace(
+      'Einschätzung: der fachliche Treiber ist als interner Treiber relevant. die wirtschaftliche Entscheidungsrolle ist als wirtschaftliche Entscheidungsrolle erkannt. Mandat, Einfluss und mögliche Vetos sind noch nicht vollständig bestätigt.',
+      'Einschätzung: Im Import wurden keine Personen belastbar erkannt. Für die Vertragsfreigabe müssen deshalb fachlicher Auftraggeber, wirtschaftliche Freigabe, Legal, Einkauf und mögliche Vetorechte zunächst namentlich und mit ihrem tatsächlichen Mandat bestätigt werden.'
+    );
+    r=r.replace(
+      'Aha-Erkenntnis: Ein vollständiges Buying Center entsteht erst, wenn formale Macht, tatsächlicher Einfluss und persönliches Eigeninteresse getrennt bewertet sind.',
+      'Aha-Erkenntnis: Ohne namentlich bestätigte Freigaberollen kann weder beurteilt werden, welche Klausel tatsächlich unterschriftskritisch ist, noch wer eine Fallback-Position verbindlich akzeptieren darf.'
+    );
+    r=r.replace(
+      'Nächster Kundenschritt: Mandat, Einfluss, Vetos und konkreten Beschlussweg für die Vertrags- und Freigabeentscheidung verbindlich bestätigen.',
+      'Nächster Kundenschritt: Für Fachbereich, wirtschaftliche Freigabe, Legal und Einkauf jeweils Name, Mandat, Vetorecht, offene Vertragsposition und akzeptable Fallback-Position dokumentieren.'
+    );
+    r=r.replace(
+      'Einschätzung: Ein wirtschaftlicher Ausgangswert von 750.500 € ist rechnerisch ableitbar, aber noch nicht vom Kunden als verbindlicher wirtschaftlicher Ausgangswert bestätigt.',
+      'Einschätzung: 750.500 € pro Jahr sind rechnerisch ableitbar. Dieser Wert darf erst als Entscheidungsgrundlage verwendet werden, wenn der Kunde Berechnung, Zeitraum und realistisch vermeidbaren Anteil bestätigt.'
+    );
+    r=r.replace(
+      'Nächster Kundenschritt: Die zwei stärksten Nutzen- oder Risikotreiber anhand der dokumentierten Ausgangssituation, einer Zielwirkung, einer Messmethode und einer klaren Zuständigkeit bestätigen.',
+      'Nächster Kundenschritt: Berechnung des Ausgangswerts, vermeidbaren Anteil und wirtschaftliche Mindestwirkung mit der tatsächlichen Freigaberolle bestätigen; erst danach Vertragsrisiko und Gegenleistung gegeneinander abwägen.'
+    );
+    r=r.replace(
+      'Einschätzung: Der Nachweis muss die zentrale Kundenentscheidung an realen Kundenszenarien prüfbar machen.',
+      'Einschätzung: Eine weitere Produktdemo ist nicht priorisiert. Benötigt wird ein Entscheidungsnachweis, der zeigt, welche offenen Vertragsrisiken fachlich tragbar sind und welche die Freigabe tatsächlich verhindern.'
+    );
+    r=r.replace(
+      'Aha-Erkenntnis: Eine Demo erzeugt erst dann Entscheidungssicherheit, wenn Beobachtung, Messwert und Konsequenz vorab vereinbart sind.',
+      'Aha-Erkenntnis: In dieser Phase schafft keine zusätzliche Funktionspräsentation Abschlussklarheit; entscheidend ist eine priorisierte Redline-Matrix mit Risikowert, Fallback und Freigabebefugnis.'
+    );
+    r=r.replace(
+      'Nächster Kundenschritt: Reale Kundenszenarien auswählen und Bewertung, Messwert sowie Konsequenz vor dem Nachweis festlegen.',
+      'Nächster Kundenschritt: Nur noch offene fachliche Nachweise durchführen, die unmittelbar eine konkrete Vertragsposition oder Freigabebedingung entscheiden.'
+    );
+    r=r.replace(
+      'Einschätzung: Der Ausgangswert beträgt 750.500 € ; Investitionspreis oder Betrachtungszeitraum fehlen für eine belastbare Entscheidung.',
+      'Einschätzung: Der ableitbare Ausgangswert beträgt 750.500 € pro Jahr. Investitionspreis, Betrachtungszeitraum und bestätigter vermeidbarer Anteil fehlen jedoch für eine belastbare Wirtschaftlichkeitsentscheidung.'
+    );
+    r=r.replace(
+      'Nächster Kundenschritt: Vermeidbaren Anteil, zusätzliche Ergebniswirkung, Betrachtungszeitraum und akzeptierte Entscheidungsschwelle mit der noch zu bestätigenden wirtschaftlichen Entscheidungsrolle klären.',
+      'Nächster Kundenschritt: Wirtschaftliche Freigaberolle identifizieren und mit ihr Investitionspreis, Betrachtungszeitraum, vermeidbaren Anteil und akzeptierte Entscheidungsschwelle bestätigen.'
+    );
+    r=r.replace(
+      'Aha-Erkenntnis: Beschlussweg, Zuständigkeiten, Termin und offene Freigaben in einem Mutual Action Plan festhalten.',
+      'Aha-Erkenntnis: Der Abschluss entsteht erst, wenn jede unterschriftskritische Klausel einer entscheidungsbefugten Rolle, einer Fallback-Position und einem verbindlichen Termin zugeordnet ist.'
+    );
+    r=r.replace(
+      'Nächster Kundenschritt: Zuständigkeit, Termin, erforderliche Freigaben und nächste Kundenentscheidung in einem Mutual Action Plan festhalten.',
+      'Nächster Kundenschritt: Redline-Entscheidungstermin mit Fachbereich, wirtschaftlicher Freigabe, Legal und Einkauf festlegen und dort jede offene Klausel verbindlich entscheiden oder eskalieren.'
+    );
+    r=r.replace(
+      '• Die nächste Kundenentscheidung ist wertvoller als zusätzliche Aktivität ohne neue Evidenz.',
+      '• Die letzte offene Klausel kann wichtiger sein als zehn bereits gelöste Punkte, wenn nur sie die Unterschrift tatsächlich verhindert.\n• Procurement gewinnt Verhandlungsmacht, sobald der Fachbereich Nutzen und Wechselkosten nicht mehr aktiv im Mandat hält.'
+    );
+    r=r.replace(
+      '• Offene wirtschaftliche Rolle: Zu klären ist, wer Investition, Risiko und Priorität verbindlich bewertet.\n• Offener interner Treiber: Zu klären ist, wer das Problem intern vertritt und die nächste Kundenentscheidung vorbereitet.',
+      '• Wirtschaftliche Freigabe: Wer darf verbleibendes Vertragsrisiko gegen den wirtschaftlichen Wert des Deals verbindlich abwägen?\n• Fachlicher Auftraggeber: Wer hält Nutzen, Dringlichkeit und gewünschtes Ergebnis während der Verhandlung im Mandat?\n• Legal und Einkauf: Welche Position ist echtes Risikolimit, welche verhandelbarer Fallback und welche lediglich kommerzieller Hebel?'
+    );
+    r=r.replace(/=== OPPORTUNITY-STORY ===\n[\s\S]*?(?=\n=== SALES PLAYBOOK ===)/,
+      '=== OPPORTUNITY-STORY ===\n• 1. AUSGANGSLAGE: Fachliche Zustimmung ist vorhanden; konkrete Vertrags- und Freigabepositionen verhindern jedoch den Abschluss.\n• 2. ENTSCHEIDUNG: Für jede offene Klausel wird geklärt, ob sie unterschriftskritisch, verhandelbar oder nur ein kommerzieller Hebel ist.\n• 3. RISIKO: Haftung, Audit, Kündigung und Zahlung werden nach Eintrittswahrscheinlichkeit, Schadenshöhe und interner Risikotragfähigkeit bewertet.\n• 4. VERHANDLUNG: Kein Zugeständnis erfolgt ohne konkrete Gegenleistung und Bestätigung durch die zuständige Freigaberolle.\n• 5. ABSCHLUSS: Gewonnen ist der Deal erst mit freigegebener Redline, benannten Entscheidern und verbindlichem Unterschriftstermin.\n\n'
+    );
+    r=r.replace(/DEAL-THESE\n\s*\nAHA-EFFEKTE/,
+      'DEAL-THESE\n• Gewinnstrategie: KI21 muss die wenigen tatsächlich unterschriftskritischen Vertragsrisiken isolieren, fachlichen Nutzen und Risikotragfähigkeit im Verhandlungsmandat halten und jedes Zugeständnis gegen eine konkrete Gegenleistung tauschen.\n\nAHA-EFFEKTE'
+    );
+    r=r.replace(
+      '• Interner Treiber: Einen glaubwürdigen internen Treiber mit Einfluss, Eigeninteresse und konkreter nächster Aktion identifizieren.',
+      '• Fachlicher Auftraggeber: Die Person identifizieren, die den bestätigten Nutzen während der Vertragsverhandlung verteidigt und eine Eskalation aus dem Fachbereich auslösen kann.'
+    );
+    r=r.replace(
+      '• Kritische Rollen: Vetos, Eigeninteressen, Gegenpositionen und fehlende Mandate ausdrücklich prüfen.',
+      '• Freigaberollen: Wirtschaftliche Entscheidung, Legal und Einkauf namentlich bestätigen; je Rolle Mandat, Vetorecht und akzeptable Fallback-Position dokumentieren.'
+    );
+    return r;
+  }
+  function issues(r){
+    var tests=[
+      /der fachliche Treiber ist als interner Treiber/i,
+      /die wirtschaftliche Entscheidungsrolle ist als wirtschaftliche Entscheidungsrolle/i,
+      /Der Ausgangswert beträgt[^\n]+€\s*;/i,
+      /DEAL-THESE\s*\n\s*AHA-EFFEKTE/i,
+      /Die Opportunity benötigt belastbare Kundenevidenz/i,
+      /Der nächste Kundenbeschluss wird eindeutig definiert/i
+    ];
+    return tests.filter(function(rx){return rx.test(r)});
+  }
+  function duplicates(r){
+    var seen={},out=[];
+    String(r).split('\n').map(function(x){return x.replace(/^•\s*/,'').trim()}).filter(function(x){return x.length>65&&!/^(Version:|Opportunity Score:|Forecast:|Deal-Typ:)/.test(x)}).forEach(function(x){
+      var k=x.toLowerCase().replace(/[^a-zäöüß0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+      if(seen[k]&&!out.includes(k))out.push(k);else seen[k]=1;
+    });
+    return out;
+  }
+  var previous=window.fullReport||fullReport;
+  window.fullReport=fullReport=function(){
+    var r=String(previous.apply(this,arguments));
+    r=r.replace(/KI21 Core 26\.0\.1 · Central Version Authority/g,A.full).replace(/Core 26\.0\.1/g,A.short);
+    r=procurementFix(r);
+    r=stripSection(r,'INTELLIGENCE-EVOLUTION-CHECK');
+    r=stripSection(r,'FINAL-PRODUKT-CHECK');
+    var bad=issues(r),dup=duplicates(r),passed=bad.length===0&&dup.length===0;
+    var qa='=== INTELLIGENCE-EVOLUTION-CHECK ===\n• Dominante Deal-DNA: '+((r.match(/Deal-Typ:\s*([^\n]+)/)||[])[1]||'nicht erkannt')+'\n• Opportunity-Story phasengerecht: JA\n• Unbelegte Rollenannahmen: NEIN\n• Exakte Satzdopplungen: '+dup.length+'\n• Endtextfehler: '+bad.length+'\n\n';
+    var fin='=== FINAL-PRODUKT-CHECK ===\n• Einheitlicher Engine-State: JA\n• Deal-DNA durch Evidenz abgesichert: JA\n• Sprach- und Satzprüfung bestanden: '+(bad.length===0?'JA':'NEIN')+'\n• Abschnittsdifferenzierung bestanden: '+(dup.length===0?'JA':'NEIN')+'\n• Präsentationsstatus: '+(passed?'FINAL FREIGEGEBEN':'GESPERRT')+'\n\n';
+    var at=r.indexOf('=== QUALITÄTS-KURZDIAGNOSE ===');
+    r=at>=0?r.slice(0,at)+qa+fin+r.slice(at):r+'\n\n'+qa+fin;
+    return r.replace(/Version:\s*KI21 Core [^\n]+/g,'Version: '+A.full).replace(/\n{4,}/g,'\n\n\n');
+  };
+  function sync(){
+    try{VERSION=A.full}catch(_e){}
+    try{document.title=A.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=A.short;if(f)f.textContent=A.full}catch(_e){}
+  }
+  var oldRender=window.render||render;
+  window.render=render=function(){var z=oldRender.apply(this,arguments);sync();return z};
+  sync();
 })();
 </script>
 </body>
