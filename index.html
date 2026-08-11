@@ -15395,6 +15395,67 @@ apply();window.addEventListener('load',function(){setTimeout(function(){try{if(t
 })();
 </script>
 
+
+<script id="ki21-28-9-0-semantic-quality-gates">
+(function(){'use strict';
+const RELEASE={version:'28.9.0',short:'Core 28.9.0',full:'KI21 Core 28.9.0 · Sales Intelligence Cockpit · Semantic Quality Gates'};
+function txt(x){return String(x==null?'':x)}
+function has(r,re){return re.test(txt(r))}
+function semanticExpectation(tc,r){
+ const raw=txt(tc&&tc.raw), phase=((raw.match(/(?:Phase|Opportunity-Status):\s*([^\n]+)/i)||[])[1]||'').trim();
+ const late=/(Vertragsabschluss|Beschaffung|Vertragsprüfung|Vertragsverhandlung|Angebot\s*\/\s*Investitionsentscheidung|Angebot und Abschluss|finale Freigabe|Rollout-Entscheidung|Vertragsverlängerung)/i.test(phase);
+ const budgetConfirmed=/(Budget|Investitionsfreigabe).{0,45}(bestätigt|freigegeben)|Investitionsfreigabe bestätigt/i.test(raw);
+ const priceKnown=/(?:Preis|Pilotpreis|Jahrespreis|Angebotspreis|Basispreis|Rolloutpreis)\s*:?\s*[\d.]+\s*€/i.test(raw);
+ const economicBuyer=/(CFO|Geschäftsführer|Geschäftsführerin).{0,90}(Wirtschaftlich|wirtschaftlich|Entscheider|Entscheiderin|Investitionsfreigabe)/i.test(raw);
+ const businessCaseDone=/(Business Case (?:abgeschlossen|bestätigt)|wirtschaftliche[rn]? Nutzen.{0,30}(?:quantifiziert|bestätigt)|Erfolgskriterien bestätigt)/i.test(raw);
+ const hardReset=/(Champion.{0,40}(verlassen|Verlust)|nicht mehr im Unternehmen|CRM.{0,80}(widerspricht|bestreitet)|Budget.{0,30}(eingefroren|Sperre)|nicht als Top-?3-Priorität|keine Management-Priorität|Betriebsrat.{0,30}(Pilotstopp|Stopp))/i.test(raw);
+ const procurement=/Procurement|Beschaffungsforderungen|Vertragsprüfung|Vertragsverhandler/i.test(raw);
+ const budgetGap=/(über dem bestätigten Budget|über dem Budget|maximal [\d.]+\s*€.{0,120}(Gesamtinvestition|angebot).{0,60}(liegt|von))/is.test(raw);
+ const crmConflict=/(CRM vor \d+ Tagen|CRM-Fakten widersprechen|bestreitet eine Budgetfreigabe|veraltete Opportunity-Daten)/i.test(raw);
+ const channelConflict=/(Partnerkonflikt|Deal Ownership|Partnergeschäftsführer|Direktvertrieb.{0,80}Partner)/i.test(raw);
+ const championLoss=/(Champion.{0,50}(verlassen|Verlust)|ausgeschiedener Champion|nicht mehr im Unternehmen)/i.test(raw);
+ let minScore=null,maxForecast=null,minForecast=null,required=[],forbidden=[];
+ if(late&&budgetConfirmed&&economicBuyer&&!hardReset){minScore=50;required.push('Late-stage + bestätigte Freigabe darf nicht wie frühe Discovery bewertet werden');}
+ if(late&&budgetConfirmed&&businessCaseDone&&economicBuyer&&!hardReset){minScore=Math.max(minScore||0,58);minForecast=38;required.push('Reife Kaufentscheidung mit Business Case benötigt einen belastbaren Reifegrad');}
+ if(procurement&&budgetConfirmed&&economicBuyer&&!hardReset){minScore=Math.max(minScore||0,55);required.push('Procurement ist Restabschlussrisiko, kein automatischer Deal-Reset');}
+ if(budgetGap){maxForecast=55;required.push('Explizite Budgetlücke muss Forecast begrenzen, bis Finanzierung/Paket geklärt ist');}
+ if(crmConflict){maxForecast=Math.min(maxForecast==null?100:maxForecast,20);required.push('Aktuelle Evidenz muss historischen CRM-Optimismus überstimmen');}
+ if(championLoss){maxForecast=Math.min(maxForecast==null?100:maxForecast,45);required.push('Champion-Verlust muss Abschlussnähe sichtbar reduzieren');}
+ if(channelConflict&&crmConflict){maxForecast=Math.min(maxForecast==null?100:maxForecast,20);}
+ forbidden.push('Keine generische frühe-Discovery-Logik bei bestätigter Investitionsfreigabe ohne expliziten Reset');
+ return {phase,late,budgetConfirmed,priceKnown,economicBuyer,businessCaseDone,hardReset,procurement,budgetGap,crmConflict,channelConflict,championLoss,minScore,maxForecast,minForecast,required,forbidden};
+}
+function semanticChecks(tc,r){
+ const e=semanticExpectation(tc,r), score=Number(r.engine&&r.engine.score), fc=Number(r.engine&&r.engine.forecast), report=txt(r.report), dna=txt(r.engine&&r.engine.type);
+ const checks={};
+ if(e.minScore!=null) checks.semanticScoreFloor=Number.isFinite(score)&&score>=e.minScore;
+ if(e.minForecast!=null) checks.semanticForecastFloor=Number.isFinite(fc)&&fc>=e.minForecast;
+ if(e.maxForecast!=null) checks.semanticForecastCeiling=Number.isFinite(fc)&&fc<=e.maxForecast;
+ if(e.crmConflict) checks.semanticCrmConflict=/CRM_EVIDENZKONFLIKT/i.test(dna+' '+report);
+ if(e.championLoss) checks.semanticChampionLoss=/CHAMPION_VERLUST|Champion-Verlust/i.test(dna+' '+report);
+ if(e.channelConflict&&e.crmConflict) checks.semanticConflictPriority=/CRM_EVIDENZKONFLIKT|KANALKONFLIKT/i.test(dna+' '+report);
+ if(e.procurement&&e.budgetConfirmed&&!e.hardReset) checks.semanticProcurementMaturity=!/Frühe Discovery|wirtschaftlicher Ausgangswert nicht belastbar quantifiziert/i.test((report.match(/EINSCHÄTZUNG[\s\S]{0,900}/)||[''])[0]);
+ return {expectation:e,checks,failed:Object.keys(checks).filter(k=>!checks[k])};
+}
+function runSemantic(ids){
+ const base=window.KI21_runEvolutionFactory(ids); const results=base.results;
+ results.forEach(r=>{const s=semanticChecks(r.tc,r);r.semantic=s;Object.assign(r.checks,s.checks);s.failed.forEach(f=>{if(!r.failed.includes(f))r.failed.push(f)});r.passed=r.failed.length===0;});
+ const passed=results.filter(r=>r.passed).length, clusters={};results.forEach(r=>r.failed.forEach(f=>clusters[f]=(clusters[f]||0)+1));
+ const summary=results.map(r=>`${r.passed?'✅':'⚠️'} ${r.tc.id} · ${r.tc.name} | Score ${r.engine.score}% | Forecast ${r.engine.forecast}%${r.semantic.failed.length?' | SEMANTIK: '+r.semantic.failed.join(', '):''}`).join('\n');
+ const semanticFails=results.filter(r=>r.semantic.failed.length).map(r=>{const e=r.semantic.expectation;return `${r.tc.id} · ${r.tc.name}: ${r.semantic.failed.join(' · ')} | Ist ${r.engine.score}/${r.engine.forecast}`+(e.minScore!=null?` | Score ≥ ${e.minScore}`:'')+(e.minForecast!=null?` | Forecast ≥ ${e.minForecast}`:'')+(e.maxForecast!=null?` | Forecast ≤ ${e.maxForecast}`:'')+` | ${e.required.join(' / ')}`}).join('\n')||'Keine semantischen Abweichungen.';
+ const text=`KI21 END-TO-END EVOLUTION FACTORY 2.0\nVersion: ${RELEASE.full}\nErstellt: ${new Date().toLocaleString('de-DE')}\nTestfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nAPI-Aufrufe: 0\n\n=== MANAGEMENT SUMMARY ===\n${summary}\n\n=== SEMANTIC QUALITY GATES ===\n• Technische Konsistenz bleibt vollständig erhalten.\n• Score-/Forecast-Korridore werden aus Evidenzmustern abgeleitet, nicht aus Testfallnamen oder hartcodierten Zielwerten.\n• Reifegrad-Gate: späte Phase + bestätigte Freigabe + Economic Buyer darf ohne expliziten Deal-Reset nicht auf Discovery-Niveau kollabieren.\n• Procurement-Gate: bestätigter Business Case und Budget bleiben positive Evidenz; Vertragsverhandlung wird als Restabschlussrisiko behandelt.\n• Budget-Gap-Gate: explizite Finanzierungslücke begrenzt Forecast.\n• CRM-Konflikt-Gate: aktuelle Kundenevidenz schlägt historischen CRM-Optimismus.\n• Champion-Loss-Gate: Verlust des internen Treibers reduziert Abschlussnähe und muss semantisch sichtbar sein.\n\n=== SEMANTISCHE ABWEICHUNGEN ===\n${semanticFails}\n\n=== FEHLERCLUSTER ===\n${Object.keys(clusters).sort((a,b)=>clusters[b]-clusters[a]).map(k=>`• ${k}: ${clusters[k]}/${results.length}`).join('\n')||'• keine'}\n\n=== FACTORY-GATES ===\n• 28.8.3 State-Isolation und Diversity Guard bleiben unverändert aktiv.\n• 28.9.0 ergänzt ausschließlich READ-ONLY Semantic Quality Gates; Parser, Core-Score, Forecast und Deal-DNA werden nicht mutiert.\n• Semantik wird aus dem synthetischen Originalimport abgeleitet, nicht aus Firmenname/Test-ID.\n• Ein technisch konsistentes, aber fachlich unplausibles Ergebnis kann nicht mehr vollständig bestehen.\n\n=== FEHLERDETAILS ===\n${results.filter(r=>!r.passed).map(r=>`${r.tc.id}: ${r.failed.join(' · ')} | Core ${r.engine.score}/${r.engine.forecast} ${r.engine.type}`).join('\n')||'Keine Fehler.'}`;
+ return {results,text,clusters};
+}
+window.KI21_runSemanticEvolutionFactory=runSemantic;
+function esc(s){return txt(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c))}
+function bind(){
+ try{window.KI21_RELEASE_AUTHORITY=RELEASE;window.KI21_VERSION=RELEASE.full;window.KI21_VERSION_SHORT=RELEASE.short;if(typeof VERSION!=='undefined')VERSION=RELEASE.full;document.title=RELEASE.full;const h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full;}catch(e){}
+ const b=document.getElementById('ki21RunEvolutionFactory');if(!b||b.dataset.semantic290==='1')return;b.dataset.semantic290='1';b.textContent='Evolution Factory 2.0 starten';b.onclick=function(){const r=runSemantic();const ov=document.createElement('div');ov.className='overlay';ov.innerHTML=`<div class="modal quality-suite-modal"><div class="kicker">End-to-End Evolution Factory 2.0</div><div class="headline">${r.results.filter(x=>x.passed).length}/${r.results.length} vollständig bestanden</div><div class="actions"><button class="btn primary" id="ki21CopySemantic">Bericht kopieren</button><button class="btn secondary" id="ki21CloseSemantic">Schließen</button></div><textarea style="min-height:60vh;margin-top:12px">${esc(r.text)}</textarea></div>`;document.body.appendChild(ov);ov.querySelector('#ki21CloseSemantic').onclick=()=>ov.remove();ov.querySelector('#ki21CopySemantic').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText(r.text);};
+}
+window.KI21_SEMANTIC_QUALITY_GATES_290={version:RELEASE.full,mode:'READ-ONLY',mutations:{parser:false,score:false,forecast:false,dealDNA:false,storage:false},principle:'Technical consistency is necessary but not sufficient; semantic plausibility is independently gated from evidence patterns.'};
+bind();document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,50));window.addEventListener('pageshow',()=>setTimeout(bind,50));setInterval(bind,1200);
+})();
+</script>
 </body>
 </html>
 <script>
