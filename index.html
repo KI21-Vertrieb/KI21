@@ -18529,3 +18529,118 @@ setTimeout(enforceVersion,1000);
 </script>
 
 
+
+<script id="ki21-28-17-8-product-polish-runtime-integrity">
+(function(){
+'use strict';
+var VER='28.17.8';
+var SHORT='Core '+VER;
+var FULL='KI21 Core '+VER+' · Sales Intelligence Cockpit · Product Polish & Runtime Integrity · Product Truth · 120 Death Cases';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function stamp(){
+ try{ window.KI21_VERSION=FULL;window.KI21_VERSION_SHORT=SHORT;document.title=FULL;if(typeof VERSION!=='undefined')VERSION=FULL; }catch(_e){}
+ var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=FULL;
+}
+
+/* Preserve the user's current workspace when switching opportunities. */
+var baseSwitch=typeof window.switchOpportunity==='function'?window.switchOpportunity:(typeof switchOpportunity==='function'?switchOpportunity:null);
+if(baseSwitch){
+ var improvedSwitch=function(id){
+  var tab=(window.state&&state.activeTab)||'cockpit';
+  var input=(window.state&&state.inputTab)||'crm';
+  var target=window.portfolio&&portfolio.opportunities&&portfolio.opportunities.find(function(x){return x.id===id});
+  if(!target)return;
+  portfolio.activeId=id;state=target;
+  state.activeTab=tab; if(tab==='inputs')state.inputTab=input;
+  try{ if(typeof normalizeState==='function')state=normalizeState(state); }catch(_e){}
+  try{ if(typeof savePortfolio==='function')savePortfolio(); }catch(_e){}
+  try{ if(typeof render==='function')render(); }catch(_e){}
+  try{ if(typeof toast==='function')toast('Opportunity gewechselt'); }catch(_e){}
+ };
+ window.switchOpportunity=improvedSwitch;try{switchOpportunity=improvedSwitch}catch(_e){}
+}
+
+/* Visible language authority: SPICED only, sales-leader language, provider-neutral deal story. */
+function polishVisible(root){
+ root=root||document;
+ var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+ var n,skip=/^(SCRIPT|STYLE|TEXTAREA)$/;
+ while(n=walker.nextNode()){
+  if(n.parentElement&&skip.test(n.parentElement.tagName))continue;
+  var t=n.nodeValue, x=t;
+  x=x.replace(/Drei Verkaufsaufträge/gi,'Die nächsten 3 Schritte');
+  x=x.replace(/Offene Verkaufsaufträge/gi,'Offene nächste Schritte');
+  x=x.replace(/\bSPIN-Fragen\b/gi,'SPICED-Fragen').replace(/\bSPIN\b/g,'SPICED');
+  x=x.replace(/Exit-Kriterium/gi,'Erledigt, wenn …');
+  x=x.replace(/Auslöser aus dem CRM/gi,'Erkannt aus diesen CRM-Angaben');
+  x=x.replace(/verknüpfte Belege/gi,'CRM-Belege');
+  x=x.replace(/höchster Einfluss/gi,'höchste Entscheidungsrelevanz');
+  x=x.replace(/\bEinfluss\b/g,'Relevanz');
+  x=x.replace(/ob KI21 funktioniert/gi,'ob die Lösung funktioniert');
+  if(x!==t)n.nodeValue=x;
+ }
+}
+
+/* Journey: explain the number and make the evidence summary directly inspectable. */
+function enhanceJourney(){
+ var cards=document.querySelectorAll('.ki21-journey-summary-card');
+ cards.forEach(function(c){
+  var span=c.querySelector('span');if(!span)return;
+  if(/CRM-Belege/i.test(span.textContent||'')){
+   c.style.cursor='pointer';c.setAttribute('role','button');c.setAttribute('tabindex','0');
+   c.title='Antippen, um die zugrunde liegenden CRM-Angaben zu sehen';
+   var open=function(){
+    var evidence=[];document.querySelectorAll('.ki21-journey-evidence>div').forEach(function(x){var t=(x.textContent||'').trim();if(t&&!evidence.includes(t))evidence.push(t)});
+    var ov=document.createElement('div');ov.className='overlay';
+    ov.innerHTML='<div class="modal"><div class="kicker">CRM-Belege der Deal Journey</div><div class="headline">Warum KI21 diese Journey priorisiert</div><div class="body muted">Diese Angaben stammen aus der aktuell geladenen Opportunity und begründen die relevanten Entscheidungsphasen.</div><div class="divider"></div><div class="list">'+(evidence.length?evidence.map(function(x){return '<div class="item">'+esc(x)+'</div>'}).join(''):'<div class="item">Noch keine spezifischen CRM-Belege vorhanden.</div>')+'</div><div class="actions"><button class="btn primary" data-close>Schließen</button></div></div>';
+    document.body.appendChild(ov);ov.querySelector('[data-close]').onclick=function(){ov.remove()};ov.onclick=function(e){if(e.target===ov)ov.remove()};
+   };
+   c.onclick=open;c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
+  }
+ });
+ document.querySelectorAll('.ki21-journey-impact').forEach(function(x){
+  x.title='Entscheidungsrelevanz: Wie stark dieser Themenblock die aktuelle Gewinn-/Verlustentscheidung beeinflusst. Kein Reifegrad- oder Qualitätsscore.';
+ });
+}
+
+/* FerroLine/any imported opportunity: never present an analysed deal as a blank 0/0 cockpit because of a stale render cycle. */
+function recoverBlankDeal(){
+ try{
+  if(!window.state||!state.rawImport)return;
+  var cockpit=state.activeTab==='cockpit';if(!cockpit)return;
+  var vals=[].slice.call(document.querySelectorAll('.metric-value')).map(function(x){return (x.textContent||'').trim()});
+  var blank=vals.length>=2&&vals[0]==='0%'&&vals[1]==='0%';
+  if(blank){
+   try{ if(typeof parseImport==='function' && (!state.company||!state.evidence||!state.evidence.length))parseImport(state.rawImport); }catch(_e){}
+   try{ if(typeof saveState==='function')saveState(state); }catch(_e){}
+   try{ if(typeof render==='function')render(); }catch(_e){}
+  }
+ }catch(_e){}
+}
+
+/* Responsive Journey labels: no clipped "Einfluss" box on narrow iPhones. */
+var css=document.createElement('style');css.textContent=`
+.ki21-journey-impact{min-width:78px;max-width:92px;padding:9px 7px!important;text-align:center;box-sizing:border-box}
+.ki21-journey-impact small{font-size:.62rem!important;line-height:1.05!important;white-space:normal!important;letter-spacing:.08em!important;display:block}
+.ki21-journey-summary-card{min-width:0}.ki21-journey-summary-card span{line-height:1.25}
+@media(max-width:430px){.ki21-journey-head{grid-template-columns:42px minmax(0,1fr) 76px 14px!important;gap:9px!important;padding:15px 12px!important}.ki21-journey-title{overflow-wrap:anywhere}.ki21-priority-badge{white-space:normal}.ki21-journey-impact{min-width:72px;max-width:76px}.ki21-journey-impact strong{font-size:1.15rem!important}}
+`;document.head.appendChild(css);
+
+/* Wrap render so every screen gets the same visible-language and journey polish. */
+var baseRender=typeof window.render==='function'?window.render:(typeof render==='function'?render:null);
+if(baseRender){
+ var render28178=function(){var out=baseRender.apply(this,arguments);requestAnimationFrame(function(){stamp();polishVisible(document);enhanceJourney();recoverBlankDeal()});return out};
+ window.render=render28178;try{render=render28178}catch(_e){}
+}
+
+/* Reports: terminology only; semantic scoring/factory contract remains untouched. */
+function reportPolish(fn){return function(){return String(fn.apply(this,arguments)).replace(/Drei Verkaufsaufträge/gi,'Die nächsten 3 Schritte').replace(/Offene Verkaufsaufträge/gi,'Offene nächste Schritte').replace(/Beantwortete SPIN-Fragen/gi,'Beantwortete SPICED-Fragen').replace(/\bSPIN\b/g,'SPICED').replace(/ob KI21 funktioniert/gi,'ob die Lösung funktioniert').replace(/Version:\s*KI21 Core [^\n]+/,'Version: '+FULL)}}
+try{if(typeof window.fullReport==='function'){window.fullReport=reportPolish(window.fullReport);fullReport=window.fullReport}if(typeof window.decisionBrief==='function'){window.decisionBrief=reportPolish(window.decisionBrief);decisionBrief=window.decisionBrief}}catch(_e){}
+
+window.KI21_PRODUCT_POLISH_28178={preserveActiveTab:true,blankDealRecovery:true,journeyEvidenceInspectable:true,decisionRelevanceExplained:true,visibleMethod:'SPICED',semanticFactoryContract:'120/120 unchanged'};
+function boot(){stamp();polishVisible(document);enhanceJourney();recoverBlankDeal()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,120)},{once:true});else setTimeout(boot,60);
+window.addEventListener('pageshow',function(){setTimeout(boot,100)});
+})();
+</script>
