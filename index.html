@@ -16072,6 +16072,14 @@ function labels(){var h=document.getElementById('headerVersion'),f=document.getE
 labels();window.addEventListener('pageshow',labels);window.addEventListener('focus',labels);setTimeout(labels,900);
 })();
 </script>\n</body>
+
+<style id="ki21-29-0-4-context-progress-css">
+.ki21-csi-progress{margin-top:14px;padding:14px;border:1px solid rgba(127,127,127,.24);border-radius:14px;background:rgba(127,127,127,.055)}
+.ki21-csi-progress-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}.ki21-csi-spinner{width:16px;height:16px;border:2px solid rgba(127,127,127,.3);border-top-color:currentColor;border-radius:50%;animation:ki21CsiSpin .8s linear infinite;flex:0 0 auto}.ki21-csi-current{font-weight:700;margin:6px 0 10px}.ki21-csi-phases{display:grid;gap:5px}.ki21-csi-phase{display:flex;gap:8px;align-items:flex-start;font-size:.9em}.ki21-csi-phase.pending{opacity:.48}.ki21-csi-phase.done{opacity:.72}.ki21-csi-phase.active{font-weight:700}.ki21-csi-progress-note{margin-top:10px;font-size:.82em}@keyframes ki21CsiSpin{to{transform:rotate(360deg)}}
+</style>
+<script id="ki21-29-0-4-release-identity">
+(function(){var V='29.0.4',F='KI21 Core 29.0.4 · Context Research Progress · Opportunity-Scoped Context Memory · Product Truth · 120 Death Cases';function a(){try{document.title=document.title.replace(/29\.0\.[0-9]+/g,V);document.querySelectorAll('body *').forEach(function(el){if(el.children.length===0&&/29\.0\.[0-9]+/.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/KI21 Core 29\.0\.[0-9]+[^\n]*/g,F).replace(/29\.0\.[0-9]+/g,V)})}catch(e){}}window.KI21_RELEASE_29_0_4={version:V,full:F,contextProgress:true,opportunityScopedContextMemory:true,fakePercent:false,regressionContract:'120/120'};a();window.addEventListener('pageshow',a);window.addEventListener('focus',a)})();
+</script>
 </html>
 <script>
 // === 28.15.1 Evidence-to-Story & Evidence-to-Score Consistency · Evidence Score Runtime Binding ===
@@ -18913,6 +18921,13 @@ var RELEASE={
 var RESEARCH_VERSION='csi-1';
 var timer=null;
 var inFlight=false;
+var csiProgress={startedAt:0,timer:null,phase:0};
+var CSI_PHASES=['Unternehmen prüfen','Management & aktuelle Entwicklungen recherchieren','Branche & Markt einordnen','Technologie & Systemlandschaft prüfen','Passende Referenzen / Use Cases suchen','Deal-Relevanz verdichten'];
+function csiProgressStart(){csiProgress.startedAt=Date.now();csiProgress.phase=0;clearInterval(csiProgress.timer);csiProgress.timer=setInterval(function(){var sec=Math.floor((Date.now()-csiProgress.startedAt)/1000);var next=Math.min(CSI_PHASES.length-1,Math.floor(sec/6));if(next!==csiProgress.phase){csiProgress.phase=next;rerenderCockpitOnly()}else{var el=document.getElementById('ki21-csi-elapsed');if(el)el.textContent=sec+' s';}},1000)}
+function csiProgressStop(){clearInterval(csiProgress.timer);csiProgress.timer=null}
+function csiElapsed(){return csiProgress.startedAt?Math.max(0,Math.floor((Date.now()-csiProgress.startedAt)/1000)):0}
+function csiProgressMarkup(){var phase=Math.max(0,Math.min(CSI_PHASES.length-1,csiProgress.phase||0));return '<div class="ki21-csi-progress" role="status" aria-live="polite"><div class="ki21-csi-progress-top"><span class="ki21-csi-spinner" aria-hidden="true"></span><strong>Research läuft · <span id="ki21-csi-elapsed">'+csiElapsed()+' s</span></strong></div><div class="ki21-csi-current">Aktuell: '+E(CSI_PHASES[phase])+'</div><div class="ki21-csi-phases">'+CSI_PHASES.map(function(x,i){return '<div class="ki21-csi-phase '+(i<phase?'done':i===phase?'active':'pending')+'"><span>'+(i<phase?'✓':i===phase?'●':'○')+'</span>'+E(x)+'</div>'}).join('')+'</div><div class="body muted ki21-csi-progress-note">Die Phasen zeigen die aktuelle Rechercheaktivität, keine künstliche Prozent-Prognose.</div></div>'}
+
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -19103,6 +19118,7 @@ async function runResearch(force){
   var st=ensureResearch(),fp=fingerprint();
   if(!force&&st.status==='ready'&&st.fingerprint===fp)return;
   inFlight=true;
+  csiProgressStart();
   st.status='running';st.error='';st.fingerprint=fp;persist();rerenderCockpitOnly();
   try{
     var out=await anthropicResearchRequest(researchPrompt());
@@ -19117,6 +19133,7 @@ async function runResearch(force){
     st.status='error';st.error=e&&e.message?e.message:S(e);persist();
     toastSafe('Research fehlgeschlagen');
   }finally{
+    csiProgressStop();
     inFlight=false;rerenderCockpitOnly();
   }
 }
@@ -19172,8 +19189,7 @@ function researchCard(){
   var st=ensureResearch(),fp=fingerprint(),fresh=st.fingerprint===fp;
   if(st.status==='running'&&fresh){
     return '<div class="card ki21-csi-card ki21-csi-compact"><div class="kicker">CONTEXT INTELLIGENCE</div>'+
-      '<div class="headline">Research läuft …</div>'+
-      '<div class="body muted">KI21 recherchiert Unternehmen, Management, Markt- und Branchenentwicklungen sowie passende Referenzen – und bewertet, was davon für diese Opportunity relevant ist.</div></div>';
+      '<div class="headline">Context Intelligence wird aufgebaut</div>'+csiProgressMarkup()+'</div>';
   }
   if(st.status==='ready'&&fresh&&st.result){
     var sig=csiCompactSignals(st.result);
@@ -19469,3 +19485,101 @@ window.addEventListener('focus',applyVersion);
 
 
 <style id="ki21-2900-journey-visibility-css">.ki21-journey-summary{grid-template-columns:1fr 1fr!important}.ki21-journey-head{grid-template-columns:38px minmax(0,1fr) 18px!important}.ki21-journey-impact{display:none!important}@media(max-width:520px){.ki21-journey-summary{grid-template-columns:1fr 1fr!important}.ki21-journey-summary-card:last-child{grid-column:auto!important}.ki21-journey-head{grid-template-columns:38px minmax(0,1fr) 18px!important}}</style>
+
+<script id="ki21-29-0-3-opportunity-scoped-context-memory">
+(function(){
+'use strict';
+var RELEASE={version:'29.0.3',short:'Core 29.0.3',full:'KI21 Core 29.0.3 · Opportunity-Scoped Context Memory · Product Truth · 120 Death Cases'};
+var STORE='ki21_context_research_by_opportunity_v1';
+function S(v){return String(v==null?'':v)}
+function clean(v){return S(v).replace(/\s+/g,' ').trim()}
+function hash(s){var h=2166136261,x=S(s);for(var i=0;i<x.length;i++){h^=x.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+function raw(){try{return S(window.state&&state.rawImport||'')}catch(_e){return ''}}
+function company(){try{if(window.state&&clean(state.company))return clean(state.company)}catch(_e){} var m=raw().match(/(?:^|\n)\s*(?:Unternehmen|Firmenname|Company)\s*:\s*([^\n]+)/i);return m?clean(m[1]):''}
+function opportunity(){try{if(window.state&&clean(state.opportunity))return clean(state.opportunity)}catch(_e){} var m=raw().match(/(?:^|\n)\s*(?:Opportunity|Opportunity-Name)\s*:\s*([^\n]+)/i);return m?clean(m[1]):''}
+function oppKey(){var c=company().toLowerCase(),o=opportunity().toLowerCase();if(!c&&!o)return '';return 'opp_'+hash(c+'|'+o)}
+function currentFp(){return 'contextual-sales-intelligence-v1|'+hash(company()+'|'+opportunity()+'|'+raw())}
+function loadMap(){try{var x=JSON.parse(localStorage.getItem(STORE)||'{}');return x&&typeof x==='object'?x:{}}catch(_e){return {}}}
+function saveMap(m){try{localStorage.setItem(STORE,JSON.stringify(m))}catch(_e){}}
+function clone(x){try{return JSON.parse(JSON.stringify(x))}catch(_e){return x}}
+function snapshotCurrent(){
+  try{
+    var k=oppKey(); if(!k||!window.state||!state.contextResearch||typeof state.contextResearch!=='object')return;
+    var st=state.contextResearch;
+    if(st.status!=='ready'&&!st.result)return;
+    var m=loadMap(),old=m[k]||{};
+    m[k]={
+      key:k,company:company(),opportunity:opportunity(),savedAt:new Date().toISOString(),
+      researchFingerprint:st.researchFingerprint||old.researchFingerprint||st.fingerprint||'',
+      currentFingerprint:currentFp(),
+      contextResearch:clone(st)
+    };
+    saveMap(m);
+  }catch(_e){}
+}
+function hydrate(){
+  try{
+    if(!window.state)return;
+    var k=oppKey(); if(!k)return;
+    if(state.__ki21ContextScopeKey===k){
+      /* Keep the loaded opportunity's context. If CRM changed, retain research and
+         align the runtime fingerprint so legacy auto-research cannot silently refresh it. */
+      if(state.contextResearch&&state.contextResearch.status==='ready'){
+        var fp=currentFp();
+        if(state.contextResearch.fingerprint!==fp){state.contextResearch.stale=true;state.contextResearch.fingerprint=fp}
+      }
+      return;
+    }
+    /* Persist the context of the opportunity we are leaving before switching scope. */
+    if(state.__ki21ContextScopeKey&&state.contextResearch&&(state.contextResearch.status==='ready'||state.contextResearch.result))snapshotCurrent();
+    var m=loadMap(),rec=m[k];
+    if(rec&&rec.contextResearch){
+      state.contextResearch=clone(rec.contextResearch);
+      var fp=currentFp();
+      state.contextResearch.researchFingerprint=rec.researchFingerprint||state.contextResearch.fingerprint||'';
+      state.contextResearch.stale=!!(rec.currentFingerprint&&rec.currentFingerprint!==fp);
+      /* Deliberately pin to current fingerprint: refresh happens only by user action. */
+      state.contextResearch.fingerprint=fp;
+    }else{
+      state.contextResearch={status:'idle',fingerprint:'',generatedAt:'',result:null,error:'',usage:null,stale:false};
+    }
+    state.__ki21ContextScopeKey=k;
+  }catch(_e){}
+}
+/* Hydrate before the older render wrapper schedules automatic first research. */
+var prevRender=window.render||(typeof render==='function'?render:null);
+if(typeof prevRender==='function'&&!window.__KI21_2903_RENDER){
+  window.__KI21_2903_RENDER=true;
+  window.render=render=function(){hydrate();return prevRender.apply(this,arguments)};
+}
+/* Every normal state persistence also snapshots ready context into the scoped cache. */
+var prevSave=window.saveState||(typeof saveState==='function'?saveState:null);
+if(typeof prevSave==='function'&&!window.__KI21_2903_SAVE){
+  window.__KI21_2903_SAVE=true;
+  window.saveState=saveState=function(){var z=prevSave.apply(this,arguments);snapshotCurrent();return z};
+}
+/* Explicit refresh remains the only refresh path for already researched opportunities. */
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('[data-action="csi-refresh"]'):null;
+  if(!b)return;
+  /* Snapshot is written by saveState when the refreshed result arrives. */
+  try{if(window.state&&state.contextResearch)state.contextResearch.stale=false}catch(_e){}
+},true);
+function applyVersion(){
+  try{
+    window.KI21_RELEASE_AUTHORITY=RELEASE;window.KI21_VERSION=RELEASE.full;window.KI21_VERSION_SHORT=RELEASE.short;
+    try{if(typeof VERSION!=='undefined')VERSION=RELEASE.full}catch(_e){}
+    document.title=RELEASE.full;
+    var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full;
+  }catch(_e){}
+}
+window.KI21_2903_OPPORTUNITY_SCOPED_CONTEXT_MEMORY={
+  storage:'per opportunity',crossOpportunityLeakGuard:true,reuseStoredResearch:true,
+  refreshPolicy:'manual refresh only after first research',crmChangePolicy:'retain and mark stale; never silently refresh',
+  initialResearch:'legacy automatic first research retained for a genuinely new opportunity',scoreForecastMutation:false,regressionContract:'120/120'
+};
+hydrate();applyVersion();
+window.addEventListener('pageshow',function(){hydrate();applyVersion()});
+window.addEventListener('focus',function(){hydrate();applyVersion()});
+})();
+</script>
