@@ -16906,4 +16906,26 @@ window.KI21_RELEASE_GATE_29324=function(){
 })();
 </script>
 
+<script id="ki21-29-3-25-cockpit-section-rendering-integrity">
+(function(){'use strict';
+var VER='29.3.25', SHORT='Core '+VER, FULL='KI21 Core '+VER+' · Cockpit Section Rendering Integrity · Context Isolation · Product Truth · 120 Death Cases';
+function E(x){return String(x==null?'':x).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c})}
+function R(){try{return String(window.fullReport?window.fullReport():'')}catch(e){return''}}
+function cut(r,start,ends){var a=r.indexOf(start);if(a<0)return'';a+=start.length;var b=r.length;for(var i=0;i<ends.length;i++){var x=r.indexOf(ends[i],a);if(x>=0&&x<b)b=x}return r.slice(a,b).trim()}
+function one(r,start,ends){return cut(r,start,ends).replace(/^\s*•\s*/,'').split(/\n/)[0].trim()}
+function numbered(x){return String(x||'').split(/\n/).map(function(v){return v.replace(/^\s*\d+\.\s*/,'').trim()}).filter(function(v){return v&&!/^•/.test(v)}).slice(0,3)}
+function bullets(x){return String(x||'').split(/\n/).map(function(v){return v.replace(/^\s*•\s*/,'').trim()}).filter(Boolean)}
+function vm(){var r=R();var score=Number(((r.match(/• Opportunity Score:\s*(\d+)%/)||[])[1])||0),fc=Number(((r.match(/• Forecast:\s*(\d+)%/)||[])[1])||0);var type=((r.match(/• Deal-Typ:\s*([^\n]+)/)||[])[1]||'QUALIFIZIERUNG').trim();var thesis=cut(r,'EINSCHÄTZUNG',['DIE PUNKTE, DIE ZÄHLEN','GRÖSSTER ENGPASS','PRIORISIERTER NÄCHSTER SCHRITT','STATE CHECK','=== BUYING CENTER ===']);thesis=thesis.replace(/\n?• Opportunity Score:[\s\S]*$/,'').trim();var decision=one(r,'ZENTRALE KUNDENENTSCHEIDUNG',['GRÖSSTER ENGPASS','EXECUTIVE AHA','PRIORISIERTER NÄCHSTER SCHRITT']);var bottleneck=one(r,'GRÖSSTER ENGPASS',['EXECUTIVE AHA','PRIORISIERTER NÄCHSTER SCHRITT','STATE CHECK']);var tasks=numbered(cut(r,'PRIORISIERTER NÄCHSTER SCHRITT',['STATE CHECK','=== BUYING CENTER ===']));var ah=[];var a=one(r,'EXECUTIVE AHA',['PRIORISIERTER NÄCHSTER SCHRITT','STATE CHECK']);if(a)ah.push(a);bullets(cut(r,'=== SURPRISE INSIGHTS ===',['=== EXECUTIVE-DENKMODELLE ==='])).forEach(function(x){if(ah.length<3&&ah.indexOf(x)<0)ah.push(x)});return{r:r,score:score,forecast:fc,type:type,thesis:thesis,decision:decision,bottleneck:bottleneck,tasks:tasks,ahas:ah}}
+function list(a){return '<div class="list">'+a.map(function(x){return'<div class="item">'+E(x)+'</div>'}).join('')+'</div>'}
+function cockpit(){var v=vm();return '<div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value" data-ki21-score>'+v.score+'%</div><div class="metric-sub">KI21 Bewertung</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value" data-ki21-forecast>'+v.forecast+'%</div><div class="metric-sub">KI21 Bewertung</div></div></div><div class="card orange"><div class="kicker">Deal-These · '+E(v.type)+'</div><div class="headline">'+E(v.thesis)+'</div></div>'+(v.decision?'<div class="card violet"><div class="kicker">Zentrale Kundenentscheidung</div><div class="headline">'+E(v.decision)+'</div></div>':'')+'<div class="card red"><div class="kicker">Größter Engpass</div><div class="body">'+E(v.bottleneck)+'</div></div><div class="card blue"><div class="kicker">Die nächsten 3 Schritte</div>'+list(v.tasks)+'</div>'+(v.ahas.length?'<div class="card green"><div class="kicker">Aha-Perspektiven</div>'+list(v.ahas)+'</div>':'')+'<div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div>'}
+try{renderCockpit=cockpit}catch(e){} window.renderCockpit=cockpit;
+var prev=window.fullReport;if(typeof prev==='function'){window.fullReport=function(){return String(prev.apply(this,arguments)).replace(/KI21 Core 29\.3\.24 · Single Stakeholder Truth Authority · Context Isolation · Product Truth · 120 Death Cases/g,FULL)}}
+function version(){window.KI21_RELEASE_AUTHORITY={version:VER,short:SHORT,full:FULL};window.KI21_VERSION=FULL;window.KI21_VERSION_SHORT=SHORT;try{document.title=FULL;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=SHORT;if(f)f.textContent=FULL}catch(e){}}
+function refresh(){version();try{if(state&&state.activeTab==='cockpit'){var v=document.getElementById('view');if(v){v.innerHTML=cockpit();if(typeof bindView==='function')bindView()}}}catch(e){}}
+window.KI21_COCKPIT_SECTION_RENDERING_GATE=function(){var v=vm();return{version:VER,thesisBounded:v.thesis.length>0&&v.thesis.length<1200&&!/BUYING CENTER|VERKAUFSPROZESS|SPICED DEAL/i.test(v.thesis),bottleneckBounded:v.bottleneck.length>0&&v.bottleneck.length<900,tasks:v.tasks.length,score:v.score,forecast:v.forecast,stakeholderTruth:/CRM-Stakeholder:\s*4/.test(v.r)&&/Rollenwidersprüche:\s*1/.test(v.r)}};
+version();setTimeout(refresh,0);window.addEventListener('load',function(){setTimeout(refresh,50)});window.addEventListener('pageshow',function(){setTimeout(refresh,50)});
+try{var mo=new MutationObserver(version);mo.observe(document.documentElement,{subtree:true,childList:true,characterData:true});window.__KI21_29325_VERSION_OBSERVER__=mo}catch(e){}
+})();
+</script>
+
 </html>
