@@ -16438,7 +16438,118 @@ var style=document.createElement('style');
 style.textContent='.ki21-journey-evidence-trigger{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,.08);touch-action:manipulation}.ki21-journey-evidence-trigger:focus-visible{outline:2px solid currentColor;outline-offset:3px}';
 document.head.appendChild(style);
 })();
-</script>\n</body>
+</script>\n
+<script id="ki21-29-3-29-report-section-version-stability">
+/*
+ KI21 Core 29.3.29 · Report Section & Version Stability
+ - restores the MANAGEMENT-PERSPEKTIVEN heading if a downstream evidence projection removed it
+ - preserves all 29.3.28 evidence/entity/decision behavior
+ - no score/forecast mutation
+ - stabilizes visible version without another polling timer
+*/
+(function(){
+"use strict";
+var VER="29.3.29";
+var NAME="Report Section & Version Stability";
+var FULL="KI21 Core "+VER+" · "+NAME+" · Context Isolation · Product Truth · 120 Death Cases";
+
+function S(x){return String(x==null?"":x)}
+
+function restoreManagementHeading(r){
+  r=S(r);
+  if(r.indexOf("=== MANAGEMENT-PERSPEKTIVEN ===")>=0)return r;
+  var needle="• Wirtschaftliche Entscheidung:";
+  var p=r.indexOf(needle);
+  if(p<0)return r;
+  var spiced=r.lastIndexOf("=== SPICED DEAL INTELLIGENCE ===",p);
+  var incremental=r.indexOf("=== INCREMENTAL EVIDENCE ===",p);
+  if(spiced>=0 && (incremental<0 || p<incremental)){
+    return r.slice(0,p)+"=== MANAGEMENT-PERSPEKTIVEN ===\n"+r.slice(p);
+  }
+  return r;
+}
+
+var previous=window.fullReport||((typeof fullReport==="function")?fullReport:null);
+if(typeof previous==="function"){
+  var authoritative=function(){
+    return restoreManagementHeading(previous.apply(this,arguments));
+  };
+  try{fullReport=authoritative}catch(_e){}
+  window.fullReport=authoritative;
+  window.KI21_AUTHORITATIVE_FULL_REPORT=authoritative;
+  window.decisionBrief=function(){
+    var r=authoritative();
+    var m=r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?=\n=== BUYING CENTER ===)/);
+    return m?m[0]:r;
+  };
+}
+
+window.KI21_RELEASE_AUTHORITY=Object.freeze({
+  version:VER,
+  short:"Core "+VER,
+  full:FULL
+});
+window.KI21_VERSION=FULL;
+window.KI21_VERSION_SHORT="Core "+VER;
+try{VERSION=FULL}catch(_e){}
+
+function applyVersion(){
+  try{
+    document.title=FULL;
+    var h=document.getElementById("headerVersion");
+    var f=document.getElementById("footerVersion");
+    if(h && h.textContent!=="Core "+VER)h.textContent="Core "+VER;
+    if(f && f.textContent!==FULL)f.textContent=FULL;
+  }catch(_e){}
+}
+
+/* Stop the last release's own polling lock. Older anonymous legacy timers may still fire,
+   therefore MutationObserver restores the authoritative value before the next paint. */
+try{
+  if(window.__KI21_FINAL_RELEASE_LOCK__){
+    clearInterval(window.__KI21_FINAL_RELEASE_LOCK__);
+    window.__KI21_FINAL_RELEASE_LOCK__=null;
+  }
+}catch(_e){}
+
+applyVersion();
+document.addEventListener("DOMContentLoaded",applyVersion);
+window.addEventListener("pageshow",applyVersion);
+window.addEventListener("focus",applyVersion);
+
+try{
+  var targets=[];
+  var h=document.getElementById("headerVersion"),f=document.getElementById("footerVersion");
+  if(h)targets.push(h);
+  if(f)targets.push(f);
+  var obs=new MutationObserver(function(){applyVersion()});
+  targets.forEach(function(t){obs.observe(t,{childList:true,characterData:true,subtree:true})});
+  window.KI21_VERSION_OBSERVER_29329=obs;
+}catch(_e){}
+
+window.KI21_RELEASE_GATE_29329=function(){
+  var r="";
+  try{r=window.fullReport?window.fullReport():""}catch(_e){}
+  var tests=[
+    ["RS01","Version authority",window.KI21_RELEASE_AUTHORITY&&window.KI21_RELEASE_AUTHORITY.version===VER],
+    ["RS02","Management heading present",r.indexOf("=== MANAGEMENT-PERSPEKTIVEN ===")>=0],
+    ["RS03","Economic decision retained",r.indexOf("• Wirtschaftliche Entscheidung:")>=0],
+    ["RS04","Incremental evidence retained",r.indexOf("=== INCREMENTAL EVIDENCE ===")>=0],
+    ["RS05","Entity decision projection retained",r.indexOf("=== EVIDENCE ENTITY & DECISION PROJECTION ===")>=0],
+    ["RS06","No score/forecast mutation marker",r.indexOf("Score-/Forecast-Mutation allein aus Ergänzungen: NEIN")>=0],
+    ["RS07","Buying center retained",r.indexOf("=== BUYING CENTER ===")>=0]
+  ];
+  return {
+    version:VER,
+    passed:tests.filter(function(x){return x[2]}).length,
+    total:tests.length,
+    tests:tests
+  };
+};
+})();
+</script>
+
+</body>
 
 <style id="ki21-29-0-4-context-progress-css">
 .ki21-csi-progress{margin-top:14px;padding:14px;border:1px solid rgba(127,127,127,.24);border-radius:14px;background:rgba(127,127,127,.055)}
