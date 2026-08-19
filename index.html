@@ -3,13 +3,83 @@
 <html lang="de">
 <head>
 
+<script id="ki21-29-3-56-global-report-recovery-authority">
+/* Global compatibility authority for historical full-report paths.
+   This must be declared at classic-script global scope because older report code
+   references `legacyCompactRecoverOpportunity` as a bare identifier. */
+var legacyCompactRecoverOpportunity = function(raw,m){
+  raw=String(raw||''); m=m||{};
+  function cleanLocal(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
+  function one(rx){var h=raw.match(rx);return h?cleanLocal(h[1]||h[0]):'';}
+  function money(txt){
+    txt=String(txt||'').replace(/\s/g,'');
+    var h=txt.match(/(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{2}))?\s*€/);
+    if(!h)return 0;
+    return Number(h[1].replace(/\./g,''))+(h[2]?Number(h[2])/100:0);
+  }
+  function pushUnique(arr,x){
+    if(!x)return;
+    var k=cleanLocal(x).toLowerCase();
+    if(!arr.some(function(y){return cleanLocal(y).toLowerCase()===k;}))arr.push(cleanLocal(x));
+  }
+  var out={company:'',opportunity:'',budget:0,price:0,critical:'',people:[],objections:[],blockers:[],annual:0,recovered:[]};
+  out.company=one(/(?:Unternehmen|Firma|Firmenname)\s*[:\-]\s*([^\n]+)/i);
+  out.opportunity=one(/(?:Opportunity(?:-Name)?|Projekt|Vorhaben)\s*[:\-]\s*([^\n]+)/i);
+  var b=one(/(?:Budget(?:rahmen)?|freigegebenes\s+Budget|Budget\s+vorhanden)\s*[:\-]?\s*([^\n]+)/i);
+  if(b)out.budget=money(b);
+  var p=one(/(?:Gesamtinvestition(?:\s+erstes\s+Jahr)?|Preis\s*\/\s*Investition|Investition|Angebotssumme|Gesamtpreis|Preis)\s*[:\-]?\s*([^\n]+)/i);
+  if(p)out.price=money(p);
+  if(!out.price){
+    var tot=one(/(?:gesamt|Gesamtvolumen|Gesamtwert)\s*[:\-]?\s*([^\n]*€)/i);
+    if(tot)out.price=money(tot);
+  }
+  out.critical=one(/(?:Critical Event|Kritisches Ereignis|Entscheidungstermin|Abschluss bis|Steering Committee(?: am)?)\s*[:\-]?\s*([^\n]+)/i);
+  var av=one(/(?:wirtschaftlicher Ausgangswert|interner Aufwand(?: pro Jahr)?|jährlicher Aufwand|Jahreswert)\s*[:\-]?\s*([^\n]+)/i);
+  if(av)out.annual=money(av);
+
+  var lines=raw.split(/\n/).map(cleanLocal).filter(Boolean);
+  lines.forEach(function(line){
+    var m1=line.match(/^([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.\- ]{2,60})\s+[–—|-]\s+([^|–—]{2,80})(?:\s+[–—|-]\s+(.+))?$/);
+    if(!m1)return;
+    var name=cleanLocal(m1[1]), rest=cleanLocal((m1[2]||'')+' '+(m1[3]||''));
+    if(!/[A-Z][a-z]+/.test(name))return;
+    if(!/(Chief|CFO|CEO|COO|CIO|CTO|VP|Vice President|Head of|Director|Manager|Procurement|Legal|Finance|Sales|Operations|IT|Champion|Sponsor|Buyer|Gate|Entscheider|Mitentscheider|Owner|Geschäftsführer|Leiter|Leiterin)/i.test(rest))return;
+    out.people.push({name:name,function:cleanLocal(m1[2]||''),role:cleanLocal(m1[3]||''),status:'',attitude:'',influence:'',authority:'',open:''});
+  });
+
+  function sectionItems(labels){
+    var names=labels.join('|');
+    var rx=new RegExp('(?:^|\\n)\\s*(?:'+names+')\\s*[:\\-]?\\s*\\n([\\s\\S]*?)(?=\\n\\s*[A-ZÄÖÜ][A-ZÄÖÜ0-9 /&()\\-]{3,}\\s*[:\\-]?\\s*$|$)','im');
+    var h=raw.match(rx),arr=[];
+    if(!h)return arr;
+    h[1].split(/\n/).forEach(function(x){
+      x=cleanLocal(x.replace(/^[-•*]\s*|\d+[.)]\s*/,''));
+      if(x)arr.push(x);
+    });
+    return arr;
+  }
+  sectionItems(['Bestätigte Kundeneinwände','Bestätigte Einwände','Einwände']).forEach(function(x){pushUnique(out.objections,x);});
+  sectionItems(['Vertragsblocker','Contract Blockers','Legal Blocker','Procurement Blocker']).forEach(function(x){pushUnique(out.blockers,x);});
+  lines.forEach(function(line){
+    if(/success\s*fee|erfolgsabhäng/i.test(line) &&
+       /(procurement|einkauf|legal|vertrag)/i.test(line) &&
+       /(block|akzeptiert\s+nicht|lehnt\s+ab|nicht\s+freigeben|verhindert|offen)/i.test(line)){
+      pushUnique(out.blockers,line);
+    }
+  });
+  return out;
+};
+try{window.legacyCompactRecoverOpportunity=legacyCompactRecoverOpportunity;}catch(_e){}
+</script>
+
+
 <script id="ki21-29-3-54-prepaint-version-authority">
 (function(){
 "use strict";
-var FULL='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var FULL='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{window.KI21_VERSION=FULL;window.KI21_VERSION_SHORT=SHORT;}catch(_e){}
 try{document.title=FULL;}catch(_e){}
-window.__KI21_RELEASE_29354__={version:'29.3.55',full:FULL,short:SHORT};
+window.__KI21_RELEASE_29354__={version:'29.3.56',full:FULL,short:SHORT};
 })();
 </script>
 
@@ -30,9 +100,9 @@ window.__KI21_RELEASE_29354__={version:'29.3.55',full:FULL,short:SHORT};
 (function(){
   'use strict';
   var RELEASE=Object.freeze({
-    version:'29.3.55',
-    short:'Core 29.3.55',
-    full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',
+    version:'29.3.56',
+    short:'Core 29.3.56',
+    full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',
     name:'Controlled Fusion Repair'
   });
   window.KI21_RELEASE_AUTHORITY=RELEASE;
@@ -62,7 +132,7 @@ window.__KI21_RELEASE_29354__={version:'29.3.55',full:FULL,short:SHORT};
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
-<title>KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases</title>
+<title>KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases</title>
 <style>
 :root{--bg:#080c12;--surface:#111722;--surface2:#171e2a;--line:#293241;--text:#f4f7fb;--muted:#9ca8b8;--orange:#ff7a1a;--green:#55d38a;--red:#ff7b72;--yellow:#d8a53a;--blue:#74aef7;--violet:#b09af8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,rgba(255,122,26,.09),transparent 30%),linear-gradient(180deg,#070a10,#0a0f17 50%,#080c12);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}.app{min-height:100vh;padding-bottom:max(95px,calc(60px + env(safe-area-inset-bottom)))}
@@ -145,11 +215,11 @@ window.__KI21_RELEASE_29354__={version:'29.3.55',full:FULL,short:SHORT};
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button aria-label="Mein Unternehmen" id="companyProfileButton" style="border:1px solid rgba(255,122,26,.45);background:rgba(255,122,26,.08);color:#ff9b45;border-radius:9px;min-width:32px;height:32px;padding:0 9px;cursor:pointer;font-weight:900" title="Mein Unternehmen">Firma</button><button aria-label="Einstellungen" id="settingsButton" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer" title="Einstellungen">⚙</button><div class="version" id="headerVersion">Core 29.3.55</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
+<header class="header"><div class="header-top"><div class="brand">KI21</div><div style="display:flex;align-items:center;gap:10px"><button aria-label="Mein Unternehmen" id="companyProfileButton" style="border:1px solid rgba(255,122,26,.45);background:rgba(255,122,26,.08);color:#ff9b45;border-radius:9px;min-width:32px;height:32px;padding:0 9px;cursor:pointer;font-weight:900" title="Mein Unternehmen">Firma</button><button aria-label="Einstellungen" id="settingsButton" style="border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer" title="Einstellungen">⚙</button><div class="version" id="headerVersion">Core 29.3.56</div></div></div><div class="opp-name" id="oppName">Keine Opportunity ausgewählt</div><div class="status-line" id="statusLine">Qualifizierung · wirtschaftlichen Entscheidungsweg klären</div></header>
 <main class="wrap">
 <div class="tabs"><button class="tab active" data-tab="cockpit">Cockpit</button><button class="tab" data-tab="process">Verkaufsprozess</button><button class="tab" data-tab="inputs">Eingaben</button></div>
 <section id="view"><div class="card orange" id="hardEmptyState"><div class="kicker">Start</div><div class="headline">Opportunity auswählen oder neu anlegen</div><div class="divider"></div><div class="body">Gespeicherte Opportunities öffnen oder direkt einen neuen CRM-Import starten.</div><div class="actions"><button class="btn primary" onclick="showOpportunityManager()">Gespeicherte Opportunities</button><button class="btn secondary" onclick="createOpportunity()">Neue Opportunity</button></div></div></section>
-<div class="footer" id="footerVersion">KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases</div>
+<div class="footer" id="footerVersion">KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases</div>
 </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -165,7 +235,7 @@ window.addEventListener('error',function(e){
     box.textContent='KI21 Startfehler: '+(e.message||'Unbekannter Fehler');
   }catch(_){}
 });
-let VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+let VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const HEADER_VERSION=VERSION.replace(/^KI21\s+/,'').split(' · ')[0];
 const STORAGE_KEY='ki21_portfolio_stable_v1';
 const LEGACY_KEYS=['ki21_core_896_portfolio','ki21_core_895_portfolio','ki21_core_894_portfolio','ki21_core_893_portfolio','ki21_core_892_portfolio','ki21_core_891_portfolio','ki21_core_890_portfolio','ki21_core_881_portfolio','ki21_core_880_portfolio','ki21_core_841_portfolio','ki21_core_830_state'];
@@ -1246,7 +1316,7 @@ function compactOpportunityForStorage(o){
   delete c._pendingBatch;
   delete c._batchPreview;
   delete c.__importStarted;
-  /* 29.3.55: structured opportunity truth is persisted.
+  /* 29.3.56: structured opportunity truth is persisted.
      evidence, stakeholders, objections, damageSignals, metrics, flags and additions
      are NOT regenerated from raw text on startup. */
   return c;
@@ -2682,7 +2752,7 @@ try{
   }
 }catch(e){}
 
-// 29.3.55 Report Legacy Recovery Compatibility.
+// 29.3.56 Global Report Recovery Authority.
 // Never reparse rawImport + additions on startup: that path destroyed the saved CRM baseline.
 // The complete structured opportunity state is now the reload authority.
 portfolio.opportunities=portfolio.opportunities.filter(o=>!isBundledSample(o));
@@ -3070,7 +3140,7 @@ bindView=function(){__ki2110BindView();document.querySelectorAll('.metric').forE
 document.getElementById('settingsButton')?.addEventListener('click',showSettings);
 
 // === 8.11.1 Hybrid Intelligence Integrity ===
-const KI2111_VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const KI2111_VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const KI2111_AI_SCHEMA_VERSION='2.0';
 const KI2111_AREA_NAMES=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
 
@@ -3222,8 +3292,8 @@ showOpportunityManager=function(){
 };
 
 // The local ten-case regression suite intentionally remains API-free.
-document.title='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
-const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+document.title='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
+const __ki2111Header=document.getElementById('headerVersion');if(__ki2111Header)__ki2111Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 
 
@@ -3335,8 +3405,8 @@ showOpportunityManager=function(){
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
 };
 
-document.title='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
-const ki2113xHeader=document.getElementById('headerVersion');if(ki2113xHeader)ki2113xHeader.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+document.title='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
+const ki2113xHeader=document.getElementById('headerVersion');if(ki2113xHeader)ki2113xHeader.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 
 // === 8.11.4 Market Readiness · Performance, Portfolio Selection & Executive Focus ===
@@ -3517,7 +3587,7 @@ document.addEventListener('click',function(event){
 
 
 document.title=VERSION;
-const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const ki2114Header=document.getElementById('headerVersion');if(ki2114Header)ki2114Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 // === 8.11.5 Stability & Performance Hotfix ===
 // Safari-safe hard timeout: Promise.race guarantees that the UI is released even
@@ -3655,7 +3725,7 @@ fullReport=function(){
 };
 
 document.title=VERSION;
-const ki2116Header=document.getElementById('headerVersion');if(ki2116Header)ki2116Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const ki2116Header=document.getElementById('headerVersion');if(ki2116Header)ki2116Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 render();
 
@@ -3795,7 +3865,7 @@ document.addEventListener('click',function(event){
 
 
 document.title=VERSION;
-const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const ki2118Header=document.getElementById('headerVersion');if(ki2118Header)ki2118Header.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 render();
 </script>
 <script>
@@ -4052,7 +4122,7 @@ render();
   };
 
   document.title=VERSION;
-  const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 06: inline-script-06 ===== */
@@ -4163,7 +4233,7 @@ render();
   };
 
   document.title=VERSION;
-  const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 07: inline-script-07 ===== */
@@ -4330,13 +4400,13 @@ render();
   };
 
   document.title=VERSION;
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 08: inline-script-08 ===== */
 (()=>{
   // === KI21 Core 8.15.2 · Expanded 25-Case Quality Suite ===
-  const KI215_VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const KI215_VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
   const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
   const raw=()=>String(state.rawImport||'');
   const approval=()=>/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i.test(raw());
@@ -4525,13 +4595,13 @@ render();
 
   document.title=KI215_VERSION;
   try{VERSION=KI215_VERSION}catch(e){}
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 09: inline-script-09 ===== */
 (()=>{
   // === KI21 Core 8.15.2 · Expanded 25-Case Quality Suite ===
-  const V8151='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const V8151='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
   const txt=()=>String(state.rawImport||'');
   const rx=(r)=>r.test(txt());
   const approved=()=>rx(/investitionsfreigabe(?: für den pilot)? (?:ist )?bestätigt|budgetfreigabe .*bestätigt/i);
@@ -4677,12 +4747,12 @@ render();
 
   try{VERSION=V8151}catch(e){}
   document.title=V8151;
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 10: inline-script-10 ===== */
 (()=>{
-  const V816='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const V816='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
   const money=n=>Number(n||0).toLocaleString('de-DE')+' €';
   const txt=()=>String(state.rawImport||'');
   const has=r=>r.test(txt());
@@ -4820,12 +4890,12 @@ render();
     const fidelity=[!/Pilotdauer\s*:\s*acht Wochen/i.test(tc.raw)||!/0 Wochen/i.test(rep),!/Preis|Pilotpreis|Jahrespreis|Neuer Preis/i.test(tc.raw)||/Preis:\s*(?!nicht bestätigt)/i.test(rep),!/Budget[^\n]*(?:bestätigt|freigegeben|darstellbar)/i.test(tc.raw)||/Budget:\s*(?!nicht erkannt)/i.test(rep),!/Investitionsfreigabe[^\n]*(?:bestätigt|erteilt)|wirtschaftliche Entscheidung ist gefallen/i.test(tc.raw)||!/Investitionsfreigabe offen/i.test(rep),!/Widersprüchliche Aussagen/i.test(tc.name)||st==='WIDERSPRÜCHLICHE EVIDENZ',!/Procurement|Vertrag fast fertig/i.test(tc.name)||/VERTRAGSVERHANDLUNG|UMSETZUNGSÜBERGANG/.test(st)];
     const checks=[!error,areas===7,bad===0,acts.length===3,new Set(acts).size===3,/DOMINANTE MANAGEMENT-HYPOTHESE/.test(rep),/EVIDENZ-INTEGRITÄT/.test(rep),/Deal-State:/.test(rep),/Opportunity Score:\s*\d+%/.test(rep),/Forecast:\s*\d+%/.test(rep),rep.length<14000,/Offene Punkte:\s*[1-9]/.test(rep),!/FAKT[^\n]*(?:Hypothese|vermutet|geschätzt)/i.test(rep),...fidelity];
     const points=checks.filter(Boolean).length;return{tc,index,report:rep,error,elapsed:Math.round(performance.now()-t0),areaCount:areas,badTokens:bad,duplicates:new Set(acts).size===acts.length?0:1,points,max:checks.length,passed:points===checks.length,score:testState?(()=>{const p=state;try{state=testState;return scores()}finally{state=p}})():{score:0,forecast:0}};};
-  try{VERSION=V816}catch(e){};document.title=V816;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  try{VERSION=V816}catch(e){};document.title=V816;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 11: inline-script-11 ===== */
 (()=>{
-  const V8161='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const V8161='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 
   function extractLine(report,label){
     const m=String(report||'').match(new RegExp('^'+label.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'\\s*:?\\s*(.+)$','mi'));
@@ -4872,12 +4942,12 @@ render();
   try{VERSION=V8161}catch(e){}
   document.title=V8161;
   const hv=document.getElementById('headerVersion');
-  if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 })();
 
 /* ===== SOURCE BLOCK 12: ki21-v8170-smart-quality-suite ===== */
 (()=>{
-  const V8170='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const V8170='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
   const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
   const REVIEW_IDS=['T07','N08','N09','N13'];
 
@@ -4949,14 +5019,14 @@ render();
 
   try{VERSION=V8170}catch(e){}
   document.title=V8170;
-  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+  const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
   const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8170;
   window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 
 /* ===== SOURCE BLOCK 13: ki21-v8171-semantic-consistency ===== */
 (()=>{
-  const V8171='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+  const V8171='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
   const REF_IDS=['T07','T08','N10','N13'];
   const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
   const money=n=>Number(n||0).toLocaleString('de-DE')+' €';
@@ -5141,12 +5211,12 @@ render();
     const text=`KI21 SMART QUALITY SUITE\nVersion: ${V8171}\nErstellt: ${new Date().toLocaleString('de-DE')}=== MANAGEMENT SUMMARY ===\n• Testfälle: ${results.length}\n• Vollständig bestanden: ${passed}/${results.length}\n• Semantische Qualitätschecks: ${pts}/${total}\n• Laufzeit: ${runtime} ms\n• API-Aufrufe: 0\n• Semantische Doppelungen: ${results.reduce((a,x)=>a+x.duplicates,0)}\n• Ungültige Tokens: ${results.reduce((a,x)=>a+x.badTokens,0)}=== TESTÜBERSICHT · ALLE AUSGEWÄHLTEN FÄLLE ===\n${summary}=== VOLLSTÄNDIGE BERICHTE · 4 REFERENZFÄLLE + ALLE FEHLERFÄLLE ===\n${reviews||'Keine Berichte ausgewählt.'}=== AUSGABEREGEL ===\nVollständige Berichte werden ausschließlich für T07, T08, N10, N13 und zusätzlich für nicht vollständig bestandene Fälle ausgegeben.`;
     return{results,text};
   };
-  try{VERSION=V8171}catch(e){}document.title=V8171;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8171;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
+  try{VERSION=V8171}catch(e){}document.title=V8171;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8171;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 
 /* ===== SOURCE BLOCK 14: ki21-v8172-state-integrity ===== */
 (()=>{
- const V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+ const V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
  const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
  const REF_IDS=['T07','N02','N08','N09','N10','N13'];
  const raw=()=>String(state.rawImport||'');
@@ -5186,12 +5256,12 @@ render();
  function evalCase(tc,index){const original=state,t0=performance.now();let rep='',error='';try{const s=emptyState(false),p=parseImport(tc.raw);applyParsed(s,p);s.rawImport=tc.raw;state=s;rep=report()}catch(e){error=String(e&&e.stack||e)}finally{state=original}const st=(rep.match(/Deal-State:\s*([^\n]+)/)||[])[1]||'',score=Number((rep.match(/Opportunity Score:\s*(\d+)%/)||[])[1]||0),forecast=Number((rep.match(/Forecast:\s*(\d+)%/)||[])[1]||0),areaCount=(rep.match(/^--- .+ ---$/gm)||[]).length,badTokens=(rep.match(/\b(?:undefined|null|NaN)\b|0 Wochen|Mit der wirtschaftliche|\.\./g)||[]).length,ins=[...rep.matchAll(/Aha-Erkenntnis:\s*(.+)/g)].map(m=>m[1]),ah=(rep.match(/EXECUTIVE AHA\n•\s*(.+)/)||[])[1]||'',as=(rep.match(/EINSCHÄTZUNG\n([^\n]+)/)||[])[1]||'',dups=ins.filter((x,i)=>ins.some((y,j)=>j<i&&sim(x,y)>.82)).length+(sim(ah,as)>.75?1:0);const expected={T07:'QUALIFIZIERUNG',T10:'QUALIFIZIERUNG',N02:'ENTSCHEIDERZUGANG',N05:'KAUFBEDINGUNGEN',N08:'SONDERBUDGET',N09:'VERTRAGSFREIGABE',N10:'VERTRAGSVERHANDLUNG',N13:'EVIDENZKONFLIKT',N15:'QUALIFIZIERUNG',N16:'ENTSCHEIDUNGSKRITERIENKONFLIKT',N17:'PREIS_BUDGET_LÜCKE',N18:'REQUALIFIZIERUNG',N19:'ENTSCHEIDUNG_VERTAGT',N20:'WETTBEWERBSENTSCHEIDUNG'}[tc.id];const checks=[!error,areaCount===7,badTokens===0,/Version: KI21 Core 8\.17\.2/g.test(rep),!expected||st===expected,!['VERTRAGSVERHANDLUNG','VERTRAGSFREIGABE'].includes(st)||forecast>=65,Math.abs(score-forecast)<=18,tc.id!=='N13'||/Erkannte Widersprüche:\s*1/.test(rep),tc.id!=='N05'||/Erkannte Kaufbedingungen:\s*6/.test(rep),tc.id!=='N08'||/620\.000 €/.test(rep),tc.id!=='N02'||/Entscheider aktiv eingebunden:\s*NEIN/.test(rep),tc.id!=='N09'||!/Preis: nicht bestätigt|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),tc.id!=='N10'||!/fehlender Wirkungsnachweis|Investitionsfreigabe offen|noch nicht persönlich/.test(rep),sim(ah,as)<.75,new Set(ins.map(norm)).size===7,/Nächster Kundenschritt:\s*(?!undefined).+/.test(rep),!/0 Wochen|rund 0 €/.test(rep),rep.length<15000,/ZENTRALE KUNDENENTSCHEIDUNG\n•\s*.+/.test(rep),dups===0];const points=checks.filter(Boolean).length;return{tc,index,report:rep,error,checks,points,max:checks.length,passed:points===checks.length,score:{score,forecast},elapsed:Math.round(performance.now()-t0),areaCount,duplicates:dups,badTokens,strongestInsight:ah,bottleneck:(rep.match(/GRÖSSTER ENGPASS\n•\s*(.+)/)||[])[1]||'',nextStep:(rep.match(/NÄCHSTER SCHRITT\n1\.\s*(.+)/)||[])[1]||''}}
  ki2118EvaluateCase=evalCase;
  ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evalCase),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0);const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}${x.report}`).join('');return{results,text:`KI21 SMART QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms=== MANAGEMENT SUMMARY ===\n${summary}=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`}}
- try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
+ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 
 /* ===== SOURCE BLOCK 15: ki21-v8173-green-report-semantic-audit ===== */
 (()=>{
- const V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+ const V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
  const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
  const REF_IDS=['T01','N05','N08','N09','N10','N13'];
  const raw=()=>String(state.rawImport||'');
@@ -5245,13 +5315,13 @@ render();
  }
  ki2118EvaluateCase=evalCase;
  ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evalCase),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0);const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}${x.report}`).join('');return{results,text:`KI21 SMART QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${Math.round(performance.now()-started)} ms=== MANAGEMENT SUMMARY ===\n${summary}=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`}}
- try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
+ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 
 /* ===== SOURCE BLOCK 16: ki21-v8190-complex-decision-patterns ===== */
 (()=>{
 'use strict';
-const V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const DEFAULT_IDS=['T01','T03','T07','T08','T10','N02','N05','N08','N09','N10','N13','N15','N16','N17','N18','N19','N20'];
 const REF_IDS=['T07','N02','N08','N09','N10','N13'];
 const oldFullReport=fullReport;
@@ -5368,7 +5438,7 @@ function evaluate(tc,index){const original=state,t0=performance.now();let rep=''
 }
 window.ki2118EvaluateCase=evaluate;
 window.ki2118BuildLocalSuite=function(ids){const requested=Array.isArray(ids)&&ids.length?ids:DEFAULT_IDS,started=performance.now(),chosen=KI219_TEST_CASES.filter(x=>requested.includes(x.id)),results=chosen.map(evaluate),passed=results.filter(x=>x.passed).length,total=results.reduce((a,x)=>a+x.max,0),pts=results.reduce((a,x)=>a+x.points,0),runtime=Math.round(performance.now()-started);const summary=results.map(x=>`${x.passed?'✅':'⚠️'} ${x.tc.id} · ${x.tc.name} | ${x.points}/${x.max} Checks | Score ${x.score.score}% | Forecast ${x.score.forecast}% | ${x.elapsed} ms | Doppelungen ${x.duplicates}`).join('\n');const failed=results.filter(x=>!x.passed),review=new Set([...REF_IDS,...failed.map(x=>x.tc.id)]),details=results.filter(x=>review.has(x.tc.id)).map((x,i)=>`${'='.repeat(78)}\nTESTFALL ${i+1} · ${x.tc.id} · ${x.tc.name}\nStatus: ${x.passed?'BESTANDEN':'PRÜFEN'} · Qualitätschecks ${x.points}/${x.max}\nLaufzeit: ${x.elapsed} ms · Bereichsanalysen: ${x.areaCount}/7 · Doppelungen: ${x.duplicates} · ungültige Tokens: ${x.badTokens}\n${'='.repeat(78)}${x.report}`).join('');return{results,text:`KI21 MULTI-OPPORTUNITY QUALITY SUITE\nVersion: ${V}\nErstellt: ${new Date().toLocaleString('de-DE')}\nAusgewählte Testfälle: ${results.length}\nVollständig bestanden: ${passed}/${results.length}\nQualitätschecks: ${pts}/${total}\nAPI-Aufrufe: 0\nGesamtlaufzeit: ${runtime} ms=== MANAGEMENT SUMMARY ===\n${summary}=== REFERENZ- UND FEHLERBERICHTE ===\n${details}`}};
-try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
+try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;window.KI21_SMART_QUALITY_DEFAULT_IDS=DEFAULT_IDS.slice();
 })();
 
 
@@ -5431,9 +5501,9 @@ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('heade
  };
  window.KI21_PERSPECTIVE_MODEL=perspectiveModel;
  window.KI21_ADAPTIVE_SPIN=questions;
- VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+ VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
  document.title=VERSION;
- const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+ const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
  const fv=document.getElementById('footerVersion');if(fv)fv.textContent=VERSION;
  try{render()}catch(e){console.error('KI21 8.20.0 render refresh failed',e)}
 })();
@@ -5441,7 +5511,7 @@ try{VERSION=V}catch(e){}document.title=V;const hv=document.getElementById('heade
 /* ===== SOURCE BLOCK 17: ki21-v8210-perspective-propagation ===== */
 (()=>{
 'use strict';
-const V821='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V821='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const BASE_FULL_REPORT=fullReport;
 const BASE_DECISION_BRIEF=decisionBrief;
 const BASE_PROCESS_ANALYSIS=processAnalysis;
@@ -5507,20 +5577,20 @@ function replaceAreas821(rep,k){
 }
 processAnalysis=function(name){const p=perspective821();return p?area821(p,name):BASE_PROCESS_ANALYSIS(name)};
 decisionBrief=function(){const base=BASE_DECISION_BRIEF(),p=perspective821();return p?replaceBrief821(base,p):base};
-fullReport=function(){const base=BASE_FULL_REPORT(),p=perspective821();let rep=base;if(p){rep=replaceBrief821(rep,p);rep=replaceAreas821(rep,p)}return rep.replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V821).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V821)};
-VERSION=V821;document.title=V821;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V821;
+fullReport=function(){const base=BASE_FULL_REPORT(),p=perspective821();let rep=base;if(p){rep=replaceBrief821(rep,p);rep=replaceAreas821(rep,p)}return rep.replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V821).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V821)};
+VERSION=V821;document.title=V821;const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V821;
 try{render()}catch(e){console.error('KI21 8.22.0 render refresh failed',e)}
 })();
 
 /* ===== SOURCE BLOCK 18: ki21-v8221-cockpit-state-sync ===== */
 (()=>{
 'use strict';
-const V8221='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V8221='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const PREV_FULL_REPORT=fullReport;
 const PREV_DECISION_BRIEF=decisionBrief;
 const esc8221=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function currentReport8221(){
-  return String(PREV_FULL_REPORT()).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8221).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8221);
+  return String(PREV_FULL_REPORT()).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8221).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8221);
 }
 function section8221(rep,title,nextTitles){
   const e=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -5556,7 +5626,7 @@ renderCockpit=function(){
   <div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div></div>`;
 };
 fullReport=currentReport8221;
-decisionBrief=function(){return String(PREV_DECISION_BRIEF()).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8221).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8221)};
+decisionBrief=function(){return String(PREV_DECISION_BRIEF()).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8221).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8221)};
 const OLD_RENDER=render;
 render=function(){
   const expectedId=String(state&&state.id||'');
@@ -5569,7 +5639,7 @@ render=function(){
   }
 };
 try{VERSION=V8221}catch(e){}document.title=V8221;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8221;
 try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refresh failed',e)}
 })();
@@ -5577,7 +5647,7 @@ try{render()}catch(e){console.error('KI21 8.22.2 quality-suite version sync refr
 /* ===== SOURCE BLOCK 19: ki21-v8223-evidence-integrity-cockpit-diversity ===== */
 (()=>{
 'use strict';
-const V8223='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V8223='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const BASE_FULL_8223=fullReport;
 const BASE_BRIEF_8223=decisionBrief;
 const esc8223=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5594,9 +5664,9 @@ function replaceBriefField8223(rep,start,end,value,prefix=''){
 }
 function fixReport8223(rep){
  rep=String(rep)
-  .replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8223)
-  .replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8223)
-  .replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8223);
+  .replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8223)
+  .replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8223)
+  .replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8223);
 
  // Evidence integrity: never reuse price, budget or competitor cost as economic baseline.
  if(isCase8223('N17',/Spree Digital Commerce|Preis-Budget-Lücke/i)){
@@ -5664,7 +5734,7 @@ renderCockpit=function(){
  return `<div data-ki21-opportunity-id="${esc8223(d.opportunityId)}" data-ki21-deal-state="${esc8223(d.stateName)}"><div class="metrics"><div class="metric" data-action="report"><div class="metric-label">OPPORTUNITY SCORE</div><div class="metric-value">${d.score}%</div><div class="metric-sub">${esc8223(d.stateName||'evidenzbasiert')}</div></div><div class="metric" data-action="report"><div class="metric-label">FORECAST</div><div class="metric-value">${d.forecast}%</div><div class="metric-sub">evidenzbasiert</div></div></div><div class="card orange"><div class="kicker">Aktuelles Lagebild</div><div class="headline">${esc8223(d.assessment||'Die aktuelle Entscheidungslage wird neu bewertet.')}</div>${businessBlock}</div><div class="card violet"><div class="kicker">Nächste Kundenentscheidung</div><div class="headline">${esc8223(d.decision||'Welche konkrete Kundenentscheidung bringt die Opportunity belastbar voran?')}</div></div><div class="card red"><div class="kicker">Größter Engpass</div><div class="body">${esc8223(d.bottleneck||'Der entscheidende Engpass ist noch nicht belastbar erkannt.')}</div></div><div class="card blue"><div class="kicker">Nächster Schritt</div><div class="list">${steps.map(x=>`<div class="item">${esc8223(x)}.</div>`).join('')}</div></div><div class="actions"><button class="btn secondary" data-action="report" onclick="window.__ki21OpenReport&&window.__ki21OpenReport(event)">Vollständigen Testbericht öffnen</button></div></div>`;
 };
 try{VERSION=V8223}catch(e){}document.title=V8223;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8223;
 try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence refresh failed',e)}
 })();
@@ -5672,7 +5742,7 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 /* ===== SOURCE BLOCK 20: ki21-v8230-opportunity-type-intelligence ===== */
 (()=>{
 'use strict';
-const V8230='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V8230='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const BASE_FULL_8230=fullReport;
 const raw8230=()=>String(state&&state.rawImport||'');
 const case8230=(id,rx)=>String(state&&state.id||'')===id||rx.test(raw8230());
@@ -5686,7 +5756,7 @@ function area8230(rep,name,status,assessment,insight,next){
 }
 function steps8230(rep,txt){return rep.replace(/NÄCHSTER SCHRITT\n1\.[\s\S]*?(?=STATE CHECK)/,'NÄCHSTER SCHRITT\n'+txt)}
 function typeFix8230(rep){
- rep=String(rep).replaceAll('KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',V8230);
+ rep=String(rep).replaceAll('KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',V8230);
  rep=rep.replace(/\b1 getrennte Kaufbedingungen\b/g,'1 getrennte Kaufbedingung')
         .replace(/\bWie werden die 1 Kaufbedingungen\b/g,'Wie wird die eine Kaufbedingung')
         .replace(/\bDie 1 Einwände sind\b/g,'Die bestätigte Bedingung ist')
@@ -5760,7 +5830,7 @@ function typeFix8230(rep){
 fullReport=function(){return typeFix8230(BASE_FULL_8230())};
 decisionBrief=function(){const r=fullReport();return (r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?==== VERKAUFSPROZESS)/)||[''])[0]};
 try{VERSION=V8230}catch(e){}document.title=V8230;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8230;
 try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence refresh failed',e)}
 })();
@@ -5784,9 +5854,9 @@ try{render()}catch(e){console.error('KI21 8.23.0 opportunity-type intelligence r
 
 /* ===== SOURCE BLOCK 21: ki21-v8240-action-drilldowns-real-world-test-pack ===== */
 (()=>{
-const VERSION8240='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const VERSION8240='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=VERSION8240}catch(e){} document.title=VERSION8240;
-const hv8240=document.getElementById('headerVersion');if(hv8240)hv8240.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv8240=document.getElementById('headerVersion');if(hv8240)hv8240.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv8240=document.getElementById('footerVersion');if(fv8240)fv8240.textContent=VERSION8240;
 
 // 30 deliberately messy, realistic CRM imports, independent from the original regression set.
@@ -5893,7 +5963,7 @@ try{render()}catch(e){console.error('KI21 8.24.0 activation failed',e)}
 /* ===== SOURCE BLOCK 22: ki21-v8250-unified-dominance-pipeline-validated ===== */
 (()=>{
 'use strict';
-const PIPELINE_VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const PIPELINE_VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 function section(text,start,end){
  const a=String(text||'').indexOf(start);if(a<0)return '';
  const from=a+start.length,b=end?String(text||'').indexOf(end,from):-1;
@@ -5931,7 +6001,7 @@ function enrichCockpit(){
  actions.appendChild(btn);
 }
 const coreRender=render;render=function(){const result=coreRender();setTimeout(enrichCockpit,0);return result};
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=PIPELINE_VERSION;
 document.title=PIPELINE_VERSION;
 try{render()}catch(e){console.error('KI21 8.25.1 activation failed',e)}
@@ -5939,10 +6009,10 @@ try{render()}catch(e){console.error('KI21 8.25.1 activation failed',e)}
 
 /* ===== SOURCE BLOCK 23: ki21-v8251-real-customer-validation-pack ===== */
 (()=>{
-const V8251='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V8251='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V8251}catch(e){}
 document.title=V8251;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V8251;
 if(typeof KI219_TEST_CASES!=='undefined'&&!KI219_TEST_CASES.some(x=>x.id==='S01')){
  KI219_TEST_CASES.push(
@@ -5958,7 +6028,7 @@ if(typeof KI219_TEST_CASES!=='undefined'&&!KI219_TEST_CASES.some(x=>x.id==='S01'
 /* ===== SOURCE BLOCK 24: ki21-v900-opportunity-dna-engine ===== */
 (()=>{
 'use strict';
-const V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 const baseFull=fullReport;
 const raw=()=>String(state&&state.rawImport||'');
 const escRx=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -6007,16 +6077,16 @@ function post(t){const k=dna(),m=models[k];if(!m)return t;
 }
 fullReport=()=>post(baseFull());
 decisionBrief=()=>{const r=fullReport();return(r.match(/KI21 SALES DECISION BRIEF[\s\S]*?(?==== VERKAUFSPROZESS)/)||[''])[0]};
-try{VERSION=V}catch(e){}document.title=V;const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');const f=document.getElementById('footerVersion');if(f)f.textContent=V;
+try{VERSION=V}catch(e){}document.title=V;const h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');const f=document.getElementById('footerVersion');if(f)f.textContent=V;
 })();
 
 /* ===== SOURCE BLOCK 25: ki21-v910-multi-dna-decision-engine ===== */
 (()=>{
 'use strict';
-const V910='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V910='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V910}catch(e){}
 document.title=V910;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V910;
 
 if(typeof KI219_TEST_CASES!=='undefined'&&!KI219_TEST_CASES.some(x=>x.id==='S06')) KI219_TEST_CASES.push(
@@ -6084,10 +6154,10 @@ try{render()}catch(e){console.error('KI21 9.1.0 activation failed',e)}
 /* ===== SOURCE BLOCK 26: ki21-v911-narrative-evidence-integrity ===== */
 (()=>{
 'use strict';
-const V911='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V911='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V911}catch(e){}
 document.title=V911;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V911;
 const base911=fullReport;
 const baseBrief911=decisionBrief;
@@ -6192,10 +6262,10 @@ try{render()}catch(e){console.error('KI21 9.1.1 activation failed',e)}
 /* ===== SOURCE BLOCK 27: ki21-v913-quality-gate-integrity ===== */
 (()=>{
 'use strict';
-const V913='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V913='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V913}catch(e){}
 document.title=V913;
-const hv913=document.getElementById('headerVersion');if(hv913)hv913.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv913=document.getElementById('headerVersion');if(hv913)hv913.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv913=document.getElementById('footerVersion');if(fv913)fv913.textContent=V913;
 const baseFull913=fullReport;
 const baseBrief913=decisionBrief;
@@ -6249,10 +6319,10 @@ try{render()}catch(e){console.error('KI21 9.1.3 activation failed',e)}
 /* ===== SOURCE BLOCK 28: ki21-v914-evaluator-integrity ===== */
 (()=>{
 'use strict';
-const V914='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V914='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V914}catch(e){}
 document.title=V914;
-const hv914=document.getElementById('headerVersion');if(hv914)hv914.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv914=document.getElementById('headerVersion');if(hv914)hv914.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv914=document.getElementById('footerVersion');if(fv914)fv914.textContent=V914;
 const baseFull914=fullReport;
 const baseBrief914=decisionBrief;
@@ -6288,10 +6358,10 @@ try{render()}catch(e){console.error('KI21 9.1.4 activation failed',e)}
 /* ===== SOURCE BLOCK 29: ki21-v915-atomic-quality-gate ===== */
 (()=>{
 'use strict';
-const V915='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V915='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V915}catch(e){}
 document.title=V915;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V915;
 const oldFull=fullReport,oldBrief=decisionBrief;
 function stamp915(t){return String(t||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V915)}
@@ -6366,10 +6436,10 @@ try{render()}catch(e){console.error('KI21 9.1.5 activation failed',e)}
 /* ===== SOURCE BLOCK 30: ki21-v916-observable-quality-gate ===== */
 (()=>{
 'use strict';
-const V916='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V916='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V916}catch(e){}
 document.title=V916;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V916;
 const oldFull916=fullReport,oldBrief916=decisionBrief;
 function stamp916(t){return String(t||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V916)}
@@ -6441,10 +6511,10 @@ try{render()}catch(e){console.error('KI21 9.1.6 activation failed',e)}
 /* ===== SOURCE BLOCK 31: ki21-v917-runtime-routing-fix ===== */
 (()=>{
 'use strict';
-const V917='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V917='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V917}catch(e){}
 document.title=V917;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V917;
 const oldFull917=fullReport,oldBrief917=decisionBrief;
 function stamp917(t){return String(t||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V917)}
@@ -6467,10 +6537,10 @@ try{render()}catch(e){console.error('KI21 9.1.7 activation failed',e)}
 /* ===== SOURCE BLOCK 32: ki21-v920-evaluator-reset ===== */
 (()=>{
 'use strict';
-const V920='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V920='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V920}catch(e){}
 document.title=V920;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V920;
 const previousFull920=fullReport,previousBrief920=decisionBrief;
 function stamp920(value){return String(value||'').replace(/Version: KI21 Core [^\n]+/g,'Version: '+V920)}
@@ -6606,7 +6676,7 @@ try{render()}catch(e){console.error('KI21 9.2.0 activation failed',e)}
 
 /* ===== SOURCE BLOCK 33: inline-script-33 ===== */
 (()=>{
-const V100='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V100='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V100}catch(e){}
 document.title=V100;
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V100;
@@ -6648,7 +6718,7 @@ try{render()}catch(e){console.error('KI21 10.0.0 activation failed',e)}
 
 /* ===== SOURCE BLOCK 34: inline-script-34 ===== */
 (()=>{
-const V101='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V101='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V101}catch(e){}
 document.title=V101;
 const fv101=document.getElementById('footerVersion');if(fv101)fv101.textContent=V101;
@@ -6722,10 +6792,10 @@ try{render()}catch(e){console.error('KI21 10.0.1 activation failed',e)}
 
 /* ===== SOURCE BLOCK 35: inline-script-35 ===== */
 (()=>{
-const V102='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V102='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V102}catch(e){}
 document.title=V102;
-const hv102=document.getElementById('headerVersion');if(hv102)hv102.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv102=document.getElementById('headerVersion');if(hv102)hv102.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv102=document.getElementById('footerVersion');if(fv102)fv102.textContent=V102;
 
 function dn102Clean(s){return String(s||'').replace(/^\d+\.\s*/,'').replace(/\s+/g,' ').trim()}
@@ -6800,10 +6870,10 @@ try{render()}catch(e){console.error('KI21 10.0.2 activation failed',e)}
 
 /* ===== SOURCE BLOCK 36: inline-script-36 ===== */
 (()=>{
-const V110='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V110='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V110}catch(e){}
 document.title=V110;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V110;
 
 const REGRESSION_GROUPS=[
@@ -6891,10 +6961,10 @@ try{render();r110Install()}catch(e){console.error('KI21 10.1.0 activation failed
 /* ===== SOURCE BLOCK 37: ki21-10-1-1-startfix ===== */
 (()=>{
 'use strict';
-const V111='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V111='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V111}catch(e){}
 document.title=V111;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V111;
 
 function openFullRegression111(){
@@ -6954,7 +7024,7 @@ setTimeout(bind111,0);setTimeout(bind111,250);setTimeout(bind111,1000);
    without changing the proven score/forecast calculation. */
 (function(){
 'use strict';
-const V1020='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1020='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{ if(typeof VERSION!=='undefined') VERSION=V1020; }catch(_e){}
 
 function confidenceModel1020(){
@@ -7009,9 +7079,9 @@ window.ki211020ConfidenceModel=confidenceModel1020;
    deal-specific coaching questions. Existing score and forecast logic remains unchanged. */
 (function(){
 'use strict';
-const V1021='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1021='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{ if(typeof VERSION!=='undefined') VERSION=V1021; }catch(_e){}
-const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 function pick(text,re,fallback){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
 function num(text,re,fallback){const v=parseInt(pick(text,re,''),10);return Number.isFinite(v)?v:fallback;}
@@ -7106,9 +7176,9 @@ window.ki211021ExecutiveConsistency={stateFacts:stateFacts1021,repair:repair1021
    in the Executive Real-Deal Check. Score and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1022='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1022='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{ if(typeof VERSION!=='undefined') VERSION=V1022; }catch(_e){}
-const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 function pick1022(text,re,fallback){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
 function num1022(text,re,fallback){const v=parseInt(pick1022(text,re,''),10);return Number.isFinite(v)?v:fallback;}
@@ -7210,9 +7280,9 @@ window.ki211022GatePriorityAlignment={facts:facts1022,repair:repair1022};
    Score and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1023='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1023='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{ if(typeof VERSION!=='undefined') VERSION=V1023; }catch(_e){}
-const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion'); if(hv) hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 
 function capture1023(text,re,fallback=''){const m=String(text||'').match(re);return m?String(m[1]).trim():fallback;}
 function escape1023(s){return String(s||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
@@ -7278,10 +7348,10 @@ window.ki211023PrimaryActionIntegrity={repair:repair1023};
    bottleneck and the rendered deal evidence. Score and forecast stay unchanged. */
 (function(){
 'use strict';
-const V1030='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1030='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{if(typeof VERSION!=='undefined')VERSION=V1030;}catch(_e){}
 document.title=V1030;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V1030;
 
 function cap1030(t,re,d=''){const m=String(t||'').match(re);return m?String(m[1]).trim():d;}
@@ -7368,10 +7438,10 @@ window.ki211030ExecutiveActionPortfolio={repair:render1030,facts:facts1030,actio
    Scoring and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1031='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1031='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{if(typeof VERSION!=='undefined')VERSION=V1031;}catch(_e){}
 document.title=V1031;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V1031;
 
 function cap(t,re,d=''){const m=String(t||'').match(re);return m?String(m[1]).trim():d;}
@@ -7481,10 +7551,10 @@ window.ki211031ContextualActionIntegrity={repair:render,facts,portfolio};
    Existing score and forecast calculations remain unchanged. */
 (function(){
 'use strict';
-const V1100='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1100='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V1100}catch(_e){}
 document.title=V1100;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V1100;
 
 const GOLDEN={
@@ -7610,7 +7680,7 @@ setTimeout(install,100);setTimeout(install,600);
 /* ===== SOURCE BLOCK 45: ki21-11-0-1-button-repair ===== */
 (function(){
 'use strict';
-const V1101='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V1101='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 function replaceQualityButton(){
  const panel=document.getElementById('ki2110RegressionPanel');
  if(!panel)return false;
@@ -7654,10 +7724,10 @@ window.KI21_VERSION=V1101;
 /* ===== SOURCE BLOCK 46: ki21-11-0-2-visible-quality-lab ===== */
 (function(){
 'use strict';
-const V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+const V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){}
 document.title=V;
-const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+const hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 const fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 
 function safeEsc(v){
@@ -7723,11 +7793,11 @@ setTimeout(bind,0);setTimeout(bind,200);setTimeout(bind,800);
 /* ===== SOURCE BLOCK 47: ki21-11-1-platform-stability ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){}
 window.KI21_VERSION=V;
 document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 var diag=[];
 function log(type,message,detail){
@@ -7820,10 +7890,10 @@ log('startup','Platform Stability initialisiert',navigator.userAgent);
 /* ===== SOURCE BLOCK 48: ki21-11-1-2-singular-language-integrity ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){}
 window.KI21_VERSION=V;document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 
 // The quality lab is application-level and must also work without an active opportunity.
@@ -7894,15 +7964,15 @@ setTimeout(install,0);setTimeout(install,300);
 /* ===== SOURCE BLOCK 49: ki21-11-2-executive-cockpit-redesign ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
-var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');
+var hv=document.getElementById('headerVersion');if(hv)hv.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');
 var fv=document.getElementById('footerVersion');if(fv)fv.textContent=V;
 function e(v){if(typeof window.esc==='function')return window.esc(String(v==null?'':v));return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c})}
 function clamp(n){n=Number(n)||0;return Math.max(0,Math.min(100,Math.round(n)))}
 
 
-/* 29.3.55 report compatibility shim.
+/* 29.3.56 report compatibility shim.
    A legacy full-report path still references legacyCompactRecoverOpportunity.
    Keep the existing implementation as single source of truth; only expose the old name. */
 var legacyCompactRecoverOpportunity = legacyCompactRecover;
@@ -8055,15 +8125,15 @@ function showDetail(kind){
  document.body.appendChild(overlay);var close=function(){overlay.remove()};overlay.querySelector('#ki21120Close').onclick=close;overlay.querySelector('#ki21120Done').onclick=close;overlay.querySelector('#ki21120Report').onclick=function(){close();if(typeof showReport==='function')showReport()};overlay.addEventListener('click',function(ev){if(ev.target===overlay)close()});
 }
 document.addEventListener('click',function(ev){var b=ev.target&&ev.target.closest?ev.target.closest('[data-ki21-score]'):null;if(!b)return;ev.preventDefault();ev.stopPropagation();showDetail(b.getAttribute('data-ki21-score'))},true);
-var h1121=document.getElementById('headerVersion');if(h1121)h1121.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');var f1121=document.getElementById('footerVersion');if(f1121)f1121.textContent=V;
+var h1121=document.getElementById('headerVersion');if(h1121)h1121.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');var f1121=document.getElementById('footerVersion');if(f1121)f1121.textContent=V;
 })();
 
 /* ===== SOURCE BLOCK 50: ki21-11-2-5-navigation-state-repair ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
-function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');if(f)f.textContent=V;}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');if(f)f.textContent=V;}
 function active(){try{return state}catch(_e){return window.state||null}}
 function persist(){
  var s=active();if(!s)return;
@@ -8144,7 +8214,7 @@ labels();window.state=active();paint();
 /* ===== SOURCE BLOCK 51: ki21-11-2-6-cockpit-content-integrity ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
 function escx(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v)}catch(_e){return String(v==null?'':v)}}
 function num(v){v=Number(v||0);return isFinite(v)?v:0}
@@ -8202,7 +8272,7 @@ window.renderCockpit=function(){
  '<section class="ki21-decision-grid"><div class="ki21-panel"><div class="ki21-panel-title"><span class="ki21-panel-icon">◇</span>Nächste Kundenentscheidung</div><div class="ki21-decision-text">'+escx(d.decision)+'</div></div><div class="ki21-panel ki21-bottleneck"><div class="ki21-panel-title"><span class="ki21-panel-icon">!</span>Größter Engpass</div><div class="ki21-bottleneck-text">'+escx(d.bottleneck)+'</div></div></section>'+
  '<section class="ki21-panel ki21-action-card"><div class="ki21-panel-title"><span class="ki21-panel-icon">→</span>Priorisierter Verkaufsauftrag</div><div class="ki21-action-list">'+steps.map(function(x){return '<div class="ki21-action-item"><div>'+escx(x.replace(/[.]+$/,''))+'.</div></div>'}).join('')+'</div></section><div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>';
 };
-function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');if(f)f.textContent=V}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');if(f)f.textContent=V}
 labels();
 try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 11.2.6 cockpit refresh failed',err)}
 })();
@@ -8210,7 +8280,7 @@ try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();els
 /* ===== SOURCE BLOCK 52: ki21-12-0-0-deal-intelligence-engine ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
 function e(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v)}catch(_e){return String(v==null?'':v)}}
 function n(v){v=Number(v||0);return isFinite(v)?v:0}
@@ -8297,14 +8367,14 @@ window.renderCockpit=function(){var d=build(),health=Math.max(0,Math.min(100,Mat
  card('Entscheidungsrelevante Belege','◇','<div class="ki21-action-list">'+factHtml+'</div>','')+
  '<div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>'
 };
-function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');if(f)f.textContent=V}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');if(f)f.textContent=V}
 labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 12.0.0 refresh failed',err)}
 })();
 
 /* ===== SOURCE BLOCK 53: ki21-12-1-0-hypothesis-decision-engine ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 try{VERSION=V}catch(_e){} window.KI21_VERSION=V; document.title=V;
 function esc2(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v)}catch(_e){return String(v==null?'':v)}}
 function num(v){v=Number(v||0);return isFinite(v)?v:0}
@@ -8388,17 +8458,17 @@ window.renderCockpit=function(){var d=build(),depth=Math.max(0,Math.min(100,Math
  card('Nächster verbindlicher Kundenschritt','→','<div class="ki21-decision-text">'+esc2(d.action)+'</div>','ki21-action-card')+
  card('Belege für diese Hypothese','◇',ev,'')+
  '<div class="ki21-cockpit-actions"><button class="btn secondary" data-action="report">Vollständige Diagnose</button></div></div>'}
-function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');if(f)f.textContent=V}
+function labels(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');if(f)f.textContent=V}
 labels();try{if(state&&state.activeTab==='cockpit'&&typeof paint==='function')paint();else if(state&&state.activeTab==='cockpit'&&typeof render==='function')render()}catch(err){console.error('KI21 16.0.4 refresh failed',err)}
 })();
 
 /* ===== SOURCE BLOCK 54: inline-script-54 ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 window.KI21_VERSION=V; document.title=V;
 function sync(){
- try{var h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55')}catch(_){}
+ try{var h=document.getElementById('headerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56')}catch(_){}
  try{var f=document.getElementById('footerVersion');if(f)f.textContent=V}catch(_){}
 }
 function fatal(msg){
@@ -8455,7 +8525,7 @@ html,body{background:radial-gradient(circle at 18% -5%,rgba(42,112,145,.22),tran
 /* ===== SOURCE BLOCK 55: ki21-13-0-decision-intelligence-platform ===== */
 (function(){
 'use strict';
-var V='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
+var V='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
 window.KI21_VERSION=V;document.title=V;
 function E(v){try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}catch(_){return String(v==null?'':v)}}
 function N(v){v=Number(v||0);return isFinite(v)?v:0}
@@ -8493,7 +8563,7 @@ window.renderCockpit=function(){var d=model(),depth=Math.min(100,Math.round(d.fa
 window.renderProcess=function(){var d=model();return '<div class="card ki21-journey-intro"><div class="kicker">Dynamische Deal Journey · '+E(d.type)+'</div><div class="headline">Diese Journey wurde aus der Deal-DNA abgeleitet.</div><div class="body muted">Nicht jede Opportunity durchläuft dieselben Phasen. Gezeigt werden nur die Entscheidungsstufen, die für diesen Deal relevant sind.</div></div><div class="ki21-journey-grid">'+d.journey.map(function(x,i){return '<section class="ki21-journey-card '+(i===0?'open':'')+'"><button class="ki21-journey-head" type="button"><span class="ki21-journey-num">'+(i+1)+'</span><span class="ki21-journey-title">'+E(x[0])+'</span><span class="ki21-journey-status">'+(i===0?'jetzt relevant':'nachgelagert')+'</span><span class="ki21-journey-arrow">›</span></button><div class="ki21-journey-body"><div class="ki21-journey-section"><h4>Ziel</h4><p>'+E(x[1])+'</p></div><div class="ki21-journey-section"><h4>Erledigt, wenn …</h4><p>'+E(x[2])+'</p></div></div></section>'}).join('')+'</div>'}
 function bindJourney(){document.querySelectorAll('.ki21-journey-head').forEach(function(b){b.onclick=function(){var c=b.closest('.ki21-journey-card');if(c)c.classList.toggle('open')}})}
 var oldBind=window.bindView;window.bindView=function(){try{if(typeof oldBind==='function')oldBind()}catch(_){ }bindJourney()};
-function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.55');if(f)f.textContent=V}
+function sync(){var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=(window.KI21_VERSION_SHORT||'Core 29.3.56');if(f)f.textContent=V}
 function boot(){sync();try{if(typeof render==='function')render();else if(typeof paint==='function')paint();sync();bindJourney()}catch(e){console.error('KI21 16.0.4 boot failed',e)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);
 })();
@@ -8501,8 +8571,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 56: ki21-14-authoritative-runtime ===== */
 (function(){
   'use strict';
-  var VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
-  var SHORT='Core 29.3.55';
+  var VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
+  var SHORT='Core 29.3.56';
   window.KI21_VERSION=VERSION;
   window.KI21_RELEASE={version:'16.0.8',name:'Competition Decision Calibration',built:'2026-07-31'};
   function applyVersion(){
@@ -8554,7 +8624,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 57: ki21-14-1-explainable-journey-engine ===== */
 (function(){
 'use strict';
-var VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',SHORT='Core 29.3.55';
+var VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',SHORT='Core 29.3.56';
 window.KI21_VERSION=VERSION;window.KI21_RELEASE={version:'16.0.8',name:'Competition Decision Calibration',built:'2026-07-31'};
 function esc2(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c})}
 function st(){return window.state||{}}
@@ -8596,8 +8666,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 58: ki21-stable-delivery-1603 ===== */
 (function(){
 'use strict';
-var VERSION='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
-var SHORT='Core 29.3.55';
+var VERSION='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
+var SHORT='Core 29.3.56';
 window.KI21_VERSION=VERSION;
 window.KI21_RELEASE={version:'17.0.0',name:'Final Engine Foundation',built:'2026-08-03'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])})}
@@ -8672,8 +8742,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 59: ki21-v1604-stable-delivery-rc ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases';
-var SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases';
+var SHORT='Core 29.3.56';
 window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'16.0.8',name:'Competition Decision Calibration',built:'2026-08-03T08:05:00+02:00'};
 try{VERSION=RELEASE}catch(_){ }
@@ -8854,7 +8924,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 60: ki21-v1605-portfolio-recovery-hard-isolation ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',SHORT='Core 29.3.56';
 window.KI21_VERSION=RELEASE;window.KI21_RELEASE={version:'16.0.8',name:'Competition Decision Calibration',built:'2026-08-03T08:05:00+02:00'};
 try{VERSION=RELEASE}catch(_){ }
 function text(v){return String(v==null?'':v)}
@@ -8900,7 +8970,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 61: ki21-v1800-product-edition-spiced ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'18.0.0',name:'Product Edition',built:'2026-08-03T11:30:00+02:00'};
 function raw(){return String((state&&state.rawImport)||'')+'\n'+String(((state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'));}
@@ -9056,7 +9126,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 62: ki21-v1900-intelligence-refinement ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'19.0.0',name:'Intelligence Refinement',built:'2026-08-03T11:45:00+02:00'};
 function allRaw(){return String((state&&state.rawImport)||'')+'\n'+String(((state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'));}
@@ -9150,7 +9220,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 63: ki21-v1901-intelligence-consistency-fix ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'19.0.1',name:'Intelligence Consistency Fix',built:'2026-08-03T11:55:00+02:00'};
 function activeModel(){
@@ -9240,7 +9310,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 64: ki21-v1902-final-intelligence-consistency ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
 window.KI21_RELEASE={version:'19.0.2',name:'Final Intelligence Consistency',built:'2026-08-03T12:00:00+02:00'};
 function raw(){return String((state&&state.rawImport)||'')+'\n'+String(((state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'));}
@@ -9311,9 +9381,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 65: ki21-v2000-product-candidate ===== */
 (function(){
 'use strict';
-var RELEASE='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var RELEASE='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 try{VERSION=RELEASE}catch(_e){} window.KI21_VERSION=RELEASE;
-window.KI21_RELEASE={version:'29.3.55',name:'Product Candidate Interaction Fix',built:'2026-08-03T12:15:00+02:00'};
+window.KI21_RELEASE={version:'29.3.56',name:'Product Candidate Interaction Fix',built:'2026-08-03T12:15:00+02:00'};
 var BASE_FULL=fullReport, BASE_DECISION=decisionBrief, BASE_RENDER=renderInputs, BASE_RENDER_APP=render;
 function baseReport(){try{return String(BASE_FULL())}catch(e){return''}}
 function baseDecision(){try{return String(BASE_DECISION())}catch(e){return''}}
@@ -9400,7 +9470,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 66: ki21-20-1-0-product-release-gate ===== */
 (function(){
 'use strict';
-const RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+const RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
 window.KI21_RELEASE=RELEASE;
 try{VERSION=RELEASE.full}catch(_e){}
 window.KI21_VERSION=RELEASE.full;
@@ -9531,7 +9601,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 67: ki21-20-1-1-safari-safe-release-gate ===== */
 (function(){
 'use strict';
-var RELEASE={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var RELEASE={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function esc(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
 function sync(){try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full}catch(_e){}}
@@ -9554,7 +9624,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 68: ki21-20-3-0-test-data-recovery ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 var DEFAULT_TEST_IDS=['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10'];
 var STORAGE='ki21_portfolio_stable_v1';
@@ -9613,7 +9683,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 69: ki21-20-3-1-quality-evaluator-fix ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function sync(){
  try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h)h.textContent=RELEASE.short;if(f)f.textContent=RELEASE.full}catch(_e){}
@@ -9640,7 +9710,7 @@ window.addEventListener('pageshow',sync);
 /* ===== SOURCE BLOCK 70: ki21-20-3-2-safari-runtime-recovery ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function sync(){
  try{document.title=RELEASE.full;var h=document.getElementById('headerVersion'),f=document.getElementById('footerVersion');if(h&&h.textContent!==RELEASE.short)h.textContent=RELEASE.short;if(f&&f.textContent!==RELEASE.full)f.textContent=RELEASE.full}catch(_e){}
@@ -9667,7 +9737,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 71: ki21-21-0-0-architecture-cleanup ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;
 try{VERSION=RELEASE.full}catch(_e){}
 
@@ -9793,7 +9863,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 72: ki21-21-2-0-single-runtime-seal ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;
 try{VERSION=RELEASE.full}catch(_e){}
 function normalize(text){
@@ -9835,7 +9905,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 73: ki21-22-0-0-product-intelligence ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function raw(){return String((window.state&&state.rawImport)||'')+'\n'+String(((window.state&&state.additions)||[]).map(function(x){return x.text||''}).join('\n'));}
 function lower(){return raw().toLowerCase();}
@@ -9972,7 +10042,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 74: ki21-23-0-0-unified-intelligence ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 function st(){return window.state||{};}
 function arr(v){return Array.isArray(v)?v:[];}
@@ -10033,7 +10103,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 75: ki21-23-1-0-sales-precision-refinement ===== */
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE=RELEASE;window.KI21_VERSION=RELEASE.full;try{VERSION=RELEASE.full}catch(_e){}
 var AREAS=['Qualifizierung','Bedarfsanalyse','Demo','Einwandbehandlung','Wirtschaftlicher Nutzen & ROI','Angebot','Abschluss'];
 function M(){return typeof window.KI21_UNIFIED_MODEL==='function'?window.KI21_UNIFIED_MODEL():null;}
@@ -10104,7 +10174,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 76: ki21-2400-base-polish ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function model(){try{return typeof window.KI21_UNIFIED_MODEL==='function'?window.KI21_UNIFIED_MODEL():null}catch(_e){return null}}
 function escText(v){return String(v==null?'':v)}
 function decisionLabel(M){
@@ -10179,7 +10249,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 77: ki21-2400-management-decision-intelligence ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function M(){try{return typeof window.KI21_UNIFIED_MODEL==='function'?window.KI21_UNIFIED_MODEL():null}catch(_e){return null}}
 function uniq(a){return a.filter(function(x,i){return x&&a.indexOf(x)===i})}
 function money(v){return Number(v||0).toLocaleString('de-DE')+' €'}
@@ -10316,7 +10386,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 78: ki21-2410-text-qa-management-language ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function polish(v){
  var s=String(v==null?'':v);
  var exact=[
@@ -10408,7 +10478,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 79: ki21-2420-semantic-decision-language-engine ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function profile(){try{var m=typeof window.KI21_UNIFIED_MODEL==='function'?window.KI21_UNIFIED_MODEL():null;return m&&m.profile?m.profile.type:''}catch(_e){return''}}
 function semantic(v,context){
  var s=String(v==null?'':v),p=profile();
@@ -10491,7 +10561,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 80: ki21-2421-final-sentence-validation ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function finalPolish(value){
  var s=String(value==null?'':value);
  var rules=[
@@ -10571,7 +10641,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 81: ki21-2500-final-product-candidate ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function finalProductPolish(value){
  var s=String(value==null?'':value);
  var rules=[
@@ -10675,7 +10745,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* ===== SOURCE BLOCK 82: ki21-intelligence-evolution-2510 ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function raw(){try{return String(state&&state.rawImport||'')}catch(_){return ''}}
 function has(rx){return rx.test(raw())}
 function namesBy(rx){try{return (state.stakeholders||[]).filter(function(x){return rx.test(String((x.function||'')+' '+(x.role||'')+' '+(x.authority||'')))}).map(function(x){return x.name}).filter(Boolean)}catch(_){return []}}
@@ -10771,7 +10841,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 83: ki21-2520-final-result-quality ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function getState(){try{return state||{}}catch(_e){return{}}}
 function reportDealType(r){var m=String(r).match(/• Deal-Typ:\s*([^\n]+)/);return m?m[1].trim():''}
 function stakeholders(){var st=getState();return Array.isArray(st.stakeholders)?st.stakeholders.filter(function(x){return x&&x.name}):[]}
@@ -10924,7 +10994,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 84: ki21-2530-final-acceptance ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 function dealType(r){var m=String(r).match(/• Deal-Typ:\s*([^\n]+)/);return m?m[1].trim():''}
 function replaceArea(r,name,body){var rx=new RegExp('--- '+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+' ---\\n[\\s\\S]*?(?=\\n--- |\\n\\n=== SPICED DEAL INTELLIGENCE ===)');return r.replace(rx,'--- '+name+' ---\n'+body)}
 function replaceSection(r,title,body){var rx=new RegExp('=== '+title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+' ===\\n[\\s\\S]*?(?=\\n=== |$)');return r.replace(rx,'=== '+title+' ===\n'+body+'\n')}
@@ -10994,7 +11064,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* ===== SOURCE BLOCK 85: ki21-25-4-final-product-release ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 window.KI21_VERSION=RELEASE.full;
 function syncVersion(){
  try{document.title=RELEASE.full}catch(_e){}
@@ -11062,7 +11132,7 @@ syncVersion();
 /* ===== SOURCE BLOCK 86: ki21-25-5-enterprise-rollout-intelligence ===== */
 (function(){
 'use strict';
-var RELEASE={full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.55'};
+var RELEASE={full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',short:'Core 29.3.56'};
 window.KI21_VERSION=RELEASE.full;
 function sync(){
   try{VERSION=RELEASE.full}catch(_e){}
@@ -11341,7 +11411,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* KI21 Core 28.15.1 · final version enforcement and release scanner */
 (function(){
   'use strict';
-  var A=window.KI21_RELEASE_AUTHORITY||{version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+  var A=window.KI21_RELEASE_AUTHORITY||{version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
   function sync(){
     try{VERSION=A.full;}catch(_e){window.KI21_VERSION=A.full;}
     try{portfolio.version=A.full;}catch(_e){}
@@ -11374,7 +11444,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* KI21 Core 28.15.1 · procurement result integrity and final language gate */
 (function(){
   'use strict';
-  var A=window.KI21_RELEASE_AUTHORITY||{version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+  var A=window.KI21_RELEASE_AUTHORITY||{version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
   function stripSection(text,title){
     var safe=title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     return String(text).replace(new RegExp('(?:\\n|^)=== '+safe+' ===\\n[\\s\\S]*?(?=\\n=== [^\\n]+ ===|$)','g'),'');
@@ -11571,7 +11641,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 </script><script id="ki21-controlled-provider-fusion-2701">
 (function(){
   'use strict';
-  var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+  var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
   window.KI21_RELEASE_AUTHORITY=RELEASE;
   window.KI21_VERSION=RELEASE.full;
   window.KI21_VERSION_SHORT=RELEASE.short;
@@ -11692,7 +11762,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 /* KI21 Core 28.15.1 · Sales Intelligence Cockpit · Canonical Numeric & Strategy State Consumption — final report postprocessor only */
 (function(){
   'use strict';
-  var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
+  var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases',name:'Controlled Fusion Repair'});
   window.KI21_RELEASE_AUTHORITY=RELEASE;
   function syncVersion(){
     try{window.KI21_VERSION=RELEASE.full;window.KI21_VERSION_SHORT=RELEASE.short;if(typeof VERSION!=='undefined')VERSION=RELEASE.full;}catch(_e){}
@@ -11778,7 +11848,7 @@ window.addEventListener('pageshow',sync);window.addEventListener('focus',sync);
 <script id="ki21-evidence-output-integrity-2706">
 (function(){
 'use strict';
-var RELEASE=Object.freeze({version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'});
+var RELEASE=Object.freeze({version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'});
 window.KI21_RELEASE_AUTHORITY=RELEASE;window.KI21_VERSION=RELEASE.full;window.KI21_VERSION_SHORT=RELEASE.short;
 function text(v){return String(v==null?'':v).replace(/\r/g,'');}
 function clean(v){return text(v).replace(/^[#\s]+|\s+$/g,'').replace(/\s+/g,' ').trim();}
@@ -12476,9 +12546,9 @@ var oldRender=window.render||render;window.render=render=function(){var z=oldRen
 'use strict';
 
 var RELEASE={
-  version:'29.3.55',
-  short:'Core 29.3.55',
-  full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'
+  version:'29.3.56',
+  short:'Core 29.3.56',
+  full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'
 };
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -12988,7 +13058,7 @@ window.addEventListener('focus',sync);
 <script id="ki21-27-0-22-pilot-recognition-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function apply(){
   try{window.KI21_RELEASE_AUTHORITY=R;window.KI21_VERSION=R.full;window.KI21_VERSION_SHORT=R.short;}catch(_e){}
   try{if(typeof VERSION!=='undefined')VERSION=R.full;}catch(_e){}
@@ -13014,7 +13084,7 @@ apply();window.addEventListener('pageshow',apply);window.addEventListener('focus
 <script id="ki21-27-0-23-pilot-power-map-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function apply(){
   try{window.KI21_RELEASE_AUTHORITY=R;window.KI21_VERSION=R.full;window.KI21_VERSION_SHORT=R.short;}catch(_e){}
   try{if(typeof VERSION!=='undefined')VERSION=R.full;}catch(_e){}
@@ -13038,7 +13108,7 @@ window.addEventListener('focus',apply);
 <script id="ki21-27-0-24-expansion-integrity-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function apply(){
   try{window.KI21_RELEASE_AUTHORITY=R;window.KI21_VERSION=R.full;window.KI21_VERSION_SHORT=R.short;}catch(_e){}
   try{if(typeof VERSION!=='undefined')VERSION=R.full;}catch(_e){}
@@ -13071,7 +13141,7 @@ apply();window.addEventListener('pageshow',apply);window.addEventListener('focus
 <script id="ki21-27-0-25-expansion-runtime-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function apply(){
   try{window.KI21_RELEASE_AUTHORITY=R;window.KI21_VERSION=R.full;window.KI21_VERSION_SHORT=R.short;}catch(_e){}
   try{if(typeof VERSION!=='undefined')VERSION=R.full;}catch(_e){}
@@ -13102,7 +13172,7 @@ window.addEventListener('focus',apply);
 <script id="ki21-27-0-26-report-hygiene-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 
 function cleanVisibleReport(s){
   return String(s||'')
@@ -13152,7 +13222,7 @@ window.addEventListener('focus',apply);
 <script id="ki21-27-0-27-procurement-strategy-precision-gate">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function apply(){
   try{window.KI21_RELEASE_AUTHORITY=R;window.KI21_VERSION=R.full;window.KI21_VERSION_SHORT=R.short;}catch(_e){}
   try{if(typeof VERSION!=='undefined')VERSION=R.full;}catch(_e){}
@@ -13187,7 +13257,7 @@ window.addEventListener('focus',apply);
 (function(){
 'use strict';
 
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 function low(v){return clean(v).toLowerCase();}
@@ -13392,7 +13462,7 @@ window.addEventListener('focus',syncRelease);
 (function(){
 'use strict';
 
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 
 function esc29(v){
   try{return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v);}
@@ -13604,7 +13674,7 @@ window.addEventListener('focus',syncRelease);
 <script id="ki21-27-0-30-champion-loss-integrity">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 
 function clearCRM(){
   try{
@@ -13662,7 +13732,7 @@ window.addEventListener('focus',apply);
 <script id="ki21-27-0-31-strategy-isolation-legacy-integrity">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
 
@@ -13732,7 +13802,7 @@ window.addEventListener('focus',applyRelease);
 <script id="ki21-27-0-32-legacy-import-recovery-isolation-precision">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function c(v){return String(v==null?'':v).replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').trim();}
 function numDE(v){
   v=c(v).replace(/[€EUR]/gi,'').replace(/\s/g,'');
@@ -14042,7 +14112,7 @@ window.KI21_importIntegrity=function(st){
 <script id="ki21-27-1-0-consolidated-core-stabilization">
 (function(){
 'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 window.KI21_CONSOLIDATED_CORE_2710={
   version:R.full,
   fixes:{
@@ -14119,9 +14189,9 @@ window.KI21_CAPTURE_FINAL_CORE_SNAPSHOT=function(m,finalReport){
 */
 
 var RELEASE={
-  version:'29.3.55',
-  short:'Core 29.3.55',
-  full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'
+  version:'29.3.56',
+  short:'Core 29.3.56',
+  full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'
 };
 
 function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
@@ -14949,7 +15019,7 @@ window.addEventListener('focus',sync);
 </script>
 <script id="ki21-28-5-2-legacy-original-import-rehydration">
 (function(){'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 window.KI21_LEGACY_ORIGINAL_IMPORT_REHYDRATION_2852={
  version:R.full,
  principle:'Kompakte historische CRM-Imports werden im autoritativen Core normalisiert. Die Regeln sind struktur- und evidenzbasiert und enthalten keine fallnamenspezifische Score-Regel.',
@@ -14963,7 +15033,7 @@ sync();window.addEventListener('pageshow',sync);window.addEventListener('focus',
 </script>
 <script id="ki21-28-5-4-canonical-numeric-strategy-state-consumption">
 (function(){'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 window.KI21_CANONICAL_NUMERIC_STRATEGY_STATE_CONSUMPTION_2854={
  version:R.full,
  principle:'Zahlen werden an der autoritativen Quelle kanonisch normalisiert; die Strategy Synthesis konsumiert denselben bestätigten Blocker- und Success-Fee-State wie Core und Intelligence.',
@@ -15036,7 +15106,7 @@ sync();window.addEventListener('pageshow',sync);window.addEventListener('focus',
 </script>
 <script id="ki21-28-6-1-crm-conflict-state-propagation">
 (function(){'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 window.KI21_CRM_CONFLICT_STATE_PROPAGATION_2861={
  version:R.full,
  principle:'CRM_EVIDENZKONFLIKT wird vom Core bis Strategy Synthesis und Intelligence Priority Synthesis durchgängig konsumiert.',
@@ -15053,7 +15123,7 @@ sync();window.addEventListener('pageshow',sync);window.addEventListener('focus',
 </script>
 <script id="ki21-28-6-3-strategy-schema-compatibility">
 (function(){'use strict';
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 var crmStrategy=function(m){
  return {
   mechanism:['Der im CRM gespeicherte Dealzustand widerspricht aktueller Kundenevidenz. Reale Deal-Kontrolle, Kundenzugang, Ownership und heute gültige Freigaben sind deshalb entscheidender als die historische CRM-Wahrscheinlichkeit.'],
@@ -15089,7 +15159,7 @@ sync();window.addEventListener('pageshow',sync);window.addEventListener('focus',
 </script>
 <script id="ki21-28-10-0-semantic-quality-gates">
 (function(){'use strict';
-const RELEASE={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+const RELEASE={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function txt(x){return String(x==null?'':x)}
 function has(r,re){return re.test(txt(r))}
 function semanticExpectation(tc,r){
@@ -15152,7 +15222,7 @@ bind();document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,50));win
 <script id="ki21-28-13-5-runtime-binding-syntax-repair">
 (function(){
 'use strict';
-var RELEASE={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var RELEASE={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function S(v){return String(v==null?'':v)}
 function vals(t){
   var sm=S(t).match(/Opportunity Score:\s*(\d+)%/i);
@@ -15234,7 +15304,7 @@ setInterval(bind,900);
 </script>
 <script id="ki21-28-14-0-adversarial-decision-reality-suite">
 (function(){'use strict';
-var RELEASE={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var RELEASE={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function addCases(){
  if(typeof KI219_TEST_CASES==='undefined'||KI219_TEST_CASES.some(function(x){return x.id==='D01'}))return;
  KI219_TEST_CASES.push(
@@ -15260,9 +15330,9 @@ window.KI21_ADVERSARIAL_DECISION_REALITY_28140={version:RELEASE.full,newCases:10
 (function(){'use strict';
 
 var RELEASE={
-  version:'29.3.55',
-  short:'Core 29.3.55',
-  full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'
+  version:'29.3.56',
+  short:'Core 29.3.56',
+  full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'
 };
 
 function addEvolution3Cases(){
@@ -15350,7 +15420,7 @@ setInterval(sync,1000);
 
 <script id="ki21-28-16-0-contradictory-signal-intelligence">
 (function(){'use strict';
-var RELEASE={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var RELEASE={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function addCases(){
  if(typeof KI219_TEST_CASES==='undefined'||KI219_TEST_CASES.some(function(x){return x.id==='F01'}))return;
  var C=[
@@ -15445,9 +15515,9 @@ window.addEventListener('pageshow',function(){setTimeout(bind,40)});window.addEv
 'use strict';
 
 var RELEASE={
-  version:'29.3.55',
-  short:'Core 29.3.55',
-  full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'
+  version:'29.3.56',
+  short:'Core 29.3.56',
+  full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'
 };
 
 function S(v){return String(v==null?'':v)}
@@ -15640,9 +15710,9 @@ setTimeout(enforceVersion,1000);
 'use strict';
 
 var RELEASE={
-  version:'29.3.55',
-  short:'Core 29.3.55',
-  full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'
+  version:'29.3.56',
+  short:'Core 29.3.56',
+  full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'
 };
 
 function S(v){return String(v==null?'':v)}
@@ -15854,7 +15924,7 @@ setTimeout(enforceVersion,1000);
 
 <script id="ki21-2901-report-alignment">
 (function(){
-var R={version:'29.3.55',short:'Core 29.3.55',full:'KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases'};
+var R={version:'29.3.56',short:'Core 29.3.56',full:'KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases'};
 function align(t){
  t=String(t||'');
  t=t.replace(/KI21 INTELLIGENCE NETWORK · SHADOW MODE/g,'KI21 INTELLIGENCE NETWORK · ACTIVE CONTEXT MODE')
@@ -15879,13 +15949,13 @@ labels();window.addEventListener('pageshow',labels);window.addEventListener('foc
 })();
 </script>
 <script>
-/* KI21 29.3.55 · Incremental Evidence Source Authority
+/* KI21 29.3.56 · Incremental Evidence Source Authority
    Stabilization + relevance-first Context Intelligence.
    Core score/forecast remains authoritative. */
 (function(){
   "use strict";
 
-  const VERSION = "29.3.55";
+  const VERSION = "29.3.56";
 
   function norm(v){ return String(v == null ? "" : v).trim(); }
   function lower(v){ return norm(v).toLowerCase(); }
@@ -16005,7 +16075,7 @@ labels();window.addEventListener('pageshow',labels);window.addEventListener('foc
 
 
 <script>
-/* KI21 29.3.55 · Incremental Evidence Source Authority · READ-ONLY */
+/* KI21 29.3.56 · Incremental Evidence Source Authority · READ-ONLY */
 (function(){
 "use strict";
 const CASES=[
@@ -16021,7 +16091,7 @@ const CASES=[
 ["CX10","Relevanter Teamaufbau",{title:"Team im relevanten Bereich wächst",source:"Karriereseite",date:"aktuell",relevance:"Kann auf Priorität oder Kapazitätsaufbau hindeuten",question:"Ist der Teamaufbau Teil derselben Initiative?"},"MITTEL"]
 ];
 window.KI21_CONTEXT_TEST_LAB=Object.freeze({
- version:"29.3.55",
+ version:"29.3.56",
  cases:CASES,
  run:function(){
   const q=window.KI21_CONTEXT_QUALITY;
@@ -16030,7 +16100,7 @@ window.KI21_CONTEXT_TEST_LAB=Object.freeze({
    return {id:c[0],name:c[1],expected:c[3],actual:o.priority,pass:pass,score:o.relevanceScore,
     signal:o.signal,dealMeaning:o.dealMeaning,nextQuestion:o.nextQuestion,nextAction:o.nextAction};
   });
-  return {version:"29.3.55",passed:results.filter(x=>x.pass).length,total:results.length,
+  return {version:"29.3.56",passed:results.filter(x=>x.pass).length,total:results.length,
    results:results,coreMutation:false,scoreMutation:false,forecastMutation:false};
  }
 });
@@ -16041,7 +16111,7 @@ window.KI21_CONTEXT_TEST_LAB=Object.freeze({
 <script id="ki21-29-1-7-real-opportunity-ci-runtime-fix">
 (function(){
 "use strict";
-var REL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var REL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 function C(v){return String(v==null?"":v).replace(/\s+/g," ").trim()}
 function activeState(){try{return window.state||state||null}catch(_e){return window.state||null}}
 function ready(cr){return !!(cr&&cr.result&&(String(cr.status||"").toLowerCase()==="ready"||cr.result))}
@@ -16125,17 +16195,17 @@ document.addEventListener("click",function(e){
 },true);
 
 window.KI21_CI_RUNTIME_DIAGNOSTICS={
-  version:"29.3.55",
+  version:"29.3.56",
   realOpportunityAutoStart:true,
   tabIndependent:true,
   canonicalCommitOnSuccess:true,
   syntheticFallback:false,
   scoreForecastMutation:false
 };
-window.KI21_RELEASE_AUTHORITY={version:"29.3.55",short:"Core 29.3.55",full:REL};
-window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.55";
+window.KI21_RELEASE_AUTHORITY={version:"29.3.56",short:"Core 29.3.56",full:REL};
+window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.56";
 function stamp(){
- try{document.title=REL;var h=document.getElementById("headerVersion"),f=document.getElementById("footerVersion");if(h)h.textContent="Core 29.3.55";if(f)f.textContent=REL}catch(_e){}
+ try{document.title=REL;var h=document.getElementById("headerVersion"),f=document.getElementById("footerVersion");if(h)h.textContent="Core 29.3.56";if(f)f.textContent=REL}catch(_e){}
 }
 stamp();setTimeout(stamp,0);setTimeout(stamp,1000);
 })();
@@ -16144,14 +16214,14 @@ stamp();setTimeout(stamp,0);setTimeout(stamp,1000);
 <script id="ki21-29-3-9-native-incremental-evidence-integration">
 (function(){
 "use strict";
-var REL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var REL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 window.KI21_NATIVE_INCREMENTAL_EVIDENCE_GATE=function(){
  var tests=[["NI01","Autoritativer report() konsumiert state.additions nativ",typeof nativeIncrementalEvidenceSection==="function"],["NI02","Native Evidence wird vor DEAL-DNA erzeugt",true],["NI03","CRM-Originalimport bleibt unverändert",true],["NI04","Score/Forecast bleiben Core-authoritativ",true],["NI05","Cross-Opportunity-Isolation bleibt erhalten",true]];
- return {version:"29.3.55",passed:tests.filter(function(x){return x[2]}).length,total:tests.length,tests:tests};
+ return {version:"29.3.56",passed:tests.filter(function(x){return x[2]}).length,total:tests.length,tests:tests};
 };
-window.KI21_RELEASE_AUTHORITY={version:"29.3.55",short:"Core 29.3.55",full:REL};
-window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.55";
-try{if(typeof RELEASE==="object"&&RELEASE){RELEASE.version="29.3.55";RELEASE.short="Core 29.3.55";RELEASE.full=REL}}catch(_e){}
+window.KI21_RELEASE_AUTHORITY={version:"29.3.56",short:"Core 29.3.56",full:REL};
+window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.56";
+try{if(typeof RELEASE==="object"&&RELEASE){RELEASE.version="29.3.56";RELEASE.short="Core 29.3.56";RELEASE.full=REL}}catch(_e){}
 })();
 </script>
 
@@ -16198,7 +16268,7 @@ document.head.appendChild(style);
 window.KI21_GATE_OWNER_DEADLINE_29339=function(){
   var a=[]; try{a=(window.state&&Array.isArray(state.additions)?state.additions:[]).map(function(x){return String(x&&x.text!=null?x.text:x)});}catch(e){}
   var t=a.find(function(x){return /technische Machbarkeit/i.test(x)&&/30\. September/i.test(x)})||'';
-  return {version:'29.3.55',deadline:/30\. September/i.test(t),owner:/Anna Feldmann/i.test(t),conditional:/sofern|wenn|vorbehaltlich|unter der Bedingung/i.test(t)};
+  return {version:'29.3.56',deadline:/30\. September/i.test(t),owner:/Anna Feldmann/i.test(t),conditional:/sofern|wenn|vorbehaltlich|unter der Bedingung/i.test(t)};
 };
 })();
 </script>
@@ -16211,7 +16281,7 @@ window.KI21_GATE_OWNER_DEADLINE_29339=function(){
 <script id="ki21-29-3-13-executable-single-report-authority">
 (function(){
 "use strict";
-var REL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var REL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 function S(v){return String(v==null?"":v)}
 function C(v){return S(v).replace(/\s+/g," ").trim()}
 function L(v){return C(v).toLowerCase()}
@@ -16285,7 +16355,7 @@ function evidenceModel(){
   });
   return {items:ev,contradictions:contr};
 }
-window.KI21_CANONICAL_EVIDENCE_PIPELINE=Object.freeze({version:"29.3.55",derive:evidenceModel});
+window.KI21_CANONICAL_EVIDENCE_PIPELINE=Object.freeze({version:"29.3.56",derive:evidenceModel});
 
 function stripSection(r,name){
   var re=new RegExp("\\n?=== "+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+" ===[\\s\\S]*?(?=\\n=== [A-ZÄÖÜ0-9][^=\\n]* ===|$)","g");
@@ -16438,7 +16508,7 @@ if(typeof legacyShow==="function"){
 
 window.KI21_applySingleAuthoritativeReportPipeline=applyPipeline;
 window.KI21_SINGLE_REPORT_AUTHORITY_RUNTIME={
-  version:"29.3.55",
+  version:"29.3.56",
   executed:true,
   at:new Date().toISOString(),
   authorityActive:!!(window.fullReport&&window.fullReport.__ki21_single_authority_29313)
@@ -16456,11 +16526,11 @@ window.KI21_SINGLE_REPORT_AUTHORITY_GATE_29313=function(){
     ["SR08","Core bleibt Bewertungsinstanz",true],
     ["SR09","Score/Forecast werden nicht automatisch mutiert",true]
   ];
-  return {version:"29.3.55",passed:tests.filter(function(x){return x[2]}).length,total:tests.length,tests:tests,coreMutation:false,scoreForecastMutation:false};
+  return {version:"29.3.56",passed:tests.filter(function(x){return x[2]}).length,total:tests.length,tests:tests,coreMutation:false,scoreForecastMutation:false};
 };
 
-window.KI21_RELEASE_AUTHORITY={version:"29.3.55",short:"Core 29.3.55",full:REL};
-window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.55";
+window.KI21_RELEASE_AUTHORITY={version:"29.3.56",short:"Core 29.3.56",full:REL};
+window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.56";
 })();
 </script>
 
@@ -16470,8 +16540,8 @@ window.KI21_VERSION=REL;window.KI21_VERSION_SHORT="Core 29.3.55";
 <script id="ki21-29-3-24-single-stakeholder-truth-authority">
 (function(){
 "use strict";
-var VER="29.3.55";
-var FULL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var VER="29.3.56";
+var FULL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 
 function S(v){return String(v==null?"":v)}
 function C(v){return S(v).replace(/\s+/g," ").trim()}
@@ -16707,8 +16777,8 @@ window.KI21_RELEASE_GATE_29324=function(){
 (function(){
 "use strict";
 
-var VER="29.3.55";
-var FULL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var VER="29.3.56";
+var FULL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 
 function S(v){return String(v==null?"":v)}
 function C(v){return S(v).replace(/\s+/g," ").trim()}
@@ -16980,8 +17050,8 @@ window.KI21_RELEASE_GATE_29328=function(){
 
 (function(){
 "use strict";
-var VER="29.3.55";
-var FULL="KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases";
+var VER="29.3.56";
+var FULL="KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases";
 function T(v){return String(v==null?"":v)}
 function C(v){return T(v).replace(/\s+/g," ").trim()}
 function E(v){return C(v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]})}
@@ -17045,7 +17115,7 @@ function b64utf8(s){try{return decodeURIComponent(escape(atob(String(s||""))))}c
 function writeHashSnapshot(q){
   try{
     if(!q||!q.raw)return false;
-    var payload={v:"29.3.55",raw:q.raw,additions:additions(),id:C(state&&state.id),company:C(q.company),opportunity:C(q.opportunity)};
+    var payload={v:"29.3.56",raw:q.raw,additions:additions(),id:C(state&&state.id),company:C(q.company),opportunity:C(q.opportunity)};
     var enc=utf8b64(JSON.stringify(payload)); if(!enc)return false;
     history.replaceState(null,"",location.pathname+location.search+HASH_PREFIX+enc);
     return true;
@@ -17314,7 +17384,7 @@ window.addEventListener("pageshow",function(){setTimeout(boot,0)});
 <script id="ki21-29-3-54-single-visible-release-authority">
 (function(){
 "use strict";
-var FULL='KI21 Core 29.3.55 · Report Legacy Recovery Compatibility · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.55';
+var FULL='KI21 Core 29.3.56 · Global Report Recovery Authority · Context Isolation · Product Truth · 120 Death Cases', SHORT='Core 29.3.56';
 function apply(){
   try{
     window.KI21_VERSION=FULL;
@@ -17332,17 +17402,5 @@ window.addEventListener("focus",apply);
 })();
 </script>
 
-
-<script id="ki21-29-3-55-report-legacy-recovery-compatibility">
-(function(){
-"use strict";
-try{
-  if(typeof window.legacyCompactRecoverOpportunity!=="function" &&
-     typeof window.legacyCompactRecover==="function"){
-    window.legacyCompactRecoverOpportunity=window.legacyCompactRecover;
-  }
-}catch(_e){}
-})();
-</script>
 
 </html>
