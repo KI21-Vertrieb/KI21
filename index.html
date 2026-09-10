@@ -20548,7 +20548,7 @@ function interpret42(){
 
    // Keep exactly three actionable items without reopening already fulfilled Journey blocks.
    var fillers=[
-     "Nächsten Kundenschritt mit Verantwortlichem und Termin verbindlich machen.",
+     preliminaryDecision&&criticalText?"Im Entscheidungsworkshop am "+criticalText+" verbindlich festlegen, ob die strukturierte Lösungsbewertung gestartet wird, und das Ergebnis dokumentieren.":"Nächsten Kundenschritt mit Verantwortlichem und Termin verbindlich machen.",
      "Offene Kaufbedingung mit dem zuständigen Stakeholder schließen.",
      "Ergebnis im nächsten Kundengespräch bestätigen und dokumentieren."
    ];
@@ -20776,6 +20776,11 @@ var SHORT="Core 30.3.24";
 function enforce(){
  try{window.KI21_VERSION=FULL;window.KI21_VERSION_SHORT=SHORT;VERSION=FULL;document.title=FULL}catch(_e){}
  try{var h=document.getElementById("headerVersion"),f=document.getElementById("footerVersion");if(h)h.textContent=SHORT;if(f)f.textContent=FULL}catch(_e){}
+ try{
+  var m=typeof window.KI21_RC43_INTERPRET==="function"?window.KI21_RC43_INTERPRET():null;
+  var s=document.getElementById("statusLine");
+  if(m&&s)s.textContent=m.closing?"Abschluss / kommerzielle Umsetzung":m.type==="discovery"?"Qualifizierung · Value Decision und Entscheidungsweg klären":m.type==="evaluation"?"Evaluation · Kaufentscheidung vorbereiten":m.type==="economic"?"Wirtschaftliche Bewertung · Freigabeweg klären":"Qualifizierung · Kaufentscheidung absichern";
+ }catch(_e){}
 }
 try{
  var prior=window.render||render;
