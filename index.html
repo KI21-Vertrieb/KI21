@@ -19771,7 +19771,8 @@ function authority(){
   adds.forEach(function(x){
     if(/(?:nicht\s+(?:als\s+)?zwingend(?:e[snmr]?)?|wünschenswert|notfalls|kein(?:e|en|er)?\s+verbindlich(?:e|en|er)?\s+(?:termin|deadline))/i.test(x))critical="";
     var cm=x.match(/(?:Investitionsentscheidung|Entscheidung)[^.\n]{0,100}?spätestens\s+am\s+(\d{1,2}\.\s*[A-Za-zÄÖÜäöü]+\s*\d{4})/i)
-      ||x.match(/(?:verbindlicher|bestätigter)\s+(?:Entscheidungs)?termin[^.\n]{0,50}?(\d{1,2}\.\s*[A-Za-zÄÖÜäöü]+\s*\d{4})/i);
+      ||x.match(/(?:verbindlicher|bestätigter)\s+(?:Entscheidungs)?termin[^.\n]{0,50}?(\d{1,2}\.\s*[A-Za-zÄÖÜäöü]+\s*\d{4})/i)
+      ||x.match(/(?:Entscheidungsworkshop|Entscheidungs-Workshop|Workshop)\s+am\s+(\d{1,2}\.\s*[A-Za-zÄÖÜäöü]+\s*\d{4})/i);
     if(cm)critical=cm[1].trim();
   });
   var technical="OPEN";
@@ -20314,8 +20315,8 @@ window.KI21_SOURCE_STATUS_3009=status;
 <script id="ki21-30-0-rc43-unified-score-forecast-authority">
 (function(){
 "use strict";
-const RELEASE43="KI21 Core 30.3.23 · Current Evidence Render Authority · Unified Input Render Authority · Context Isolation · Product Truth · 120 Death Cases";
-const SHORT43="Core 30.3.23";
+const RELEASE43="KI21 Core 30.3.24 · Incremental Evidence Authority · Unified Input Render Authority · Context Isolation · Product Truth · 120 Death Cases";
+const SHORT43="Core 30.3.24";
 const T=v=>String(v==null?"":v), L=v=>T(v).toLowerCase(), A=v=>Array.isArray(v)?v:[];
 function active42(){
  try{
@@ -20401,7 +20402,7 @@ function interpret42(){
  }catch(_e){}
  additionTexts.forEach(x=>{
    const negative=/(?:notfalls|wünschenswert|nicht\s+(?:als\s+)?zwingend(?:e[snmr]?)?|keine?\s+verbindliche?\s+(?:priorität|deadline|termin)|kann\s+verschoben\s+werden)/i.test(x);
-   const positive=/(?:muss|spätestens|verbindlich|akzeptiert\s+(?:er|sie)?\s*nicht\s+mehr)[^.\n]{0,180}(?:Investitionsentscheidung|Entscheidung|Jahresplanung|Planungsprozess|produktiv)|(?:Investitionsentscheidung|Entscheidung|Jahresplanung|Planungsprozess)[^.\n]{0,180}(?:muss|spätestens|verbindlich|nicht\s+mehr)/i.test(x);
+   const positive=/(?:muss|spätestens|verbindlich|akzeptiert\s+(?:er|sie)?\s*nicht\s+mehr)[^.\n]{0,180}(?:Investitionsentscheidung|Entscheidung|Jahresplanung|Planungsprozess|produktiv)|(?:Investitionsentscheidung|Entscheidung|Jahresplanung|Planungsprozess)[^.\n]{0,180}(?:muss|spätestens|verbindlich|nicht\s+mehr)|(?:Management)?priorität[^.\n]{0,60}(?:besitzt|bestätigt|festgelegt|gegeben|hoch)/i.test(x);
    if(negative){priority=false;priorityBlocked=true}
    if(positive&&!negative){priority=true;priorityBlocked=false}
  });
@@ -20413,7 +20414,7 @@ function interpret42(){
  }
  /* Explicit counter-evidence is authoritative. The generic Critical-Event fallback may not reopen priority. */
  if(!priority&&!priorityBlocked)priority=/(?:priorität[^.\n]{0,45}(?:bestätigt|hoch|klar|verbindlich|geschäftskritisch)|(?:bestätigte|hohe|klare|verbindliche|geschäftskritische)\s+priorität|dringend|deadline|critical event)/i.test(c)&&!/(?:priorität[^.\n]{0,45}(?:nicht|noch offen|unbestätigt|ungeklärt)|keine[^.\n]{0,30}priorität)/i.test(c);
- const decision=/entscheidungskriter|decision criteria|entscheidungsweg|freigabeprozess|procurement|beschaffung/.test(c);
+ const decision=/entscheidungskriter|decision criteria|entscheidungsweg|freigabeprozess|entscheidungsworkshop|entscheidungs-workshop|strukturierte lösungsbewertung|procurement|beschaffung/.test(c);
  const adoption=/adoption|nutzung|anwender|renewal|verlänger|bestandsausbau|ausbau/.test(c);
  const ps=problem?(priority?"fulfilled":"partial"):"open";
  const vs=(econ&&price)?"fulfilled":(price||hours||econ)?"partial":"open";
@@ -20718,8 +20719,8 @@ window.KI21_COMMIT_ADDITION_3018=function(txt){
 <script id="ki21-30-0-10-final-release-hardening">
 (function(){
 "use strict";
-const FULL="KI21 Core 30.3.23 · Current Evidence Render Authority · Unified Input Render Authority · Context Isolation · Product Truth · 120 Death Cases";
-const SHORT="Core 30.3.23";
+const FULL="KI21 Core 30.3.24 · Incremental Evidence Authority · Unified Input Render Authority · Context Isolation · Product Truth · 120 Death Cases";
+const SHORT="Core 30.3.24";
 function stamp(){
  try{
   window.KI21_VERSION=FULL;window.KI21_VERSION_SHORT=SHORT;document.title=FULL;
